@@ -2,6 +2,40 @@
 
 ## Commands Executed
 
+TASK-004C-RUN2 VPS candidate prefilter dry-run:
+
+```bash
+/opt/official-sources/app/.venv/bin/official-sources find-boe-candidates --help
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+sqlite3 /opt/official-sources/data/official_sources.sqlite "SELECT COUNT(*) FROM source_candidates;"
+du -sh /opt/official-sources/data/artifacts
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite find-boe-candidates --date-from 2026-04-18 --date-to 2026-05-17 --keywords "beca,becas,ayuda,ayudas,subvención,subvenciones,convocatoria,bases reguladoras,educación,estudiantes,alquiler,bono,familia numerosa,discapacidad,transporte,vivienda" --dry-run --limit 100
+sqlite3 /opt/official-sources/data/official_sources.sqlite "SELECT COUNT(*) FROM source_candidates;"
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+du -sh /opt/official-sources/data/artifacts
+ss -tulpn
+```
+
+Result:
+
+- Initial VPS help check did not expose safe preview flags, so the candidate search was not run in
+  normal write mode.
+- Safe mode was implemented in `962f1e1` and the unmatched-row counting regression was fixed in
+  `ab0c206`.
+- Final deployed commit for the dry-run: `ab0c206`.
+- Documents scanned: `3896`.
+- Documents matched: `554`.
+- Candidates created: `0`.
+- Candidate count before/after: `0/0`.
+- Artifact directory size before/after: `22M/22M`.
+- DB validation after dry-run: `current_version=6 latest_version=6 status=valid`.
+- Match counts by top keywords included `transporte=246`, `convocatoria=217`,
+  `subvenciones=35`, `educación=28`, `ayuda=28`, `ayudas=27`, `vivienda=16`,
+  `beca=10`, and `becas=10`.
+- MCP privacy check found no MCP/FastMCP/Python/Uvicorn/official-sources public listener and no
+  SQLite exposure.
+- No BOE API calls, artifact downloads, downstream writes, approval, or publication were run.
+
 TASK-004C-FIX3 local validation:
 
 ```bash
