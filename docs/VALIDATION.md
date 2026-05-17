@@ -2,6 +2,39 @@
 
 ## Commands Executed
 
+TASK-004C-RUN1 VPS operational validation:
+
+```bash
+git pull --ff-only origin main
+python -m pip install -e .
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db status
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_before_30d_backfill_20260517_180859.sqlite
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite ingest-boe-range --date-from 2026-04-18 --date-to 2026-05-17 --skip-existing --continue-on-no-publication --stop-on-error --max-days 30 --sleep-seconds 1
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite status --date 2026-04-18
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite status --date 2026-05-17
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+du -sh /opt/official-sources/data/artifacts
+ss -tulpn
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_after_30d_backfill_20260517_180948.sqlite
+```
+
+Result:
+
+- Deployed commit: `607b96c`.
+- Pre-run DB validation: `current_version=6 latest_version=6 status=valid`.
+- Pre-run backup: `verification=quick_check source_check=ok backup_check=ok status=success`.
+- Range result: `processed=29 skipped=1 success=25 no_publication=4 failed=0 days=30`.
+- Final range state: `success=25 no_publication=5 failed=0`.
+- HTTP status summary: `200:25,404:5`.
+- Documents: `documents_fetched=3896 documents_new=3896 documents_updated=0`.
+- Retry/throttle: `retry_count=0 throttle_events=6`.
+- Artifact directory size: unchanged at `22M`.
+- Post-run DB validation: `current_version=6 latest_version=6 status=valid`.
+- Post-run backup: `verification=quick_check source_check=ok backup_check=ok status=success`.
+- MCP privacy: no MCP/FastMCP/Python/Uvicorn/official-sources public listener and no SQLite exposure.
+- No artifact downloads, candidate prefiltering, 24-month backfill, or full historical backfill were run.
+
 TASK-004C local validation:
 
 ```bash
