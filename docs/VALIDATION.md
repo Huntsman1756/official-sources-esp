@@ -2,6 +2,22 @@
 
 ## Commands Executed
 
+TASK-004A-FIX1 local validation:
+
+```bash
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+- Tests: `152 passed`.
+- Lint: `All checks passed!`.
+- Formatting: `56 files already formatted`.
+- New schema latest version: `6`.
+- Focused no-publication behavior tests: BOE summary `404` persists `last_http_status=404`, records `status=no_publication`, exits zero from the CLI, skips artifact download, and keeps real 500/malformed-200 failures as `failed`.
+
 TASK-004A real VPS deployment rehearsal:
 
 ```bash

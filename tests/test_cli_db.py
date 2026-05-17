@@ -14,8 +14,8 @@ def test_cli_db_status_reports_versions_and_pending_migrations(tmp_path, capsys)
     assert exit_code == 0
     assert f"database_path={db_path}" in captured.out
     assert "current_version=0" in captured.out
-    assert "latest_version=5" in captured.out
-    assert "pending_migrations=5" in captured.out
+    assert "latest_version=6" in captured.out
+    assert "pending_migrations=6" in captured.out
 
 
 def test_cli_db_migrate_applies_pending_migrations_and_preserves_data(tmp_path, capsys):

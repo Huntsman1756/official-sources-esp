@@ -114,6 +114,12 @@ official-sources --db-path official-sources.sqlite ingest-boe-summary --date 202
 ```
 
 The command creates an `ingestion_runs` row before fetching. Failed attempts are also recorded.
+For `/datosabiertos/api/boe/sumario/{fecha}`, BOE documents `404` as requested
+information not existing. Daily summary ingestion treats that case as `no_publication`: the
+source was reached, no summary exists for the requested date, `last_http_status=404` is
+persisted, document counts stay at zero, and the CLI exits successfully so systemd does not
+report an infrastructure failure. Real network, server, parsing, storage, and schema failures
+still use `failed` and exit non-zero.
 
 ## Download BOE Artifacts
 
@@ -141,7 +147,7 @@ official-sources --db-path official-sources.sqlite integrity-check --date 2024-0
 official-sources --db-path official-sources.sqlite status --date 2024-05-29
 ```
 
-The integrity command recomputes hashes from local cached artifacts and records integrity events. The status command reports ingestion status, document counts, artifact counts, download attempt counts, failed downloads, and integrity warnings.
+The integrity command recomputes hashes from local cached artifacts and records integrity events. The status command reports ingestion status, last observed HTTP status, document counts, artifact counts, download attempt counts, failed downloads, and integrity warnings.
 
 ## BOE Consolidated Legislation
 
@@ -196,6 +202,8 @@ official-sources status --date 2024-05-29
 ```
 
 The CLI also accepts `--date today` for timer use.
+On a `no_publication` day, artifact download is skipped because there are no BOE document URLs
+to fetch for that date.
 
 ## systemd Templates
 

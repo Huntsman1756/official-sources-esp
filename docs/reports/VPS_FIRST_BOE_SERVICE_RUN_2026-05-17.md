@@ -280,3 +280,13 @@ MCP remained private and stopped.
 
 TASK-004A-FIX1: define and validate the operational behavior for BOE no-publication days and failed
 HTTP status auditing before starting downstream pilot integration.
+
+## Follow-up Correction
+
+TASK-004A-FIX1 defines the controlled status `no_publication` for BOE daily summary `404`
+responses. BOE documents summary API `404` as requested information not existing. For daily
+summary ingestion, this is now treated as a no-summary/no-publication condition rather than
+as a hard systemd failure. The corrected behavior persists `last_http_status=404`, keeps all
+document counts at zero, skips artifact download for that date, and lets the CLI exit with
+status code `0`. Real network, server, parser, storage, and schema failures remain
+`failed` and exit non-zero.

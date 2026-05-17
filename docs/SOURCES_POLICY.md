@@ -56,6 +56,13 @@ OFFICIAL_SOURCES_BOE_JITTER_SECONDS=0.25
 
 429, 503, and transient 5xx responses are treated as retryable with finite retries, exponential backoff, small jitter, and `Retry-After` handling when the header is present. Retry and throttle outcomes are audited; failures are not silently swallowed.
 
+The BOE summary endpoint documents `404` as requested information not existing. For daily
+summary ingestion, `404` is not retried aggressively and is recorded as `no_publication`:
+the source was reached, no summary exists for that date, `last_http_status=404` is
+preserved, document counts remain zero, and artifact download is skipped. This is not a
+system failure. Real network, server, parser, storage, and schema failures remain
+`failed`.
+
 The current implementation uses `httpx` with an internal retry/backoff wrapper. `retryhttp` was not adopted in TASK-003F because that package is not available in the offline validation environment; equivalent behavior is covered by mocked HTTP tests.
 
 ## BOE Consolidated Legislation Source

@@ -114,7 +114,13 @@ CREATE TABLE IF NOT EXISTS ingestion_runs (
     source_code TEXT NOT NULL,
     run_date TEXT NOT NULL,
     target_date TEXT,
-    status TEXT NOT NULL CHECK(status IN ('pending', 'success', 'partial', 'failed')),
+    status TEXT NOT NULL CHECK(status IN (
+        'pending',
+        'success',
+        'partial',
+        'failed',
+        'no_publication'
+    )),
     documents_fetched INTEGER NOT NULL DEFAULT 0,
     documents_new INTEGER NOT NULL DEFAULT 0,
     documents_updated INTEGER NOT NULL DEFAULT 0,

@@ -5,6 +5,8 @@ from pathlib import Path
 import httpx
 
 from official_sources.integrity.hashing import sha256_bytes
+from official_sources.sources.boe.client import BOESummaryNotFoundError
+from official_sources.sources.boe.http_policy import BOERequestAudit
 from official_sources.storage.database import connect, initialize_database
 from official_sources.storage.repository import OfficialSourcesRepository
 
@@ -101,6 +103,168 @@ def test_ingest_boe_summary_records_retry_and_throttle_information(tmp_path):
     assert exit_code == 0
     assert run_record["retry_count"] == 2
     assert run_record["throttle_triggered"] == 1
+    assert run_record["last_http_status"] == 200
+
+
+def test_ingest_boe_summary_404_exits_zero_and_reports_no_publication(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+
+    def not_found_fetcher(_date: str) -> bytes:
+        raise BOESummaryNotFoundError(
+            "2026-05-17",
+            BOERequestAudit(retry_count=0, throttle_triggered=False, last_http_status=404),
+        )
+
+    exit_code = run(
+        ["--db-path", str(db_path), "ingest-boe-summary", "--date", "2026-05-17"],
+        summary_fetcher=not_found_fetcher,
+    )
+
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    run_record = repository.get_latest_ingestion_run("BOE", "2026-05-17")
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert run_record["status"] == "no_publication"
+    assert run_record["last_http_status"] == 404
+    assert run_record["retry_count"] == 0
+    assert run_record["throttle_triggered"] == 0
+    assert "status=no_publication" in captured.out
+    assert "last_http_status=404" in captured.out
+
+
+def test_status_reports_no_publication_and_last_http_status(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+
+    def not_found_fetcher(_date: str) -> bytes:
+        raise BOESummaryNotFoundError(
+            "2026-05-17",
+            BOERequestAudit(retry_count=0, throttle_triggered=False, last_http_status=404),
+        )
+
+    run(
+        ["--db-path", str(db_path), "ingest-boe-summary", "--date", "2026-05-17"],
+        summary_fetcher=not_found_fetcher,
+    )
+    capsys.readouterr()
+
+    exit_code = run(["--db-path", str(db_path), "status", "--date", "2026-05-17"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "ingestion_status=no_publication" in captured.out
+    assert "last_http_status=404" in captured.out
+    assert "documents=0" in captured.out
+
+
+def test_download_boe_artifacts_skips_after_no_publication(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    calls = 0
+
+    def not_found_fetcher(_date: str) -> bytes:
+        raise BOESummaryNotFoundError(
+            "2026-05-17",
+            BOERequestAudit(retry_count=0, throttle_triggered=False, last_http_status=404),
+        )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(200, content=b"unused", request=request)
+
+    artifact_client = httpx.Client(transport=httpx.MockTransport(handler))
+    run(
+        ["--db-path", str(db_path), "ingest-boe-summary", "--date", "2026-05-17"],
+        summary_fetcher=not_found_fetcher,
+    )
+    capsys.readouterr()
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-boe-artifacts",
+            "--date",
+            "2026-05-17",
+            "--types",
+            "xml,html,pdf",
+        ],
+        artifact_client=artifact_client,
+    )
+
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    latest = repository.get_latest_ingestion_run("BOE", "2026-05-17")
+    download_counts = repository.count_artifact_download_attempts_by_date("2026-05-17")
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert calls == 0
+    assert latest["status"] == "no_publication"
+    assert sum(download_counts.values()) == 0
+    assert "status=no_publication" in captured.out
+    assert "last_http_status=404" in captured.out
+
+
+def test_ingest_boe_summary_500_after_retries_still_fails(tmp_path):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+
+    def server_error_fetcher(_date: str) -> bytes:
+        request = httpx.Request("GET", "https://www.boe.es/datosabiertos/api/boe/sumario/20260517")
+        response = httpx.Response(500, request=request)
+        exc = httpx.HTTPStatusError("server error", request=request, response=response)
+        exc.retry_count = 5
+        exc.throttle_triggered = True
+        raise exc
+
+    exit_code = run(
+        ["--db-path", str(db_path), "ingest-boe-summary", "--date", "2026-05-17"],
+        summary_fetcher=server_error_fetcher,
+    )
+
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    run_record = repository.get_latest_ingestion_run("BOE", "2026-05-17")
+    assert exit_code == 1
+    assert run_record["status"] == "failed"
+    assert run_record["last_http_status"] == 500
+    assert run_record["retry_count"] == 5
+    assert run_record["throttle_triggered"] == 1
+
+
+def test_ingest_boe_summary_malformed_200_still_fails(tmp_path):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+
+    class MalformedFetcher:
+        retry_count = 0
+        throttle_triggered = False
+        last_http_status = 200
+
+        def __call__(self, _date: str) -> bytes:
+            return b'{"data":{"sumario":{"metadatos":{"fecha_publicacion":"bad"}}}}'
+
+    exit_code = run(
+        ["--db-path", str(db_path), "ingest-boe-summary", "--date", "2026-05-17"],
+        summary_fetcher=MalformedFetcher(),
+    )
+
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    run_record = repository.get_latest_ingestion_run("BOE", "2026-05-17")
+    assert exit_code == 1
+    assert run_record["status"] == "failed"
     assert run_record["last_http_status"] == 200
 
 

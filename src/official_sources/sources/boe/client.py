@@ -31,11 +31,13 @@ class BOEClient:
         *,
         request_policy: BOERequestPolicy | None = None,
         sleeper: Callable[[float], None] | None = None,
+        client: httpx.Client | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.request_policy = request_policy or BOERequestPolicy.from_env()
         self.sleeper = sleeper
+        self.client = client
         self.last_request_audit = BOERequestAudit()
 
     def fetch_summary(self, target_date: str) -> bytes:
@@ -43,13 +45,30 @@ class BOEClient:
         date_token = parsed.strftime("%Y%m%d")
         url = f"{self.base_url}/datosabiertos/api/boe/sumario/{date_token}"
 
-        with httpx.Client(follow_redirects=False, timeout=self.timeout) as client:
-            result = self.request_policy.get(
-                url,
-                headers={"Accept": "application/json"},
-                client=client,
-                sleeper=self.sleeper or time.sleep,
-            )
+        if self.client is not None:
+            result = self._get(url, self.client)
+        else:
+            with httpx.Client(follow_redirects=False, timeout=self.timeout) as client:
+                result = self._get(url, client)
         self.last_request_audit = result.audit
+        if result.status_code == 404:
+            raise BOESummaryNotFoundError(target_date, result.audit)
         result.raise_for_status()
         return result.content
+
+    def _get(self, url: str, client: httpx.Client):
+        return self.request_policy.get(
+            url,
+            headers={"Accept": "application/json"},
+            client=client,
+            sleeper=self.sleeper or time.sleep,
+        )
+
+
+class BOESummaryNotFoundError(Exception):
+    def __init__(self, target_date: str, audit: BOERequestAudit | None = None) -> None:
+        self.target_date = target_date
+        self.retry_count = audit.retry_count if audit else 0
+        self.throttle_triggered = audit.throttle_triggered if audit else False
+        self.last_http_status = audit.last_http_status if audit else 404
+        super().__init__(f"BOE summary not found for date {target_date}")

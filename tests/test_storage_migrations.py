@@ -182,8 +182,8 @@ def test_empty_database_migrates_to_latest_schema():
 
     result = migrate_database(connection)
 
-    assert result.current_version == 5
-    assert result.applied_versions == [1, 2, 3, 4, 5]
+    assert result.current_version == 6
+    assert result.applied_versions == [1, 2, 3, 4, 5, 6]
     assert validate_database(connection).valid is True
 
 
@@ -202,7 +202,7 @@ def test_older_database_states_upgrade_to_latest_and_preserve_data(builder):
 
     result = migrate_database(connection)
 
-    assert result.current_version == 5
+    assert result.current_version == 6
     assert (
         connection.execute("SELECT COUNT(*) AS count FROM official_documents").fetchone()["count"]
         == 1
@@ -240,6 +240,46 @@ def test_request_audit_fields_are_added_by_latest_migration():
     assert "last_http_status" in columns["ingestion_runs"]
     assert "throttle_triggered" in columns["artifact_download_attempts"]
     assert "retry_count" in columns["artifact_download_attempts"]
+
+
+def test_ingestion_no_publication_status_is_allowed_by_latest_migration():
+    connection = connect(":memory:")
+    _build_before_block_fields_database(connection)
+
+    migrate_database(connection)
+
+    connection.execute(
+        """
+        INSERT INTO ingestion_runs (
+            source_code,
+            run_date,
+            target_date,
+            status,
+            started_at,
+            documents_fetched,
+            documents_new,
+            documents_updated,
+            last_http_status
+        )
+        VALUES (
+            'BOE',
+            '2026-05-17',
+            '2026-05-17',
+            'no_publication',
+            '2026-05-17T00:00:00+00:00',
+            0,
+            0,
+            0,
+            404
+        )
+        """
+    )
+    row = connection.execute(
+        "SELECT status, last_http_status FROM ingestion_runs WHERE status = 'no_publication'"
+    ).fetchone()
+
+    assert row["status"] == "no_publication"
+    assert row["last_http_status"] == 404
 
 
 def test_fresh_migrated_schema_matches_canonical_latest_schema():

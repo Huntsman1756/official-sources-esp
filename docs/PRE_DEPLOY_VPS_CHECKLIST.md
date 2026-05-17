@@ -175,6 +175,12 @@ official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
 official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
 ```
 
+If BOE returns `404 Not Found` for `/datosabiertos/api/boe/sumario/{fecha}`, daily summary
+ingestion records `ingestion_status=no_publication` and `last_http_status=404`. This is a
+controlled no-summary condition, not a system failure, and the systemd daily service should
+finish successfully. Artifact download is skipped for that date. Network, server, parser,
+storage, and schema errors must still fail and be investigated.
+
 The following consolidated-law commands fetch from official BOE endpoints. Use them only when
 a live BOE network smoke check is acceptable, and replace placeholders with a known official
 identifier and block ID:

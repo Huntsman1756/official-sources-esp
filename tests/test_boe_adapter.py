@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import httpx
 import pytest
 
-from official_sources.sources.boe.client import validate_boe_date
+from official_sources.sources.boe.client import (
+    BOEClient,
+    BOESummaryNotFoundError,
+    validate_boe_date,
+)
+from official_sources.sources.boe.http_policy import BOERequestAudit, BOERequestPolicy
 from official_sources.sources.boe.ingestion import ingest_boe_summary
 from official_sources.sources.boe.parser import parse_boe_summary
 
@@ -57,3 +63,49 @@ def test_ingestion_records_failed_run_when_fetch_fails(repository):
 
     assert run["status"] == "failed"
     assert "boom" in run["error_message"]
+
+
+def test_boe_summary_404_is_not_retried_aggressively():
+    requests = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal requests
+        requests += 1
+        return httpx.Response(404, content=b'{"error":"not found"}', request=request)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    boe_client = BOEClient(
+        client=client,
+        request_policy=BOERequestPolicy(max_retries=5, requests_per_second=0),
+    )
+
+    with pytest.raises(BOESummaryNotFoundError) as exc_info:
+        boe_client.fetch_summary("2026-05-17")
+
+    assert requests == 1
+    assert exc_info.value.last_http_status == 404
+    assert exc_info.value.retry_count == 0
+    assert exc_info.value.throttle_triggered is False
+
+
+def test_ingestion_records_no_publication_for_boe_summary_404(repository):
+    def not_found_fetcher(_target_date: str) -> bytes:
+        raise BOESummaryNotFoundError(
+            "2026-05-17",
+            BOERequestAudit(retry_count=0, throttle_triggered=False, last_http_status=404),
+        )
+
+    run = ingest_boe_summary(repository, target_date="2026-05-17", fetcher=not_found_fetcher)
+
+    documents = repository.list_documents_by_date("2026-05-17")
+    latest = repository.get_latest_ingestion_run("BOE", "2026-05-17")
+    assert run["status"] == "no_publication"
+    assert run["documents_fetched"] == 0
+    assert run["documents_new"] == 0
+    assert run["documents_updated"] == 0
+    assert run["last_http_status"] == 404
+    assert run["retry_count"] == 0
+    assert run["throttle_triggered"] == 0
+    assert "BOE summary not found for date 2026-05-17" in run["error_message"]
+    assert documents == []
+    assert latest["status"] == "no_publication"

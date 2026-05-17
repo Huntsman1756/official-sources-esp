@@ -26,6 +26,15 @@ The implementation uses `httpx` plus an internal finite retry/backoff wrapper. `
 
 Retry and throttle information is recorded on `ingestion_runs` and `artifact_download_attempts` through `throttle_triggered`, `retry_count`, and final HTTP status fields.
 
+For BOE daily summary ingestion, a `404 Not Found` response from
+`/datosabiertos/api/boe/sumario/{fecha}` is treated as the controlled status
+`no_publication`. This means BOE was reached successfully, but no summary exists for the
+requested date. The run stores `last_http_status=404`, zero document counts, and a clear
+message. The CLI exits with status code `0` for this condition so the systemd daily service
+does not fail on expected no-publication days. Network errors, server errors after finite
+retries, malformed successful responses, database errors, and schema errors still use
+`failed` and exit non-zero.
+
 ## Dependency Direction
 
 Correct dependency direction:
@@ -138,6 +147,7 @@ Implemented migrations:
 - `0003_consolidated_legislation`: consolidated law, version, block, reference, and integrity tables.
 - `0004_consolidated_index_blocks`: official consolidated block endpoint metadata columns.
 - `0005_request_audit_fields`: request retry/throttle audit columns for ingestion runs and artifact download attempts.
+- `0006_ingestion_no_publication_status`: allows `ingestion_runs.status='no_publication'` for controlled BOE daily-summary 404 responses.
 
 The runner stores applied versions in `schema_migrations` with version, name, checksum, timestamp, and execution time. Pending migrations are applied in ascending order and inside transactions where SQLite allows it. Checksum mismatches fail before applying additional migrations.
 

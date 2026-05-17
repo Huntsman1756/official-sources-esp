@@ -22,7 +22,7 @@ from official_sources.sources.boe.consolidated import (
     validate_consolidated_block_id,
     validate_consolidated_identifier,
 )
-from official_sources.sources.boe.ingestion import ingest_boe_summary
+from official_sources.sources.boe.ingestion import NO_PUBLICATION_STATUS, ingest_boe_summary
 from official_sources.storage.backup import SQLiteBackupError, backup_sqlite_database
 from official_sources.storage.database import connect, initialize_database
 from official_sources.storage.migrations.runner import (
@@ -394,11 +394,14 @@ def _run_ingest(
                 f"documents_fetched={run_record['documents_fetched']}",
                 f"documents_new={run_record['documents_new']}",
                 f"documents_updated={run_record['documents_updated']}",
+                f"retry_count={run_record['retry_count']}",
+                f"throttle_triggered={run_record['throttle_triggered']}",
+                f"last_http_status={_status_value(run_record['last_http_status'])}",
             ]
         ),
         file=stdout,
     )
-    return 0 if run_record["status"] == "success" else 1
+    return 0 if run_record["status"] in {"success", NO_PUBLICATION_STATUS} else 1
 
 
 def _parse_artifact_types(value: str) -> list[str]:
@@ -420,6 +423,23 @@ def _run_download(
     stderr: TextIO,
 ) -> int:
     documents = repository.list_documents_by_date(target_date)
+    latest_run = repository.get_latest_ingestion_run("BOE", target_date)
+    if latest_run and latest_run["status"] == NO_PUBLICATION_STATUS:
+        print(
+            _format_counts(
+                {
+                    "downloaded": 0,
+                    "skipped": 0,
+                    "changed": 0,
+                    "failed": 0,
+                    "retries": 0,
+                    "status": NO_PUBLICATION_STATUS,
+                    "last_http_status": _status_value(latest_run["last_http_status"]),
+                }
+            ),
+            file=stdout,
+        )
+        return 0
     run_record = repository.create_ingestion_run(source_code="BOE", target_date=target_date)
     downloader = BOEArtifactDownloader(repository, cache_dir=artifact_dir, client=client)
     counts = {"downloaded": 0, "skipped": 0, "changed": 0, "failed": 0, "retries": 0}
@@ -511,6 +531,7 @@ def _run_status(repository: OfficialSourcesRepository, target_date: str, stdout:
     download_attempts = sum(download_counts.values())
     counts = {
         "ingestion_status": latest_run["status"] if latest_run else "none",
+        "last_http_status": _status_value(latest_run["last_http_status"] if latest_run else None),
         "documents": len(documents),
         "xml_files": _count_files(files, "xml"),
         "html_files": _count_files(files, "html"),
@@ -662,3 +683,7 @@ def _count_files(files: list[dict], file_type: str) -> int:
 
 def _format_counts(counts: dict) -> str:
     return " ".join(f"{key}={value}" for key, value in counts.items())
+
+
+def _status_value(value: object) -> object:
+    return "none" if value is None else value

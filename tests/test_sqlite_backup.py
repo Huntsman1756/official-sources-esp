@@ -239,7 +239,7 @@ def test_realistic_restore_migrate_validate_and_read_smoke(tmp_path, capsys):
     assert exit_code == 0
     assert status_exit_code == 0
     assert validation.valid is True
-    assert validation.current_version == 5
+    assert validation.current_version == 6
     assert citation["external_id"] == "BOE-A-2024-11111"
     assert block_citation["resource_type"] == "consolidated_law_block"
     assert block["content"] == "Existing official block text"
