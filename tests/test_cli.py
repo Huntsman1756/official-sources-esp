@@ -1060,6 +1060,49 @@ def test_find_boe_candidates_no_write_alias_does_not_create_candidates(tmp_path,
     assert "write_mode=dry_run" in captured.out
 
 
+def test_find_boe_candidates_ignores_documents_without_keyword_matches(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-11111",
+        publication_date="2024-05-29",
+        title="Plain administrative notice",
+        department="Ministerio de Cultura",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "becas,ayudas",
+            "--dry-run",
+        ]
+    )
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert candidate_count == 0
+    assert "documents_scanned=1" in captured.out
+    assert "documents_matched=0" in captured.out
+    assert "matches_by_keyword=none" in captured.out
+    assert "sample index=" not in captured.out
+
+
 def test_find_boe_candidates_rejects_non_positive_limit(tmp_path, capsys):
     from official_sources.cli import run
 

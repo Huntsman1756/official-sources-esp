@@ -857,6 +857,8 @@ def _candidate_keyword_matches(document: dict[str, Any], keywords: list[str]) ->
         field_matches = [keyword for keyword in keywords if keyword.lower() in value_lower]
         if field_matches:
             matched[field] = sorted(set(field_matches))
+    if not matched:
+        return {}
     return {
         "keywords": sorted({keyword for matches in matched.values() for keyword in matches}),
         "matched_fields": matched,
