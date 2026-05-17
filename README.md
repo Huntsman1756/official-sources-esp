@@ -149,6 +149,39 @@ official-sources --db-path official-sources.sqlite status --date 2024-05-29
 
 The integrity command recomputes hashes from local cached artifacts and records integrity events. The status command reports ingestion status, last observed HTTP status, document counts, artifact counts, download attempt counts, failed downloads, and integrity warnings.
 
+`status --date` separates BOE summary ingestion audit fields from artifact download audit
+fields. `summary_*` fields describe the daily summary API request, for example
+`summary_ingestion_status`, `summary_last_http_status`, `summary_retry_count`, and
+`summary_throttle_triggered`. `artifact_*` fields describe XML/HTML/PDF downloads, including
+`artifact_download_*`, `artifact_http_status_summary`, `artifact_retry_count`, and
+`artifact_throttle_events`. The legacy `ingestion_status` and `last_http_status` fields remain
+as aliases for the summary ingestion status and summary HTTP status.
+
+Controlled range ingestion is metadata-only and never downloads artifacts:
+
+```bash
+official-sources --db-path official-sources.sqlite \
+  ingest-boe-range --date-from 2024-05-01 --date-to 2024-05-31 \
+  --skip-existing --continue-on-no-publication
+```
+
+Safety defaults are deliberately narrow: `--max-days` defaults to `90`, ranges above `365`
+days require `--force`, and ranges above `365` days also require `--confirm-large-range`.
+Artifacts remain explicit and on-demand. XML/HTML are candidate evidence layers. PDF is final
+evidence/on-demand and is never downloaded by default.
+
+Keyword candidate prefiltering is local-only:
+
+```bash
+official-sources --db-path official-sources.sqlite \
+  find-boe-candidates --date-from 2024-05-01 --date-to 2024-05-31 \
+  --keywords "beca,ayuda,subvencion,convocatoria"
+```
+
+This searches stored BOE titles and metadata only. It does not parse full document content,
+does not use LLMs, does not classify legal meaning, and does not approve or publish anything.
+Candidates default to `human_review_required`.
+
 ## BOE Consolidated Legislation
 
 The CLI can retrieve one consolidated law by official BOE identifier:

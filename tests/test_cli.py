@@ -158,7 +158,31 @@ def test_status_reports_no_publication_and_last_http_status(tmp_path, capsys):
     assert exit_code == 0
     assert "ingestion_status=no_publication" in captured.out
     assert "last_http_status=404" in captured.out
+    assert "summary_ingestion_status=no_publication" in captured.out
+    assert "summary_last_http_status=404" in captured.out
     assert "documents=0" in captured.out
+
+
+def test_status_reports_summary_failure_without_http_status(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+
+    def failing_fetcher(_date: str) -> bytes:
+        raise RuntimeError("network unavailable")
+
+    run(
+        ["--db-path", str(db_path), "ingest-boe-summary", "--date", "2024-05-29"],
+        summary_fetcher=failing_fetcher,
+    )
+    capsys.readouterr()
+
+    exit_code = run(["--db-path", str(db_path), "status", "--date", "2024-05-29"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "summary_ingestion_status=failed" in captured.out
+    assert "summary_last_http_status=none" in captured.out
 
 
 def test_download_boe_artifacts_skips_after_no_publication(tmp_path, capsys):
@@ -374,8 +398,12 @@ def test_status_reports_real_failed_downloads(tmp_path, capsys):
 
     captured = capsys.readouterr()
     assert exit_code == 0
+    assert "summary_ingestion_status=none" in captured.out
     assert "download_attempts=1" in captured.out
     assert "download_failed=1" in captured.out
+    assert "artifact_download_attempts=1" in captured.out
+    assert "artifact_download_failed=1" in captured.out
+    assert "artifact_http_status_summary=xml:none:1" in captured.out
     assert "failed_downloads=1" in captured.out
 
 
@@ -506,6 +534,78 @@ def test_status_reports_expected_counts(tmp_path, capsys):
     assert "xml_files=1" in captured.out
     assert "html_files=1" in captured.out
     assert "pdf_files=1" in captured.out
+    assert "artifact_download_attempts=3" in captured.out
+    assert "artifact_download_success=3" in captured.out
+    assert "artifact_http_status_summary=xml:200:1,html:200:1,pdf:200:1" in captured.out
+
+
+def test_status_reports_summary_http_status_after_summary_only(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    exit_code = run(
+        ["--db-path", str(db_path), "ingest-boe-summary", "--date", "2024-05-29"],
+        summary_fetcher=lambda _date: _fixture_bytes("boe_summary_20240529.json"),
+    )
+    capsys.readouterr()
+
+    status_exit_code = run(["--db-path", str(db_path), "status", "--date", "2024-05-29"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert status_exit_code == 0
+    assert "summary_ingestion_status=success" in captured.out
+    assert "summary_last_http_status=200" in captured.out
+    assert "summary_retry_count=0" in captured.out
+    assert "summary_throttle_triggered=0" in captured.out
+    assert "artifact_http_status_summary=none" in captured.out
+
+
+def test_status_keeps_summary_http_status_after_artifact_downloads(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    run(
+        ["--db-path", str(db_path), "ingest-boe-summary", "--date", "2024-05-29"],
+        summary_fetcher=lambda _date: _fixture_bytes("boe_summary_20240529.json"),
+    )
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    document = repository.get_document_by_external_id("BOE-A-2024-11111")
+    run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-boe-artifacts",
+            "--date",
+            "2024-05-29",
+            "--types",
+            "xml,html,pdf",
+        ],
+        artifact_client=_artifact_client(
+            {
+                document["url_xml"]: _fixture_bytes("boe_document.xml"),
+                document["url_html"]: _fixture_bytes("boe_document.html"),
+                document["url_pdf"]: _fixture_bytes("boe_document.pdf"),
+            }
+        ),
+    )
+    capsys.readouterr()
+
+    exit_code = run(["--db-path", str(db_path), "status", "--date", "2024-05-29"])
+    validate_exit_code = run(["--db-path", str(db_path), "db", "validate"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert validate_exit_code == 0
+    assert "summary_ingestion_status=success" in captured.out
+    assert "summary_last_http_status=200" in captured.out
+    assert "last_http_status=200" in captured.out
+    assert "artifact_http_status_summary=xml:200:1,html:200:1,pdf:200:1" in captured.out
+    assert "artifact_retry_count=0" in captured.out
 
 
 def test_cli_does_not_expose_mcp_write_tools_or_downstream_publication():
@@ -530,3 +630,334 @@ def test_cli_accepts_today_for_systemd_templates(tmp_path, capsys):
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "target_date=" in captured.out
+
+
+def test_ingest_boe_range_rejects_invalid_date(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "ingest-boe-range",
+            "--date-from",
+            "20240529",
+            "--date-to",
+            "2024-05-30",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "YYYY-MM-DD" in captured.err
+
+
+def test_ingest_boe_range_rejects_reversed_dates(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "ingest-boe-range",
+            "--date-from",
+            "2024-05-30",
+            "--date-to",
+            "2024-05-29",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "--date-from" in captured.err
+
+
+def test_ingest_boe_range_default_max_days_is_90(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "ingest-boe-range",
+            "--date-from",
+            "2024-01-01",
+            "--date-to",
+            "2024-04-01",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "--max-days=90" in captured.err
+
+
+def test_ingest_boe_range_above_365_requires_force_and_ack(tmp_path, capsys):
+    from official_sources.cli import run
+
+    base = [
+        "--db-path",
+        str(tmp_path / "db.sqlite"),
+        "ingest-boe-range",
+        "--date-from",
+        "2023-01-01",
+        "--date-to",
+        "2024-01-01",
+        "--max-days",
+        "400",
+    ]
+
+    assert run(base) == 2
+    captured = capsys.readouterr()
+    assert "--force" in captured.err
+    assert run([*base, "--force"]) == 2
+    captured = capsys.readouterr()
+    assert "--confirm-large-range" in captured.err
+
+
+def test_ingest_boe_range_inclusive_and_does_not_download_artifacts(tmp_path, capsys, monkeypatch):
+    import official_sources.cli as cli
+
+    db_path = tmp_path / "db.sqlite"
+    calls = []
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            self.last_request_audit = BOERequestAudit(last_http_status=200)
+
+        def fetch_summary(self, target_date):
+            calls.append(target_date)
+            return _fixture_bytes("boe_summary_20240529.json")
+
+    monkeypatch.setattr(cli, "BOEClient", FakeClient)
+
+    exit_code = cli.run(
+        [
+            "--db-path",
+            str(db_path),
+            "ingest-boe-range",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-30",
+            "--max-days",
+            "2",
+        ]
+    )
+
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert calls == ["2024-05-29", "2024-05-30"]
+    assert "processed=2" in captured.out
+    assert sum(repository.count_artifact_download_attempts_by_date("2024-05-29").values()) == 0
+
+
+def test_ingest_boe_range_skip_existing_skips_success_dates(tmp_path, monkeypatch):
+    import official_sources.cli as cli
+
+    db_path = tmp_path / "db.sqlite"
+    cli.run(
+        ["--db-path", str(db_path), "ingest-boe-summary", "--date", "2024-05-29"],
+        summary_fetcher=lambda _date: _fixture_bytes("boe_summary_20240529.json"),
+    )
+    calls = []
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            self.last_request_audit = BOERequestAudit(last_http_status=200)
+
+        def fetch_summary(self, target_date):
+            calls.append(target_date)
+            return _fixture_bytes("boe_summary_20240529.json")
+
+    monkeypatch.setattr(cli, "BOEClient", FakeClient)
+
+    exit_code = cli.run(
+        [
+            "--db-path",
+            str(db_path),
+            "ingest-boe-range",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--skip-existing",
+        ]
+    )
+
+    assert exit_code == 0
+    assert calls == []
+
+
+def test_ingest_boe_range_continue_on_no_publication(tmp_path, capsys, monkeypatch):
+    import official_sources.cli as cli
+
+    db_path = tmp_path / "db.sqlite"
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            self.last_request_audit = BOERequestAudit(last_http_status=404)
+
+        def fetch_summary(self, target_date):
+            if target_date == "2024-05-29":
+                raise BOESummaryNotFoundError(target_date, self.last_request_audit)
+            self.last_request_audit = BOERequestAudit(last_http_status=200)
+            return _fixture_bytes("boe_summary_20240529.json")
+
+    monkeypatch.setattr(cli, "BOEClient", FakeClient)
+
+    exit_code = cli.run(
+        [
+            "--db-path",
+            str(db_path),
+            "ingest-boe-range",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-30",
+            "--max-days",
+            "2",
+            "--continue-on-no-publication",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "no_publication=1" in captured.out
+    assert "success=1" in captured.out
+
+
+def test_ingest_boe_range_stop_on_error_stops_real_failures(tmp_path, capsys, monkeypatch):
+    import official_sources.cli as cli
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            self.last_request_audit = BOERequestAudit(last_http_status=200)
+
+        def fetch_summary(self, target_date):
+            if target_date == "2024-05-30":
+                raise RuntimeError("network unavailable")
+            return _fixture_bytes("boe_summary_20240529.json")
+
+    monkeypatch.setattr(cli, "BOEClient", FakeClient)
+
+    exit_code = cli.run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "ingest-boe-range",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-31",
+            "--max-days",
+            "3",
+            "--stop-on-error",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "processed=2" in captured.out
+    assert "failed=1" in captured.out
+
+
+def test_ingest_boe_range_sleep_seconds_configures_limiter(tmp_path, monkeypatch):
+    import official_sources.cli as cli
+
+    policies = []
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs):
+            policies.append(kwargs["request_policy"])
+            self.last_request_audit = BOERequestAudit(last_http_status=200)
+
+        def fetch_summary(self, _target_date):
+            return _fixture_bytes("boe_summary_20240529.json")
+
+    monkeypatch.setattr(cli, "BOEClient", FakeClient)
+
+    exit_code = cli.run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "ingest-boe-range",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--sleep-seconds",
+            "2",
+        ]
+    )
+
+    assert exit_code == 0
+    assert policies[0].requests_per_second == 0.5
+
+
+def test_find_boe_candidates_matches_titles_and_metadata(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-11111",
+        publication_date="2024-05-29",
+        title="Convocatoria de becas",
+        department="Ministerio de Educacion",
+        raw_metadata={"materia": "estudiantes"},
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "becas,estudiantes",
+            "--project-key",
+            "la-ayuda",
+        ]
+    )
+
+    candidate = connection.execute("SELECT * FROM source_candidates").fetchone()
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "candidates_created=1" in captured.out
+    assert candidate["review_status"] == "human_review_required"
+    assert candidate["extraction_status"] == "raw_detected"
+    assert "becas" in candidate["matched_fields_json"]
+    assert "estudiantes" in candidate["matched_fields_json"]
+
+
+def test_find_boe_candidates_does_not_approve_or_publish(tmp_path):
+    import inspect
+
+    import official_sources.cli as cli
+
+    source = inspect.getsource(cli._run_find_candidates)
+
+    assert "human_accepted" not in source
+    assert "publish" not in source.lower()
+
+
+def test_find_boe_candidates_help_contains_false_positive_warning(capsys):
+    from official_sources.cli import run
+
+    exit_code = run(["find-boe-candidates", "--help"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "metadata" in captured.out
+    assert "false" in captured.out
+    assert "positives" in captured.out

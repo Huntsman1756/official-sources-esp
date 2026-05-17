@@ -9,7 +9,10 @@ from official_sources.sources.boe.client import (
     validate_boe_date,
 )
 from official_sources.sources.boe.http_policy import BOERequestAudit, BOERequestPolicy
-from official_sources.sources.boe.ingestion import ingest_boe_summary
+from official_sources.sources.boe.ingestion import (
+    _payload_indicates_no_publication,
+    ingest_boe_summary,
+)
 from official_sources.sources.boe.parser import parse_boe_summary
 
 
@@ -109,3 +112,35 @@ def test_ingestion_records_no_publication_for_boe_summary_404(repository):
     assert "BOE summary not found for date 2026-05-17" in run["error_message"]
     assert documents == []
     assert latest["status"] == "no_publication"
+
+
+def test_sunday_probe_style_404_xml_body_maps_to_no_publication():
+    payload = b'<?xml version="1.0" encoding="UTF-8"?><error>Not Found</error>'
+
+    assert _payload_indicates_no_publication(payload) is True
+
+
+def test_holiday_probe_style_valid_summary_is_not_no_publication(boe_summary_payload):
+    assert _payload_indicates_no_publication(boe_summary_payload) is False
+
+
+def test_empty_200_summary_maps_to_no_publication(repository):
+    run = ingest_boe_summary(repository, target_date="2025-01-05", payload=b"")
+
+    assert run["status"] == "no_publication"
+    assert run["last_http_status"] == 200
+
+
+def test_json_summary_without_diary_maps_to_no_publication(repository):
+    payload = b'{"status":{"code":"200","text":"ok"},"data":{"sumario":{"metadatos":{}}}}'
+
+    run = ingest_boe_summary(repository, target_date="2025-01-05", payload=payload)
+
+    assert run["status"] == "no_publication"
+    assert run["documents_fetched"] == 0
+
+
+def test_malformed_200_summary_still_fails(repository):
+    run = ingest_boe_summary(repository, target_date="2025-01-05", payload=b"{bad json")
+
+    assert run["status"] == "failed"

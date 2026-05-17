@@ -2,6 +2,44 @@
 
 ## Commands Executed
 
+TASK-004C local validation:
+
+```bash
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+- Tests: `175 passed`.
+- Lint: `All checks passed!`.
+- Formatting: `56 files already formatted`.
+- Focused TASK-004C tests covered no-publication payload behavior, controlled range ingestion,
+  range safety limits, local candidate prefiltering, structured cache misses, and separated
+  summary/artifact status output.
+
+TASK-004A-FIX2 local validation:
+
+```bash
+rtk python -m pytest tests/test_cli.py -q
+rtk python -m ruff check src/official_sources/cli.py src/official_sources/storage/repository.py tests/test_cli.py
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+- Focused tests: `20 passed`.
+- Focused lint: `All checks passed!`.
+- Full tests: `155 passed`.
+- Full lint: `All checks passed!`.
+- Formatting: `56 files already formatted`.
+- Status output now reports `summary_*` fields separately from `artifact_*` fields.
+- Artifact HTTP summaries are read from `artifact_download_attempts`.
+- Legacy `ingestion_status` and `last_http_status` remain summary aliases for compatibility.
+
 TASK-004A-FIX1 local validation:
 
 ```bash

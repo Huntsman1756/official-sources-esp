@@ -1046,3 +1046,65 @@ class OfficialSourcesRepository:
                 (source_code, target_date),
             ).fetchone()
         )
+
+    def get_latest_summary_ingestion_run(
+        self, source_code: str, target_date: str
+    ) -> dict[str, Any] | None:
+        return row_to_dict(
+            self.connection.execute(
+                """
+                SELECT * FROM ingestion_runs
+                WHERE source_code = ? AND target_date = ? AND (
+                    last_http_status IS NOT NULL
+                    OR (
+                        status = 'failed'
+                        AND (
+                            error_message IS NULL
+                            OR error_message != 'artifact download failures'
+                        )
+                    )
+                )
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (source_code, target_date),
+            ).fetchone()
+        )
+
+    def summarize_artifact_download_attempts_by_date(self, target_date: str) -> dict[str, Any]:
+        rows = self.connection.execute(
+            """
+            SELECT
+                a.file_type,
+                a.http_status,
+                COUNT(*) AS count,
+                SUM(a.retry_count) AS retry_count,
+                SUM(CASE WHEN a.throttle_triggered = 1 THEN 1 ELSE 0 END) AS throttle_events
+            FROM artifact_download_attempts a
+            JOIN official_documents d ON d.id = a.document_id
+            WHERE d.publication_date = ?
+            GROUP BY a.file_type, a.http_status
+            ORDER BY a.file_type ASC, a.http_status ASC
+            """,
+            (target_date,),
+        ).fetchall()
+        grouped_parts: dict[str, list[str]] = {}
+        retry_count = 0
+        throttle_events = 0
+        for row in rows:
+            status = "none" if row["http_status"] is None else row["http_status"]
+            grouped_parts.setdefault(row["file_type"], []).append(
+                f"{row['file_type']}:{status}:{row['count']}"
+            )
+            retry_count += int(row["retry_count"] or 0)
+            throttle_events += int(row["throttle_events"] or 0)
+        status_parts = []
+        for file_type in ("xml", "html", "pdf"):
+            status_parts.extend(grouped_parts.pop(file_type, []))
+        for file_type in sorted(grouped_parts):
+            status_parts.extend(grouped_parts[file_type])
+        return {
+            "http_status_summary": ",".join(status_parts) if status_parts else "none",
+            "retry_count": retry_count,
+            "throttle_events": throttle_events,
+        }

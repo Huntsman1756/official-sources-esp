@@ -24,6 +24,14 @@ def boe_summary_search(
         date_to=date_to,
         limit=limit,
     )
+    if not documents and date_from and date_from == date_to:
+        summary_run = repository.get_latest_summary_ingestion_run("BOE", date_from)
+        if summary_run is None:
+            return queries.cache_miss(
+                resource_type="boe_summary",
+                date=date_from,
+                recommended_action="Run controlled BOE ingestion for this date",
+            )
     return {
         "source_code": "BOE",
         "items": [
@@ -40,6 +48,8 @@ def boe_summary_search(
 
 def boe_document_get(repository: OfficialSourcesRepository, *, external_id: str) -> dict:
     document = queries.get_document(repository, external_id)
+    if "status" in document and document["status"] == "cache_miss":
+        return document
     return {
         "document_id": document["external_id"],
         "source_code": document["source_code"],
@@ -54,7 +64,11 @@ def boe_document_get(repository: OfficialSourcesRepository, *, external_id: str)
 
 def boe_document_text_get(repository: OfficialSourcesRepository, *, external_id: str) -> dict:
     document = queries.get_document(repository, external_id)
+    if "status" in document and document["status"] == "cache_miss":
+        return document
     text = queries.get_document_text(repository, external_id)
+    if "status" in text and text["status"] == "cache_miss":
+        return text
     return {
         "document_id": document["external_id"],
         "source_code": document["source_code"],
@@ -72,6 +86,8 @@ def boe_citation_build(repository: OfficialSourcesRepository, *, external_id: st
 
 def source_trace(repository: OfficialSourcesRepository, *, external_id: str) -> dict:
     trace = queries.get_trace(repository, external_id)
+    if "status" in trace and trace["status"] == "cache_miss":
+        return trace
     document = trace["document"]
     return {
         "document_id": document["external_id"],

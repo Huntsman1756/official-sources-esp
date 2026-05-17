@@ -3,9 +3,9 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
-from typing import TextIO
+from typing import Any, TextIO
 
 import httpx
 
@@ -15,13 +15,14 @@ from official_sources.sources.boe.artifacts import (
     BOEArtifactDownloader,
     BOEArtifactDownloadError,
 )
-from official_sources.sources.boe.client import validate_boe_date
+from official_sources.sources.boe.client import BOEClient, validate_boe_date
 from official_sources.sources.boe.consolidated import (
     BOEConsolidatedClient,
     BOEConsolidatedService,
     validate_consolidated_block_id,
     validate_consolidated_identifier,
 )
+from official_sources.sources.boe.http_policy import BOERequestPolicy
 from official_sources.sources.boe.ingestion import NO_PUBLICATION_STATUS, ingest_boe_summary
 from official_sources.storage.backup import SQLiteBackupError, backup_sqlite_database
 from official_sources.storage.database import connect, initialize_database
@@ -90,6 +91,52 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Target date in YYYY-MM-DD format or today.",
     )
+    ingest_range = subparsers.add_parser(
+        "ingest-boe-range",
+        help=(
+            "Ingest BOE daily summaries for a controlled inclusive date range. "
+            "Artifacts are never downloaded by this command."
+        ),
+    )
+    ingest_range.add_argument("--date-from", required=True, help="Start date in YYYY-MM-DD format.")
+    ingest_range.add_argument("--date-to", required=True, help="End date in YYYY-MM-DD format.")
+    ingest_range.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip dates already recorded as success or no_publication.",
+    )
+    ingest_range.add_argument(
+        "--max-days",
+        type=int,
+        default=90,
+        help="Maximum inclusive range length. Default: 90.",
+    )
+    ingest_range.add_argument(
+        "--force",
+        action="store_true",
+        help="Allow ranges above 365 days only with --confirm-large-range.",
+    )
+    ingest_range.add_argument(
+        "--confirm-large-range",
+        action="store_true",
+        help="Explicit acknowledgment required with --force for ranges above 365 days.",
+    )
+    ingest_range.add_argument(
+        "--continue-on-no-publication",
+        action="store_true",
+        help="Continue when a date is recorded as controlled no_publication.",
+    )
+    ingest_range.add_argument(
+        "--stop-on-error",
+        action="store_true",
+        help="Stop immediately on real ingestion failures.",
+    )
+    ingest_range.add_argument(
+        "--sleep-seconds",
+        type=float,
+        default=1.0,
+        help="Limiter period between BOE summary requests. Default: 1 second.",
+    )
 
     download = subparsers.add_parser(
         "download-boe-artifacts", help="Download stored official BOE artifact URLs."
@@ -153,6 +200,30 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print official block text content after the compact status line.",
     )
+    candidates = subparsers.add_parser(
+        "find-boe-candidates",
+        description=(
+            "Create human-review candidates by keyword matching locally stored BOE titles "
+            "and metadata only. This is not legal classification and may produce false positives."
+        ),
+        help=(
+            "Create human-review candidates by keyword matching locally stored BOE titles "
+            "and metadata only. This is not legal classification and may produce false positives."
+        ),
+    )
+    candidates.add_argument("--date-from", required=True, help="Start date in YYYY-MM-DD format.")
+    candidates.add_argument("--date-to", required=True, help="End date in YYYY-MM-DD format.")
+    candidates.add_argument(
+        "--keywords",
+        required=True,
+        help="Comma-separated keywords. Matches titles and metadata only, not full content.",
+    )
+    candidates.add_argument("--project-key", default="generic", help="Project key.")
+    candidates.add_argument(
+        "--candidate-type",
+        default="keyword_match",
+        help="Candidate type stored for human review.",
+    )
     return parser
 
 
@@ -177,6 +248,10 @@ def run(
         return _run_db_command(args, stdout, stderr)
 
     repository = _open_repository(args.db_path)
+    if args.command == "ingest-boe-range":
+        return _run_ingest_range(repository, args, stdout, stderr)
+    if args.command == "find-boe-candidates":
+        return _run_find_candidates(repository, args, stdout, stderr)
     if args.command == "boe-consolidated-get":
         return _run_consolidated_get(
             repository, args.identifier, consolidated_client, stdout, stderr
@@ -523,15 +598,26 @@ def _run_integrity_check(
 
 
 def _run_status(repository: OfficialSourcesRepository, target_date: str, stdout: TextIO) -> int:
-    latest_run = repository.get_latest_ingestion_run("BOE", target_date)
+    summary_run = repository.get_latest_summary_ingestion_run("BOE", target_date)
     documents = repository.list_documents_by_date(target_date)
     files = repository.list_document_files_by_date(target_date)
     warnings = sum(1 for file_record in files if file_record["content_changed_at"])
     download_counts = repository.count_artifact_download_attempts_by_date(target_date)
+    artifact_summary = repository.summarize_artifact_download_attempts_by_date(target_date)
     download_attempts = sum(download_counts.values())
+    summary_status = summary_run["status"] if summary_run else "none"
+    summary_last_http_status = _status_value(
+        summary_run["last_http_status"] if summary_run else None
+    )
+    summary_retry_count = summary_run["retry_count"] if summary_run else 0
+    summary_throttle_triggered = summary_run["throttle_triggered"] if summary_run else 0
     counts = {
-        "ingestion_status": latest_run["status"] if latest_run else "none",
-        "last_http_status": _status_value(latest_run["last_http_status"] if latest_run else None),
+        "ingestion_status": summary_status,
+        "last_http_status": summary_last_http_status,
+        "summary_ingestion_status": summary_status,
+        "summary_last_http_status": summary_last_http_status,
+        "summary_retry_count": summary_retry_count,
+        "summary_throttle_triggered": summary_throttle_triggered,
         "documents": len(documents),
         "xml_files": _count_files(files, "xml"),
         "html_files": _count_files(files, "html"),
@@ -541,11 +627,186 @@ def _run_status(repository: OfficialSourcesRepository, target_date: str, stdout:
         "download_skipped": download_counts["skipped"],
         "download_changed": download_counts["changed"],
         "download_failed": download_counts["failed"],
+        "artifact_download_attempts": download_attempts,
+        "artifact_download_success": download_counts["success"],
+        "artifact_download_skipped": download_counts["skipped"],
+        "artifact_download_changed": download_counts["changed"],
+        "artifact_download_failed": download_counts["failed"],
+        "artifact_http_status_summary": artifact_summary["http_status_summary"],
+        "artifact_retry_count": artifact_summary["retry_count"],
+        "artifact_throttle_events": artifact_summary["throttle_events"],
         "integrity_warnings": warnings,
         "failed_downloads": download_counts["failed"],
     }
     print(_format_counts(counts), file=stdout)
     return 0
+
+
+def _run_ingest_range(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        date_from = validate_boe_date(args.date_from)
+        date_to = validate_boe_date(args.date_to)
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    if date_from > date_to:
+        print("--date-from must be earlier than or equal to --date-to", file=stderr)
+        return 2
+    days = (date_to - date_from).days + 1
+    if args.max_days <= 0:
+        print("--max-days must be greater than zero", file=stderr)
+        return 2
+    if days > args.max_days:
+        print(f"Date range contains {days} days, exceeding --max-days={args.max_days}", file=stderr)
+        return 2
+    if days > 365 and not args.force:
+        print("Date ranges above 365 days require --force", file=stderr)
+        return 2
+    if days > 365 and args.force and not args.confirm_large_range:
+        print("Date ranges above 365 days require --confirm-large-range with --force", file=stderr)
+        return 2
+
+    base_policy = BOERequestPolicy.from_env()
+    requests_per_second = 0 if args.sleep_seconds <= 0 else 1 / args.sleep_seconds
+    client = BOEClient(
+        request_policy=BOERequestPolicy(
+            requests_per_second=requests_per_second,
+            max_retries=base_policy.max_retries,
+            backoff_base_seconds=base_policy.backoff_base_seconds,
+            backoff_max_seconds=base_policy.backoff_max_seconds,
+            jitter_seconds=base_policy.jitter_seconds,
+        )
+    )
+    fetcher = _SharedBOEFetcher(client)
+    counts = {"processed": 0, "skipped": 0, "success": 0, "no_publication": 0, "failed": 0}
+    for current in _inclusive_dates(date_from, date_to):
+        target_date = current.isoformat()
+        existing = repository.get_latest_summary_ingestion_run("BOE", target_date)
+        if (
+            args.skip_existing
+            and existing
+            and existing["status"] in {"success", NO_PUBLICATION_STATUS}
+        ):
+            counts["skipped"] += 1
+            continue
+        run_record = ingest_boe_summary(repository, target_date=target_date, fetcher=fetcher)
+        counts["processed"] += 1
+        status = run_record["status"]
+        if status == "success":
+            counts["success"] += 1
+        elif status == NO_PUBLICATION_STATUS:
+            counts["no_publication"] += 1
+            if not args.continue_on_no_publication:
+                print(_format_counts({**counts, "stopped_on": target_date}), file=stdout)
+                return 1
+        else:
+            counts["failed"] += 1
+            if args.stop_on_error:
+                print(_format_counts({**counts, "stopped_on": target_date}), file=stdout)
+                return 1
+    print(_format_counts({**counts, "days": days}), file=stdout)
+    return 0 if counts["failed"] == 0 else 1
+
+
+def _run_find_candidates(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        date_from = validate_boe_date(args.date_from).isoformat()
+        date_to = validate_boe_date(args.date_to).isoformat()
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    if date_from > date_to:
+        print("--date-from must be earlier than or equal to --date-to", file=stderr)
+        return 2
+    keywords = [keyword.strip() for keyword in args.keywords.split(",") if keyword.strip()]
+    if not keywords:
+        print("--keywords must include at least one keyword", file=stderr)
+        return 2
+    documents = repository.search_documents(date_from=date_from, date_to=date_to, limit=100000)
+    created = 0
+    matched = 0
+    for document in documents:
+        matches = _candidate_keyword_matches(document, keywords)
+        if not matches:
+            continue
+        matched += 1
+        repository.create_source_candidate(
+            document_id=document["id"],
+            project_key=args.project_key,
+            candidate_type=args.candidate_type,
+            extraction_status="raw_detected",
+            evidence_level="metadata_keyword_match",
+            matched_fields=matches,
+        )
+        created += 1
+    print(
+        _format_counts(
+            {
+                "documents_scanned": len(documents),
+                "documents_matched": matched,
+                "candidates_created": created,
+                "review_status": "human_review_required",
+            }
+        ),
+        file=stdout,
+    )
+    return 0
+
+
+class _SharedBOEFetcher:
+    retry_count = 0
+    throttle_triggered = False
+    last_http_status: int | None = None
+
+    def __init__(self, client: BOEClient) -> None:
+        self.client = client
+
+    def __call__(self, target_date: str) -> bytes:
+        try:
+            payload = self.client.fetch_summary(target_date)
+        finally:
+            self.retry_count = self.client.last_request_audit.retry_count
+            self.throttle_triggered = self.client.last_request_audit.throttle_triggered
+            self.last_http_status = self.client.last_request_audit.last_http_status
+        return payload
+
+
+def _inclusive_dates(date_from: date, date_to: date):
+    current = date_from
+    while current <= date_to:
+        yield current
+        current += timedelta(days=1)
+
+
+def _candidate_keyword_matches(document: dict[str, Any], keywords: list[str]) -> dict[str, Any]:
+    fields = {
+        "title": document.get("title") or "",
+        "department": document.get("department") or "",
+        "section": document.get("section") or "",
+        "document_type": document.get("document_type") or "",
+        "raw_metadata": document.get("raw_metadata_json") or "",
+    }
+    matched: dict[str, list[str]] = {}
+    for field, value in fields.items():
+        value_lower = str(value).lower()
+        field_matches = [keyword for keyword in keywords if keyword.lower() in value_lower]
+        if field_matches:
+            matched[field] = sorted(set(field_matches))
+    return {
+        "keywords": sorted({keyword for matches in matched.values() for keyword in matches}),
+        "matched_fields": matched,
+        "warning": "Keyword matching uses BOE titles and metadata only; it is not classification.",
+    }
 
 
 def _run_consolidated_get(

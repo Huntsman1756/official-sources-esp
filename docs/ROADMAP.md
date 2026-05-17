@@ -30,6 +30,10 @@ Scope:
 - Conservative BOE HTTP retry/backoff policy with request audit fields.
 - MCP no-auth/private-only warning and tool output trust model.
 - Downstream consumption contract.
+- Controlled BOE summary range ingestion.
+- Metadata-only keyword candidate prefiltering.
+- Structured cache-miss responses for read-only consumers.
+- Status output split between summary HTTP status and artifact HTTP status.
 - Pre-deploy VPS checklist.
 - ADR-001 official publication hierarchy.
 
@@ -40,6 +44,7 @@ Scope:
 - Tier 4: EUR-Lex/DOUE.
 - TED/OJ S procurement adapter.
 - RAG/vector search.
+- Full BOE historical backfill automation.
 - Downstream integrations.
 - Authentication for MCP or a public API.
 - Legal interpretation.

@@ -27,6 +27,10 @@ workflow, publication workflow, legal or fiscal interpretation, and user-facing 
   downloads explicitly.
 - Downstream projects must not treat `official-sources` output as a final legal, fiscal, or
   product decision.
+- Keyword candidate prefiltering is title/metadata matching only. It does not parse full
+  document content, classify legal meaning, or decide eligibility.
+- Prefiltered candidates are false-positive-prone and must remain
+  `human_review_required`.
 
 ## Required evidence object
 
@@ -123,6 +127,23 @@ Required behavior:
 
 This is not an automatic rejection rule. It is a signal that human review must be informed of
 the detected change. Unresolved integrity warnings must block automatic approval/publication.
+
+## Cache Miss Behavior
+
+Read-only consumers may receive structured cache misses when evidence is not present locally:
+
+```json
+{
+  "status": "cache_miss",
+  "resource_type": "boe_summary",
+  "date": "YYYY-MM-DD",
+  "recommended_action": "Run controlled BOE ingestion for this date"
+}
+```
+
+Cache misses do not trigger live fetching, downstream writes, candidate approval, or
+publication. Consumers must treat them as a signal to schedule an explicit controlled
+ingestion or artifact download step.
 
 ## Example downstream flow
 

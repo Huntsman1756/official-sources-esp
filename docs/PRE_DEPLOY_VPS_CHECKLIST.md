@@ -198,6 +198,18 @@ official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
 
 Do not claim live BOE checks passed unless they were actually run.
 
+Controlled project backfills must remain summary-first:
+
+```bash
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
+  ingest-boe-range --date-from YYYY-MM-DD --date-to YYYY-MM-DD \
+  --skip-existing --continue-on-no-publication
+```
+
+Do not run a broad historical backfill without a fresh verified backup, estimated request
+count, explicit date range, artifact policy, and written report. XML/HTML/PDF downloads remain
+separate explicit steps, and PDF is never a default backfill artifact.
+
 ## 9. Systemd Installation
 
 Templates live in `deploy/systemd/` and assume:

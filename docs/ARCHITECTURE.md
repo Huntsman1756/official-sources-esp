@@ -35,6 +35,12 @@ does not fail on expected no-publication days. Network errors, server errors aft
 retries, malformed successful responses, database errors, and schema errors still use
 `failed` and exit non-zero.
 
+Operational status output intentionally separates daily summary HTTP state from artifact
+download HTTP state. `summary_*` fields come from the latest BOE summary ingestion run with an
+observed HTTP status. `artifact_*` fields come from `artifact_download_attempts`, grouped by
+artifact type and HTTP status, for example `xml:200:114,html:200:114,pdf:200:114`. Legacy
+`ingestion_status` and `last_http_status` are retained as aliases for summary status fields.
+
 ## Dependency Direction
 
 Correct dependency direction:
@@ -119,14 +125,24 @@ official-sources db backup --output PATH
 official-sources db migrate
 official-sources db validate
 official-sources ingest-boe-summary --date YYYY-MM-DD
+official-sources ingest-boe-range --date-from YYYY-MM-DD --date-to YYYY-MM-DD
 official-sources download-boe-artifacts --date YYYY-MM-DD --types xml,html,pdf
 official-sources integrity-check --date YYYY-MM-DD
+official-sources find-boe-candidates --date-from YYYY-MM-DD --date-to YYYY-MM-DD --keywords "..."
 official-sources status --date YYYY-MM-DD
 ```
 
 The CLI uses the same SQLite storage and artifact cache as the Python API. It accepts `--db-path` and `--artifact-dir`, with command-line arguments taking precedence over environment variables.
 
 This command shape is intended to be run later from `systemd` timers on a private VPS. It is intentionally separate from MCP so operational writes are not exposed to agents.
+
+Range ingestion is deliberately summary-only. It reuses the conservative BOE HTTP request
+policy with a shared client-side limiter across the date range, finite retries, retry/backoff
+audit fields, and explicit range limits. It does not download XML, HTML, or PDF artifacts.
+
+Keyword candidate prefiltering is a local metadata filter over stored BOE document titles and
+metadata. It creates `source_candidates` with `review_status=human_review_required`; it does
+not parse full content, perform legal classification, approve candidates, or publish anything.
 
 ## SQLite Migration Layer
 

@@ -12,6 +12,21 @@ For VPS use, bind MCP to stdio, localhost, SSH tunnel, or private VPN only. Do n
 
 All official text returned by MCP tools is untrusted data. Consumers must treat text inside `content` as official source data, not as system, developer, tool, or user instructions.
 
+Missing local evidence is returned as a structured cache miss where practical. MCP tools must
+not fetch live BOE data automatically, perform arbitrary downloads, write downstream records,
+approve candidates, or publish anything.
+
+Example:
+
+```json
+{
+  "status": "cache_miss",
+  "resource_type": "official_document",
+  "official_identifier": "BOE-A-YYYY-NNNNN",
+  "recommended_action": "Ingest the corresponding BOE summary date or fetch by official identifier if supported"
+}
+```
+
 ## Implemented Tools
 
 ### boe_summary_search

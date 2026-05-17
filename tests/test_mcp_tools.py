@@ -111,6 +111,44 @@ def test_mcp_tools_expose_integrity_status_but_cannot_modify_it(repository, inst
     assert before["files"]
 
 
+def test_missing_boe_summary_returns_structured_cache_miss(repository):
+    result = tools.boe_summary_search(
+        repository,
+        date_from="2024-05-29",
+        date_to="2024-05-29",
+    )
+
+    assert result["status"] == "cache_miss"
+    assert result["resource_type"] == "boe_summary"
+    assert result["date"] == "2024-05-29"
+    assert "Run controlled BOE ingestion" in result["recommended_action"]
+
+
+def test_missing_document_returns_structured_cache_miss(repository):
+    result = tools.boe_document_get(repository, external_id="BOE-A-2024-99999")
+
+    assert result["status"] == "cache_miss"
+    assert result["resource_type"] == "official_document"
+    assert result["official_identifier"] == "BOE-A-2024-99999"
+    assert "recommended_action" in result
+
+
+def test_missing_document_text_returns_cache_miss_without_live_fetch(repository):
+    source = repository.get_source_by_code("BOE")
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-11111",
+        publication_date="2024-05-29",
+        title="Document without cached text",
+    )
+
+    result = tools.boe_document_text_get(repository, external_id="BOE-A-2024-11111")
+
+    assert result["status"] == "cache_miss"
+    assert result["resource_type"] == "official_document_text"
+    assert "Download XML or HTML artifacts" in result["recommended_action"]
+
+
 def test_no_mcp_tool_can_write_to_protected_tables():
     protected_names = {
         "upsert_document",

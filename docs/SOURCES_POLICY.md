@@ -65,6 +65,29 @@ system failure. Real network, server, parser, storage, and schema failures remai
 
 The current implementation uses `httpx` with an internal retry/backoff wrapper. `retryhttp` was not adopted in TASK-003F because that package is not available in the offline validation environment; equivalent behavior is covered by mocked HTTP tests.
 
+## Controlled Range Ingestion Policy
+
+`ingest-boe-range` is metadata-only. It ingests daily BOE summaries for an inclusive date range
+and never downloads XML, HTML, or PDF artifacts.
+
+Safety limits:
+
+- `--max-days` defaults to `90`;
+- ranges longer than `--max-days` fail clearly;
+- ranges above `365` days require `--force`;
+- ranges above `365` days also require `--confirm-large-range`;
+- `--skip-existing` skips dates already recorded as `success` or `no_publication`;
+- `--continue-on-no-publication` continues through controlled no-publication dates;
+- `--stop-on-error` stops on real failures.
+
+The command reuses the conservative BOE request policy with one shared client-side limiter
+across the range. `--sleep-seconds` configures the limiter period. This is equivalent to a
+single-request-per-period token pace for the synchronous range runner; no uncontrolled
+concurrency is used.
+
+Do not run broad historical BOE backfills by default. Project-specific backfills must document
+date count, estimated request count, artifact policy, backup plan, and post-run report.
+
 ## BOE Consolidated Legislation Source
 
 TASK-003 and TASK-003B use only official BOE OpenData consolidated legislation endpoints.
@@ -126,6 +149,41 @@ Downloads must be driven by official URLs already stored from BOE metadata:
 The downloader accepts only HTTPS URLs on official BOE hosts. It rejects non-BOE hosts, unsupported schemes, local file paths, and URL values that are not stored document artifact fields.
 
 MCP tools do not expose arbitrary download functionality.
+
+Summaries are the metadata/index layer. XML and HTML are candidate evidence layers. PDF is a
+final evidence/on-demand layer and must be requested explicitly.
+
+## Candidate Prefiltering Policy
+
+`find-boe-candidates` performs keyword matching on stored BOE document titles and metadata
+only. It does not parse full document content, call BOE, download artifacts, use LLMs,
+classify legal meaning, approve anything, publish anything, or write to downstream projects.
+
+Results will include false positives. All candidates default to
+`review_status=human_review_required`.
+
+Example keywords for `la-ayuda` / `EduAyudas` only:
+
+```text
+beca
+becas
+ayuda
+ayudas
+subvencion
+subvenciones
+convocatoria
+bases reguladoras
+educacion
+estudiantes
+alquiler
+bono
+familia numerosa
+discapacidad
+transporte
+vivienda
+```
+
+These keywords are not authoritative classification.
 
 ## Third-Party Sources
 

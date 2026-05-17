@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 
 import httpx
@@ -40,6 +41,18 @@ def ingest_boe_summary(
                 client = BOEClient()
                 payload = client.fetch_summary(target_date)
                 request_audit = client.last_request_audit
+        if _payload_indicates_no_publication(payload):
+            return repository.finish_ingestion_run(
+                run_id=run["id"],
+                status=NO_PUBLICATION_STATUS,
+                documents_fetched=0,
+                documents_new=0,
+                documents_updated=0,
+                error_message=f"BOE summary not found for date {target_date}",
+                retry_count=request_audit.retry_count,
+                throttle_triggered=request_audit.throttle_triggered,
+                last_http_status=request_audit.last_http_status or 200,
+            )
         parsed = parse_boe_summary(payload)
         source = repository.ensure_official_source_boe()
         documents_new = 0
@@ -129,3 +142,27 @@ def _audit_from_exception(
         throttle_triggered=getattr(exc, "throttle_triggered", fallback.throttle_triggered),
         last_http_status=status_code if status_code is not None else fallback.last_http_status,
     )
+
+
+def _payload_indicates_no_publication(payload: bytes) -> bool:
+    stripped = payload.strip()
+    if not stripped:
+        return True
+    if stripped.startswith(b"{"):
+        try:
+            raw = json.loads(stripped.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return False
+        status = raw.get("status", {})
+        status_text = str(status.get("text", "")).lower()
+        status_code = str(status.get("code", "")).lower()
+        if status_code in {"204", "404"} or "no existe" in status_text:
+            return True
+        summary = raw.get("data", {}).get("sumario")
+        if isinstance(summary, dict):
+            return not bool(summary.get("diario")) and not bool(summary.get("metadatos"))
+        return False
+    if stripped.startswith(b"<"):
+        text = stripped[:1000].decode("utf-8", errors="replace").lower()
+        return "<error" in text or "no existe" in text or "not found" in text
+    return False
