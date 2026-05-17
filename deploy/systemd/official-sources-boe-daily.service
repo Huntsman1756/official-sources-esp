@@ -1,0 +1,17 @@
+[Unit]
+Description=official-sources BOE daily ingestion and artifact download
+Documentation=https://github.com/example/official-sources
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=official-sources
+Group=official-sources
+WorkingDirectory=/opt/official-sources/app
+EnvironmentFile=/opt/official-sources/.env
+ExecStart=/opt/official-sources/app/.venv/bin/official-sources ingest-boe-summary --date today
+ExecStart=/opt/official-sources/app/.venv/bin/official-sources download-boe-artifacts --date today --types xml,html,pdf
+ExecStart=/opt/official-sources/app/.venv/bin/official-sources status --date today
+NoNewPrivileges=true
+PrivateTmp=true

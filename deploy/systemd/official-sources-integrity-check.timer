@@ -1,0 +1,10 @@
+[Unit]
+Description=Run official-sources local artifact integrity checks
+
+[Timer]
+OnCalendar=*-*-* 12:00:00
+Persistent=true
+Unit=official-sources-integrity-check.service
+
+[Install]
+WantedBy=timers.target

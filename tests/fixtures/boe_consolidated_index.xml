@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque>
+      <id>pr</id>
+      <titulo>[preambulo]</titulo>
+      <fecha_actualizacion>20240529</fecha_actualizacion>
+      <url>https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2024-11111/texto/bloque/pr</url>
+    </bloque>
+    <bloque tipo="titulo">
+      <id>ti</id>
+      <titulo>Title I</titulo>
+      <fecha_actualizacion>20240530</fecha_actualizacion>
+      <url>https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2024-11111/texto/bloque/ti</url>
+      <bloque tipo="articulo">
+        <id>a1</id>
+        <titulo>Article 1</titulo>
+        <fecha_actualizacion>20240530</fecha_actualizacion>
+        <url>https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2024-11111/texto/bloque/a1</url>
+      </bloque>
+    </bloque>
+  </data>
+</response>

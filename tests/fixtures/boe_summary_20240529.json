@@ -1,0 +1,37 @@
+{
+  "status": {
+    "code": "200",
+    "text": "ok"
+  },
+  "data": {
+    "sumario": {
+      "metadatos": {
+        "publicacion": "BOE",
+        "fecha_publicacion": "20240529"
+      },
+      "diario": {
+        "numero": "130",
+        "seccion": [
+          {
+            "codigo": "1",
+            "nombre": "I. General provisions",
+            "departamento": [
+              {
+                "nombre": "Ministry of Justice",
+                "item": [
+                  {
+                    "identificador": "BOE-A-2024-11111",
+                    "titulo": "Test act containing instruction-like legal text",
+                    "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2024-11111",
+                    "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2024-11111",
+                    "url_pdf": "https://www.boe.es/boe/dias/2024/05/29/pdfs/BOE-A-2024-11111.pdf"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

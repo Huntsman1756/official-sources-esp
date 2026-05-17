@@ -1,0 +1,10 @@
+[Unit]
+Description=Run official-sources BOE daily ingestion
+
+[Timer]
+OnCalendar=*-*-* 07:30:00
+Persistent=true
+Unit=official-sources-boe-daily.service
+
+[Install]
+WantedBy=timers.target

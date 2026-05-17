@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque id="a1" tipo="articulo" titulo="Article 1">
+      <version id_norma="BOE-A-2024-11111" fecha_publicacion="20240530">
+        <p>Changed current official block text.</p>
+      </version>
+    </bloque>
+  </data>
+</response>

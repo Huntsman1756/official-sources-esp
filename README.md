@@ -1,0 +1,246 @@
+# official-sources
+
+`official-sources` is reusable infrastructure for ingesting, normalizing, tracing, and auditing official public-source documents.
+
+The first implemented tier covers only Spanish BOE state-level sources. It is not a public product and does not approve, publish, summarize with LLMs, or integrate with downstream projects automatically.
+
+## Why This Exists
+
+Many civic, legal, fiscal, subsidy, public-employment, transparency, and accountability projects need the same reliable base layer:
+
+```text
+official source -> ingestion -> normalized document -> citation -> integrity check -> candidate extraction -> human review -> safe publication
+```
+
+This repository provides the source and audit layer. Human review remains mandatory for downstream use.
+
+## MVP Scope
+
+- Tier 1 BOE state-level official source support only.
+- BOE daily summary ingestion from the official BOE open-data API.
+- SQLite storage for sources, documents, files, texts, candidates, ingestion runs, and integrity checks.
+- Raw-source traceability through official URLs and source snapshot hashes.
+- Controlled download of stored official BOE XML, HTML, and PDF artifact URLs.
+- Audited artifact download attempts for success, skipped, failed, and changed outcomes.
+- Read-only BOE consolidated legislation retrieval by official identifier.
+- Official BOE consolidated legislation text index retrieval.
+- Official BOE consolidated legislation text block retrieval and block citations.
+- Stable citation generation.
+- Integrity hash comparison and reviewable change events.
+- Read-only internal query functions.
+- Read-only FastMCP interface with structured outputs.
+- Conservative BOE HTTP retry/backoff policy for 429, 503, and transient 5xx responses.
+- Verified SQLite backup with default `quick_check`, row-count comparison, and minimum size checks.
+
+## Non-Goals
+
+- EUR-Lex adapters.
+- Autonomous/statutory territory, provincial, local, or municipal bulletin adapters.
+- RAG, embeddings, or vector databases.
+- Git/Markdown export.
+- UI, authentication, Docker, or production deployment.
+- LLM extraction, legal interpretation, automatic approval, or automatic publication.
+
+## Install
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+`uv` can also be used:
+
+```bash
+uv sync --extra dev
+```
+
+## Run Tests
+
+```bash
+python -m pytest -q
+python -m ruff check .
+python -m ruff format --check .
+```
+
+## CLI
+
+The package exposes an operational CLI:
+
+```bash
+official-sources --db-path official-sources.sqlite --artifact-dir data/artifacts <command>
+```
+
+Command-line options override environment variables:
+
+- `OFFICIAL_SOURCES_DB`
+- `OFFICIAL_SOURCES_DB_PATH`
+- `OFFICIAL_SOURCES_ARTIFACT_DIR`
+
+## Database Migrations
+
+Persistent SQLite databases must be upgraded with migrations, not by deleting or recreating the file.
+
+Before running migrations on a persistent installation, create a database backup.
+
+```bash
+official-sources --db-path official-sources.sqlite db status
+official-sources --db-path official-sources.sqlite db backup --output backups/official_sources_YYYYMMDD_HHMMSS.sqlite
+official-sources --db-path official-sources.sqlite db migrate
+official-sources --db-path official-sources.sqlite db validate
+```
+
+`db status` reports the current schema version, latest version, pending migration count, database path, and status. `db backup` copies the SQLite file with the SQLite online backup API, verifies the source and backup with `PRAGMA quick_check` by default, compares application-table row counts, enforces a minimum backup size, and refuses to overwrite existing output unless `--force` is explicit. `db migrate` applies pending migrations in order and records checksums in `schema_migrations`. `db validate` verifies required tables, columns, the migration metadata table, and that the current version matches the latest migration.
+
+Backup verification options:
+
+```bash
+official-sources --db-path official-sources.sqlite db backup --output backups/official_sources_YYYYMMDD_HHMMSS.sqlite
+official-sources --db-path official-sources.sqlite db backup --output backups/official_sources_YYYYMMDD_HHMMSS.sqlite --quick-check
+official-sources --db-path official-sources.sqlite db backup --output backups/official_sources_YYYYMMDD_HHMMSS.sqlite --full-check
+official-sources --db-path official-sources.sqlite db backup --output backups/official_sources_YYYYMMDD_HHMMSS.sqlite --no-verify
+```
+
+The migration system is local and deterministic. It does not call BOE APIs, MCP tools, downstream projects, or external network resources.
+
+Restore is a manual operational process. See `docs/BACKUP_AND_RESTORE.md`.
+
+Before VPS deployment or update, follow `docs/PRE_DEPLOY_VPS_CHECKLIST.md`.
+
+The official publication hierarchy is documented in `docs/decisions/ADR-001-official-publication-hierarchy.md`. BOE is a state-level source, not a generic synonym for official bulletins.
+
+## Ingest A BOE Summary
+
+```bash
+official-sources --db-path official-sources.sqlite ingest-boe-summary --date 2024-05-29
+```
+
+The command creates an `ingestion_runs` row before fetching. Failed attempts are also recorded.
+
+## Download BOE Artifacts
+
+Artifact downloads are driven by official URLs already stored on `official_documents`; there is no arbitrary URL downloader.
+
+```bash
+official-sources \
+  --db-path official-sources.sqlite \
+  --artifact-dir data/artifacts \
+  download-boe-artifacts --date 2024-05-29 --types xml,html,pdf
+```
+
+Downloaded files are cached under:
+
+```text
+data/artifacts/boe/YYYY/MM/DD/<external_id>/
+```
+
+Expected filenames are `document.xml`, `document.html`, and `document.pdf`.
+
+## Integrity Check And Status
+
+```bash
+official-sources --db-path official-sources.sqlite integrity-check --date 2024-05-29
+official-sources --db-path official-sources.sqlite status --date 2024-05-29
+```
+
+The integrity command recomputes hashes from local cached artifacts and records integrity events. The status command reports ingestion status, document counts, artifact counts, download attempt counts, failed downloads, and integrity warnings.
+
+## BOE Consolidated Legislation
+
+The CLI can retrieve one consolidated law by official BOE identifier:
+
+```bash
+official-sources --db-path official-sources.sqlite \
+  boe-consolidated-get --identifier BOE-A-2024-11111
+```
+
+This uses the official BOE OpenData consolidated legislation endpoint:
+
+```text
+/datosabiertos/api/legislacion-consolidada/id/{id}
+```
+
+The implementation stores consolidated law metadata, one current cached version, deterministic text blocks when the XML structure supports them, raw payload hashes, source snapshot hashes, and consolidated-law integrity events. It does not implement legal interpretation, legal advice, custom version comparison, RAG, or search.
+
+The CLI can also retrieve the official text index and one official text block:
+
+```bash
+official-sources --db-path official-sources.sqlite \
+  boe-consolidated-index-get --identifier BOE-A-2024-11111
+
+official-sources --db-path official-sources.sqlite \
+  boe-consolidated-block-get --identifier BOE-A-2024-11111 --block-id a1
+```
+
+Block content is not printed by default. To print official text explicitly:
+
+```bash
+official-sources --db-path official-sources.sqlite \
+  boe-consolidated-block-get --identifier BOE-A-2024-11111 --block-id a1 --print-content
+```
+
+Index and block retrieval use only official BOE OpenData endpoints:
+
+```text
+/datosabiertos/api/legislacion-consolidada/id/{id}/texto/indice
+/datosabiertos/api/legislacion-consolidada/id/{id}/texto/bloque/{id_bloque}
+```
+
+Block-level MCP output keeps official text inside a structured `content` field. It does not interpret obligations, determine applicability, compare legal versions, perform RAG, or expose broad search.
+
+## Daily Operational Flow
+
+```bash
+official-sources ingest-boe-summary --date 2024-05-29
+official-sources download-boe-artifacts --date 2024-05-29 --types xml,html,pdf
+official-sources integrity-check --date 2024-05-29
+official-sources status --date 2024-05-29
+```
+
+The CLI also accepts `--date today` for timer use.
+
+## systemd Templates
+
+Minimal templates are provided under `deploy/systemd/`:
+
+- `official-sources-boe-daily.service`
+- `official-sources-boe-daily.timer`
+- `official-sources-integrity-check.service`
+- `official-sources-integrity-check.timer`
+
+They assume this VPS layout:
+
+```text
+/opt/official-sources
+/opt/official-sources/app
+/opt/official-sources/data/official_sources.sqlite
+/opt/official-sources/data/artifacts
+/opt/official-sources/data/backups
+```
+
+The service templates run as the non-root `official-sources` user, read `/opt/official-sources/.env`, and execute `/opt/official-sources/app/.venv/bin/official-sources`.
+
+This is operational packaging, not product deployment. It does not add Docker, a web server, public network services, authentication, or downstream integrations. The MCP server remains read-only and does not expose download commands.
+
+Before deploying updates or running migrations on a VPS, create a backup, restore it to a temporary path, run `db migrate`, run `db validate`, and perform a small read-only smoke check. Stop timers and services before restoring over the active database.
+
+## Run The MCP Server
+
+```bash
+OFFICIAL_SOURCES_DB_PATH=official-sources.sqlite python -m official_sources.mcp.server
+```
+
+The MCP server name is `official-sources`. Tools are read-only and return structured records. This MCP server has no authentication. Keep MCP private through local stdio, localhost, SSH tunnel, or Tailscale/private network access only; do not expose it through Cloudflare Tunnel, public Nginx, public Docker port mapping, or `0.0.0.0` unless a proper authentication and authorization layer is added.
+
+Downstream projects must consume `official-sources` as evidence only. They remain responsible for their own `pending_review` candidates, review workflow, publication workflow, and legal or fiscal interpretation. See `docs/DOWNSTREAM_CONTRACT.md`.
+
+## Limitations
+
+- MVP parsing is focused on BOE daily summary metadata.
+- Artifact download stores XML/HTML/PDF bytes and extracts deterministic text only from XML/HTML.
+- Signature validation is not implemented; `signature_status` defaults to `not_checked`.
+- PDF files are hashed and stored only; PDF text extraction and electronic signature validation are not implemented.
+- Consolidated legislation retrieval is by identifier only; search and own version diffing are future work.
+- BOE consolidated legislation search is documented as future work, not implemented.
+- Consolidated text index and block retrieval are cached snapshots of official BOE endpoint payloads; stale cache review remains a human responsibility.
+- Consolidated block retrieval does not determine whether a block is legally applicable to a user situation.
+- Live network calls are not required by tests; fixtures cover the adapter behavior.
+- Tier 2 autonomous/statutory territory bulletins, Tier 3 provincial/local bulletins, Tier 4 EUR-Lex/DOUE, and TED/OJ S are conceptual future tiers only.

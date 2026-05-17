@@ -1,0 +1,1 @@
+"""Spanish BOE source adapter."""
