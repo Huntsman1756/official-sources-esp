@@ -2,6 +2,37 @@
 
 ## Commands Executed
 
+TASK-004C-RUN4 VPS candidate evidence review:
+
+```bash
+git pull --ff-only origin main
+python -m pip install -e .
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db status
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_before_candidate_evidence_download_20260517_202030.sqlite
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite --artifact-dir /opt/official-sources/data/artifacts download-boe-artifacts --candidate-ids 1,3,10,11,14,17,18,20,21,23 --types xml,html
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_after_candidate_evidence_download_20260517_202050.sqlite
+du -sh /opt/official-sources/data/artifacts
+ss -tulpn
+```
+
+Result:
+
+- Deployed commit: `3519c35`.
+- DB status: `current_version=6 latest_version=6 pending_migrations=0 journal_mode=wal synchronous=normal status=up_to_date`.
+- DB validation before and after artifact download: `status=valid`.
+- Candidate count: `25`.
+- Candidate review labels for the report: `likely_relevant=10 unclear=13 false_positive=2`.
+- Selected evidence candidates: `1,3,10,11,14,17,18,20,21,23`.
+- Pre-download backup: `verification=quick_check source_check=ok backup_check=ok status=success`.
+- Scoped artifact download: `selected_documents=10 artifact_types=xml,html downloaded=20 skipped=0 changed=0 failed=0 retries=0 throttle_events=18 http_status_summary=html:200:10,xml:200:10`.
+- Artifact directory size before/after: `22M/23M`.
+- Post-download backup: `verification=quick_check source_check=ok backup_check=ok status=success`.
+- MCP privacy check found no MCP/FastMCP/Python/Uvicorn/official-sources listener and no SQLite exposure.
+- No PDF download, downstream write, approval, publication, LLM processing, or legal classification was run.
+- Tests were not rerun for the report-only commit; TASK-004C-FIX5 code validation was already run before deployment.
+
 TASK-004C-FIX5 local validation:
 
 ```bash
