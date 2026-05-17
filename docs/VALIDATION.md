@@ -18,6 +18,33 @@ Result:
 - New schema latest version: `6`.
 - Focused no-publication behavior tests: BOE summary `404` persists `last_http_status=404`, records `status=no_publication`, exits zero from the CLI, skips artifact download, and keeps real 500/malformed-200 failures as `failed`.
 
+TASK-004A-FIX1 VPS validation:
+
+```bash
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_before_no_publication_fix_20260517_173237.sqlite
+git pull --ff-only origin main
+python -m pip install -e .
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db status
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db migrate
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+systemctl start official-sources-boe-daily.service
+systemctl status official-sources-boe-daily.service --no-pager --full
+journalctl -u official-sources-boe-daily.service -n 300 --no-pager
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite status --date today
+```
+
+Result:
+
+- Pre-update backup: `verification=quick_check source_check=ok backup_check=ok status=success`.
+- Deployed commit: `a942899`.
+- Migration: `current_version=6 latest_version=6 applied_migrations=6 status=migrated`.
+- VPS DB validation: `current_version=6 latest_version=6 status=valid`.
+- Forced BOE daily service: `service_start_exit=0`.
+- systemd result: all three `ExecStart` commands ended with `status=0/SUCCESS`.
+- Today status: `ingestion_status=no_publication last_http_status=404 documents=0 ... failed_downloads=0`.
+- Artifact directory remained empty apart from the directory itself.
+- MCP privacy remained intact: no MCP/FastMCP/Python/Uvicorn listener.
+
 TASK-004A real VPS deployment rehearsal:
 
 ```bash
