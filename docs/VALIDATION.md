@@ -49,6 +49,38 @@ Result:
 - In explicit write mode, `--limit` caps the number of candidates created.
 - Written candidates still use `review_status=human_review_required`.
 
+TASK-004C-RUN3 VPS candidate creation pilot:
+
+```bash
+git pull --ff-only origin main
+python -m pip install -e .
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db status
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_before_candidate_pilot_20260517_200934.sqlite
+official-sources find-boe-candidates --help
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite find-boe-candidates --date-from 2026-04-18 --date-to 2026-05-17 --profile la-ayuda --limit 25 --write
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_after_candidate_pilot_20260517_201015.sqlite
+du -sh /opt/official-sources/data/artifacts
+ss -tulpn
+```
+
+Result:
+
+- Deployed commit: `55c5fcc`.
+- DB status: `current_version=6 latest_version=6 pending_migrations=0 journal_mode=wal synchronous=normal status=up_to_date`.
+- DB validation before and after candidate creation: `status=valid`.
+- Pre-run backup: `verification=quick_check source_check=ok backup_check=ok status=success`.
+- Candidate count before/after: `0/25`.
+- Candidates created: `25`.
+- Review status distribution: `human_review_required:25`.
+- Artifact directory size before/after: `22M/22M`.
+- Post-run backup: `verification=quick_check source_check=ok backup_check=ok status=success`.
+- MCP privacy check found no MCP/FastMCP/Python/Uvicorn/official-sources listener and no SQLite
+  exposure.
+- No BOE fetch, artifact download, downstream write, approval, publication, LLM processing, or
+  legal classification was run.
+
 TASK-004C-FIX4 VPS refined dry-run:
 
 ```bash
