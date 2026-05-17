@@ -28,6 +28,35 @@ Result:
   matches such as standalone `convocatoria`.
 - Dry-run mode remains no-write and reports deterministic score reasons.
 
+TASK-004C-FIX4 VPS refined dry-run:
+
+```bash
+git pull --ff-only origin main
+python -m pip install -e .
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite find-boe-candidates --date-from 2026-04-18 --date-to 2026-05-17 --profile la-ayuda --dry-run --limit 100
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+du -sh /opt/official-sources/data/artifacts
+ss -tulpn
+```
+
+Result:
+
+- Deployed commit: `fbdcf42`.
+- DB validation before and after dry-run: `current_version=6 latest_version=6 status=valid`.
+- Documents scanned: `3896`.
+- Refined matches before filters: `313`.
+- Refined matches after filters: `73`.
+- Baseline matches before refinement: `554`.
+- Usable match reduction from baseline: `481` fewer matches, `86.8%`.
+- Candidates created: `0`.
+- Candidate count before/after: `0/0`.
+- Artifact directory size before/after: `22M/22M`.
+- Exclusions: `excluded_by_section=38`, `excluded_by_keyword_rules=202`.
+- MCP privacy check found no MCP/FastMCP/Python/Uvicorn/official-sources listener and no SQLite
+  exposure.
+- No BOE API calls, artifact downloads, downstream writes, approval, or publication were run.
+
 TASK-004C-RUN2 VPS candidate prefilter dry-run:
 
 ```bash
