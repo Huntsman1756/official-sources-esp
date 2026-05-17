@@ -2,6 +2,39 @@
 
 ## Commands Executed
 
+TASK-004A real VPS deployment rehearsal:
+
+```bash
+ssh -i C:\Users\rome_\.ssh\esdata_root_vps_ed25519 root@157.90.22.40 'set -eu; whoami; hostname -f; date -Is; cat /etc/os-release | head -n 5; uname -a; command -v python3.12; command -v git; systemctl --version | head -n 1'
+ssh -i C:\Users\rome_\.ssh\esdata_root_vps_ed25519 root@157.90.22.40 'mkdir -p /opt/official-sources/app /opt/official-sources/data/artifacts /opt/official-sources/data/backups /opt/official-sources/logs'
+ssh -i C:\Users\rome_\.ssh\esdata_root_vps_ed25519 root@157.90.22.40 'useradd --system --home /opt/official-sources --shell /usr/sbin/nologin official-sources 2>/dev/null || true'
+ssh -i C:\Users\rome_\.ssh\esdata_root_vps_ed25519 root@157.90.22.40 'chown -R official-sources:official-sources /opt/official-sources'
+ssh -i C:\Users\rome_\.ssh\esdata_root_vps_ed25519 root@157.90.22.40 'sudo -u official-sources git clone https://github.com/Huntsman1756/official-sources-esp.git /opt/official-sources/app'
+ssh -i C:\Users\rome_\.ssh\esdata_root_vps_ed25519 root@157.90.22.40 'cd /opt/official-sources/app; sudo -u official-sources python3.12 -m venv .venv; sudo -u official-sources .venv/bin/python -m pip install --upgrade pip; sudo -u official-sources .venv/bin/python -m pip install -e .; sudo -u official-sources .venv/bin/official-sources --help'
+ssh -i C:\Users\rome_\.ssh\esdata_root_vps_ed25519 root@157.90.22.40 'CLI=/opt/official-sources/app/.venv/bin/official-sources; DB=/opt/official-sources/data/official_sources.sqlite; sudo -u official-sources $CLI --db-path $DB db status; sudo -u official-sources $CLI --db-path $DB db migrate; sudo -u official-sources $CLI --db-path $DB db validate'
+ssh -i C:\Users\rome_\.ssh\esdata_root_vps_ed25519 root@157.90.22.40 'CLI=/opt/official-sources/app/.venv/bin/official-sources; DB=/opt/official-sources/data/official_sources.sqlite; BACKUP=/opt/official-sources/data/backups/official_sources_20260517_170440.sqlite; sudo -u official-sources $CLI --db-path $DB db backup --output $BACKUP; cp $BACKUP /tmp/official_sources_restore_test.sqlite; chown official-sources:official-sources /tmp/official_sources_restore_test.sqlite; sudo -u official-sources $CLI --db-path /tmp/official_sources_restore_test.sqlite db status; sudo -u official-sources $CLI --db-path /tmp/official_sources_restore_test.sqlite db migrate; sudo -u official-sources $CLI --db-path /tmp/official_sources_restore_test.sqlite db validate'
+ssh -i C:\Users\rome_\.ssh\esdata_root_vps_ed25519 root@157.90.22.40 'cd /opt/official-sources/app; cp deploy/systemd/official-sources-boe-daily.service /etc/systemd/system/; cp deploy/systemd/official-sources-boe-daily.timer /etc/systemd/system/; cp deploy/systemd/official-sources-integrity-check.service /etc/systemd/system/; cp deploy/systemd/official-sources-integrity-check.timer /etc/systemd/system/; systemctl daemon-reload; systemctl enable official-sources-boe-daily.timer official-sources-integrity-check.timer; systemctl start official-sources-boe-daily.timer official-sources-integrity-check.timer'
+ssh -i C:\Users\rome_\.ssh\esdata_root_vps_ed25519 root@157.90.22.40 'systemctl start official-sources-integrity-check.service; systemctl --no-pager --full status official-sources-integrity-check.service; journalctl -u official-sources-integrity-check.service -n 50 --no-pager'
+```
+
+Result:
+
+- VPS access: successful as `root`.
+- Environment: Ubuntu 24.04.4 LTS, Python 3.12, git, systemd 255.
+- Application path: `/opt/official-sources/app`.
+- Deployed commit: `c5b6350`.
+- Package installation: `python -m pip install -e .` succeeded.
+- CLI help printed successfully on the VPS.
+- Database: migrated to `current_version=5 latest_version=5`.
+- Database validation: `status=valid`.
+- Backup: verified backup created at `/opt/official-sources/data/backups/official_sources_20260517_170440.sqlite`.
+- Restore rehearsal: `/tmp/official_sources_restore_test.sqlite` status/migrate/validate passed.
+- Smoke check: `status --date today` returned no documents and no failed downloads.
+- systemd: both timers enabled and active.
+- systemd smoke: `official-sources-integrity-check.service` ran with `status=0/SUCCESS`.
+- MCP privacy: no MCP process, no `official-sources` listener, no public listener beyond SSH.
+- Live BOE daily ingestion was not manually started; it is scheduled by timer.
+
 TASK-004A dry-run after TASK-003F:
 
 ```bash
