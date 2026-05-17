@@ -2,7 +2,7 @@
 
 ## Scope
 
-TASK-004A was performed on a private VPS at `157.90.22.40` over SSH as `root`.
+TASK-004A was performed on a private VPS over SSH as `root`.
 
 The deployment installed `official-sources` under `/opt/official-sources`, configured a
 dedicated service user, initialized and migrated SQLite, created a verified backup, rehearsed
@@ -28,7 +28,7 @@ source adapter, legal interpretation, automatic approval, or automatic publicati
 SSH baseline:
 
 ```bash
-ssh -i C:\Users\rome_\.ssh\esdata_root_vps_ed25519 root@157.90.22.40 \
+ssh -i C:\Users\rome_\.ssh\esdata_root_vps_ed25519 root@<redacted-public-ip> \
   'set -eu; whoami; hostname -f; date -Is; cat /etc/os-release | head -n 5; uname -a; command -v python3.12; command -v git; systemctl --version | head -n 1'
 ```
 
