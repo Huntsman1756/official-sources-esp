@@ -175,12 +175,15 @@ Keyword candidate prefiltering is local-only:
 ```bash
 official-sources --db-path official-sources.sqlite \
   find-boe-candidates --date-from 2024-05-01 --date-to 2024-05-31 \
-  --keywords "beca,ayuda,subvencion,convocatoria"
+  --keywords "beca,ayuda,subvencion,convocatoria" \
+  --dry-run --limit 50
 ```
 
 This searches stored BOE titles and metadata only. It does not parse full document content,
 does not use LLMs, does not classify legal meaning, and does not approve or publish anything.
-Candidates default to `human_review_required`.
+Use `--dry-run` or `--no-write` for safe previews; those modes print aggregate counts and sample
+matches without writing `source_candidates`. Candidates created by the normal write mode default
+to `human_review_required`.
 
 ## BOE Consolidated Legislation
 

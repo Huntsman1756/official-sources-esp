@@ -967,6 +967,124 @@ def test_find_boe_candidates_matches_titles_and_metadata(tmp_path, capsys):
     assert "estudiantes" in candidate["matched_fields_json"]
 
 
+def test_find_boe_candidates_dry_run_does_not_create_candidates(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-11111",
+        publication_date="2024-05-29",
+        title="Convocatoria de becas",
+        department="Ministerio de Educacion",
+        section="III",
+        raw_metadata={"materia": "estudiantes"},
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "becas,estudiantes",
+            "--project-key",
+            "la-ayuda",
+            "--dry-run",
+            "--limit",
+            "1",
+        ]
+    )
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert candidate_count == 0
+    assert "write_mode=dry_run" in captured.out
+    assert "documents_scanned=1" in captured.out
+    assert "documents_matched=1" in captured.out
+    assert "candidates_created=0" in captured.out
+    assert "matches_by_keyword=becas:1,estudiantes:1" in captured.out
+    assert "matches_by_section=III:1" in captured.out
+    assert "matches_by_department=Ministerio_de_Educacion:1" in captured.out
+    assert "sample index=1" in captured.out
+    assert "BOE-A-2024-11111" in captured.out
+
+
+def test_find_boe_candidates_no_write_alias_does_not_create_candidates(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-11111",
+        publication_date="2024-05-29",
+        title="Ayudas al alquiler",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "ayudas",
+            "--no-write",
+        ]
+    )
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert candidate_count == 0
+    assert "write_mode=dry_run" in captured.out
+
+
+def test_find_boe_candidates_rejects_non_positive_limit(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "ayuda",
+            "--dry-run",
+            "--limit",
+            "0",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "--limit" in captured.err
+
+
 def test_find_boe_candidates_does_not_approve_or_publish(tmp_path):
     import inspect
 
@@ -988,3 +1106,6 @@ def test_find_boe_candidates_help_contains_false_positive_warning(capsys):
     assert "metadata" in captured.out
     assert "false" in captured.out
     assert "positives" in captured.out
+    assert "--dry-run" in captured.out
+    assert "--no-write" in captured.out
+    assert "--limit" in captured.out

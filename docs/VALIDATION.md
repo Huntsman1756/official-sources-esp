@@ -2,6 +2,20 @@
 
 ## Commands Executed
 
+TASK-004C-FIX3 local validation:
+
+```bash
+rtk python -m pytest tests/test_cli.py::test_find_boe_candidates_dry_run_does_not_create_candidates tests/test_cli.py::test_find_boe_candidates_no_write_alias_does_not_create_candidates tests/test_cli.py::test_find_boe_candidates_rejects_non_positive_limit tests/test_cli.py::test_find_boe_candidates_help_contains_false_positive_warning -q
+```
+
+Result:
+
+- First red run failed as expected because `find-boe-candidates` did not accept `--dry-run` or
+  `--no-write`, and help did not list safe preview options.
+- Focused tests after implementation: `4 passed`.
+- `--dry-run` and `--no-write` do not create `source_candidates`.
+- `--limit` controls printed sample matches and rejects non-positive values.
+
 TASK-004C-RUN1B VPS deployment and operational validation:
 
 ```bash

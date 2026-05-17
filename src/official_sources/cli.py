@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from collections import Counter
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, TextIO
@@ -223,6 +224,22 @@ def build_parser() -> argparse.ArgumentParser:
         "--candidate-type",
         default="keyword_match",
         help="Candidate type stored for human review.",
+    )
+    candidates.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview matches without writing source_candidates.",
+    )
+    candidates.add_argument(
+        "--no-write",
+        action="store_true",
+        help="Alias for --dry-run. Preview matches without writing source_candidates.",
+    )
+    candidates.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Maximum sample matches to print. Default: 50.",
     )
     return parser
 
@@ -735,34 +752,69 @@ def _run_find_candidates(
     if not keywords:
         print("--keywords must include at least one keyword", file=stderr)
         return 2
+    if args.limit <= 0:
+        print("--limit must be greater than zero", file=stderr)
+        return 2
     documents = repository.search_documents(date_from=date_from, date_to=date_to, limit=100000)
+    dry_run = bool(args.dry_run or args.no_write)
     created = 0
-    matched = 0
+    matched_items: list[tuple[dict[str, Any], dict[str, Any]]] = []
     for document in documents:
         matches = _candidate_keyword_matches(document, keywords)
         if not matches:
             continue
-        matched += 1
-        repository.create_source_candidate(
-            document_id=document["id"],
-            project_key=args.project_key,
-            candidate_type=args.candidate_type,
-            extraction_status="raw_detected",
-            evidence_level="metadata_keyword_match",
-            matched_fields=matches,
-        )
-        created += 1
+        matched_items.append((document, matches))
+        if not dry_run:
+            repository.create_source_candidate(
+                document_id=document["id"],
+                project_key=args.project_key,
+                candidate_type=args.candidate_type,
+                extraction_status="raw_detected",
+                evidence_level="metadata_keyword_match",
+                matched_fields=matches,
+            )
+            created += 1
+    keyword_counts: Counter[str] = Counter()
+    section_counts: Counter[str] = Counter()
+    department_counts: Counter[str] = Counter()
+    for document, matches in matched_items:
+        keyword_counts.update(matches["keywords"])
+        if document.get("section"):
+            section_counts[_compact_token(document["section"])] += 1
+        if document.get("department"):
+            department_counts[_compact_token(document["department"])] += 1
     print(
         _format_counts(
             {
                 "documents_scanned": len(documents),
-                "documents_matched": matched,
+                "documents_matched": len(matched_items),
                 "candidates_created": created,
                 "review_status": "human_review_required",
+                "write_mode": "dry_run" if dry_run else "write",
+                "matches_by_keyword": _format_counter(keyword_counts),
+                "matches_by_section": _format_counter(section_counts),
+                "matches_by_department": _format_counter(department_counts),
+                "sample_count": min(len(matched_items), args.limit),
             }
         ),
         file=stdout,
     )
+    for index, (document, matches) in enumerate(matched_items[: args.limit], start=1):
+        print(
+            "sample "
+            + _format_counts(
+                {
+                    "index": index,
+                    "date": document["publication_date"],
+                    "external_id": document["external_id"],
+                    "keywords": ",".join(matches["keywords"]),
+                    "section": _compact_token(document.get("section") or "none"),
+                    "department": _compact_token(document.get("department") or "none"),
+                    "title": _quote_value(document.get("title") or ""),
+                }
+            ),
+            file=stdout,
+        )
     return 0
 
 
@@ -951,3 +1003,18 @@ def _format_counts(counts: dict) -> str:
 
 def _status_value(value: object) -> object:
     return "none" if value is None else value
+
+
+def _format_counter(counter: Counter[str]) -> str:
+    if not counter:
+        return "none"
+    return ",".join(f"{key}:{value}" for key, value in sorted(counter.items()))
+
+
+def _compact_token(value: object) -> str:
+    return str(value).strip().replace(" ", "_") or "none"
+
+
+def _quote_value(value: object) -> str:
+    text = str(value).replace('"', "'")
+    return f'"{text}"'

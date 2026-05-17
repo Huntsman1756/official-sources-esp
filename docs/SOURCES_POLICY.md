@@ -170,6 +170,20 @@ final evidence/on-demand layer and must be requested explicitly.
 only. It does not parse full document content, call BOE, download artifacts, use LLMs,
 classify legal meaning, approve anything, publish anything, or write to downstream projects.
 
+Safe preview modes are available:
+
+```bash
+official-sources find-boe-candidates \
+  --date-from YYYY-MM-DD \
+  --date-to YYYY-MM-DD \
+  --keywords "beca,ayuda,subvencion,convocatoria" \
+  --dry-run --limit 50
+```
+
+`--dry-run` and `--no-write` are equivalent: they report matches and sample rows without
+creating `source_candidates`. `--limit` controls the number of sample matches printed, not the
+date range scanned.
+
 Results will include false positives. All candidates default to
 `review_status=human_review_required`.
 

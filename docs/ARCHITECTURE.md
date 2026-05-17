@@ -150,6 +150,9 @@ audit fields, and explicit range limits. It does not download XML, HTML, or PDF 
 Keyword candidate prefiltering is a local metadata filter over stored BOE document titles and
 metadata. It creates `source_candidates` with `review_status=human_review_required`; it does
 not parse full content, perform legal classification, approve candidates, or publish anything.
+Operators should use `--dry-run` or `--no-write` before enabling normal write mode. In safe
+preview mode the command reports aggregate match counts and sample rows without creating
+`source_candidates`.
 
 ## SQLite Migration Layer
 
