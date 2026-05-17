@@ -101,6 +101,12 @@ BOE must not be used as a generic synonym for official bulletins. Autonomous, pr
 
 BOE artifact downloads are source-adapter behavior, not MCP behavior. The downloader reads stored `url_xml`, `url_html`, and `url_pdf` values from `official_documents`, validates that they are HTTPS BOE URLs, fetches bytes with `httpx`, writes them to the local cache, and records them in `document_files`.
 
+Artifact downloads can be date-scoped or explicitly scoped to `source_candidates` /
+`official_documents` IDs. Candidate/document-scoped downloads are used for evidence review so a
+small candidate pilot can fetch only selected XML/HTML artifacts without downloading every
+document from the publication date. PDF is not a default artifact type and requires explicit
+operator request.
+
 Each attempted artifact download also creates an `artifact_download_attempts` row. This table records what happened while trying to fetch an artifact. It does not replace `integrity_checks`.
 
 ```text

@@ -202,13 +202,19 @@ def build_parser() -> argparse.ArgumentParser:
     download = subparsers.add_parser(
         "download-boe-artifacts", help="Download stored official BOE artifact URLs."
     )
+    download.add_argument("--date", help="Target date in YYYY-MM-DD format or today.")
     download.add_argument(
-        "--date", required=True, help="Target date in YYYY-MM-DD format or today."
+        "--candidate-ids",
+        help="Comma-separated source_candidate IDs to download artifacts for.",
+    )
+    download.add_argument(
+        "--document-ids",
+        help="Comma-separated official_documents IDs to download artifacts for.",
     )
     download.add_argument(
         "--types",
-        default="xml,html,pdf",
-        help="Comma-separated artifact types.",
+        default="xml,html",
+        help="Comma-separated artifact types. Default: xml,html. PDF requires explicit request.",
     )
 
     check = subparsers.add_parser("integrity-check", help="Recompute local artifact hashes.")
@@ -376,6 +382,32 @@ def run(
             stderr,
         )
 
+    if args.command == "download-boe-artifacts":
+        try:
+            artifact_types = _parse_artifact_types(args.types)
+        except BOEArtifactDownloadError as exc:
+            print(str(exc), file=stderr)
+            return 2
+        try:
+            target_date, documents = _resolve_download_selection(repository, args)
+        except ValueError as exc:
+            print(str(exc), file=stderr)
+            return 2
+        target_label = target_date or "scoped"
+        print(
+            f"command_started={args.command} source_code=BOE target_date={target_label}",
+            file=stdout,
+        )
+        return _run_download(
+            repository,
+            target_date=target_date,
+            documents=documents,
+            artifact_types=artifact_types,
+            artifact_dir=Path(args.artifact_dir),
+            client=artifact_client,
+            stdout=stdout,
+            stderr=stderr,
+        )
     try:
         target_date = resolve_target_date(args.date)
     except ValueError as exc:
@@ -385,21 +417,6 @@ def run(
 
     if args.command == "ingest-boe-summary":
         return _run_ingest(repository, target_date, summary_fetcher, stdout)
-    if args.command == "download-boe-artifacts":
-        try:
-            artifact_types = _parse_artifact_types(args.types)
-        except BOEArtifactDownloadError as exc:
-            print(str(exc), file=stderr)
-            return 2
-        return _run_download(
-            repository,
-            target_date=target_date,
-            artifact_types=artifact_types,
-            artifact_dir=Path(args.artifact_dir),
-            client=artifact_client,
-            stdout=stdout,
-            stderr=stderr,
-        )
     if args.command == "integrity-check":
         return _run_integrity_check(repository, target_date, stdout, stderr)
     if args.command == "status":
@@ -595,18 +612,59 @@ def _parse_artifact_types(value: str) -> list[str]:
     return artifact_types
 
 
+def _parse_id_list(value: str | None, *, option_name: str) -> list[int]:
+    if not value:
+        return []
+    try:
+        ids = [int(item.strip()) for item in value.split(",") if item.strip()]
+    except ValueError as exc:
+        raise ValueError(f"{option_name} must be a comma-separated list of integers") from exc
+    if not ids or any(item <= 0 for item in ids):
+        raise ValueError(f"{option_name} must contain positive integer IDs")
+    return list(dict.fromkeys(ids))
+
+
+def _resolve_download_selection(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+) -> tuple[str | None, list[dict[str, Any]]]:
+    candidate_ids = _parse_id_list(args.candidate_ids, option_name="--candidate-ids")
+    document_ids = _parse_id_list(args.document_ids, option_name="--document-ids")
+    scoped = bool(candidate_ids or document_ids)
+    if args.date and scoped:
+        raise ValueError("--date cannot be combined with --candidate-ids or --document-ids")
+    if candidate_ids and document_ids:
+        raise ValueError("--candidate-ids cannot be combined with --document-ids")
+    if candidate_ids:
+        documents = repository.list_documents_by_candidate_ids(candidate_ids)
+        if len(documents) != len(candidate_ids):
+            raise ValueError("One or more --candidate-ids were not found")
+        return None, documents
+    if document_ids:
+        documents = repository.list_documents_by_ids(document_ids)
+        if len(documents) != len(document_ids):
+            raise ValueError("One or more --document-ids were not found")
+        return None, documents
+    if not args.date:
+        raise ValueError("--date, --candidate-ids, or --document-ids is required")
+    target_date = resolve_target_date(args.date)
+    return target_date, repository.list_documents_by_date(target_date)
+
+
 def _run_download(
     repository: OfficialSourcesRepository,
     *,
-    target_date: str,
+    target_date: str | None,
+    documents: list[dict[str, Any]],
     artifact_types: list[str],
     artifact_dir: Path,
     client: httpx.Client | None,
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
-    documents = repository.list_documents_by_date(target_date)
-    latest_run = repository.get_latest_ingestion_run("BOE", target_date)
+    latest_run = (
+        repository.get_latest_ingestion_run("BOE", target_date) if target_date is not None else None
+    )
     if latest_run and latest_run["status"] == NO_PUBLICATION_STATUS:
         print(
             _format_counts(
@@ -625,7 +683,17 @@ def _run_download(
         return 0
     run_record = repository.create_ingestion_run(source_code="BOE", target_date=target_date)
     downloader = BOEArtifactDownloader(repository, cache_dir=artifact_dir, client=client)
-    counts = {"downloaded": 0, "skipped": 0, "changed": 0, "failed": 0, "retries": 0}
+    counts = {
+        "selected_documents": len(documents),
+        "artifact_types": ",".join(artifact_types),
+        "downloaded": 0,
+        "skipped": 0,
+        "changed": 0,
+        "failed": 0,
+        "retries": 0,
+        "throttle_events": 0,
+    }
+    http_status_counts: Counter[str] = Counter()
     for document in documents:
         for artifact_type in artifact_types:
             before = _file_hashes(repository, document["id"])
@@ -645,10 +713,16 @@ def _run_download(
             counts["downloaded"] += 1
             after = result[artifact_type]
             attempts = repository.list_artifact_download_attempts(document_id=document["id"])
-            counts["retries"] += attempts[-1]["retry_count"] if attempts else 0
+            latest_attempt = attempts[-1] if attempts else None
+            if latest_attempt:
+                counts["retries"] += latest_attempt["retry_count"]
+                counts["throttle_events"] += latest_attempt["throttle_triggered"]
+                status_value = _status_value(latest_attempt["http_status"])
+                http_status_counts[f"{artifact_type}:{status_value}"] += 1
             previous_hash = before.get((artifact_type, after["official_url"]))
             if previous_hash is not None and previous_hash != after["sha256"]:
                 counts["changed"] += 1
+    counts["http_status_summary"] = _format_counter(http_status_counts)
     status = "success" if counts["failed"] == 0 else "partial"
     repository.finish_ingestion_run(
         run_id=run_record["id"],

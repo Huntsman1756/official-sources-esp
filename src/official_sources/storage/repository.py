@@ -207,6 +207,39 @@ class OfficialSourcesRepository:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    def list_documents_by_ids(self, document_ids: list[int]) -> list[dict[str, Any]]:
+        if not document_ids:
+            return []
+        placeholders = ",".join("?" for _ in document_ids)
+        rows = self.connection.execute(
+            f"""
+            SELECT d.*, s.code AS source_code
+            FROM official_documents d
+            JOIN official_sources s ON s.id = d.source_id
+            WHERE d.id IN ({placeholders})
+            ORDER BY d.publication_date DESC, d.external_id ASC
+            """,
+            document_ids,
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def list_documents_by_candidate_ids(self, candidate_ids: list[int]) -> list[dict[str, Any]]:
+        if not candidate_ids:
+            return []
+        placeholders = ",".join("?" for _ in candidate_ids)
+        rows = self.connection.execute(
+            f"""
+            SELECT d.*, s.code AS source_code, c.id AS source_candidate_id
+            FROM source_candidates c
+            JOIN official_documents d ON d.id = c.document_id
+            JOIN official_sources s ON s.id = d.source_id
+            WHERE c.id IN ({placeholders})
+            ORDER BY c.id ASC
+            """,
+            candidate_ids,
+        ).fetchall()
+        return [dict(row) for row in rows]
+
     def upsert_document_file(
         self,
         *,

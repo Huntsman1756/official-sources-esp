@@ -164,6 +164,17 @@ MCP tools do not expose arbitrary download functionality.
 Summaries are the metadata/index layer. XML and HTML are candidate evidence layers. PDF is a
 final evidence/on-demand layer and must be requested explicitly.
 
+Candidate evidence review should use scoped artifact downloads:
+
+```bash
+official-sources download-boe-artifacts --candidate-ids 1,2,3 --types xml,html
+official-sources download-boe-artifacts --document-ids 10,11,12 --types xml,html
+```
+
+Scoped downloads are mutually exclusive with `--date` so operators do not accidentally download
+artifacts for a full BOE day while reviewing a small candidate set. The default artifact types
+are `xml,html`; PDF must be explicitly requested.
+
 ## Candidate Prefiltering Policy
 
 `find-boe-candidates` performs keyword matching on stored BOE document titles and metadata

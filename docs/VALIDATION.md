@@ -2,6 +2,27 @@
 
 ## Commands Executed
 
+TASK-004C-FIX5 local validation:
+
+```bash
+rtk python -m pytest tests/test_cli.py::test_download_boe_artifacts_candidate_ids_download_only_selected_documents tests/test_cli.py::test_download_boe_artifacts_document_ids_default_to_xml_html_not_pdf tests/test_cli.py::test_download_boe_artifacts_rejects_mixed_date_and_scoped_selection -q
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+- Red focused run failed before implementation because `download-boe-artifacts` did not accept
+  `--candidate-ids` or `--document-ids`.
+- Focused tests after implementation: `3 passed`.
+- Full tests: `199 passed`.
+- Lint: `All checks passed!`.
+- Formatting: `56 files already formatted`.
+- Candidate-scoped artifact download fetches only selected candidate documents.
+- Document-scoped artifact download defaults to `xml,html`; PDF is not default.
+- `--date` cannot be combined with candidate/document scoped selectors.
+
 TASK-004C-FIX4 local validation:
 
 ```bash

@@ -140,6 +140,19 @@ data/artifacts/boe/YYYY/MM/DD/<external_id>/
 
 Expected filenames are `document.xml`, `document.html`, and `document.pdf`.
 
+Scoped evidence downloads are available for candidate/document review workflows:
+
+```bash
+official-sources \
+  --db-path official-sources.sqlite \
+  --artifact-dir data/artifacts \
+  download-boe-artifacts --candidate-ids 1,2,3 --types xml,html
+```
+
+`--candidate-ids` and `--document-ids` are mutually exclusive with `--date`; they prevent
+accidental broad date-level downloads. The default artifact types are `xml,html`. PDF is never
+downloaded by default and requires explicit inclusion in `--types`.
+
 ## Integrity Check And Status
 
 ```bash

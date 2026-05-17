@@ -358,6 +358,132 @@ def test_download_boe_artifacts_downloads_xml_html_and_pdf(tmp_path, capsys):
     assert (artifact_dir / "boe" / "2024" / "05" / "29" / document["external_id"]).exists()
 
 
+def test_download_boe_artifacts_candidate_ids_download_only_selected_documents(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    selected = repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-11111",
+        publication_date="2024-05-29",
+        title="Selected",
+        url_xml="https://www.boe.es/diario_boe/xml.php?id=BOE-A-2024-11111",
+        url_html="https://www.boe.es/diario_boe/txt.php?id=BOE-A-2024-11111",
+        url_pdf="https://www.boe.es/boe/dias/2024/05/29/pdfs/BOE-A-2024-11111.pdf",
+    )
+    other = repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-22222",
+        publication_date="2024-05-29",
+        title="Other",
+        url_xml="https://www.boe.es/diario_boe/xml.php?id=BOE-A-2024-22222",
+        url_html="https://www.boe.es/diario_boe/txt.php?id=BOE-A-2024-22222",
+    )
+    candidate = repository.create_source_candidate(
+        document_id=selected["id"],
+        project_key="la-ayuda",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["ayudas"]},
+    )
+    seen_urls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_urls.append(str(request.url))
+        return httpx.Response(200, content=b"<document>ok</document>", request=request)
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-boe-artifacts",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "xml,html",
+        ],
+        artifact_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    captured = capsys.readouterr()
+    selected_files = repository.list_document_files(selected["id"])
+    other_files = repository.list_document_files(other["id"])
+    assert exit_code == 0
+    assert len(seen_urls) == 2
+    assert selected["url_xml"] in seen_urls
+    assert selected["url_html"] in seen_urls
+    assert selected["url_pdf"] not in seen_urls
+    assert {item["file_type"] for item in selected_files} == {"xml", "html"}
+    assert other_files == []
+    assert "selected_documents=1" in captured.out
+    assert "downloaded=2" in captured.out
+
+
+def test_download_boe_artifacts_document_ids_default_to_xml_html_not_pdf(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    document = _seed_document(db_path)
+    seen_urls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_urls.append(str(request.url))
+        return httpx.Response(200, content=b"<document>ok</document>", request=request)
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-boe-artifacts",
+            "--document-ids",
+            str(document["id"]),
+        ],
+        artifact_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    stored = repository.list_document_files(document["id"])
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert document["url_xml"] in seen_urls
+    assert document["url_html"] in seen_urls
+    assert document["url_pdf"] not in seen_urls
+    assert {item["file_type"] for item in stored} == {"xml", "html"}
+    assert "artifact_types=xml,html" in captured.out
+
+
+def test_download_boe_artifacts_rejects_mixed_date_and_scoped_selection(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "download-boe-artifacts",
+            "--date",
+            "2024-05-29",
+            "--document-ids",
+            "1",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "--date cannot be combined" in captured.err
+
+
 def test_download_boe_artifacts_rejects_non_boe_url(tmp_path, capsys):
     from official_sources.cli import run
 
