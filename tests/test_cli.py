@@ -135,6 +135,33 @@ def test_ingest_boe_summary_404_exits_zero_and_reports_no_publication(tmp_path, 
     assert "last_http_status=404" in captured.out
 
 
+def test_ingest_boe_summary_non_sunday_404_exits_nonzero_and_reports_failed(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+
+    def not_found_fetcher(_date: str) -> bytes:
+        raise BOESummaryNotFoundError(
+            "2025-01-01",
+            BOERequestAudit(retry_count=0, throttle_triggered=False, last_http_status=404),
+        )
+
+    exit_code = run(
+        ["--db-path", str(db_path), "ingest-boe-summary", "--date", "2025-01-01"],
+        summary_fetcher=not_found_fetcher,
+    )
+
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    run_record = repository.get_latest_ingestion_run("BOE", "2025-01-01")
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert run_record["status"] == "failed"
+    assert run_record["last_http_status"] == 404
+    assert "status=failed" in captured.out
+    assert "last_http_status=404" in captured.out
+
+
 def test_status_reports_no_publication_and_last_http_status(tmp_path, capsys):
     from official_sources.cli import run
 
@@ -801,7 +828,7 @@ def test_ingest_boe_range_continue_on_no_publication(tmp_path, capsys, monkeypat
             self.last_request_audit = BOERequestAudit(last_http_status=404)
 
         def fetch_summary(self, target_date):
-            if target_date == "2024-05-29":
+            if target_date == "2025-01-05":
                 raise BOESummaryNotFoundError(target_date, self.last_request_audit)
             self.last_request_audit = BOERequestAudit(last_http_status=200)
             return _fixture_bytes("boe_summary_20240529.json")
@@ -814,9 +841,9 @@ def test_ingest_boe_range_continue_on_no_publication(tmp_path, capsys, monkeypat
             str(db_path),
             "ingest-boe-range",
             "--date-from",
-            "2024-05-29",
+            "2025-01-05",
             "--date-to",
-            "2024-05-30",
+            "2025-01-06",
             "--max-days",
             "2",
             "--continue-on-no-publication",

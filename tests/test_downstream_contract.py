@@ -22,3 +22,14 @@ def test_downstream_contract_exists_and_defines_operational_boundaries():
     assert "preserve integrity warnings" in content
     assert "block automatic approval/publication" in content
     assert "Example downstream flow" in content
+
+
+def test_pre_task_004b_downstream_checklist_exists():
+    path = Path(__file__).parents[1] / "docs" / "reports" / "PRE_TASK_004B_DOWNSTREAM_CHECKLIST.md"
+
+    assert path.exists()
+    content = path.read_text(encoding="utf-8")
+    assert "candidates/evidence table" in content
+    assert "pending_review workflow" in content
+    assert "source_snapshot_hash" in content
+    assert "TASK-004B duration depends on downstream readiness" in content

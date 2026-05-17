@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from datetime import date
 
 import httpx
 
@@ -15,6 +16,7 @@ from official_sources.sources.boe.parser import parse_boe_summary
 from official_sources.storage.repository import OfficialSourcesRepository
 
 NO_PUBLICATION_STATUS = "no_publication"
+OBSERVED_NON_SUNDAY_NO_PUBLICATION_DATES: frozenset[str] = frozenset()
 
 
 def ingest_boe_summary(
@@ -42,13 +44,21 @@ def ingest_boe_summary(
                 payload = client.fetch_summary(target_date)
                 request_audit = client.last_request_audit
         if _payload_indicates_no_publication(payload):
+            if _controlled_no_publication_date(target_date):
+                return _finish_no_publication(
+                    repository,
+                    run_id=run["id"],
+                    target_date=target_date,
+                    request_audit=request_audit,
+                    last_http_status=request_audit.last_http_status or 200,
+                )
             return repository.finish_ingestion_run(
                 run_id=run["id"],
-                status=NO_PUBLICATION_STATUS,
+                status="failed",
                 documents_fetched=0,
                 documents_new=0,
                 documents_updated=0,
-                error_message=f"BOE summary not found for date {target_date}",
+                error_message=f"BOE returned no summary for non-Sunday date {target_date}",
                 retry_count=request_audit.retry_count,
                 throttle_triggered=request_audit.throttle_triggered,
                 last_http_status=request_audit.last_http_status or 200,
@@ -99,15 +109,23 @@ def ingest_boe_summary(
     except BOESummaryNotFoundError as exc:
         fallback_audit = client.last_request_audit if client else None
         request_audit = _audit_from_exception(exc, fallback=fallback_audit)
-        return repository.finish_ingestion_run(
+        if not _controlled_no_publication_date(target_date):
+            return repository.finish_ingestion_run(
+                run_id=run["id"],
+                status="failed",
+                documents_fetched=0,
+                documents_new=0,
+                documents_updated=0,
+                error_message=f"BOE summary not found for non-Sunday date {target_date}",
+                retry_count=request_audit.retry_count,
+                throttle_triggered=request_audit.throttle_triggered,
+                last_http_status=404,
+            )
+        return _finish_no_publication(
+            repository,
             run_id=run["id"],
-            status=NO_PUBLICATION_STATUS,
-            documents_fetched=0,
-            documents_new=0,
-            documents_updated=0,
-            error_message=str(exc),
-            retry_count=request_audit.retry_count,
-            throttle_triggered=request_audit.throttle_triggered,
+            target_date=target_date,
+            request_audit=request_audit,
             last_http_status=404,
         )
     except Exception as exc:
@@ -126,6 +144,32 @@ def ingest_boe_summary(
             throttle_triggered=request_audit.throttle_triggered,
             last_http_status=request_audit.last_http_status,
         )
+
+
+def _finish_no_publication(
+    repository: OfficialSourcesRepository,
+    *,
+    run_id: int,
+    target_date: str,
+    request_audit: BOERequestAudit,
+    last_http_status: int,
+) -> dict:
+    return repository.finish_ingestion_run(
+        run_id=run_id,
+        status=NO_PUBLICATION_STATUS,
+        documents_fetched=0,
+        documents_new=0,
+        documents_updated=0,
+        error_message=f"BOE summary not found for date {target_date}",
+        retry_count=request_audit.retry_count,
+        throttle_triggered=request_audit.throttle_triggered,
+        last_http_status=last_http_status,
+    )
+
+
+def _controlled_no_publication_date(target_date: str) -> bool:
+    parsed = date.fromisoformat(target_date)
+    return parsed.weekday() == 6 or target_date in OBSERVED_NON_SUNDAY_NO_PUBLICATION_DATES
 
 
 def _audit_from_exception(

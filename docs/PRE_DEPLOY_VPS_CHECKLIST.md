@@ -131,6 +131,12 @@ Check migration state:
 official-sources --db-path /opt/official-sources/data/official_sources.sqlite db status
 ```
 
+For persistent VPS databases, `db status` should report `journal_mode=wal` and
+`synchronous=normal`. WAL allows read-only consumers to keep reading while one writer is
+active, but SQLite still has a single-writer model. If write concurrency grows beyond this
+operational model, plan a PostgreSQL migration instead of treating WAL as a full database
+server replacement.
+
 Apply pending migrations:
 
 ```bash
@@ -175,11 +181,17 @@ official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
 official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
 ```
 
-If BOE returns `404 Not Found` for `/datosabiertos/api/boe/sumario/{fecha}`, daily summary
-ingestion records `ingestion_status=no_publication` and `last_http_status=404`. This is a
-controlled no-summary condition, not a system failure, and the systemd daily service should
-finish successfully. Artifact download is skipped for that date. Network, server, parser,
-storage, and schema errors must still fail and be investigated.
+BOE publishes every day of the year except Sundays. National holidays, 24 December, and 31
+December can still have BOE publication. If BOE returns `404 Not Found` or another observed
+no-summary response for a Sunday, daily summary ingestion records
+`ingestion_status=no_publication` and preserves `last_http_status`. This is a controlled
+no-summary condition, not a system failure, and the systemd daily service should finish
+successfully. Artifact download is skipped for that date.
+
+Do not infer BOE no-publication from a generic holiday calendar. Non-Sunday `404`, network,
+server, parser, storage, and schema errors must fail and be investigated unless a specific
+non-Sunday date has been explicitly allowlisted from observed BOE API behavior. BORME
+publication rules are different and must not be reused for BOE daily summary ingestion.
 
 The following consolidated-law commands fetch from official BOE endpoints. Use them only when
 a live BOE network smoke check is acceptable, and replace placeholders with a known official

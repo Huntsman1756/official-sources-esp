@@ -25,7 +25,7 @@ from official_sources.sources.boe.consolidated import (
 from official_sources.sources.boe.http_policy import BOERequestPolicy
 from official_sources.sources.boe.ingestion import NO_PUBLICATION_STATUS, ingest_boe_summary
 from official_sources.storage.backup import SQLiteBackupError, backup_sqlite_database
-from official_sources.storage.database import connect, initialize_database
+from official_sources.storage.database import connect, initialize_database, sqlite_runtime_pragmas
 from official_sources.storage.migrations.runner import (
     MigrationChecksumError,
     MigrationRunner,
@@ -385,6 +385,7 @@ def _run_db_command(
             print(str(exc), file=stderr)
             return 1
         status = "up_to_date" if not result.pending_versions else "pending"
+        pragmas = sqlite_runtime_pragmas(connection)
         print(
             " ".join(
                 [
@@ -392,6 +393,8 @@ def _run_db_command(
                     f"current_version={result.current_version}",
                     f"latest_version={result.latest_version}",
                     f"pending_migrations={len(result.pending_versions)}",
+                    f"journal_mode={pragmas['journal_mode']}",
+                    f"synchronous={pragmas['synchronous']}",
                     f"status={status}",
                 ]
             ),

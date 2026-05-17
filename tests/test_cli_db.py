@@ -16,6 +16,8 @@ def test_cli_db_status_reports_versions_and_pending_migrations(tmp_path, capsys)
     assert "current_version=0" in captured.out
     assert "latest_version=6" in captured.out
     assert "pending_migrations=6" in captured.out
+    assert "journal_mode=wal" in captured.out
+    assert "synchronous=normal" in captured.out
 
 
 def test_cli_db_migrate_applies_pending_migrations_and_preserves_data(tmp_path, capsys):

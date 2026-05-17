@@ -21,6 +21,8 @@ Current migrations:
 - `0002_artifact_download_attempts`
 - `0003_consolidated_legislation`
 - `0004_consolidated_index_blocks`
+- `0005_request_audit_fields`
+- `0006_ingestion_no_publication_status`
 
 Before running migrations on a persistent installation, create a database backup.
 
@@ -31,6 +33,18 @@ official-sources --db-path official-sources.sqlite db status
 official-sources --db-path official-sources.sqlite db migrate
 official-sources --db-path official-sources.sqlite db validate
 ```
+
+For persistent file-backed databases, runtime connections enable:
+
+```text
+PRAGMA journal_mode=WAL
+PRAGMA synchronous=NORMAL
+```
+
+WAL lets readers continue while a writer is active, which fits the VPS model where ingestion or
+artifact jobs write while MCP/API/local query paths read. SQLite remains single-writer; WAL is
+an operational concurrency improvement, not a substitute for PostgreSQL if write concurrency
+becomes heavy. In-memory test databases do not enable WAL by default.
 
 Migrations preserve existing rows and avoid destructive schema resets. Failed migrations are not marked as applied. If an already-applied migration checksum differs from the migration code, migration and validation fail.
 
@@ -149,8 +163,13 @@ Allowed `status` values:
 - `success`
 - `partial`
 - `failed`
+- `no_publication`
 
 Without this table the system would be a scraper, not auditable infrastructure.
+
+`no_publication` is used for controlled BOE daily summary no-publication outcomes, currently
+Sundays with an observed no-summary response unless a specific non-Sunday date is explicitly
+allowlisted from empirical BOE API evidence. Non-Sunday technical failures remain `failed`.
 
 ### integrity_checks
 

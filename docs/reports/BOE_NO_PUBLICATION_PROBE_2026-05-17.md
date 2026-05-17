@@ -29,14 +29,22 @@ Each date was requested once. No artifacts were downloaded.
   `404 -> no_publication` behavior.
 - The tested holiday-like dates were not no-publication days. BOE returned valid JSON summaries
   with diary entries.
-- The implementation must not classify dates as `no_publication` based only on calendar
-  assumptions.
+- BOE publishes every day of the year except Sundays. National holidays, 24 December, and 31
+  December can still have BOE publication.
+- The implementation must not classify dates as `no_publication` based on a generic holiday
+  calendar. `no_publication` applies to Sundays only unless empirical API evidence for a
+  specific non-Sunday date proves otherwise and that date is explicitly allowlisted.
+- BORME publication rules are different and must not be reused for BOE daily summary ingestion.
 
 ## Code Behavior
 
-Current behavior remains correct for observed `404` responses. The implementation also supports
-controlled no-publication detection for empty responses, JSON summaries without diary entries
-and without metadata, and XML/HTML error-like no-document bodies.
+Current behavior remains correct for observed Sunday `404` responses. The implementation also
+supports controlled no-publication detection for Sunday empty responses, Sunday JSON summaries
+without diary entries and without metadata, and Sunday XML/HTML error-like no-document bodies.
+
+Non-Sunday valid summaries are stored as `success`. Non-Sunday `404`, API, network, parser, and
+storage failures are stored as `failed` unless the exact date has been explicitly allowlisted
+from observed BOE behavior.
 
 Malformed JSON `200` responses still fail as real parser failures.
 

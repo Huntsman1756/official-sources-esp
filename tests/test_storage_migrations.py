@@ -187,6 +187,26 @@ def test_empty_database_migrates_to_latest_schema():
     assert validate_database(connection).valid is True
 
 
+def test_file_database_connection_enables_wal_and_normal_synchronous(tmp_path):
+    connection = connect(str(tmp_path / "wal.sqlite"))
+
+    journal_mode = connection.execute("PRAGMA journal_mode").fetchone()[0]
+    synchronous = connection.execute("PRAGMA synchronous").fetchone()[0]
+
+    assert journal_mode == "wal"
+    assert synchronous == 1
+
+
+def test_migrations_and_validation_work_with_wal_enabled_database(tmp_path):
+    connection = connect(str(tmp_path / "migrated-wal.sqlite"))
+
+    result = migrate_database(connection)
+
+    assert result.current_version == 6
+    assert connection.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
+    assert validate_database(connection).valid is True
+
+
 @pytest.mark.parametrize(
     "builder",
     [

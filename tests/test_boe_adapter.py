@@ -114,6 +114,42 @@ def test_ingestion_records_no_publication_for_boe_summary_404(repository):
     assert latest["status"] == "no_publication"
 
 
+def test_national_holiday_valid_summary_records_success(repository, boe_summary_payload):
+    run = ingest_boe_summary(repository, target_date="2025-01-01", payload=boe_summary_payload)
+
+    assert run["status"] == "success"
+    assert run["last_http_status"] == 200
+
+
+def test_christmas_eve_valid_summary_records_success(repository, boe_summary_payload):
+    run = ingest_boe_summary(repository, target_date="2024-12-24", payload=boe_summary_payload)
+
+    assert run["status"] == "success"
+    assert run["last_http_status"] == 200
+
+
+def test_new_years_eve_valid_summary_records_success(repository, boe_summary_payload):
+    run = ingest_boe_summary(repository, target_date="2024-12-31", payload=boe_summary_payload)
+
+    assert run["status"] == "success"
+    assert run["last_http_status"] == 200
+
+
+def test_non_sunday_boe_summary_404_records_failed_run(repository):
+    def not_found_fetcher(_target_date: str) -> bytes:
+        raise BOESummaryNotFoundError(
+            "2025-01-01",
+            BOERequestAudit(retry_count=0, throttle_triggered=False, last_http_status=404),
+        )
+
+    run = ingest_boe_summary(repository, target_date="2025-01-01", fetcher=not_found_fetcher)
+
+    assert run["status"] == "failed"
+    assert run["documents_fetched"] == 0
+    assert run["last_http_status"] == 404
+    assert "BOE summary not found for non-Sunday date 2025-01-01" in run["error_message"]
+
+
 def test_sunday_probe_style_404_xml_body_maps_to_no_publication():
     payload = b'<?xml version="1.0" encoding="UTF-8"?><error>Not Found</error>'
 
@@ -129,6 +165,14 @@ def test_empty_200_summary_maps_to_no_publication(repository):
 
     assert run["status"] == "no_publication"
     assert run["last_http_status"] == 200
+
+
+def test_empty_200_summary_on_non_sunday_records_failed_run(repository):
+    run = ingest_boe_summary(repository, target_date="2025-01-01", payload=b"")
+
+    assert run["status"] == "failed"
+    assert run["last_http_status"] == 200
+    assert "no summary for non-Sunday date 2025-01-01" in run["error_message"]
 
 
 def test_json_summary_without_diary_maps_to_no_publication(repository):

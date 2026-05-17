@@ -39,3 +39,17 @@ def test_systemd_templates_do_not_expose_public_listener():
         assert "ListenStream" not in content
         assert "0.0.0.0" not in content
         assert "nginx" not in content.lower()
+
+
+def test_boe_calendar_semantics_are_documented():
+    combined = "\n".join(
+        [
+            _read("docs/SOURCES_POLICY.md"),
+            _read("docs/ARCHITECTURE.md"),
+            _read("docs/reports/BOE_NO_PUBLICATION_PROBE_2026-05-17.md"),
+        ]
+    )
+
+    assert "BOE publishes every day of the year except Sundays" in combined
+    assert "BORME publication rules are different" in combined
+    assert "must not be reused for BOE daily summary ingestion" in combined

@@ -2,6 +2,32 @@
 
 ## Commands Executed
 
+TASK-004C-RUN1 patch local validation:
+
+```bash
+rtk python -m pytest tests/test_boe_adapter.py tests/test_cli.py::test_ingest_boe_summary_non_sunday_404_exits_nonzero_and_reports_failed tests/test_cli_db.py::test_cli_db_status_reports_versions_and_pending_migrations tests/test_storage_migrations.py::test_file_database_connection_enables_wal_and_normal_synchronous tests/test_storage_migrations.py::test_migrations_and_validation_work_with_wal_enabled_database -q
+rtk python -m pytest tests/test_downstream_contract.py::test_pre_task_004b_downstream_checklist_exists tests/test_security_docs.py::test_boe_calendar_semantics_are_documented -q
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+- First red run failed as expected before implementation: non-Sunday `404` still mapped to
+  `no_publication`, WAL was not enabled, and `db status` did not report SQLite runtime pragmas.
+- Documentation red run failed as expected before documentation updates: the pre-TASK-004B
+  checklist did not exist and BOE calendar semantics were not explicit.
+- Focused implementation tests: `26 passed`.
+- Focused documentation tests after updates: `2 passed`.
+- Full tests: `185 passed`.
+- Lint: `All checks passed!`.
+- Formatting: `56 files already formatted`.
+- BOE daily `no_publication` is now Sunday-only unless a specific non-Sunday date is explicitly
+  allowlisted from observed BOE API behavior.
+- File-backed SQLite connections enable `journal_mode=wal` and `synchronous=normal`; in-memory
+  test databases do not enable WAL by default.
+
 TASK-004C-RUN1 VPS operational validation:
 
 ```bash

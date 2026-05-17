@@ -56,12 +56,23 @@ OFFICIAL_SOURCES_BOE_JITTER_SECONDS=0.25
 
 429, 503, and transient 5xx responses are treated as retryable with finite retries, exponential backoff, small jitter, and `Retry-After` handling when the header is present. Retry and throttle outcomes are audited; failures are not silently swallowed.
 
-The BOE summary endpoint documents `404` as requested information not existing. For daily
-summary ingestion, `404` is not retried aggressively and is recorded as `no_publication`:
-the source was reached, no summary exists for that date, `last_http_status=404` is
-preserved, document counts remain zero, and artifact download is skipped. This is not a
-system failure. Real network, server, parser, storage, and schema failures remain
-`failed`.
+The BOE summary endpoint documents `404` as requested information not existing. BOE publishes
+every day of the year except Sundays. National holidays, 24 December, and 31 December can
+still have BOE publication and must not be treated as no-publication days by default.
+
+For daily summary ingestion, `no_publication` applies to Sundays only unless empirical API
+evidence for a specific non-Sunday date proves otherwise and the date is explicitly allowlisted
+in code. A Sunday `404` or Sunday no-summary response is not retried aggressively and is
+recorded as `no_publication`: the source was reached, no summary exists for that date,
+`last_http_status` is preserved, document counts remain zero, and artifact download is
+skipped. This is not a system failure.
+
+A non-Sunday valid summary is `success`. A non-Sunday `404`, network error, server error,
+parser error, storage error, or schema error is `failed` unless that exact non-Sunday date is
+explicitly allowlisted from observed BOE behavior. The implementation must not infer
+`no_publication` from a holiday calendar.
+
+BORME publication rules are different and must not be reused for BOE daily summary ingestion.
 
 The current implementation uses `httpx` with an internal retry/backoff wrapper. `retryhttp` was not adopted in TASK-003F because that package is not available in the offline validation environment; equivalent behavior is covered by mocked HTTP tests.
 

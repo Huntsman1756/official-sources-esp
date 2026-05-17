@@ -26,14 +26,21 @@ The implementation uses `httpx` plus an internal finite retry/backoff wrapper. `
 
 Retry and throttle information is recorded on `ingestion_runs` and `artifact_download_attempts` through `throttle_triggered`, `retry_count`, and final HTTP status fields.
 
-For BOE daily summary ingestion, a `404 Not Found` response from
-`/datosabiertos/api/boe/sumario/{fecha}` is treated as the controlled status
-`no_publication`. This means BOE was reached successfully, but no summary exists for the
-requested date. The run stores `last_http_status=404`, zero document counts, and a clear
-message. The CLI exits with status code `0` for this condition so the systemd daily service
-does not fail on expected no-publication days. Network errors, server errors after finite
-retries, malformed successful responses, database errors, and schema errors still use
-`failed` and exit non-zero.
+For BOE daily summary ingestion, `no_publication` is a controlled calendar/API condition, not a
+generic holiday rule. BOE publishes every day of the year except Sundays. National holidays, 24
+December, and 31 December can still have BOE publication. BORME publication rules are
+different and must not be reused for BOE daily summary ingestion.
+
+A Sunday `404 Not Found` response from `/datosabiertos/api/boe/sumario/{fecha}` is treated as
+the controlled status `no_publication`. This means BOE was reached successfully, but no summary
+exists for that Sunday. The run stores `last_http_status=404`, zero document counts, and a
+clear message. The CLI exits with status code `0` for this condition so the systemd daily
+service does not fail on expected Sunday no-publication days.
+
+Non-Sunday valid summaries are `success`. Non-Sunday `404`, network errors, server errors
+after finite retries, malformed successful responses, database errors, and schema errors use
+`failed` and exit non-zero unless a specific non-Sunday date has been explicitly allowlisted
+from empirical BOE API evidence.
 
 Operational status output intentionally separates daily summary HTTP state from artifact
 download HTTP state. `summary_*` fields come from the latest BOE summary ingestion run with an
@@ -170,6 +177,17 @@ The runner stores applied versions in `schema_migrations` with version, name, ch
 Schema changes must not be applied by silently recreating SQLite files because that would destroy ingestion history, stored official artifacts, source snapshot hashes, integrity events, and human review state.
 
 The backup command uses SQLite's online backup API to copy the database to an operator-provided path. It runs `PRAGMA quick_check` on source and backup by default, compares application-table row counts, and enforces a minimum backup size. `--full-check` runs `PRAGMA integrity_check` for manual audits and diagnostics. Restore remains manual by design: operators must stop services and timers, copy the active database aside, replace the database file, run `db status`, `db migrate`, `db validate`, and perform a read-only smoke check before restarting services.
+
+Persistent file-backed SQLite connections enable WAL mode and `synchronous=NORMAL` during
+connection initialization. WAL improves reader/writer coexistence for the VPS workload, where
+BOE ingestion and artifact jobs are writers while MCP/API/local query consumers are readers.
+SQLite still has a single-writer model; WAL is not a replacement for PostgreSQL if write
+concurrency or operational complexity grows. In-memory test databases do not enable WAL by
+default.
+
+`official-sources db status` reports the active `journal_mode` and `synchronous` setting so a
+VPS operator can confirm `journal_mode=wal` and `synchronous=normal` on the persistent
+database.
 
 VPS deployment requires the sequence documented in `docs/PRE_DEPLOY_VPS_CHECKLIST.md`: local validation, backup, restore rehearsal, migration, validation, smoke checks, systemd checks, and rollback readiness.
 
