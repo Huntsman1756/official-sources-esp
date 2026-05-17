@@ -2,6 +2,52 @@
 
 ## Commands Executed
 
+TASK-004C-RUN1B VPS deployment and operational validation:
+
+```bash
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db status
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_before_15d5077_deploy_20260517_182109.sqlite
+git fetch origin
+git checkout main
+git pull --ff-only origin main
+python -m pip install -e .
+official-sources --help
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db migrate
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db status
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite ingest-boe-range --date-from 2026-04-18 --date-to 2026-05-17 --skip-existing --continue-on-no-publication --stop-on-error --max-days 30 --sleep-seconds 1
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite status --date 2026-04-18
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite status --date 2026-05-17
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite status --date 2026-04-20
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+du -sh /opt/official-sources/data/artifacts
+find /opt/official-sources/data/artifacts -type f | head -20
+ss -tulpn
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_after_30d_backfill_20260517_182117.sqlite
+```
+
+Result:
+
+- Initial deployment attempt stopped before pull because root Git access hit `dubious ownership`;
+  the successful attempt used the `official-sources` service user for Git and package reinstall.
+- Commit before deploy: `607b96c`.
+- Deployed commit: `15d5077`.
+- Pre-deploy backup: `verification=quick_check source_check=ok backup_check=ok status=success`.
+- Migration: `current_version=6 latest_version=6 applied_migrations=none status=up_to_date`.
+- DB validation after deploy: `current_version=6 latest_version=6 status=valid`.
+- SQLite runtime status: `journal_mode=wal synchronous=normal`.
+- Range result: `processed=0 skipped=30 success=0 no_publication=0 failed=0 days=30`.
+- Final range state: `success=25 no_publication=5 failed=0`.
+- HTTP status summary: `200:25,404:5`.
+- Documents: `documents_fetched=3896 documents_new=3896 documents_updated=0`.
+- Retry/throttle: `retry_count=0 throttle_events=6`.
+- Artifact directory size: unchanged at `22M`.
+- Post-run DB validation: `current_version=6 latest_version=6 status=valid`.
+- Post-run backup: `verification=quick_check source_check=ok backup_check=ok status=success`.
+- MCP privacy: no MCP/FastMCP/Python/Uvicorn/official-sources public listener and no SQLite exposure.
+- No artifact downloads, candidate prefiltering, downstream integration, 24-month backfill, or full historical backfill were run.
+
 TASK-004C-RUN1 patch local validation:
 
 ```bash
