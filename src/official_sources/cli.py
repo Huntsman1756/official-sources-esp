@@ -316,10 +316,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Alias for --dry-run. Preview matches without writing source_candidates.",
     )
     candidates.add_argument(
+        "--write",
+        action="store_true",
+        help="Explicitly write source_candidates. Without this flag, use --dry-run or --no-write.",
+    )
+    candidates.add_argument(
         "--limit",
         type=int,
         default=50,
-        help="Maximum sample matches to print. Default: 50.",
+        help=(
+            "Maximum sample matches to print in dry-run mode, or maximum candidates to create "
+            "in explicit write mode. Default: 50."
+        ),
     )
     return parser
 
@@ -835,10 +843,18 @@ def _run_find_candidates(
     if args.limit <= 0:
         print("--limit must be greater than zero", file=stderr)
         return 2
+    dry_run = bool(args.dry_run or args.no_write)
+    if args.write and dry_run:
+        print("--write cannot be combined with --dry-run or --no-write", file=stderr)
+        return 2
+    if not args.write and not dry_run:
+        print(
+            "Use --dry-run/--no-write for preview or --write for explicit candidate creation",
+            file=stderr,
+        )
+        return 2
     filters = _candidate_filters(args)
     documents = repository.search_documents(date_from=date_from, date_to=date_to, limit=100000)
-    dry_run = bool(args.dry_run or args.no_write)
-    created = 0
     excluded_by_section = 0
     excluded_by_department = 0
     excluded_by_keyword_rules = 0
@@ -859,8 +875,11 @@ def _run_find_candidates(
         if exclusion_reason == "keyword_rules":
             excluded_by_keyword_rules += 1
             continue
+        matches = _candidate_evidence_metadata(document, matches, profile=args.profile)
         matched_items.append((document, matches))
-        if not dry_run:
+    created = 0
+    if args.write:
+        for document, matches in matched_items[: args.limit]:
             repository.create_source_candidate(
                 document_id=document["id"],
                 project_key=args.project_key,
@@ -889,6 +908,7 @@ def _run_find_candidates(
                 "candidates_created": created,
                 "review_status": "human_review_required",
                 "write_mode": "dry_run" if dry_run else "write",
+                "write_limit": args.limit if args.write else "none",
                 "matches_by_keyword": _format_counter(keyword_counts),
                 "matches_by_section": _format_counter(section_counts),
                 "matches_by_department": _format_counter(department_counts),
@@ -1039,6 +1059,24 @@ def _candidate_exclusion_reason(
     if filters["profile"] == ["la-ayuda"] and _weak_only_match(matches["keywords"]):
         return "keyword_rules"
     return None
+
+
+def _candidate_evidence_metadata(
+    document: dict[str, Any],
+    matches: dict[str, Any],
+    *,
+    profile: str | None,
+) -> dict[str, Any]:
+    return {
+        **matches,
+        "profile": profile or "custom",
+        "official_identifier": document["external_id"],
+        "publication_date": document["publication_date"],
+        "title": document.get("title") or "",
+        "section": document.get("section"),
+        "department": document.get("department"),
+        "official_url": _candidate_official_url(document),
+    }
 
 
 def _normalize_search_text(value: str) -> str:

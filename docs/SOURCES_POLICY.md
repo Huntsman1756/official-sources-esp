@@ -181,8 +181,10 @@ official-sources find-boe-candidates \
 ```
 
 `--dry-run` and `--no-write` are equivalent: they report matches and sample rows without
-creating `source_candidates`. `--limit` controls the number of sample matches printed, not the
-date range scanned.
+creating `source_candidates`. Write mode is explicit: operators must pass `--write` to create
+candidate rows. In dry-run mode, `--limit` controls the number of sample matches printed. In
+write mode, `--limit` caps the number of candidates created. It does not change the date range
+scanned.
 
 Results will include false positives. All candidates default to
 `review_status=human_review_required`.
@@ -223,6 +225,17 @@ official-sources find-boe-candidates \
   --profile la-ayuda \
   --dry-run \
   --limit 100
+```
+
+Small write-mode pilots should use an explicit cap:
+
+```bash
+official-sources find-boe-candidates \
+  --date-from YYYY-MM-DD \
+  --date-to YYYY-MM-DD \
+  --profile la-ayuda \
+  --write \
+  --limit 25
 ```
 
 The profile is intentionally conservative:

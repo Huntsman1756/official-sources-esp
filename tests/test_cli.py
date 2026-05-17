@@ -954,6 +954,7 @@ def test_find_boe_candidates_matches_titles_and_metadata(tmp_path, capsys):
             "becas,estudiantes",
             "--project-key",
             "la-ayuda",
+            "--write",
         ]
     )
 
@@ -965,6 +966,90 @@ def test_find_boe_candidates_matches_titles_and_metadata(tmp_path, capsys):
     assert candidate["extraction_status"] == "raw_detected"
     assert "becas" in candidate["matched_fields_json"]
     assert "estudiantes" in candidate["matched_fields_json"]
+
+
+def test_find_boe_candidates_requires_explicit_write_or_dry_run(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-11111",
+        publication_date="2024-05-29",
+        title="Convocatoria de ayudas",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "ayudas",
+        ]
+    )
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert candidate_count == 0
+    assert "--write" in captured.err
+    assert "--dry-run" in captured.err
+
+
+def test_find_boe_candidates_write_mode_respects_limit(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    for index in range(3):
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=f"BOE-A-2024-1111{index}",
+            publication_date="2024-05-29",
+            title=f"Convocatoria de ayudas {index}",
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "ayudas",
+            "--write",
+            "--limit",
+            "2",
+        ]
+    )
+
+    rows = connection.execute(
+        "SELECT review_status, matched_fields_json FROM source_candidates ORDER BY id"
+    ).fetchall()
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert len(rows) == 2
+    assert {row["review_status"] for row in rows} == {"human_review_required"}
+    assert "matches_after_filters=3" in captured.out
+    assert "candidates_created=2" in captured.out
+    assert "write_limit=2" in captured.out
 
 
 def test_find_boe_candidates_dry_run_does_not_create_candidates(tmp_path, capsys):
@@ -1151,6 +1236,8 @@ def test_find_boe_candidates_help_contains_false_positive_warning(capsys):
     assert "positives" in captured.out
     assert "--dry-run" in captured.out
     assert "--no-write" in captured.out
+    assert "--write" in captured.out
+    assert "explicit" in captured.out
     assert "--limit" in captured.out
 
 

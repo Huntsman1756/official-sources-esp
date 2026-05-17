@@ -28,6 +28,27 @@ Result:
   matches such as standalone `convocatoria`.
 - Dry-run mode remains no-write and reports deterministic score reasons.
 
+TASK-004C-RUN3 safety precondition local validation:
+
+```bash
+rtk python -m pytest tests/test_cli.py::test_find_boe_candidates_matches_titles_and_metadata tests/test_cli.py::test_find_boe_candidates_requires_explicit_write_or_dry_run tests/test_cli.py::test_find_boe_candidates_write_mode_respects_limit tests/test_cli.py::test_find_boe_candidates_help_contains_false_positive_warning -q
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+- Red focused run failed before implementation because `--write` did not exist, normal mode still
+  wrote candidates, and `--limit` did not cap write-mode creation.
+- Focused tests after implementation: `4 passed`.
+- Full tests: `196 passed`.
+- Lint: `All checks passed!`.
+- Formatting: `56 files already formatted`.
+- `find-boe-candidates` now requires `--dry-run`, `--no-write`, or explicit `--write`.
+- In explicit write mode, `--limit` caps the number of candidates created.
+- Written candidates still use `review_status=human_review_required`.
+
 TASK-004C-FIX4 VPS refined dry-run:
 
 ```bash

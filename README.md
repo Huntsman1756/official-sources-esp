@@ -183,7 +183,8 @@ This searches stored BOE titles and metadata only. It does not parse full docume
 does not use LLMs, does not classify legal meaning, and does not approve or publish anything.
 Use `--dry-run` or `--no-write` for safe previews; those modes print aggregate counts and sample
 matches without writing `source_candidates`. Candidates created by the normal write mode default
-to `human_review_required`.
+to `human_review_required`. Candidate creation is not the default; it requires explicit
+`--write`, and `--limit` caps the number of candidates created in write mode.
 
 The `la-ayuda` profile provides a stricter first-pass filter for `la-ayuda` / `EduAyudas`:
 

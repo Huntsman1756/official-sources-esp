@@ -153,6 +153,8 @@ not parse full content, perform legal classification, approve candidates, or pub
 Operators should use `--dry-run` or `--no-write` before enabling normal write mode. In safe
 preview mode the command reports aggregate match counts and sample rows without creating
 `source_candidates`.
+Write mode is explicit and requires `--write`; in that mode `--limit` caps created candidates,
+so operational pilots can be bounded before any human-review workflow consumes the rows.
 
 The prefilter normalizes searchable text by lowercasing, removing accents, and collapsing
 whitespace while preserving original titles and metadata for output. Keyword matching uses word
