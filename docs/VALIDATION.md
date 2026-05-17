@@ -2,6 +2,32 @@
 
 ## Commands Executed
 
+TASK-004C-FIX4 local validation:
+
+```bash
+rtk python -m pytest tests/test_cli.py::test_find_boe_candidates_normalizes_accents_case_and_whitespace tests/test_cli.py::test_find_boe_candidates_word_boundaries_prevent_bono_carbono tests/test_cli.py::test_find_boe_candidates_phrase_matching_and_scoring_are_explainable tests/test_cli.py::test_find_boe_candidates_profile_excludes_procurement_and_generic_keywords tests/test_cli.py::test_find_boe_candidates_section_and_department_filters_work -q
+rtk python -m pytest tests/test_cli.py::test_find_boe_candidates_matches_titles_and_metadata tests/test_cli.py::test_find_boe_candidates_dry_run_does_not_create_candidates tests/test_cli.py::test_find_boe_candidates_no_write_alias_does_not_create_candidates tests/test_cli.py::test_find_boe_candidates_ignores_documents_without_keyword_matches tests/test_cli.py::test_find_boe_candidates_rejects_non_positive_limit tests/test_cli.py::test_find_boe_candidates_does_not_approve_or_publish tests/test_cli.py::test_find_boe_candidates_help_contains_false_positive_warning -q
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+- Red focused run failed before implementation because matching was accent-sensitive,
+  substring-based, lacked score output, lacked `--profile`, and lacked section/department
+  filters.
+- Focused refined matching tests after implementation: `5 passed`.
+- Existing candidate prefilter regression tests after implementation: `7 passed`.
+- Full tests: `194 passed`.
+- Lint: `All checks passed!`.
+- Formatting: `56 files already formatted`.
+- `bono` no longer matches `carbono`.
+- Multi-word phrases such as `bases reguladoras` match as phrases.
+- The `la-ayuda` profile excludes Section `V-A` by default and filters weak generic-only
+  matches such as standalone `convocatoria`.
+- Dry-run mode remains no-write and reports deterministic score reasons.
+
 TASK-004C-RUN2 VPS candidate prefilter dry-run:
 
 ```bash

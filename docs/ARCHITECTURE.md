@@ -154,6 +154,15 @@ Operators should use `--dry-run` or `--no-write` before enabling normal write mo
 preview mode the command reports aggregate match counts and sample rows without creating
 `source_candidates`.
 
+The prefilter normalizes searchable text by lowercasing, removing accents, and collapsing
+whitespace while preserving original titles and metadata for output. Keyword matching uses word
+boundaries to avoid matches inside unrelated tokens, handles multi-word phrases as phrases, and
+supports section/department include and exclude filters. The `la-ayuda` profile excludes
+procurement-heavy Section `V-A` by default and treats broad terms such as `convocatoria` and
+`transporte` as weak unless they co-occur with stronger aid-related terms. Prefilter scores are
+deterministic and explainable, but they are not LLM scores, legal classification, ranking,
+approval, or publication decisions.
+
 ## SQLite Migration Layer
 
 Persistent SQLite schema changes are managed by `official_sources.storage.migrations`.

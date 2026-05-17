@@ -31,6 +31,9 @@ workflow, publication workflow, legal or fiscal interpretation, and user-facing 
   document content, classify legal meaning, or decide eligibility.
 - Prefiltered candidates are false-positive-prone and must remain
   `human_review_required`.
+- Candidate prefilter scores, when present, are deterministic and explainable matching signals
+  only. They are not risk scores, rankings, recommendations, legal decisions, approval signals,
+  or publication decisions.
 
 ## Required evidence object
 
@@ -110,6 +113,7 @@ Downstream projects must not treat these as authoritative decisions from `offici
 - `risk_score`
 - `ranking`
 - `recommendation`
+- `prefilter_score` as an approval or ranking decision
 
 ## Integrity Warning Behavior
 

@@ -185,6 +185,22 @@ Use `--dry-run` or `--no-write` for safe previews; those modes print aggregate c
 matches without writing `source_candidates`. Candidates created by the normal write mode default
 to `human_review_required`.
 
+The `la-ayuda` profile provides a stricter first-pass filter for `la-ayuda` / `EduAyudas`:
+
+```bash
+official-sources --db-path official-sources.sqlite \
+  find-boe-candidates --date-from 2024-05-01 --date-to 2024-05-31 \
+  --profile la-ayuda \
+  --dry-run --limit 100
+```
+
+Candidate matching normalizes case, accents, and repeated whitespace; applies word boundaries so
+short terms such as `bono` do not match inside unrelated words such as `carbono`; handles
+multi-word phrases as phrases; supports `--include-sections`, `--exclude-sections`,
+`--include-departments`, and `--exclude-departments`; and prints deterministic, explainable scores.
+Those scores are prefiltering signals only. They do not approve, publish, rank, or decide legal
+or fiscal meaning.
+
 ## BOE Consolidated Legislation
 
 The CLI can retrieve one consolidated law by official BOE identifier:

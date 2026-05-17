@@ -1152,3 +1152,245 @@ def test_find_boe_candidates_help_contains_false_positive_warning(capsys):
     assert "--dry-run" in captured.out
     assert "--no-write" in captured.out
     assert "--limit" in captured.out
+
+
+def test_find_boe_candidates_normalizes_accents_case_and_whitespace(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-22222",
+        publication_date="2024-05-29",
+        title="Convocatoria   de SUBVENCION para Educacion",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "subvención,educación",
+            "--dry-run",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "matches_after_filters=1" in captured.out
+    assert "matched_keywords=subvención,educación" in captured.out
+
+
+def test_find_boe_candidates_word_boundaries_prevent_bono_carbono(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-22222",
+        publication_date="2024-05-29",
+        title="Proyecto sobre captura de carbono",
+    )
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-33333",
+        publication_date="2024-05-29",
+        title="Convocatoria de bono alquiler",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "bono",
+            "--dry-run",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "matches_total=1" in captured.out
+    assert "BOE-A-2024-33333" in captured.out
+    assert "BOE-A-2024-22222" not in captured.out
+
+
+def test_find_boe_candidates_phrase_matching_and_scoring_are_explainable(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-22222",
+        publication_date="2024-05-29",
+        title="Bases reguladoras de ayudas al estudio",
+        url_html="https://www.boe.es/diario_boe/txt.php?id=BOE-A-2024-22222",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "bases reguladoras,ayudas al estudio",
+            "--dry-run",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "matched_keywords=bases reguladoras,ayudas al estudio" in captured.out
+    assert "score=" in captured.out
+    assert "score_reasons=" in captured.out
+    assert "strong_phrase:bases_reguladoras" in captured.out
+    assert "official_url=https://www.boe.es/diario_boe/txt.php?id=BOE-A-2024-22222" in captured.out
+
+
+def test_find_boe_candidates_profile_excludes_procurement_and_generic_keywords(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-B-2024-11111",
+        publication_date="2024-05-29",
+        title="Anuncio de licitación de servicios de transporte",
+        department="Ministerio de Transportes",
+        section="V. Anuncios - A. Contratación del Sector Público",
+    )
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-B-2024-22222",
+        publication_date="2024-05-29",
+        title="Anuncio sobre convocatoria de Junta",
+        department="Otros entes",
+        section="V. Anuncios - B. Otros anuncios oficiales",
+    )
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-B-2024-33333",
+        publication_date="2024-05-29",
+        title="Convocatoria de ayudas al transporte para estudiantes",
+        department="Ministerio de Educacion",
+        section="V. Anuncios - B. Otros anuncios oficiales",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--profile",
+            "la-ayuda",
+            "--dry-run",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "documents_scanned=3" in captured.out
+    assert "matches_total=3" in captured.out
+    assert "matches_after_filters=1" in captured.out
+    assert "excluded_by_section=1" in captured.out
+    assert "excluded_by_keyword_rules=1" in captured.out
+    assert "BOE-B-2024-33333" in captured.out
+    assert "BOE-B-2024-11111" not in captured.out
+    assert "BOE-B-2024-22222" not in captured.out
+
+
+def test_find_boe_candidates_section_and_department_filters_work(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-11111",
+        publication_date="2024-05-29",
+        title="Convocatoria de ayudas",
+        department="Ministerio de Educacion",
+        section="III",
+    )
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-22222",
+        publication_date="2024-05-29",
+        title="Convocatoria de ayudas",
+        department="Ministerio de Cultura",
+        section="III",
+    )
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-B-2024-33333",
+        publication_date="2024-05-29",
+        title="Convocatoria de ayudas",
+        department="Ministerio de Educacion",
+        section="V. Anuncios - A. Contratación del Sector Público",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "convocatoria de ayudas",
+            "--include-sections",
+            "III",
+            "--include-departments",
+            "Educacion",
+            "--dry-run",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "matches_total=3" in captured.out
+    assert "matches_after_filters=1" in captured.out
+    assert "BOE-A-2024-11111" in captured.out
+    assert "BOE-A-2024-22222" not in captured.out
+    assert "BOE-B-2024-33333" not in captured.out

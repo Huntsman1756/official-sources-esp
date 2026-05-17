@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
+import unicodedata
 from collections import Counter
 from datetime import date, timedelta
 from pathlib import Path
@@ -33,6 +35,64 @@ from official_sources.storage.migrations.runner import (
     validate_database,
 )
 from official_sources.storage.repository import OfficialSourcesRepository
+
+LA_AYUDA_PROFILE_KEYWORDS = [
+    "beca",
+    "becas",
+    "ayuda",
+    "ayudas",
+    "subvención",
+    "subvenciones",
+    "bases reguladoras",
+    "convocatoria",
+    "convocatoria de ayudas",
+    "convocatoria de subvenciones",
+    "ayudas al estudio",
+    "becas de carácter general",
+    "estudiantes",
+    "alquiler",
+    "bono",
+    "bono alquiler",
+    "bono social",
+    "familia numerosa",
+    "discapacidad",
+    "transporte",
+    "vivienda",
+]
+LA_AYUDA_DEFAULT_EXCLUDED_SECTIONS = ["V-A"]
+GENERIC_WEAK_KEYWORDS = {"convocatoria", "transporte"}
+TRANSPORT_SUPPORT_KEYWORDS = {
+    "ayuda",
+    "ayudas",
+    "subvención",
+    "subvenciones",
+    "beca",
+    "becas",
+    "estudiantes",
+}
+STRONG_PHRASES = {
+    "bases reguladoras",
+    "convocatoria de ayudas",
+    "convocatoria de subvenciones",
+    "ayudas al estudio",
+    "becas de carácter general",
+    "bono alquiler",
+    "bono social",
+    "familia numerosa",
+}
+STRONG_KEYWORDS = {
+    "beca",
+    "becas",
+    "ayuda",
+    "ayudas",
+    "subvención",
+    "subvenciones",
+    "alquiler",
+    "discapacidad",
+    "educación",
+    "estudiantes",
+    "vivienda",
+}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -216,8 +276,28 @@ def build_parser() -> argparse.ArgumentParser:
     candidates.add_argument("--date-to", required=True, help="End date in YYYY-MM-DD format.")
     candidates.add_argument(
         "--keywords",
-        required=True,
         help="Comma-separated keywords. Matches titles and metadata only, not full content.",
+    )
+    candidates.add_argument(
+        "--profile",
+        choices=["la-ayuda"],
+        help="Use a documented keyword/filter profile. Currently supported: la-ayuda.",
+    )
+    candidates.add_argument(
+        "--include-sections",
+        help="Comma-separated BOE section filters, for example III,V-B.",
+    )
+    candidates.add_argument(
+        "--exclude-sections",
+        help="Comma-separated BOE section filters to exclude, for example V-A.",
+    )
+    candidates.add_argument(
+        "--include-departments",
+        help="Comma-separated department substrings to include.",
+    )
+    candidates.add_argument(
+        "--exclude-departments",
+        help="Comma-separated department substrings to exclude.",
     )
     candidates.add_argument("--project-key", default="generic", help="Project key.")
     candidates.add_argument(
@@ -748,20 +828,36 @@ def _run_find_candidates(
     if date_from > date_to:
         print("--date-from must be earlier than or equal to --date-to", file=stderr)
         return 2
-    keywords = [keyword.strip() for keyword in args.keywords.split(",") if keyword.strip()]
+    keywords = _candidate_keywords(args)
     if not keywords:
-        print("--keywords must include at least one keyword", file=stderr)
+        print("--keywords or --profile must include at least one keyword", file=stderr)
         return 2
     if args.limit <= 0:
         print("--limit must be greater than zero", file=stderr)
         return 2
+    filters = _candidate_filters(args)
     documents = repository.search_documents(date_from=date_from, date_to=date_to, limit=100000)
     dry_run = bool(args.dry_run or args.no_write)
     created = 0
+    excluded_by_section = 0
+    excluded_by_department = 0
+    excluded_by_keyword_rules = 0
+    total_matches = 0
     matched_items: list[tuple[dict[str, Any], dict[str, Any]]] = []
     for document in documents:
-        matches = _candidate_keyword_matches(document, keywords)
+        matches = _candidate_keyword_matches(document, keywords, profile=args.profile)
         if not matches:
+            continue
+        total_matches += 1
+        exclusion_reason = _candidate_exclusion_reason(document, matches, filters)
+        if exclusion_reason == "section":
+            excluded_by_section += 1
+            continue
+        if exclusion_reason == "department":
+            excluded_by_department += 1
+            continue
+        if exclusion_reason == "keyword_rules":
+            excluded_by_keyword_rules += 1
             continue
         matched_items.append((document, matches))
         if not dry_run:
@@ -787,6 +883,8 @@ def _run_find_candidates(
         _format_counts(
             {
                 "documents_scanned": len(documents),
+                "matches_total": total_matches,
+                "matches_after_filters": len(matched_items),
                 "documents_matched": len(matched_items),
                 "candidates_created": created,
                 "review_status": "human_review_required",
@@ -794,6 +892,9 @@ def _run_find_candidates(
                 "matches_by_keyword": _format_counter(keyword_counts),
                 "matches_by_section": _format_counter(section_counts),
                 "matches_by_department": _format_counter(department_counts),
+                "excluded_by_section": excluded_by_section,
+                "excluded_by_department": excluded_by_department,
+                "excluded_by_keyword_rules": excluded_by_keyword_rules,
                 "sample_count": min(len(matched_items), args.limit),
             }
         ),
@@ -806,10 +907,16 @@ def _run_find_candidates(
                 {
                     "index": index,
                     "date": document["publication_date"],
+                    "publication_date": document["publication_date"],
+                    "official_identifier": document["external_id"],
                     "external_id": document["external_id"],
                     "keywords": ",".join(matches["keywords"]),
+                    "matched_keywords": ",".join(matches["keywords"]),
                     "section": _compact_token(document.get("section") or "none"),
                     "department": _compact_token(document.get("department") or "none"),
+                    "score": matches["score"],
+                    "score_reasons": ",".join(matches["score_reasons"]),
+                    "official_url": _candidate_official_url(document),
                     "title": _quote_value(document.get("title") or ""),
                 }
             ),
@@ -843,7 +950,40 @@ def _inclusive_dates(date_from: date, date_to: date):
         current += timedelta(days=1)
 
 
-def _candidate_keyword_matches(document: dict[str, Any], keywords: list[str]) -> dict[str, Any]:
+def _candidate_keywords(args: argparse.Namespace) -> list[str]:
+    keywords: list[str] = []
+    if args.profile == "la-ayuda":
+        keywords.extend(LA_AYUDA_PROFILE_KEYWORDS)
+    if args.keywords:
+        keywords.extend(keyword.strip() for keyword in args.keywords.split(",") if keyword.strip())
+    return list(dict.fromkeys(keywords))
+
+
+def _candidate_filters(args: argparse.Namespace) -> dict[str, list[str]]:
+    excluded_sections = _parse_filter_values(args.exclude_sections)
+    if args.profile == "la-ayuda" and not excluded_sections:
+        excluded_sections = LA_AYUDA_DEFAULT_EXCLUDED_SECTIONS.copy()
+    return {
+        "profile": [args.profile] if args.profile else [],
+        "include_sections": _parse_filter_values(args.include_sections),
+        "exclude_sections": excluded_sections,
+        "include_departments": _parse_filter_values(args.include_departments),
+        "exclude_departments": _parse_filter_values(args.exclude_departments),
+    }
+
+
+def _parse_filter_values(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [_normalize_search_text(item) for item in value.split(",") if item.strip()]
+
+
+def _candidate_keyword_matches(
+    document: dict[str, Any],
+    keywords: list[str],
+    *,
+    profile: str | None = None,
+) -> dict[str, Any]:
     fields = {
         "title": document.get("title") or "",
         "department": document.get("department") or "",
@@ -853,17 +993,138 @@ def _candidate_keyword_matches(document: dict[str, Any], keywords: list[str]) ->
     }
     matched: dict[str, list[str]] = {}
     for field, value in fields.items():
-        value_lower = str(value).lower()
-        field_matches = [keyword for keyword in keywords if keyword.lower() in value_lower]
+        normalized_value = _normalize_search_text(str(value))
+        field_matches = [
+            keyword for keyword in keywords if _keyword_matches(normalized_value, keyword)
+        ]
         if field_matches:
-            matched[field] = sorted(set(field_matches))
+            matched[field] = list(dict.fromkeys(field_matches))
     if not matched:
         return {}
+    matched_set = {keyword for matches in matched.values() for keyword in matches}
+    matched_keywords = [keyword for keyword in keywords if keyword in matched_set]
+    score, score_reasons = _score_candidate_match(matched_keywords, profile=profile)
     return {
-        "keywords": sorted({keyword for matches in matched.values() for keyword in matches}),
+        "keywords": matched_keywords,
         "matched_fields": matched,
+        "score": score,
+        "score_reasons": score_reasons,
         "warning": "Keyword matching uses BOE titles and metadata only; it is not classification.",
     }
+
+
+def _candidate_exclusion_reason(
+    document: dict[str, Any],
+    matches: dict[str, Any],
+    filters: dict[str, list[str]],
+) -> str | None:
+    section_aliases = _section_aliases(document.get("section") or "")
+    department = _normalize_search_text(document.get("department") or "")
+    if filters["include_sections"] and not any(
+        _filter_matches_section(section_aliases, expected)
+        for expected in filters["include_sections"]
+    ):
+        return "section"
+    if any(
+        _filter_matches_section(section_aliases, expected)
+        for expected in filters["exclude_sections"]
+    ):
+        return "section"
+    if filters["include_departments"] and not any(
+        expected in department for expected in filters["include_departments"]
+    ):
+        return "department"
+    if any(expected in department for expected in filters["exclude_departments"]):
+        return "department"
+    if filters["profile"] == ["la-ayuda"] and _weak_only_match(matches["keywords"]):
+        return "keyword_rules"
+    return None
+
+
+def _normalize_search_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value.lower())
+    ascii_text = "".join(
+        character for character in normalized if not unicodedata.combining(character)
+    )
+    return re.sub(r"\s+", " ", ascii_text).strip()
+
+
+def _keyword_matches(normalized_value: str, keyword: str) -> bool:
+    normalized_keyword = _normalize_search_text(keyword)
+    if not normalized_keyword:
+        return False
+    phrase_pattern = r"\s+".join(re.escape(part) for part in normalized_keyword.split())
+    pattern = rf"(?<!\w){phrase_pattern}(?!\w)"
+    return re.search(pattern, normalized_value) is not None
+
+
+def _score_candidate_match(
+    keywords: list[str],
+    *,
+    profile: str | None,
+) -> tuple[int, list[str]]:
+    score = 0
+    reasons: list[str] = []
+    normalized_keywords = {_normalize_search_text(keyword): keyword for keyword in keywords}
+    for normalized_keyword, original_keyword in sorted(normalized_keywords.items()):
+        reason_key = _compact_token(original_keyword)
+        if normalized_keyword in {_normalize_search_text(item) for item in STRONG_PHRASES}:
+            score += 3
+            reasons.append(f"strong_phrase:{reason_key}")
+        elif normalized_keyword in {_normalize_search_text(item) for item in STRONG_KEYWORDS}:
+            score += 2
+            reasons.append(f"strong_keyword:{reason_key}")
+        elif normalized_keyword in GENERIC_WEAK_KEYWORDS:
+            score += 1
+            reasons.append(f"weak_keyword:{reason_key}")
+        else:
+            score += 1
+            reasons.append(f"keyword:{reason_key}")
+    if profile == "la-ayuda" and _weak_only_match(keywords):
+        score -= 1
+        reasons.append("weak_only_generic_match:-1")
+    return score, reasons
+
+
+def _weak_only_match(keywords: list[str]) -> bool:
+    normalized_keywords = {_normalize_search_text(keyword) for keyword in keywords}
+    if not normalized_keywords:
+        return True
+    if normalized_keywords <= GENERIC_WEAK_KEYWORDS:
+        return True
+    transport_support = {_normalize_search_text(keyword) for keyword in TRANSPORT_SUPPORT_KEYWORDS}
+    return "transporte" in normalized_keywords and not (normalized_keywords & transport_support)
+
+
+def _section_aliases(section: str) -> set[str]:
+    normalized = _normalize_search_text(section)
+    aliases = {normalized}
+    compact = normalized.replace(".", " ").replace("-", " ")
+    compact = re.sub(r"\s+", " ", compact).strip()
+    aliases.add(compact)
+    if normalized in {"i", "ii", "iii", "iv", "v"}:
+        aliases.add(normalized)
+    if "contratacion del sector publico" in normalized:
+        aliases.add("v-a")
+        aliases.add("v a")
+    if "otros anuncios oficiales" in normalized:
+        aliases.add("v-b")
+        aliases.add("v b")
+    return aliases
+
+
+def _filter_matches_section(section_aliases: set[str], expected: str) -> bool:
+    expected_aliases = _section_aliases(expected)
+    return bool(section_aliases & expected_aliases)
+
+
+def _candidate_official_url(document: dict[str, Any]) -> str:
+    return (
+        document.get("url_html")
+        or document.get("url_xml")
+        or document.get("url_pdf")
+        or f"https://www.boe.es/buscar/doc.php?id={document['external_id']}"
+    )
 
 
 def _run_consolidated_get(

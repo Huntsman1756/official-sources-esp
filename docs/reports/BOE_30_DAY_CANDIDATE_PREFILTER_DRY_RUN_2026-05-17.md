@@ -293,3 +293,17 @@ Recommended scope:
 - optional section/department filters;
 - a curated dry-run keyword set for `la-ayuda` / `EduAyudas`;
 - keep `--dry-run` as the default operational rehearsal path before any write-mode run.
+
+## Follow-up Correction
+
+TASK-004C-FIX4 implements this matching-quality hardening:
+
+- case, accent, and whitespace normalization;
+- word-boundary matching for short terms, fixing the `bono` / `carbono` false positive;
+- phrase matching for terms such as `bases reguladoras`;
+- optional section and department filters;
+- a documented `la-ayuda` profile;
+- deterministic score and score reasons in dry-run sample output.
+
+The original baseline remains useful as the noisy pre-refinement reference: `554` matches from
+`3896` scanned documents.

@@ -31,7 +31,8 @@ Scope:
 - MCP no-auth/private-only warning and tool output trust model.
 - Downstream consumption contract.
 - Controlled BOE summary range ingestion.
-- Metadata-only keyword candidate prefiltering.
+- Metadata-only keyword candidate prefiltering with safe dry-run mode, deterministic scoring,
+  section/department filters, and a refined `la-ayuda` / `EduAyudas` profile.
 - Structured cache-miss responses for read-only consumers.
 - Status output split between summary HTTP status and artifact HTTP status.
 - Pre-deploy VPS checklist.
@@ -46,6 +47,7 @@ Scope:
 - RAG/vector search.
 - Full BOE historical backfill automation.
 - Downstream integrations.
+- Automatic candidate creation from prefilter dry-runs without explicit operator approval.
 - Authentication for MCP or a public API.
 - Legal interpretation.
 - Automatic approval.

@@ -187,6 +187,53 @@ date range scanned.
 Results will include false positives. All candidates default to
 `review_status=human_review_required`.
 
+Matching precision rules:
+
+- searchable text is lowercased, accent-normalized, and whitespace-normalized;
+- original titles and metadata are preserved in output and storage;
+- short terms such as `bono`, `beca`, and `ayuda` use word-boundary matching;
+- `bono` matches `bono alquiler` but not `carbono`;
+- multi-word terms such as `bases reguladoras` and `familia numerosa` are matched as phrases;
+- deterministic scores are explainable prefilter signals, not legal or product decisions;
+- score reasons are printed so reviewers can see why a document matched.
+
+Optional filters are available:
+
+```bash
+official-sources find-boe-candidates \
+  --date-from YYYY-MM-DD \
+  --date-to YYYY-MM-DD \
+  --keywords "convocatoria de ayudas,bases reguladoras" \
+  --include-sections "III,V-B" \
+  --exclude-sections "V-A" \
+  --include-departments "Educacion,Formacion Profesional" \
+  --dry-run
+```
+
+Stored BOE section names can be verbose. The CLI accepts shorthand aliases for common BOE
+summary sections such as `V-A` for public procurement notices and `V-B` for other official
+notices.
+
+The `la-ayuda` / `EduAyudas` profile is available:
+
+```bash
+official-sources find-boe-candidates \
+  --date-from YYYY-MM-DD \
+  --date-to YYYY-MM-DD \
+  --profile la-ayuda \
+  --dry-run \
+  --limit 100
+```
+
+The profile is intentionally conservative:
+
+- it excludes Section `V-A` public procurement notices by default;
+- it treats standalone `convocatoria` and standalone `transporte` as weak/generic signals;
+- `transporte` requires co-occurrence with aid-related terms such as `ayuda`, `subvencion`,
+  `beca`, or `estudiantes`;
+- `convocatoria de ayudas` and `convocatoria de subvenciones` are stronger than
+  standalone `convocatoria`.
+
 Example keywords for `la-ayuda` / `EduAyudas` only:
 
 ```text
@@ -197,11 +244,15 @@ ayudas
 subvencion
 subvenciones
 convocatoria
+convocatoria de ayudas
+convocatoria de subvenciones
 bases reguladoras
 educacion
 estudiantes
 alquiler
 bono
+bono alquiler
+bono social
 familia numerosa
 discapacidad
 transporte
