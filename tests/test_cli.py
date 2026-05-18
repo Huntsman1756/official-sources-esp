@@ -247,7 +247,7 @@ def test_download_boe_artifacts_skips_after_no_publication(tmp_path, capsys):
             "--date",
             "2026-05-17",
             "--types",
-            "xml,html,pdf",
+            "xml,html",
         ],
         artifact_client=artifact_client,
     )
@@ -340,8 +340,8 @@ def test_download_boe_artifacts_downloads_xml_html_and_pdf(tmp_path, capsys):
             "--artifact-dir",
             str(artifact_dir),
             "download-boe-artifacts",
-            "--date",
-            "2024-05-29",
+            "--document-ids",
+            str(document["id"]),
             "--types",
             "xml,html,pdf",
         ],
@@ -668,13 +668,12 @@ def test_status_reports_expected_counts(tmp_path, capsys):
             "--date",
             "2024-05-29",
             "--types",
-            "xml,html,pdf",
+            "xml,html",
         ],
         artifact_client=_artifact_client(
             {
                 document["url_xml"]: _fixture_bytes("boe_document.xml"),
                 document["url_html"]: _fixture_bytes("boe_document.html"),
-                document["url_pdf"]: _fixture_bytes("boe_document.pdf"),
             }
         ),
     )
@@ -686,10 +685,10 @@ def test_status_reports_expected_counts(tmp_path, capsys):
     assert "documents=1" in captured.out
     assert "xml_files=1" in captured.out
     assert "html_files=1" in captured.out
-    assert "pdf_files=1" in captured.out
-    assert "artifact_download_attempts=3" in captured.out
-    assert "artifact_download_success=3" in captured.out
-    assert "artifact_http_status_summary=xml:200:1,html:200:1,pdf:200:1" in captured.out
+    assert "pdf_files=0" in captured.out
+    assert "artifact_download_attempts=2" in captured.out
+    assert "artifact_download_success=2" in captured.out
+    assert "artifact_http_status_summary=xml:200:1,html:200:1" in captured.out
 
 
 def test_status_reports_summary_http_status_after_summary_only(tmp_path, capsys):
@@ -736,13 +735,12 @@ def test_status_keeps_summary_http_status_after_artifact_downloads(tmp_path, cap
             "--date",
             "2024-05-29",
             "--types",
-            "xml,html,pdf",
+            "xml,html",
         ],
         artifact_client=_artifact_client(
             {
                 document["url_xml"]: _fixture_bytes("boe_document.xml"),
                 document["url_html"]: _fixture_bytes("boe_document.html"),
-                document["url_pdf"]: _fixture_bytes("boe_document.pdf"),
             }
         ),
     )
@@ -757,7 +755,7 @@ def test_status_keeps_summary_http_status_after_artifact_downloads(tmp_path, cap
     assert "summary_ingestion_status=success" in captured.out
     assert "summary_last_http_status=200" in captured.out
     assert "last_http_status=200" in captured.out
-    assert "artifact_http_status_summary=xml:200:1,html:200:1,pdf:200:1" in captured.out
+    assert "artifact_http_status_summary=xml:200:1,html:200:1" in captured.out
     assert "artifact_retry_count=0" in captured.out
 
 

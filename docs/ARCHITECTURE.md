@@ -105,7 +105,7 @@ Artifact downloads can be date-scoped or explicitly scoped to `source_candidates
 `official_documents` IDs. Candidate/document-scoped downloads are used for evidence review so a
 small candidate pilot can fetch only selected XML/HTML artifacts without downloading every
 document from the publication date. PDF is not a default artifact type and requires explicit
-operator request.
+candidate or document IDs. PDF is never downloaded for a whole date range by default.
 
 Each attempted artifact download also creates an `artifact_download_attempts` row. This table records what happened while trying to fetch an artifact. It does not replace `integrity_checks`.
 
@@ -139,7 +139,10 @@ official-sources db migrate
 official-sources db validate
 official-sources ingest-boe-summary --date YYYY-MM-DD
 official-sources ingest-boe-range --date-from YYYY-MM-DD --date-to YYYY-MM-DD
-official-sources download-boe-artifacts --date YYYY-MM-DD --types xml,html,pdf
+official-sources download-boe-artifacts --date YYYY-MM-DD --types xml,html
+official-sources download-boe-artifacts --candidate-ids 1,3,10 --types pdf
+official-sources candidate-evidence-status --candidate-ids 1,3,10
+official-sources mark-candidate-evidence --candidate-id 1 --evidence-label likely_relevant --evidence-review-status evidence_downloaded
 official-sources integrity-check --date YYYY-MM-DD
 official-sources find-boe-candidates --date-from YYYY-MM-DD --date-to YYYY-MM-DD --keywords "..."
 official-sources status --date YYYY-MM-DD

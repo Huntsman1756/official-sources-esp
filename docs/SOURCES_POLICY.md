@@ -173,7 +173,21 @@ official-sources download-boe-artifacts --document-ids 10,11,12 --types xml,html
 
 Scoped downloads are mutually exclusive with `--date` so operators do not accidentally download
 artifacts for a full BOE day while reviewing a small candidate set. The default artifact types
-are `xml,html`; PDF must be explicitly requested.
+are `xml,html`.
+
+PDF policy:
+
+- PDF is never downloaded by default.
+- PDF requires explicit `--candidate-ids` or `--document-ids`.
+- PDF must not be downloaded for all candidates automatically.
+- PDF must not be downloaded for all documents in a date range automatically.
+- PDF should normally be used only for likely relevant candidates, final evidence selection,
+  official PDF validation, or direct human review requests.
+- PDF downloads create normal `artifact_download_attempts` rows and normal integrity records.
+
+```bash
+official-sources download-boe-artifacts --candidate-ids 1,3,10 --types pdf
+```
 
 ## Candidate Prefiltering Policy
 

@@ -34,7 +34,11 @@ from official_sources.storage.migrations.runner import (
     MigrationRunner,
     validate_database,
 )
-from official_sources.storage.repository import OfficialSourcesRepository
+from official_sources.storage.repository import (
+    EVIDENCE_LABELS,
+    EVIDENCE_REVIEW_STATUSES,
+    OfficialSourcesRepository,
+)
 
 LA_AYUDA_PROFILE_KEYWORDS = [
     "beca",
@@ -217,6 +221,42 @@ def build_parser() -> argparse.ArgumentParser:
         help="Comma-separated artifact types. Default: xml,html. PDF requires explicit request.",
     )
 
+    evidence_status = subparsers.add_parser(
+        "candidate-evidence-status",
+        help="Show read-only operational evidence status for source candidates.",
+    )
+    evidence_status.add_argument(
+        "--candidate-ids",
+        help="Comma-separated source_candidate IDs to inspect.",
+    )
+    evidence_status.add_argument("--date-from", help="Start date in YYYY-MM-DD format.")
+    evidence_status.add_argument("--date-to", help="End date in YYYY-MM-DD format.")
+    evidence_status.add_argument(
+        "--profile",
+        choices=["la-ayuda"],
+        help="Filter candidates by documented profile project key.",
+    )
+    evidence_status.add_argument("--project-key", help="Filter candidates by project key.")
+
+    mark_evidence = subparsers.add_parser(
+        "mark-candidate-evidence",
+        help="Record operational evidence review metadata for one source candidate.",
+    )
+    mark_evidence.add_argument("--candidate-id", type=int, required=True)
+    mark_evidence.add_argument(
+        "--evidence-label",
+        choices=sorted(EVIDENCE_LABELS),
+    )
+    mark_evidence.add_argument(
+        "--evidence-review-status",
+        choices=sorted(EVIDENCE_REVIEW_STATUSES),
+        default="not_reviewed",
+    )
+    mark_evidence.add_argument("--notes")
+    mark_evidence.add_argument("--selected-for-evidence", action="store_true")
+    mark_evidence.add_argument("--selected-for-pdf", action="store_true")
+    mark_evidence.add_argument("--reviewed-by")
+
     check = subparsers.add_parser("integrity-check", help="Recompute local artifact hashes.")
     check.add_argument(
         "--date",
@@ -363,6 +403,10 @@ def run(
         return _run_ingest_range(repository, args, stdout, stderr)
     if args.command == "find-boe-candidates":
         return _run_find_candidates(repository, args, stdout, stderr)
+    if args.command == "candidate-evidence-status":
+        return _run_candidate_evidence_status(repository, args, stdout, stderr)
+    if args.command == "mark-candidate-evidence":
+        return _run_mark_candidate_evidence(repository, args, stdout, stderr)
     if args.command == "boe-consolidated-get":
         return _run_consolidated_get(
             repository, args.identifier, consolidated_client, stdout, stderr
@@ -387,6 +431,9 @@ def run(
             artifact_types = _parse_artifact_types(args.types)
         except BOEArtifactDownloadError as exc:
             print(str(exc), file=stderr)
+            return 2
+        if "pdf" in artifact_types and not (args.candidate_ids or args.document_ids):
+            print("PDF downloads require --candidate-ids or --document-ids", file=stderr)
             return 2
         try:
             target_date, documents = _resolve_download_selection(repository, args)
@@ -821,6 +868,102 @@ def _run_status(repository: OfficialSourcesRepository, target_date: str, stdout:
         "failed_downloads": download_counts["failed"],
     }
     print(_format_counts(counts), file=stdout)
+    return 0
+
+
+def _run_candidate_evidence_status(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        candidate_ids = _parse_id_list(args.candidate_ids, option_name="--candidate-ids")
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    has_date_filter = bool(args.date_from or args.date_to)
+    if candidate_ids and has_date_filter:
+        print("--candidate-ids cannot be combined with --date-from or --date-to", file=stderr)
+        return 2
+    if bool(args.date_from) != bool(args.date_to):
+        print("--date-from and --date-to must be provided together", file=stderr)
+        return 2
+    if not candidate_ids and not has_date_filter:
+        print("--candidate-ids or --date-from/--date-to is required", file=stderr)
+        return 2
+    if args.profile and args.project_key and args.profile != args.project_key:
+        print("--profile and --project-key cannot select different project keys", file=stderr)
+        return 2
+    date_from = None
+    date_to = None
+    if has_date_filter:
+        try:
+            date_from = validate_boe_date(args.date_from).isoformat()
+            date_to = validate_boe_date(args.date_to).isoformat()
+        except ValueError as exc:
+            print(str(exc), file=stderr)
+            return 2
+        if date_from > date_to:
+            print("--date-from must be earlier than or equal to --date-to", file=stderr)
+            return 2
+    rows = repository.list_candidate_evidence_status(
+        candidate_ids=candidate_ids or None,
+        date_from=date_from,
+        date_to=date_to,
+        project_key=args.project_key or args.profile,
+    )
+    if candidate_ids and len(rows) != len(candidate_ids):
+        print("One or more --candidate-ids were not found", file=stderr)
+        return 2
+    print(_format_counts({"candidates": len(rows)}), file=stdout)
+    for row in rows:
+        print("candidate_evidence " + _format_candidate_evidence_row(row), file=stdout)
+    return 0
+
+
+def _run_mark_candidate_evidence(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    if args.candidate_id <= 0:
+        print("--candidate-id must be a positive integer", file=stderr)
+        return 2
+    try:
+        review = repository.mark_candidate_evidence_review(
+            source_candidate_id=args.candidate_id,
+            evidence_label=args.evidence_label,
+            evidence_review_status=args.evidence_review_status,
+            evidence_notes=args.notes,
+            selected_for_evidence=args.selected_for_evidence or None,
+            selected_for_pdf=args.selected_for_pdf or None,
+            reviewed_by=args.reviewed_by,
+        )
+    except (KeyError, ValueError) as exc:
+        print(str(exc), file=stderr)
+        return 2
+    candidate = repository.get_source_candidate(args.candidate_id)
+    assert candidate is not None
+    print(
+        _format_counts(
+            {
+                "candidate_id": args.candidate_id,
+                "review_status": candidate["review_status"],
+                "evidence_review_status": review["evidence_review_status"],
+                "evidence_label": review["evidence_label"] or "none",
+                "selected_for_evidence": _bool_token(review["selected_for_evidence"]),
+                "selected_for_pdf": _bool_token(review["selected_for_pdf"]),
+                "xml_available": _bool_token(review["xml_available"]),
+                "html_available": _bool_token(review["html_available"]),
+                "pdf_available": _bool_token(review["pdf_available"]),
+                "integrity_warning": _bool_token(review["integrity_warning"]),
+                "approved": "false",
+            }
+        ),
+        file=stdout,
+    )
     return 0
 
 
@@ -1374,6 +1517,29 @@ def _count_files(files: list[dict], file_type: str) -> int:
 
 def _format_counts(counts: dict) -> str:
     return " ".join(f"{key}={value}" for key, value in counts.items())
+
+
+def _format_candidate_evidence_row(row: dict[str, Any]) -> str:
+    return _format_counts(
+        {
+            "candidate_id": row["candidate_id"],
+            "official_identifier": row["official_identifier"],
+            "title": _quote_value(row["title"]),
+            "review_status": row["review_status"],
+            "evidence_review_status": row["evidence_review_status"],
+            "evidence_label": row["evidence_label"] or "none",
+            "xml_available": _bool_token(row["xml_available"]),
+            "html_available": _bool_token(row["html_available"]),
+            "pdf_available": _bool_token(row["pdf_available"]),
+            "integrity_warning": _bool_token(row["integrity_warning"]),
+            "selected_for_pdf": _bool_token(row["selected_for_pdf"]),
+            "official_url": row["official_url"],
+        }
+    )
+
+
+def _bool_token(value: object) -> str:
+    return "true" if bool(value) else "false"
 
 
 def _status_value(value: object) -> object:

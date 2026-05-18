@@ -76,6 +76,42 @@ consumer boundary, but the meaning must not be weakened.
 }
 ```
 
+## Candidate Evidence Metadata
+
+Candidate evidence review metadata is operational review state inside `official-sources`.
+It is not a publication workflow and it is not an approval workflow.
+
+Downstream projects can consume evidence metadata, but they must still create and maintain
+their own review workflow.
+
+```json
+{
+  "candidate": {
+    "candidate_id": 1,
+    "review_status": "human_review_required",
+    "evidence_review_status": "evidence_downloaded",
+    "evidence_label": "likely_relevant"
+  },
+  "evidence": {
+    "xml_available": true,
+    "html_available": true,
+    "pdf_available": false,
+    "pdf_policy": "on_demand",
+    "integrity_warning": false
+  }
+}
+```
+
+Required interpretation:
+
+- `likely_relevant is not approval`.
+- `false_positive` is operational review, not a legal conclusion.
+- `PDF is on-demand`.
+- PDF absence does not mean evidence is invalid.
+- PDF presence does not mean candidate is approved.
+- `source_candidates.review_status` remains publication-safe and must not be overloaded with
+  operational evidence labels.
+
 ## Integrity Hash Semantics
 
 `source_snapshot_hash` represents the hash of the raw official source payload at ingestion

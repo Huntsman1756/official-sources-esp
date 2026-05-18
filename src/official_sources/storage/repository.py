@@ -7,6 +7,27 @@ from typing import Any
 
 from official_sources.integrity.hashing import sha256_bytes, sha256_text
 
+EVIDENCE_REVIEW_STATUSES = {
+    "not_reviewed",
+    "evidence_selected",
+    "evidence_downloaded",
+    "evidence_reviewed",
+    "needs_more_evidence",
+    "false_positive",
+    "out_of_scope",
+}
+EVIDENCE_LABELS = {
+    "likely_relevant",
+    "unclear",
+    "false_positive",
+    "out_of_scope",
+}
+EVIDENCE_SELECTED_STATUSES = {
+    "evidence_selected",
+    "evidence_downloaded",
+    "evidence_reviewed",
+}
+
 
 def utc_now() -> str:
     return datetime.now(UTC).isoformat()
@@ -1006,6 +1027,237 @@ class OfficialSourcesRepository:
                 (cursor.lastrowid,),
             ).fetchone()
         )
+
+    def get_source_candidate(self, source_candidate_id: int) -> dict[str, Any] | None:
+        return row_to_dict(
+            self.connection.execute(
+                "SELECT * FROM source_candidates WHERE id = ?",
+                (source_candidate_id,),
+            ).fetchone()
+        )
+
+    def mark_candidate_evidence_review(
+        self,
+        *,
+        source_candidate_id: int,
+        evidence_label: str | None = None,
+        evidence_review_status: str = "not_reviewed",
+        evidence_notes: str | None = None,
+        selected_for_evidence: bool | None = None,
+        selected_for_pdf: bool | None = None,
+        reviewed_by: str | None = None,
+    ) -> dict[str, Any]:
+        if evidence_review_status not in EVIDENCE_REVIEW_STATUSES:
+            raise ValueError(f"Unsupported evidence review status: {evidence_review_status}")
+        if evidence_label is not None and evidence_label not in EVIDENCE_LABELS:
+            raise ValueError(f"Unsupported evidence label: {evidence_label}")
+        candidate = self.get_source_candidate(source_candidate_id)
+        if candidate is None:
+            raise KeyError(f"Unknown source candidate: {source_candidate_id}")
+        availability = self._candidate_artifact_availability(candidate["document_id"])
+        existing = row_to_dict(
+            self.connection.execute(
+                """
+                SELECT * FROM candidate_evidence_reviews
+                WHERE source_candidate_id = ?
+                """,
+                (source_candidate_id,),
+            ).fetchone()
+        )
+        now = utc_now()
+        if existing is None:
+            selected_evidence_value = (
+                evidence_review_status in EVIDENCE_SELECTED_STATUSES
+                if selected_for_evidence is None
+                else selected_for_evidence
+            )
+            selected_pdf_value = False if selected_for_pdf is None else selected_for_pdf
+            self.connection.execute(
+                """
+                INSERT INTO candidate_evidence_reviews (
+                    source_candidate_id, evidence_review_status, evidence_label,
+                    evidence_notes, selected_for_evidence, selected_for_pdf,
+                    xml_available, html_available, pdf_available, integrity_warning,
+                    reviewed_by, reviewed_at, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    source_candidate_id,
+                    evidence_review_status,
+                    evidence_label,
+                    evidence_notes,
+                    1 if selected_evidence_value else 0,
+                    1 if selected_pdf_value else 0,
+                    1 if availability["xml_available"] else 0,
+                    1 if availability["html_available"] else 0,
+                    1 if availability["pdf_available"] else 0,
+                    1 if availability["integrity_warning"] else 0,
+                    reviewed_by,
+                    now,
+                    now,
+                    now,
+                ),
+            )
+        else:
+            selected_evidence_value = (
+                bool(existing["selected_for_evidence"])
+                if selected_for_evidence is None
+                else selected_for_evidence
+            )
+            if (
+                selected_for_evidence is None
+                and evidence_review_status in EVIDENCE_SELECTED_STATUSES
+            ):
+                selected_evidence_value = True
+            selected_pdf_value = (
+                bool(existing["selected_for_pdf"]) if selected_for_pdf is None else selected_for_pdf
+            )
+            self.connection.execute(
+                """
+                UPDATE candidate_evidence_reviews
+                SET evidence_review_status = ?,
+                    evidence_label = ?,
+                    evidence_notes = ?,
+                    selected_for_evidence = ?,
+                    selected_for_pdf = ?,
+                    xml_available = ?,
+                    html_available = ?,
+                    pdf_available = ?,
+                    integrity_warning = ?,
+                    reviewed_by = ?,
+                    reviewed_at = ?,
+                    updated_at = ?
+                WHERE source_candidate_id = ?
+                """,
+                (
+                    evidence_review_status,
+                    evidence_label if evidence_label is not None else existing["evidence_label"],
+                    (evidence_notes if evidence_notes is not None else existing["evidence_notes"]),
+                    1 if selected_evidence_value else 0,
+                    1 if selected_pdf_value else 0,
+                    1 if availability["xml_available"] else 0,
+                    1 if availability["html_available"] else 0,
+                    1 if availability["pdf_available"] else 0,
+                    1 if availability["integrity_warning"] else 0,
+                    reviewed_by if reviewed_by is not None else existing["reviewed_by"],
+                    now,
+                    now,
+                    source_candidate_id,
+                ),
+            )
+        self.connection.commit()
+        result = row_to_dict(
+            self.connection.execute(
+                """
+                SELECT * FROM candidate_evidence_reviews
+                WHERE source_candidate_id = ?
+                """,
+                (source_candidate_id,),
+            ).fetchone()
+        )
+        assert result is not None
+        return result
+
+    def list_candidate_evidence_status(
+        self,
+        *,
+        candidate_ids: list[int] | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        project_key: str | None = None,
+    ) -> list[dict[str, Any]]:
+        clauses: list[str] = []
+        values: list[Any] = []
+        if candidate_ids is not None:
+            if not candidate_ids:
+                return []
+            placeholders = ",".join("?" for _ in candidate_ids)
+            clauses.append(f"c.id IN ({placeholders})")
+            values.extend(candidate_ids)
+        if date_from is not None:
+            clauses.append("d.publication_date >= ?")
+            values.append(date_from)
+        if date_to is not None:
+            clauses.append("d.publication_date <= ?")
+            values.append(date_to)
+        if project_key is not None:
+            clauses.append("c.project_key = ?")
+            values.append(project_key)
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        rows = self.connection.execute(
+            f"""
+            SELECT
+                c.id AS candidate_id,
+                d.external_id AS official_identifier,
+                d.title AS title,
+                c.review_status AS review_status,
+                COALESCE(r.evidence_review_status, 'not_reviewed')
+                    AS evidence_review_status,
+                r.evidence_label AS evidence_label,
+                COALESCE(r.selected_for_evidence, 0) AS selected_for_evidence,
+                COALESCE(r.selected_for_pdf, 0) AS selected_for_pdf,
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM document_files f
+                    WHERE f.document_id = d.id AND f.file_type = 'xml'
+                ) THEN 1 ELSE 0 END AS xml_available,
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM document_files f
+                    WHERE f.document_id = d.id AND f.file_type = 'html'
+                ) THEN 1 ELSE 0 END AS html_available,
+                CASE WHEN EXISTS (
+                    SELECT 1 FROM document_files f
+                    WHERE f.document_id = d.id AND f.file_type = 'pdf'
+                ) THEN 1 ELSE 0 END AS pdf_available,
+                CASE WHEN COALESCE(r.integrity_warning, 0) = 1 OR EXISTS (
+                    SELECT 1 FROM document_files f
+                    WHERE f.document_id = d.id AND f.content_changed_at IS NOT NULL
+                ) THEN 1 ELSE 0 END AS integrity_warning,
+                COALESCE(
+                    d.url_html,
+                    d.url_xml,
+                    d.url_pdf,
+                    'https://www.boe.es/buscar/doc.php?id=' || d.external_id
+                ) AS official_url
+            FROM source_candidates c
+            JOIN official_documents d ON d.id = c.document_id
+            LEFT JOIN candidate_evidence_reviews r ON r.source_candidate_id = c.id
+            {where}
+            ORDER BY c.id ASC
+            """,
+            values,
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_candidate_evidence_object(self, source_candidate_id: int) -> dict[str, Any]:
+        rows = self.list_candidate_evidence_status(candidate_ids=[source_candidate_id])
+        if not rows:
+            raise KeyError(f"Unknown source candidate: {source_candidate_id}")
+        row = rows[0]
+        return {
+            "candidate": {
+                "candidate_id": row["candidate_id"],
+                "review_status": row["review_status"],
+                "evidence_review_status": row["evidence_review_status"],
+                "evidence_label": row["evidence_label"],
+            },
+            "evidence": {
+                "xml_available": bool(row["xml_available"]),
+                "html_available": bool(row["html_available"]),
+                "pdf_available": bool(row["pdf_available"]),
+                "pdf_policy": "on_demand",
+                "integrity_warning": bool(row["integrity_warning"]),
+            },
+        }
+
+    def _candidate_artifact_availability(self, document_id: int) -> dict[str, bool]:
+        files = self.list_document_files(document_id)
+        return {
+            "xml_available": any(file_record["file_type"] == "xml" for file_record in files),
+            "html_available": any(file_record["file_type"] == "html" for file_record in files),
+            "pdf_available": any(file_record["file_type"] == "pdf" for file_record in files),
+            "integrity_warning": any(file_record["content_changed_at"] for file_record in files),
+        }
 
     def create_ingestion_run(self, *, source_code: str, target_date: str | None) -> dict[str, Any]:
         now = utc_now()

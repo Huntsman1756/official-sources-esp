@@ -18,6 +18,7 @@ MIGRATION_MODULE_NAMES = [
     "0004_consolidated_index_blocks",
     "0005_request_audit_fields",
     "0006_ingestion_no_publication_status",
+    "0007_candidate_evidence_reviews",
 ]
 
 SCHEMA_MIGRATIONS_SQL = """

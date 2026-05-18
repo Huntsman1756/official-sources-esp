@@ -23,6 +23,7 @@ Current migrations:
 - `0004_consolidated_index_blocks`
 - `0005_request_audit_fields`
 - `0006_ingestion_no_publication_status`
+- `0007_candidate_evidence_reviews`
 
 Before running migrations on a persistent installation, create a database backup.
 
@@ -151,7 +152,40 @@ Allowed `review_status` values:
 
 Default: `human_review_required`.
 
+`review_status` is publication-safe state. Operational evidence labels must not be stored in
+this field.
+
 Avoid generic confidence scores. Evidence fields are preferred.
+
+### candidate_evidence_reviews
+
+Stores operational evidence review metadata for source candidates. This is not candidate
+approval, legal classification, or a publication workflow.
+
+Allowed `evidence_review_status` values:
+
+- `not_reviewed`
+- `evidence_selected`
+- `evidence_downloaded`
+- `evidence_reviewed`
+- `needs_more_evidence`
+- `false_positive`
+- `out_of_scope`
+
+Allowed `evidence_label` values:
+
+- `likely_relevant`
+- `unclear`
+- `false_positive`
+- `out_of_scope`
+
+The table preserves notes, evidence selection, PDF selection, artifact availability snapshots,
+integrity warning snapshots, reviewer metadata, and timestamps. Read paths derive current
+XML/HTML/PDF availability from `document_files` so the status command reflects downloaded
+artifacts.
+
+`likely_relevant` is an operational label only. It must not change
+`source_candidates.review_status` away from `human_review_required`.
 
 ### ingestion_runs
 

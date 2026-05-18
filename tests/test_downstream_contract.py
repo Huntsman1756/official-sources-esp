@@ -22,6 +22,16 @@ def test_downstream_contract_exists_and_defines_operational_boundaries():
     assert "preserve integrity warnings" in content
     assert "block automatic approval/publication" in content
     assert "Example downstream flow" in content
+    assert '"evidence_review_status": "evidence_downloaded"' in content
+    assert '"evidence_label": "likely_relevant"' in content
+    assert '"xml_available": true' in content
+    assert '"html_available": true' in content
+    assert '"pdf_available": false' in content
+    assert '"pdf_policy": "on_demand"' in content
+    assert "likely_relevant is not approval" in content
+    assert "PDF is on-demand" in content
+    assert "PDF absence does not mean evidence is invalid" in content
+    assert "PDF presence does not mean candidate is approved" in content
 
 
 def test_pre_task_004b_downstream_checklist_exists():

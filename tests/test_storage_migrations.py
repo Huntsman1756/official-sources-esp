@@ -182,8 +182,8 @@ def test_empty_database_migrates_to_latest_schema():
 
     result = migrate_database(connection)
 
-    assert result.current_version == 6
-    assert result.applied_versions == [1, 2, 3, 4, 5, 6]
+    assert result.current_version == 7
+    assert result.applied_versions == [1, 2, 3, 4, 5, 6, 7]
     assert validate_database(connection).valid is True
 
 
@@ -202,7 +202,7 @@ def test_migrations_and_validation_work_with_wal_enabled_database(tmp_path):
 
     result = migrate_database(connection)
 
-    assert result.current_version == 6
+    assert result.current_version == 7
     assert connection.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
     assert validate_database(connection).valid is True
 
@@ -222,7 +222,7 @@ def test_older_database_states_upgrade_to_latest_and_preserve_data(builder):
 
     result = migrate_database(connection)
 
-    assert result.current_version == 6
+    assert result.current_version == 7
     assert (
         connection.execute("SELECT COUNT(*) AS count FROM official_documents").fetchone()["count"]
         == 1
@@ -300,6 +300,24 @@ def test_ingestion_no_publication_status_is_allowed_by_latest_migration():
 
     assert row["status"] == "no_publication"
     assert row["last_http_status"] == 404
+
+
+def test_candidate_evidence_reviews_table_is_added_by_latest_migration():
+    connection = connect(":memory:")
+
+    migrate_database(connection)
+
+    columns = _table_columns(connection)
+    assert "candidate_evidence_reviews" in columns
+    assert "source_candidate_id" in columns["candidate_evidence_reviews"]
+    assert "evidence_review_status" in columns["candidate_evidence_reviews"]
+    assert "evidence_label" in columns["candidate_evidence_reviews"]
+    assert "selected_for_evidence" in columns["candidate_evidence_reviews"]
+    assert "selected_for_pdf" in columns["candidate_evidence_reviews"]
+    assert "xml_available" in columns["candidate_evidence_reviews"]
+    assert "html_available" in columns["candidate_evidence_reviews"]
+    assert "pdf_available" in columns["candidate_evidence_reviews"]
+    assert "integrity_warning" in columns["candidate_evidence_reviews"]
 
 
 def test_fresh_migrated_schema_matches_canonical_latest_schema():
