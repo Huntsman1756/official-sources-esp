@@ -59,6 +59,14 @@ Added migration:
 0007_candidate_evidence_reviews
 ```
 
+VPS migration result:
+
+```text
+before: current_version=6 latest_version=7 pending_migration=0007_candidate_evidence_reviews
+after migrate: current_version=7 latest_version=7
+after validate: current_version=7 latest_version=7 status=valid
+```
+
 ## Evidence Commands
 
 Added read-only evidence status command:
@@ -123,8 +131,25 @@ Known false-positive candidate IDs from the pilot report:
 false_positive=19,22
 ```
 
-The local code supports recording these labels. The VPS marking step was not completed because
-the configured SSH host did not contain the expected `official-sources` deployment or database.
+VPS evidence marking result:
+
+```text
+candidates_checked=12
+human_review_required_count=12
+likely_relevant_count=10
+false_positive_count=2
+xml_available_true_count=10
+html_available_true_count=10
+pdf_available_true_count=0
+selected_for_pdf_true_count=0
+```
+
+All 25 pilot candidates remained `human_review_required` after marking:
+
+```text
+candidates=25
+human_review_required_count=25
+```
 
 ## PDF Policy
 
@@ -196,23 +221,19 @@ rtk python -m ruff format --check .
 
 ## VPS Follow-up
 
-Attempted target: the configured private SSH alias.
+Completed on the configured private SSH alias.
 
-Observed blocker:
+Actions:
 
-- `/opt/official-sources/app` was not present.
-- No `official-sources` user was present.
-- No `official-sources` systemd units were present.
-- No `official_sources.sqlite` or `official-sources.sqlite` database was found in scoped
-  searches.
-- No Docker container or volume with an `official` source name was present.
-- Existing official-looking service names belonged to the separate `esdata` application.
-
-No VPS migration was run.
-
-No candidate labels were recorded on the VPS.
-
-No false-positive labels were recorded on the VPS.
+- pulled latest `main` commit;
+- ran database migration from version 6 to 7;
+- validated the database before and after operational marking;
+- marked candidate IDs `1,3,10,11,14,17,18,20,21,23` as
+  `likely_relevant` / `evidence_downloaded`;
+- marked known false-positive candidate IDs `19,22` as `false_positive`;
+- confirmed all source candidates remained `human_review_required`;
+- installed the updated daily systemd service template so the automatic artifact job uses
+  `--types xml,html`.
 
 No PDF downloads were run.
 
@@ -222,8 +243,11 @@ No downstream writes were performed.
 
 Local DB validation passed through the test suite and migration tests.
 
-VPS DB validation was not run because the expected deployment/database was not found on the
-available SSH target.
+VPS DB validation passed after migration and after evidence marking:
+
+```text
+database_path=/opt/official-sources/data/official_sources.sqlite current_version=7 latest_version=7 status=valid
+```
 
 ## Artifact Size
 
@@ -236,6 +260,12 @@ artifact_size_after=23M
 
 This task did not download additional artifacts locally or on the VPS.
 
+VPS artifact directory after deployment:
+
+```text
+artifact_size=23M
+```
+
 ## MCP Privacy
 
 No MCP server code path was changed.
@@ -243,8 +273,8 @@ No MCP server code path was changed.
 Existing tests still verify that MCP tools do not perform artifact downloads and that docs do
 not instruct public MCP exposure.
 
-The available VPS target did not show an `official-sources`, MCP, Python, Uvicorn, or FastMCP
-listener associated with this project during investigation.
+VPS process/listener checks found no `official-sources`, MCP, Python, Uvicorn, or FastMCP public
+listener after deployment.
 
 ## Known Limitations
 
@@ -252,21 +282,14 @@ listener associated with this project during investigation.
   full event history.
 - Availability status is derived from current `document_files` in read paths; stored
   availability columns are snapshots from the last evidence mark.
-- VPS operational marking remains pending until the correct deployment host/path/database is
-  confirmed.
-- The two known false-positive labels remain pending on the VPS for the same reason.
+- `candidate-evidence-status --profile la-ayuda` depends on `source_candidates.project_key`.
+  The pilot candidates were verified by explicit candidate IDs and by date range.
 - PDF signature validation is still not implemented; PDF files are hashed and audited only.
 
 ## Next Recommended Task
 
-TASK-004D-FOLLOWUP1: confirm the correct VPS deployment target and database path, then run:
-
-```bash
-official-sources db migrate
-official-sources db validate
-official-sources mark-candidate-evidence --candidate-id 1 --evidence-label likely_relevant --evidence-review-status evidence_downloaded
-official-sources candidate-evidence-status --candidate-ids 1,3,10,11,14,17,18,20,21,23
-official-sources db validate
-```
+TASK-004E: add a human review export/checklist for the 10 likely relevant candidates that
+references XML/HTML evidence metadata, preserves `human_review_required`, and still avoids
+approval/publication.
 
 Do not download PDFs during that follow-up unless explicitly authorized.
