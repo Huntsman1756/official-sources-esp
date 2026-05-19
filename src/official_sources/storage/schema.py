@@ -136,6 +136,24 @@ CREATE TABLE IF NOT EXISTS candidate_evidence_reviews (
     html_available INTEGER NOT NULL DEFAULT 0 CHECK(html_available IN (0, 1)),
     pdf_available INTEGER NOT NULL DEFAULT 0 CHECK(pdf_available IN (0, 1)),
     integrity_warning INTEGER NOT NULL DEFAULT 0 CHECK(integrity_warning IN (0, 1)),
+    manual_decision TEXT
+        CHECK(manual_decision IS NULL OR manual_decision IN (
+            'accept_for_downstream_pilot',
+            'needs_more_evidence',
+            'reject_false_positive',
+            'out_of_scope',
+            'defer'
+        )),
+    manual_notes TEXT,
+    needs_pdf TEXT CHECK(needs_pdf IS NULL OR needs_pdf IN ('yes', 'no')),
+    downstream_project_fit TEXT
+        CHECK(downstream_project_fit IS NULL OR downstream_project_fit IN (
+            'la-ayuda',
+            'EduAyudas',
+            'both',
+            'neither',
+            'unclear'
+        )),
     reviewed_by TEXT,
     reviewed_at TEXT,
     created_at TEXT NOT NULL,

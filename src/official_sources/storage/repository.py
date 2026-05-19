@@ -22,6 +22,15 @@ EVIDENCE_LABELS = {
     "false_positive",
     "out_of_scope",
 }
+MANUAL_DECISIONS = {
+    "accept_for_downstream_pilot",
+    "needs_more_evidence",
+    "reject_false_positive",
+    "out_of_scope",
+    "defer",
+}
+NEEDS_PDF_VALUES = {"yes", "no"}
+DOWNSTREAM_PROJECT_FITS = {"la-ayuda", "EduAyudas", "both", "neither", "unclear"}
 EVIDENCE_SELECTED_STATUSES = {
     "evidence_selected",
     "evidence_downloaded",
@@ -1045,12 +1054,26 @@ class OfficialSourcesRepository:
         evidence_notes: str | None = None,
         selected_for_evidence: bool | None = None,
         selected_for_pdf: bool | None = None,
+        manual_decision: str | None = None,
+        manual_notes: str | None = None,
+        needs_pdf: str | None = None,
+        downstream_project_fit: str | None = None,
         reviewed_by: str | None = None,
+        reviewed_at: str | None = None,
     ) -> dict[str, Any]:
         if evidence_review_status not in EVIDENCE_REVIEW_STATUSES:
             raise ValueError(f"Unsupported evidence review status: {evidence_review_status}")
         if evidence_label is not None and evidence_label not in EVIDENCE_LABELS:
             raise ValueError(f"Unsupported evidence label: {evidence_label}")
+        if manual_decision is not None and manual_decision not in MANUAL_DECISIONS:
+            raise ValueError(f"Unsupported manual decision: {manual_decision}")
+        if needs_pdf is not None and needs_pdf not in NEEDS_PDF_VALUES:
+            raise ValueError(f"Unsupported needs PDF value: {needs_pdf}")
+        if (
+            downstream_project_fit is not None
+            and downstream_project_fit not in DOWNSTREAM_PROJECT_FITS
+        ):
+            raise ValueError(f"Unsupported downstream project fit: {downstream_project_fit}")
         candidate = self.get_source_candidate(source_candidate_id)
         if candidate is None:
             raise KeyError(f"Unknown source candidate: {source_candidate_id}")
@@ -1065,6 +1088,7 @@ class OfficialSourcesRepository:
             ).fetchone()
         )
         now = utc_now()
+        review_timestamp = reviewed_at or now
         if existing is None:
             selected_evidence_value = (
                 evidence_review_status in EVIDENCE_SELECTED_STATUSES
@@ -1072,15 +1096,18 @@ class OfficialSourcesRepository:
                 else selected_for_evidence
             )
             selected_pdf_value = False if selected_for_pdf is None else selected_for_pdf
+            if needs_pdf == "yes":
+                selected_pdf_value = True
             self.connection.execute(
                 """
                 INSERT INTO candidate_evidence_reviews (
                     source_candidate_id, evidence_review_status, evidence_label,
                     evidence_notes, selected_for_evidence, selected_for_pdf,
                     xml_available, html_available, pdf_available, integrity_warning,
+                    manual_decision, manual_notes, needs_pdf, downstream_project_fit,
                     reviewed_by, reviewed_at, created_at, updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     source_candidate_id,
@@ -1093,8 +1120,12 @@ class OfficialSourcesRepository:
                     1 if availability["html_available"] else 0,
                     1 if availability["pdf_available"] else 0,
                     1 if availability["integrity_warning"] else 0,
+                    manual_decision,
+                    manual_notes,
+                    needs_pdf,
+                    downstream_project_fit,
                     reviewed_by,
-                    now,
+                    review_timestamp,
                     now,
                     now,
                 ),
@@ -1113,6 +1144,10 @@ class OfficialSourcesRepository:
             selected_pdf_value = (
                 bool(existing["selected_for_pdf"]) if selected_for_pdf is None else selected_for_pdf
             )
+            if needs_pdf == "yes":
+                selected_pdf_value = True
+            elif needs_pdf == "no" and selected_for_pdf is None:
+                selected_pdf_value = False
             self.connection.execute(
                 """
                 UPDATE candidate_evidence_reviews
@@ -1125,6 +1160,10 @@ class OfficialSourcesRepository:
                     html_available = ?,
                     pdf_available = ?,
                     integrity_warning = ?,
+                    manual_decision = ?,
+                    manual_notes = ?,
+                    needs_pdf = ?,
+                    downstream_project_fit = ?,
                     reviewed_by = ?,
                     reviewed_at = ?,
                     updated_at = ?
@@ -1140,8 +1179,20 @@ class OfficialSourcesRepository:
                     1 if availability["html_available"] else 0,
                     1 if availability["pdf_available"] else 0,
                     1 if availability["integrity_warning"] else 0,
+                    (
+                        manual_decision
+                        if manual_decision is not None
+                        else existing["manual_decision"]
+                    ),
+                    manual_notes if manual_notes is not None else existing["manual_notes"],
+                    needs_pdf if needs_pdf is not None else existing["needs_pdf"],
+                    (
+                        downstream_project_fit
+                        if downstream_project_fit is not None
+                        else existing["downstream_project_fit"]
+                    ),
                     reviewed_by if reviewed_by is not None else existing["reviewed_by"],
-                    now,
+                    review_timestamp,
                     now,
                     source_candidate_id,
                 ),
@@ -1195,6 +1246,12 @@ class OfficialSourcesRepository:
                 COALESCE(r.evidence_review_status, 'not_reviewed')
                     AS evidence_review_status,
                 r.evidence_label AS evidence_label,
+                r.manual_decision AS manual_decision,
+                r.manual_notes AS manual_notes,
+                r.needs_pdf AS needs_pdf,
+                r.downstream_project_fit AS downstream_project_fit,
+                r.reviewed_by AS reviewed_by,
+                r.reviewed_at AS reviewed_at,
                 COALESCE(r.selected_for_evidence, 0) AS selected_for_evidence,
                 COALESCE(r.selected_for_pdf, 0) AS selected_for_pdf,
                 CASE WHEN EXISTS (

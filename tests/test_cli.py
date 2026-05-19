@@ -770,7 +770,15 @@ def test_cli_does_not_expose_mcp_write_tools_or_downstream_publication():
     assert "mcp.tool" not in source
     assert "human_accepted" not in source
     assert "publish" not in source.lower()
-    assert "downstream" not in source.lower()
+    downstream_lines = [
+        line
+        for line in source.lower().splitlines()
+        if "downstream" in line
+        and "downstream_project" not in line
+        and "downstream-project" not in line
+        and "downstream project fit" not in line
+    ]
+    assert downstream_lines == []
 
 
 def test_cli_accepts_today_for_systemd_templates(tmp_path, capsys):

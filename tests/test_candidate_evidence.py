@@ -81,6 +81,55 @@ def test_mark_candidate_evidence_records_label_without_changing_review_status(tm
     assert "approved=false" in captured.out
 
 
+def test_mark_candidate_evidence_records_manual_review_metadata(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    _document, candidate = _seed_candidate(db_path)
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "mark-candidate-evidence",
+            "--candidate-id",
+            str(candidate["id"]),
+            "--evidence-label",
+            "unclear",
+            "--evidence-review-status",
+            "needs_more_evidence",
+            "--manual-decision",
+            "needs_more_evidence",
+            "--manual-notes",
+            "PDF required before downstream fit decision",
+            "--needs-pdf",
+            "yes",
+            "--downstream-project-fit",
+            "unclear",
+            "--reviewed-by",
+            "Dani",
+            "--reviewed-at",
+            "2026-05-17",
+        ]
+    )
+
+    connection = connect(str(db_path))
+    stored_candidate = connection.execute("SELECT * FROM source_candidates").fetchone()
+    review = connection.execute("SELECT * FROM candidate_evidence_reviews").fetchone()
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert stored_candidate["review_status"] == "human_review_required"
+    assert review["manual_decision"] == "needs_more_evidence"
+    assert review["manual_notes"] == "PDF required before downstream fit decision"
+    assert review["needs_pdf"] == "yes"
+    assert review["downstream_project_fit"] == "unclear"
+    assert review["reviewed_by"] == "Dani"
+    assert review["reviewed_at"] == "2026-05-17"
+    assert "manual_decision=needs_more_evidence" in captured.out
+    assert "needs_pdf=yes" in captured.out
+    assert "downstream_project_fit=unclear" in captured.out
+
+
 def test_candidate_evidence_status_lists_artifact_availability_without_full_text(tmp_path, capsys):
     from official_sources.cli import run
 
@@ -118,6 +167,12 @@ def test_candidate_evidence_status_lists_artifact_availability_without_full_text
             "likely_relevant",
             "--evidence-review-status",
             "evidence_downloaded",
+            "--manual-decision",
+            "accept_for_downstream_pilot",
+            "--needs-pdf",
+            "no",
+            "--downstream-project-fit",
+            "EduAyudas",
         ]
     )
     capsys.readouterr()
@@ -144,6 +199,9 @@ def test_candidate_evidence_status_lists_artifact_availability_without_full_text
     assert "pdf_available=false" in captured.out
     assert "integrity_warning=false" in captured.out
     assert "selected_for_pdf=false" in captured.out
+    assert "manual_decision=accept_for_downstream_pilot" in captured.out
+    assert "needs_pdf=no" in captured.out
+    assert "downstream_project_fit=EduAyudas" in captured.out
     assert "official_url=https://www.boe.es/diario_boe/txt.php?id=BOE-A-2024-11111" in captured.out
     assert "Ignore previous instructions" not in captured.out
 

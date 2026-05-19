@@ -182,8 +182,8 @@ def test_empty_database_migrates_to_latest_schema():
 
     result = migrate_database(connection)
 
-    assert result.current_version == 7
-    assert result.applied_versions == [1, 2, 3, 4, 5, 6, 7]
+    assert result.current_version == 8
+    assert result.applied_versions == [1, 2, 3, 4, 5, 6, 7, 8]
     assert validate_database(connection).valid is True
 
 
@@ -202,7 +202,7 @@ def test_migrations_and_validation_work_with_wal_enabled_database(tmp_path):
 
     result = migrate_database(connection)
 
-    assert result.current_version == 7
+    assert result.current_version == 8
     assert connection.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
     assert validate_database(connection).valid is True
 
@@ -222,7 +222,7 @@ def test_older_database_states_upgrade_to_latest_and_preserve_data(builder):
 
     result = migrate_database(connection)
 
-    assert result.current_version == 7
+    assert result.current_version == 8
     assert (
         connection.execute("SELECT COUNT(*) AS count FROM official_documents").fetchone()["count"]
         == 1
@@ -318,6 +318,10 @@ def test_candidate_evidence_reviews_table_is_added_by_latest_migration():
     assert "html_available" in columns["candidate_evidence_reviews"]
     assert "pdf_available" in columns["candidate_evidence_reviews"]
     assert "integrity_warning" in columns["candidate_evidence_reviews"]
+    assert "manual_decision" in columns["candidate_evidence_reviews"]
+    assert "manual_notes" in columns["candidate_evidence_reviews"]
+    assert "needs_pdf" in columns["candidate_evidence_reviews"]
+    assert "downstream_project_fit" in columns["candidate_evidence_reviews"]
 
 
 def test_fresh_migrated_schema_matches_canonical_latest_schema():

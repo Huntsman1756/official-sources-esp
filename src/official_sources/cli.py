@@ -35,8 +35,11 @@ from official_sources.storage.migrations.runner import (
     validate_database,
 )
 from official_sources.storage.repository import (
+    DOWNSTREAM_PROJECT_FITS,
     EVIDENCE_LABELS,
     EVIDENCE_REVIEW_STATUSES,
+    MANUAL_DECISIONS,
+    NEEDS_PDF_VALUES,
     OfficialSourcesRepository,
 )
 
@@ -255,7 +258,12 @@ def build_parser() -> argparse.ArgumentParser:
     mark_evidence.add_argument("--notes")
     mark_evidence.add_argument("--selected-for-evidence", action="store_true")
     mark_evidence.add_argument("--selected-for-pdf", action="store_true")
+    mark_evidence.add_argument("--manual-decision", choices=sorted(MANUAL_DECISIONS))
+    mark_evidence.add_argument("--manual-notes")
+    mark_evidence.add_argument("--needs-pdf", choices=sorted(NEEDS_PDF_VALUES))
+    mark_evidence.add_argument("--downstream-project-fit", choices=sorted(DOWNSTREAM_PROJECT_FITS))
     mark_evidence.add_argument("--reviewed-by")
+    mark_evidence.add_argument("--reviewed-at")
 
     check = subparsers.add_parser("integrity-check", help="Recompute local artifact hashes.")
     check.add_argument(
@@ -939,7 +947,12 @@ def _run_mark_candidate_evidence(
             evidence_notes=args.notes,
             selected_for_evidence=args.selected_for_evidence or None,
             selected_for_pdf=args.selected_for_pdf or None,
+            manual_decision=args.manual_decision,
+            manual_notes=args.manual_notes,
+            needs_pdf=args.needs_pdf,
+            downstream_project_fit=args.downstream_project_fit,
             reviewed_by=args.reviewed_by,
+            reviewed_at=args.reviewed_at,
         )
     except (KeyError, ValueError) as exc:
         print(str(exc), file=stderr)
@@ -953,6 +966,11 @@ def _run_mark_candidate_evidence(
                 "review_status": candidate["review_status"],
                 "evidence_review_status": review["evidence_review_status"],
                 "evidence_label": review["evidence_label"] or "none",
+                "manual_decision": review["manual_decision"] or "none",
+                "needs_pdf": review["needs_pdf"] or "none",
+                "downstream_project_fit": review["downstream_project_fit"] or "none",
+                "reviewed_by": review["reviewed_by"] or "none",
+                "reviewed_at": review["reviewed_at"] or "none",
                 "selected_for_evidence": _bool_token(review["selected_for_evidence"]),
                 "selected_for_pdf": _bool_token(review["selected_for_pdf"]),
                 "xml_available": _bool_token(review["xml_available"]),
@@ -1528,6 +1546,11 @@ def _format_candidate_evidence_row(row: dict[str, Any]) -> str:
             "review_status": row["review_status"],
             "evidence_review_status": row["evidence_review_status"],
             "evidence_label": row["evidence_label"] or "none",
+            "manual_decision": row["manual_decision"] or "none",
+            "needs_pdf": row["needs_pdf"] or "none",
+            "downstream_project_fit": row["downstream_project_fit"] or "none",
+            "reviewed_by": row["reviewed_by"] or "none",
+            "reviewed_at": row["reviewed_at"] or "none",
             "xml_available": _bool_token(row["xml_available"]),
             "html_available": _bool_token(row["html_available"]),
             "pdf_available": _bool_token(row["pdf_available"]),
