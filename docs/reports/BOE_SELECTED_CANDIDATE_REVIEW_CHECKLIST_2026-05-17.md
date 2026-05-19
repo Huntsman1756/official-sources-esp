@@ -41,7 +41,12 @@ html_available=10
 pdf_available=0
 integrity_warnings=0
 hashes_match=10
-manual_fields_prefilled=0
+manual_fields_completed=10
+accept_for_downstream_pilot=4
+needs_more_evidence=4
+out_of_scope=2
+needs_pdf_yes=4
+needs_pdf_no=6
 ```
 
 The optional CSV export was created locally outside tracked docs:
@@ -51,6 +56,22 @@ data/review_exports/boe_selected_candidate_review_2026-05-17.csv
 ```
 
 `data/` is ignored by Git, so the CSV export is not committed.
+
+## Human Review Outcome
+
+The human reviewer filled the manual fields based on title and metadata review only.
+
+```text
+reviewer=Dani
+reviewed_at=2026-05-17
+pilot_candidate_ids=1,11,17,18
+needs_more_evidence_candidate_ids=3,20,21,23
+out_of_scope_candidate_ids=10,14
+pdf_requested_candidate_ids=3,20,21,23
+```
+
+This manual checklist does not change `source_candidates.review_status`, does not approve
+candidates, and does not publish anything.
 
 ## PDF Policy Reminder
 
@@ -114,20 +135,21 @@ All selected candidates have matching XML/HTML snapshot and content hashes.
 
 ## Manual Review Checklist
 
-Manual fields are intentionally empty. They must be filled only by a human reviewer.
+Manual fields were filled by the human reviewer. These are review notes for a downstream pilot
+decision, not approval or publication status inside `official-sources`.
 
 | Candidate ID | Official identifier | Manual decision | Manual notes | Needs PDF | Downstream project fit | Reviewer | Reviewed at |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | BOE-B-2026-15543 |  |  |  |  |  |  |
-| 3 | BOE-B-2026-15552 |  |  |  |  |  |  |
-| 10 | BOE-B-2026-15334 |  |  |  |  |  |  |
-| 11 | BOE-B-2026-15350 |  |  |  |  |  |  |
-| 14 | BOE-B-2026-15228 |  |  |  |  |  |  |
-| 17 | BOE-B-2026-15263 |  |  |  |  |  |  |
-| 18 | BOE-B-2026-14562 |  |  |  |  |  |  |
-| 20 | BOE-B-2026-14487 |  |  |  |  |  |  |
-| 21 | BOE-B-2026-14488 |  |  |  |  |  |  |
-| 23 | BOE-B-2026-14385 |  |  |  |  |  |  |
+| 1 | BOE-B-2026-15543 | `accept_for_downstream_pilot` | Fits as a training grant for young university graduates in an official master program. | `no` | `EduAyudas` | Dani | 2026-05-17 |
+| 3 | BOE-B-2026-15552 | `needs_more_evidence` | European Solidarity Corps may fit, but beneficiaries, age, country, management, and product fit need review. | `yes` | `unclear` | Dani | 2026-05-17 |
+| 10 | BOE-B-2026-15334 | `out_of_scope` | Social action grants tied to organizations related to the Navy; not a general citizen or student aid. | `no` | `neither` | Dani | 2026-05-17 |
+| 11 | BOE-B-2026-15350 | `accept_for_downstream_pilot` | Strong candidate for textbook and teaching or IT materials aid for students. | `no` | `both` | Dani | 2026-05-17 |
+| 14 | BOE-B-2026-15228 | `out_of_scope` | Experiential employment and training programs in Melilla; likely institutional rather than general education aid. | `no` | `neither` | Dani | 2026-05-17 |
+| 17 | BOE-B-2026-15263 | `accept_for_downstream_pilot` | Clear training scholarship candidate. | `no` | `EduAyudas` | Dani | 2026-05-17 |
+| 18 | BOE-B-2026-14562 | `accept_for_downstream_pilot` | Very strong candidate for students with specific educational support needs. | `no` | `both` | Dani | 2026-05-17 |
+| 20 | BOE-B-2026-14487 | `needs_more_evidence` | Climate change training scholarships may fit; requirements and target recipients need review. | `yes` | `unclear` | Dani | 2026-05-17 |
+| 21 | BOE-B-2026-14488 | `needs_more_evidence` | Fundacion Biodiversidad training scholarships may fit; rules and target recipients need review. | `yes` | `unclear` | Dani | 2026-05-17 |
+| 23 | BOE-B-2026-14385 | `needs_more_evidence` | Likely aimed at entities or projects for intangible cultural heritage; needs evidence before product fit decision. | `yes` | `unclear` | Dani | 2026-05-17 |
 
 ## Allowed Manual Values
 
@@ -175,13 +197,14 @@ result=no_matching_public_listener
 
 ## Next Recommended Review Action
 
-Have a human reviewer inspect each selected candidate using the official URL and cached XML/HTML
-evidence. The reviewer should fill `manual_decision`, `manual_notes`, `needs_pdf`,
-`downstream_project_fit`, `reviewer`, and `reviewed_at`.
+Prepare downstream pilot intake for candidate IDs `1,11,17,18`, keeping downstream approval
+separate from `official-sources`.
 
-Only after explicit human review should a separate downstream project decide whether to create
-its own pilot candidate. `official-sources` must keep `source_candidates.review_status` as
-`human_review_required`.
+For candidate IDs `3,20,21,23`, request explicit PDF downloads only if the next review step
+requires official PDF validation. Candidate IDs `10,14` should stay available as evidence but
+should not be passed to the downstream pilot at this stage.
+
+`official-sources` must keep `source_candidates.review_status` as `human_review_required`.
 
 ## Limitations
 
