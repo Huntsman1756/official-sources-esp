@@ -31,7 +31,8 @@ def test_systemd_daily_template_runs_cli_operations():
     content = (SYSTEMD_DIR / "official-sources-boe-daily.service").read_text(encoding="utf-8")
 
     assert "official-sources ingest-boe-summary --date today" in content
-    assert "official-sources download-boe-artifacts --date today --types xml,html,pdf" in content
+    assert "official-sources download-boe-artifacts --date today --types xml,html" in content
+    assert "--date today --types xml,html,pdf" not in content
     assert "official-sources status --date today" in content
 
 
