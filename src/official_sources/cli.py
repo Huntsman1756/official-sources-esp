@@ -329,16 +329,24 @@ def build_parser() -> argparse.ArgumentParser:
     candidates = subparsers.add_parser(
         "find-boe-candidates",
         description=(
-            "Create human-review candidates by keyword matching locally stored BOE titles "
-            "and metadata only. This is not legal classification and may produce false positives."
+            "Create human-review candidates by keyword matching locally stored official-source "
+            "titles and metadata only. This is not legal classification and may produce false "
+            "positives."
         ),
         help=(
-            "Create human-review candidates by keyword matching locally stored BOE titles "
-            "and metadata only. This is not legal classification and may produce false positives."
+            "Create human-review candidates by keyword matching locally stored official-source "
+            "titles and metadata only. This is not legal classification and may produce false "
+            "positives."
         ),
     )
     candidates.add_argument("--date-from", required=True, help="Start date in YYYY-MM-DD format.")
     candidates.add_argument("--date-to", required=True, help="End date in YYYY-MM-DD format.")
+    candidates.add_argument(
+        "--source",
+        choices=["BOE", "BOJA"],
+        default="BOE",
+        help="Official source code to scan. Default: BOE.",
+    )
     candidates.add_argument(
         "--keywords",
         help="Comma-separated keywords. Matches titles and metadata only, not full content.",
@@ -1145,7 +1153,12 @@ def _run_find_candidates(
         )
         return 2
     filters = _candidate_filters(args)
-    documents = repository.search_documents(date_from=date_from, date_to=date_to, limit=100000)
+    documents = repository.search_documents(
+        date_from=date_from,
+        date_to=date_to,
+        source_code=args.source,
+        limit=100000,
+    )
     excluded_by_section = 0
     excluded_by_department = 0
     excluded_by_keyword_rules = 0
@@ -1202,6 +1215,7 @@ def _run_find_candidates(
         _format_counts(
             {
                 "documents_scanned": len(documents),
+                "source": args.source,
                 "matches_total": total_matches,
                 "matches_after_filters": len(matched_items),
                 "documents_matched": len(matched_items),

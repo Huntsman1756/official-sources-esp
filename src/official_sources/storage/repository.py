@@ -206,10 +206,14 @@ class OfficialSourcesRepository:
         keyword: str | None = None,
         date_from: str | None = None,
         date_to: str | None = None,
+        source_code: str | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         clauses: list[str] = []
         values: list[Any] = []
+        if source_code:
+            clauses.append("s.code = ?")
+            values.append(source_code)
         if keyword:
             clauses.append("(d.title LIKE ? OR d.external_id LIKE ?)")
             like = f"%{keyword}%"

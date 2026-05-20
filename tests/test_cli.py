@@ -1307,6 +1307,105 @@ def test_find_boe_candidates_dry_run_does_not_create_candidates(tmp_path, capsys
     assert "BOE-A-2024-11111" in captured.out
 
 
+def test_find_boe_candidates_source_filter_supports_boja_dry_run(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    boe_source = repository.ensure_official_source_boe()
+    boja_source = repository.ensure_official_source_boja()
+    repository.upsert_document(
+        source_id=boe_source["id"],
+        external_id="BOE-A-2024-11111",
+        publication_date="2024-05-29",
+        title="Convocatoria de ayudas estatales",
+    )
+    repository.upsert_document(
+        source_id=boja_source["id"],
+        external_id="BOJA:disposition.2026.94.5",
+        publication_date="2024-05-29",
+        title="Subvenciones para formacion profesional",
+        department="Consejeria de Desarrollo Educativo y Formacion Profesional",
+        section="3. Otras disposiciones",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--source",
+            "BOJA",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--profile",
+            "la-ayuda",
+            "--dry-run",
+        ]
+    )
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert candidate_count == 0
+    assert "source=BOJA" in captured.out
+    assert "documents_scanned=1" in captured.out
+    assert "matches_after_filters=1" in captured.out
+    assert "BOJA:disposition.2026.94.5" in captured.out
+    assert "BOE-A-2024-11111" not in captured.out
+
+
+def test_find_boe_candidates_default_source_remains_boe(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    boe_source = repository.ensure_official_source_boe()
+    boja_source = repository.ensure_official_source_boja()
+    repository.upsert_document(
+        source_id=boe_source["id"],
+        external_id="BOE-A-2024-11111",
+        publication_date="2024-05-29",
+        title="Convocatoria de ayudas estatales",
+    )
+    repository.upsert_document(
+        source_id=boja_source["id"],
+        external_id="BOJA:disposition.2026.94.5",
+        publication_date="2024-05-29",
+        title="Convocatoria de ayudas autonomicas",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "ayudas",
+            "--dry-run",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "source=BOE" in captured.out
+    assert "documents_scanned=1" in captured.out
+    assert "BOE-A-2024-11111" in captured.out
+    assert "BOJA:disposition.2026.94.5" not in captured.out
+
+
 def test_find_boe_candidates_no_write_alias_does_not_create_candidates(tmp_path, capsys):
     from official_sources.cli import run
 
