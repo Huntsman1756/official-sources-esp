@@ -1,0 +1,38 @@
+{
+  "source_code": "BOE",
+  "resource_type": "official_document",
+  "official_identifier": "BOE-B-2026-00000",
+  "title": "Example official document title",
+  "publication_date": "2026-05-20",
+  "version_date": null,
+  "official_url": "https://www.boe.es/...",
+  "citation": {
+    "source_code": "BOE",
+    "source_name": "Boletin Oficial del Estado",
+    "official_identifier": "BOE-B-2026-00000",
+    "title": "Example official document title",
+    "official_url": "https://www.boe.es/...",
+    "publication_date": "2026-05-20"
+  },
+  "integrity": {
+    "source_snapshot_hash": "sha256:...",
+    "content_sha256": "sha256:...",
+    "hashes_match": true,
+    "last_integrity_check_at": "2026-05-20T00:00:00Z",
+    "content_changed_at": null,
+    "has_integrity_warning": false,
+    "integrity_warning_reason": null
+  },
+  "artifacts": {
+    "xml_available": true,
+    "html_available": true,
+    "pdf_available": false
+  },
+  "official_sources_candidate": {
+    "candidate_id": 123,
+    "manual_decision": "accept_for_downstream_pilot",
+    "evidence_label": "likely_relevant",
+    "evidence_review_status": "evidence_reviewed",
+    "downstream_project_fit": "EduAyudas"
+  }
+}

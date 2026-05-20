@@ -456,6 +456,19 @@ BOJA pilot closure:
 - BOJA evidence should not be imported into EduAyudas or another downstream project until the
   downstream onboarding contract and environment-safe import path are documented.
 
+## Downstream Onboarding Policy
+
+Downstream integrations must follow `docs/DOWNSTREAM_ONBOARDING.md`.
+
+Required policy:
+
+- official evidence import must write to staging first;
+- candidate creation must default to `pending_review`;
+- publication must be downstream-owned and separate from import;
+- source identifiers, citation metadata, integrity metadata, and artifact availability must be
+  preserved;
+- projects without staging/review foundation must implement foundation before importing evidence.
+
 ## Citation Requirements
 
 Citations must identify the source code, external official identifier, publication date, title, and best official URL.

@@ -1538,3 +1538,48 @@ git diff --check: passed
 ```
 
 No code changes were made, so the Python test suite was not run for this documentation-only closure.
+
+## TASK-PLATFORM-001 - Downstream Onboarding Kit
+
+Documentation-only validation was performed locally for the downstream onboarding kit.
+
+Files created:
+
+```text
+docs/DOWNSTREAM_ONBOARDING.md
+docs/examples/downstream_evidence_contract.example.json
+docs/examples/downstream_profile.example.yaml
+docs/reports/DOWNSTREAM_ONBOARDING_KIT_2026-05-20.md
+```
+
+Files updated:
+
+```text
+docs/DOWNSTREAM_CONTRACT.md
+docs/ROADMAP.md
+docs/SOURCES_POLICY.md
+docs/VALIDATION.md
+```
+
+The kit documents:
+
+```text
+required downstream staging/review capabilities
+evidence contract example
+downstream profile template
+manual export/import
+preview-only import
+evidence staging write
+candidate creation as pending_review
+draft creation after human decision
+publication anti-patterns
+project-specific onboarding notes
+```
+
+Validation:
+
+```text
+git diff --check: passed
+```
+
+No code changes were made, so the Python test suite was not run for this documentation-only task.

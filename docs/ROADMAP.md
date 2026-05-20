@@ -37,6 +37,7 @@ Scope:
 - Status output split between summary HTTP status and artifact HTTP status.
 - Pre-deploy VPS checklist.
 - ADR-001 official publication hierarchy.
+- Downstream onboarding kit for reusable project integrations.
 
 ## Not Implemented
 
@@ -119,10 +120,14 @@ Latest BOJA pilot result:
 
 Recommended next step:
 
-- `TASK-PLATFORM-001 - Downstream onboarding kit for official-sources`.
+- `TASK-PLATFORM-001 - Downstream onboarding kit for official-sources` - completed.
 
 Do not import BOJA evidence into EduAyudas until the downstream onboarding contract and
 environment-safe import path are documented.
+
+Recommended next platform/downstream step:
+
+- `TASK-LAAYUDA-FOUNDATION - add evidence/candidate staging model`.
 
 ## Future phase - EUR-Lex
 
@@ -138,4 +143,5 @@ Status: Not started.
 
 ## Future phase - Downstream integrations
 
-Status: Not started.
+Status: Onboarding contract documented. EduAyudas has a validated local/dev path; no production
+downstream rollout is implemented.

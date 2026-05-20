@@ -1,0 +1,39 @@
+project_key: example-project
+project_name: Example Project
+source_families:
+  - BOE
+  - BOJA
+accepted_resource_types:
+  - official_document
+candidate_rules:
+  allowed_manual_decisions:
+    - accept_for_downstream_pilot
+  rejected_manual_decisions:
+    - out_of_scope
+    - false_positive
+    - defer
+integrity_requirements:
+  require_hashes_match: true
+  reject_integrity_warning: true
+artifact_requirements:
+  require_any:
+    - xml
+    - html
+    - pdf
+publication_rules:
+  default_status: pending_review
+  never_publish_on_import: true
+  require_human_review: true
+  block_if_last_verified_at_null: true
+downstream_fields:
+  must_store:
+    - official_identifier
+    - official_url
+    - citation_json
+    - source_snapshot_hash
+    - content_sha256
+    - hashes_match
+    - has_integrity_warning
+review_surface:
+  required: true
+  notes: "Admin/staff review must show citation and integrity before any draft creation."

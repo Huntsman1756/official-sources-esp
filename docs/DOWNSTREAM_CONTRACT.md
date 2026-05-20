@@ -2,6 +2,14 @@
 
 This document defines how downstream projects consume `official-sources`.
 
+For the operational onboarding guide and examples, see:
+
+```text
+docs/DOWNSTREAM_ONBOARDING.md
+docs/examples/downstream_evidence_contract.example.json
+docs/examples/downstream_profile.example.yaml
+```
+
 ## Purpose
 
 Downstream projects use `official-sources` to retrieve official evidence, citations,
@@ -195,3 +203,18 @@ ingestion or artifact download step.
 6. `la-ayuda` publishes only after its own review workflow passes.
 
 No downstream integration is implemented by this repository in TASK-003F.
+
+## Onboarding Requirement
+
+Every new downstream project must have an onboarding profile and a staging/review foundation before
+evidence import.
+
+Minimum foundation:
+
+- evidence staging;
+- candidate staging with `pending_review`;
+- citation and integrity storage;
+- admin/staff review surface;
+- publication gate separate from import.
+
+Projects without this foundation should start with a foundation task, not an import task.
