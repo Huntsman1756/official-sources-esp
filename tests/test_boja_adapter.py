@@ -8,6 +8,7 @@ import pytest
 from official_sources.citation.builder import build_citation
 from official_sources.integrity.hashing import sha256_bytes
 from official_sources.sources.boja.client import BOJA_DEFAULT_PAGE_SIZE, validate_boja_date
+from official_sources.sources.boja.enrichment import enrich_boja_evidence_urls
 from official_sources.sources.boja.ingestion import BOJA_PAGE_SEPARATOR, ingest_boja_date
 from official_sources.sources.boja.parser import parse_boja_search_response
 
@@ -81,6 +82,97 @@ def test_boja_fixture_parses_documents_and_preserves_urls():
     )
     assert parsed.documents[0].raw_metadata["boja_official_id"] == "disposition.2026.94.5"
     assert parsed.documents[0].raw_metadata["hashPdf"] == "fixture-hash-1"
+
+
+def test_boja_detail_fixture_parses_nested_pdf_public_url():
+    payload = _fixture_bytes("boja_document_detail_with_pdf.json")
+
+    parsed = parse_boja_search_response(payload, target_date="2026-05-19")
+
+    assert parsed.documents[0].external_id == "BOJA:disposition.2026.94.5"
+    assert parsed.documents[0].url_pdf == (
+        "https://juntadeandalucia.es/eboja/2026/94/BOJA26-094-00002-6601-01_00337837.pdf"
+    )
+    assert parsed.documents[0].raw_metadata["pdf"][0]["pathPdf"] == (
+        "BOJA26-094-00002-6601-01_00337837"
+    )
+    assert "body" not in parsed.documents[0].raw_metadata
+
+
+def test_boja_detail_fixture_rejects_non_official_nested_pdf_url():
+    payload = _fixture_bytes("boja_document_detail_with_pdf.json").replace(
+        b"https://juntadeandalucia.es/eboja/2026/94/BOJA26-094-00002-6601-01_00337837.pdf",
+        b"https://example.com/BOJA26-094-00002-6601-01_00337837.pdf",
+    )
+
+    parsed = parse_boja_search_response(payload, target_date="2026-05-19")
+
+    assert parsed.documents[0].url_pdf is None
+
+
+def test_boja_selected_candidate_enrichment_updates_only_selected_documents(repository):
+    source = repository.ensure_official_source_boja()
+    selected = repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOJA:disposition.2026.94.5",
+        publication_date="2026-05-19",
+        title="Selected BOJA document",
+        department="Universidades",
+        section="1. Disposiciones generales",
+        raw_metadata={"id": "disposition.2026.94.5"},
+    )
+    unselected = repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOJA:disposition.2026.94.6",
+        publication_date="2026-05-19",
+        title="Unselected BOJA document",
+        department="Universidades",
+        section="1. Disposiciones generales",
+        raw_metadata={"id": "disposition.2026.94.6"},
+    )
+    repository.create_source_candidate(
+        document_id=selected["id"],
+        project_key="boja-ayudas",
+        candidate_type="aid",
+        extraction_status="raw_detected",
+        evidence_level="metadata",
+        matched_fields={"keywords": ["becas"]},
+    )
+    repository.create_source_candidate(
+        document_id=unselected["id"],
+        project_key="boja-ayudas",
+        candidate_type="aid",
+        extraction_status="raw_detected",
+        evidence_level="metadata",
+        matched_fields={"keywords": ["becas"]},
+    )
+    candidate_id = repository.connection.execute(
+        "SELECT id FROM source_candidates WHERE document_id = ?", (selected["id"],)
+    ).fetchone()["id"]
+    calls: list[str] = []
+
+    def fetcher(official_id: str) -> bytes:
+        calls.append(official_id)
+        return _fixture_bytes("boja_document_detail_with_pdf.json")
+
+    result = enrich_boja_evidence_urls(
+        repository,
+        candidate_ids=[candidate_id],
+        fetcher=fetcher,
+    )
+
+    selected_after = repository.get_document_by_external_id("BOJA:disposition.2026.94.5")
+    unselected_after = repository.get_document_by_external_id("BOJA:disposition.2026.94.6")
+    candidate_count = repository.connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+
+    assert result["selected_documents"] == 1
+    assert result["enriched"] == 1
+    assert calls == ["disposition.2026.94.5"]
+    assert selected_after["url_pdf"].endswith("BOJA26-094-00002-6601-01_00337837.pdf")
+    assert unselected_after["url_pdf"] is None
+    assert candidate_count == 2
 
 
 def test_boja_raw_hash_is_computed_before_parsing():

@@ -4,7 +4,7 @@ import os
 import time
 from collections.abc import Callable, Mapping
 from datetime import date
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 import httpx
 
@@ -57,6 +57,17 @@ def build_boja_search_url(
     return f"{base_url.rstrip('/')}{BOJA_SEARCH_ENDPOINT}?{query}"
 
 
+def build_boja_detail_url(
+    official_id: str,
+    *,
+    base_url: str = BOJA_API_BASE_URL,
+) -> str:
+    official_id = official_id.strip()
+    if not official_id:
+        raise ValueError("BOJA official identifier is required")
+    return f"{base_url.rstrip('/')}/{quote(official_id, safe='')}"
+
+
 class BOJAClient:
     def __init__(
         self,
@@ -93,6 +104,17 @@ class BOJAClient:
 
     def fetch_date(self, target_date: str) -> bytes:
         return self.fetch_date_page(target_date, page=0, size=BOJA_DEFAULT_PAGE_SIZE)
+
+    def fetch_document_detail(self, official_id: str) -> bytes:
+        url = build_boja_detail_url(official_id, base_url=self.base_url)
+        if self.client is not None:
+            result = self._get(url, self.client)
+        else:
+            with httpx.Client(follow_redirects=False, timeout=self.timeout) as client:
+                result = self._get(url, client)
+        self.last_request_audit = result.audit
+        result.raise_for_status()
+        return result.content
 
     def _get(self, url: str, client: httpx.Client):
         return self.request_policy.get(

@@ -6,11 +6,13 @@ from dataclasses import dataclass
 from datetime import date
 from html import unescape
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 from official_sources.integrity.hashing import sha256_bytes
 
 BOJA_PORTAL_BASE_URL = "https://www.juntadeandalucia.es"
+BOJA_ALLOWED_HOSTS = {"www.juntadeandalucia.es", "juntadeandalucia.es"}
+BOJA_RAW_METADATA_OMIT_KEYS = {"body", "bodyNoHtml"}
 
 
 @dataclass(frozen=True)
@@ -66,7 +68,8 @@ def _extract_documents(results: list[Any]) -> list[BOJADocumentMetadata | None]:
             continue
         publication_date = _format_boja_date(item.get("date"))
         public_url = _url_or_none(item.get("publicUrl"))
-        pdf_url = _absolute_portal_url(_url_or_none(item.get("pathPdf")))
+        pdf_metadata = _first_pdf_metadata(item)
+        pdf_url = _pdf_url_from_item(item, pdf_metadata)
         documents.append(
             BOJADocumentMetadata(
                 external_id=f"BOJA:{official_id}",
@@ -79,7 +82,7 @@ def _extract_documents(results: list[Any]) -> list[BOJADocumentMetadata | None]:
                 url_html=public_url,
                 url_xml=None,
                 url_pdf=pdf_url,
-                raw_metadata={**item, "boja_official_id": official_id},
+                raw_metadata=_safe_raw_metadata(item, official_id=official_id),
             )
         )
     return documents
@@ -112,6 +115,58 @@ def _absolute_portal_url(value: str | None) -> str | None:
     if value is None:
         return None
     return urljoin(f"{BOJA_PORTAL_BASE_URL}/", value)
+
+
+def _pdf_url_from_item(item: dict[str, Any], pdf_metadata: dict[str, Any] | None) -> str | None:
+    candidates = [
+        _url_or_none(item.get("pathPdf")),
+        _url_or_none(item.get("publicUrl")),
+    ]
+    if pdf_metadata is not None:
+        candidates = [
+            _url_or_none(pdf_metadata.get("publicUrl")),
+            _url_or_none(pdf_metadata.get("pathPdf")),
+            *candidates,
+        ]
+    for candidate in candidates:
+        normalized = _official_pdf_url_or_none(candidate)
+        if normalized:
+            return normalized
+    return None
+
+
+def _official_pdf_url_or_none(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = _absolute_portal_url(value)
+    parsed = urlsplit(normalized)
+    if parsed.scheme != "https":
+        return None
+    if parsed.hostname not in BOJA_ALLOWED_HOSTS:
+        return None
+    if not parsed.path.startswith("/eboja/"):
+        return None
+    if not parsed.path.lower().endswith(".pdf"):
+        return None
+    return normalized
+
+
+def _first_pdf_metadata(item: dict[str, Any]) -> dict[str, Any] | None:
+    value = item.get("pdf")
+    if isinstance(value, list):
+        for entry in value:
+            if isinstance(entry, dict):
+                return entry
+    if isinstance(value, dict):
+        return value
+    return None
+
+
+def _safe_raw_metadata(item: dict[str, Any], *, official_id: str) -> dict[str, Any]:
+    return {
+        **{key: value for key, value in item.items() if key not in BOJA_RAW_METADATA_OMIT_KEYS},
+        "boja_official_id": official_id,
+    }
 
 
 def _url_or_none(value: Any) -> str | None:

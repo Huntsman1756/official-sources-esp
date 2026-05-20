@@ -1,0 +1,27 @@
+{
+  "hits": 1,
+  "total_hits": 1,
+  "schema": {},
+  "results": [
+    {
+      "id": "disposition.2026.94.5",
+      "number": 94,
+      "date": "19/05/2026",
+      "titleSec": "1. Disposiciones generales",
+      "organisation": "Universidades",
+      "type": "Extractos",
+      "summaryNoHtml": "Extracto de la Resolucion de 8 de mayo de 2026, de la Universidad de Huelva, por la que se convocan ayudas a estudiantes universitarios.",
+      "hasPdf": true,
+      "pdf": [
+        {
+          "signatureFile": "",
+          "pathPdf": "BOJA26-094-00002-6601-01_00337837",
+          "id_file": 1,
+          "publicUrl": "https://juntadeandalucia.es/eboja/2026/94/BOJA26-094-00002-6601-01_00337837.pdf",
+          "hashPdf": "RqqPbkB6KuNY7A0RaOos9YdJbnU="
+        }
+      ],
+      "body": "This fixture body must not be copied into enriched metadata."
+    }
+  ]
+}

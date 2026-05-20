@@ -4,7 +4,7 @@ from pathlib import Path
 
 import httpx
 
-from official_sources.storage.database import connect
+from official_sources.storage.database import connect, initialize_database
 from official_sources.storage.repository import OfficialSourcesRepository
 
 
@@ -98,3 +98,78 @@ def test_ingest_boja_date_cli_records_observed_400_no_publication(tmp_path, caps
     assert "status=no_publication" in captured.out
     assert "pagination_complete=true" in captured.out
     assert "last_http_status=400" in captured.out
+
+
+def test_enrich_boja_evidence_urls_cli_updates_selected_candidate_only(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boja()
+    selected = repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOJA:disposition.2026.94.5",
+        publication_date="2026-05-19",
+        title="Selected BOJA document",
+        department="Universidades",
+        section="1. Disposiciones generales",
+        raw_metadata={"id": "disposition.2026.94.5"},
+    )
+    unselected = repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOJA:disposition.2026.94.6",
+        publication_date="2026-05-19",
+        title="Unselected BOJA document",
+        department="Universidades",
+        section="1. Disposiciones generales",
+        raw_metadata={"id": "disposition.2026.94.6"},
+    )
+    repository.create_source_candidate(
+        document_id=selected["id"],
+        project_key="boja-ayudas",
+        candidate_type="aid",
+        extraction_status="raw_detected",
+        evidence_level="metadata",
+        matched_fields={"keywords": ["becas"]},
+    )
+    repository.create_source_candidate(
+        document_id=unselected["id"],
+        project_key="boja-ayudas",
+        candidate_type="aid",
+        extraction_status="raw_detected",
+        evidence_level="metadata",
+        matched_fields={"keywords": ["becas"]},
+    )
+    candidate_id = repository.connection.execute(
+        "SELECT id FROM source_candidates WHERE document_id = ?", (selected["id"],)
+    ).fetchone()["id"]
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "enrich-boja-evidence-urls",
+            "--candidate-ids",
+            str(candidate_id),
+        ],
+        boja_detail_fetcher=lambda _official_id: _fixture_bytes(
+            "boja_document_detail_with_pdf.json"
+        ),
+    )
+
+    refreshed = OfficialSourcesRepository(connect(str(db_path)))
+    selected_after = refreshed.get_document_by_external_id("BOJA:disposition.2026.94.5")
+    unselected_after = refreshed.get_document_by_external_id("BOJA:disposition.2026.94.6")
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert selected_after["url_pdf"].endswith("BOJA26-094-00002-6601-01_00337837.pdf")
+    assert unselected_after["url_pdf"] is None
+    assert (
+        "command_started=enrich-boja-evidence-urls source_code=BOJA target=scoped" in captured.out
+    )
+    assert "selected_documents=1" in captured.out
+    assert "enriched=1" in captured.out
+    assert "missing_evidence_url=0" in captured.out

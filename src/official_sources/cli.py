@@ -29,6 +29,7 @@ from official_sources.sources.boe.http_policy import BOERequestPolicy
 from official_sources.sources.boe.ingestion import NO_PUBLICATION_STATUS, ingest_boe_summary
 from official_sources.sources.boja.artifacts import BOJA_ARTIFACT_FIELDS, BOJAArtifactDownloader
 from official_sources.sources.boja.client import validate_boja_date
+from official_sources.sources.boja.enrichment import enrich_boja_evidence_urls
 from official_sources.sources.boja.ingestion import ingest_boja_date
 from official_sources.storage.backup import SQLiteBackupError, backup_sqlite_database
 from official_sources.storage.database import connect, initialize_database, sqlite_runtime_pragmas
@@ -273,6 +274,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--date",
         required=True,
         help="Target date in YYYY-MM-DD format or today.",
+    )
+    enrich_boja = subparsers.add_parser(
+        "enrich-boja-evidence-urls",
+        help="Enrich stored BOJA documents with official evidence URLs for explicit IDs.",
+    )
+    enrich_boja.add_argument(
+        "--candidate-ids",
+        help="Comma-separated BOJA source_candidate IDs to enrich.",
+    )
+    enrich_boja.add_argument(
+        "--document-ids",
+        help="Comma-separated BOJA official_documents IDs to enrich.",
     )
     ingest_range = subparsers.add_parser(
         "ingest-boe-range",
@@ -520,6 +533,7 @@ def run(
     *,
     summary_fetcher=None,
     boja_fetcher=None,
+    boja_detail_fetcher=None,
     artifact_client: httpx.Client | None = None,
     consolidated_client: httpx.Client | None = None,
     stdout: TextIO | None = None,
@@ -539,6 +553,8 @@ def run(
     repository = _open_repository(args.db_path)
     if args.command == "ingest-boja-date":
         return _run_ingest_boja(repository, args, boja_fetcher, stdout, stderr)
+    if args.command == "enrich-boja-evidence-urls":
+        return _run_enrich_boja_evidence_urls(repository, args, boja_detail_fetcher, stdout, stderr)
     if args.command == "ingest-boe-range":
         return _run_ingest_range(repository, args, stdout, stderr)
     if args.command == "find-boe-candidates":
@@ -839,6 +855,30 @@ def _run_ingest_boja(
         file=stdout,
     )
     return 0 if run_record["status"] in {"success", NO_PUBLICATION_STATUS} else 1
+
+
+def _run_enrich_boja_evidence_urls(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        candidate_ids = _parse_id_list(args.candidate_ids, option_name="--candidate-ids")
+        document_ids = _parse_id_list(args.document_ids, option_name="--document-ids")
+        result = enrich_boja_evidence_urls(
+            repository,
+            candidate_ids=candidate_ids,
+            document_ids=document_ids,
+            fetcher=fetcher,
+        )
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print("command_started=enrich-boja-evidence-urls source_code=BOJA target=scoped", file=stdout)
+    print(_format_counts(result), file=stdout)
+    return 0 if result["failed"] == 0 else 1
 
 
 def _parse_artifact_types(value: str, *, source_code: str = "BOE") -> list[str]:
