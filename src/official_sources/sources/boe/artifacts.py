@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -73,11 +74,12 @@ class BOEArtifactDownloader:
         document = self.repository.get_document_by_external_id(external_id)
         if document is None:
             raise KeyError(f"Unknown document: {external_id}")
-        selected_types = artifact_types or list(BOE_ARTIFACT_FIELDS)
+        artifact_fields = self._artifact_fields()
+        selected_types = artifact_types or list(artifact_fields)
         results: dict[str, dict] = {}
         for artifact_type in selected_types:
             started_at = utc_now()
-            if artifact_type not in BOE_ARTIFACT_FIELDS:
+            if artifact_type not in artifact_fields:
                 self._record_attempt(
                     document_id=document["id"],
                     ingestion_run_id=ingestion_run_id,
@@ -85,11 +87,14 @@ class BOEArtifactDownloader:
                     official_url=None,
                     status="failed",
                     http_status=None,
-                    error_message=f"Unsupported BOE artifact type: {artifact_type}",
+                    error_message=f"Unsupported {self._artifact_error_prefix()} artifact type: "
+                    f"{artifact_type}",
                     started_at=started_at,
                 )
-                raise BOEArtifactDownloadError(f"Unsupported BOE artifact type: {artifact_type}")
-            field_name, filename, media_type = BOE_ARTIFACT_FIELDS[artifact_type]
+                raise self._artifact_error(
+                    f"Unsupported {self._artifact_error_prefix()} artifact type: {artifact_type}"
+                )
+            field_name, filename, media_type = artifact_fields[artifact_type]
             official_url = document[field_name]
             if not official_url:
                 self._record_attempt(
@@ -105,7 +110,7 @@ class BOEArtifactDownloader:
                 continue
             previous = self._existing_hash(document["id"], artifact_type, official_url)
             try:
-                validated_url = validate_boe_artifact_url(official_url)
+                validated_url = self._validate_artifact_url(official_url)
                 response = self._download_response(validated_url)
             except BOEArtifactDownloadError as exc:
                 self._record_attempt(
@@ -177,8 +182,9 @@ class BOEArtifactDownloader:
                     sleeper=self.sleeper,
                 )
         if not 200 <= result.status_code < 300:
-            exc = BOEArtifactDownloadError(
-                f"BOE artifact download returned HTTP {result.status_code}"
+            exc = self._artifact_error(
+                f"{self._artifact_error_prefix()} artifact download returned HTTP "
+                f"{result.status_code}"
             )
             exc.http_status = result.status_code
             exc.retry_count = result.audit.retry_count
@@ -241,11 +247,33 @@ class BOEArtifactDownloader:
         payload: bytes,
     ) -> Path:
         year, month, day = publication_date.split("-")
-        directory = self.cache_dir / "boe" / year / month / day / external_id
+        directory = (
+            self.cache_dir
+            / self._cache_source_dir()
+            / year
+            / month
+            / day
+            / _safe_artifact_path_segment(external_id)
+        )
         directory.mkdir(parents=True, exist_ok=True)
         path = directory / filename
         path.write_bytes(payload)
         return path
+
+    def _artifact_fields(self) -> dict[str, tuple[str, str, str]]:
+        return BOE_ARTIFACT_FIELDS
+
+    def _validate_artifact_url(self, url: str) -> str:
+        return validate_boe_artifact_url(url)
+
+    def _artifact_error(self, message: str) -> BOEArtifactDownloadError:
+        return BOEArtifactDownloadError(message)
+
+    def _artifact_error_prefix(self) -> str:
+        return "BOE"
+
+    def _cache_source_dir(self) -> str:
+        return "boe"
 
     def _store_extracted_text(
         self,
@@ -274,6 +302,10 @@ class BOEArtifactDownloader:
 def extract_text_from_xml(payload: bytes) -> str:
     root = ElementTree.fromstring(payload)
     return " ".join(part.strip() for part in root.itertext() if part.strip())
+
+
+def _safe_artifact_path_segment(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", value).strip("_") or "document"
 
 
 class _TextOnlyHTMLParser(HTMLParser):

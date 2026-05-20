@@ -27,6 +27,7 @@ from official_sources.sources.boe.consolidated import (
 )
 from official_sources.sources.boe.http_policy import BOERequestPolicy
 from official_sources.sources.boe.ingestion import NO_PUBLICATION_STATUS, ingest_boe_summary
+from official_sources.sources.boja.artifacts import BOJA_ARTIFACT_FIELDS, BOJAArtifactDownloader
 from official_sources.sources.boja.client import validate_boja_date
 from official_sources.sources.boja.ingestion import ingest_boja_date
 from official_sources.storage.backup import SQLiteBackupError, backup_sqlite_database
@@ -323,6 +324,12 @@ def build_parser() -> argparse.ArgumentParser:
     download = subparsers.add_parser(
         "download-boe-artifacts", help="Download stored official BOE artifact URLs."
     )
+    download.add_argument(
+        "--source",
+        choices=["BOE", "BOJA"],
+        default="BOE",
+        help="Official source for scoped artifact download. Default: BOE.",
+    )
     download.add_argument("--date", help="Target date in YYYY-MM-DD format or today.")
     download.add_argument(
         "--candidate-ids",
@@ -561,25 +568,33 @@ def run(
 
     if args.command == "download-boe-artifacts":
         try:
-            artifact_types = _parse_artifact_types(args.types)
+            artifact_types = _parse_artifact_types(args.types, source_code=args.source)
         except BOEArtifactDownloadError as exc:
             print(str(exc), file=stderr)
+            return 2
+        if args.source == "BOJA" and args.date:
+            print("BOJA artifact downloads require --candidate-ids or --document-ids", file=stderr)
             return 2
         if "pdf" in artifact_types and not (args.candidate_ids or args.document_ids):
             print("PDF downloads require --candidate-ids or --document-ids", file=stderr)
             return 2
         try:
-            target_date, documents = _resolve_download_selection(repository, args)
+            target_date, documents = _resolve_download_selection(
+                repository,
+                args,
+                source_code=args.source,
+            )
         except ValueError as exc:
             print(str(exc), file=stderr)
             return 2
         target_label = target_date or "scoped"
         print(
-            f"command_started={args.command} source_code=BOE target_date={target_label}",
+            f"command_started={args.command} source_code={args.source} target_date={target_label}",
             file=stdout,
         )
         return _run_download(
             repository,
+            source_code=args.source,
             target_date=target_date,
             documents=documents,
             artifact_types=artifact_types,
@@ -826,11 +841,14 @@ def _run_ingest_boja(
     return 0 if run_record["status"] in {"success", NO_PUBLICATION_STATUS} else 1
 
 
-def _parse_artifact_types(value: str) -> list[str]:
+def _parse_artifact_types(value: str, *, source_code: str = "BOE") -> list[str]:
     artifact_types = [item.strip() for item in value.split(",") if item.strip()]
-    unsupported = sorted(set(artifact_types) - set(BOE_ARTIFACT_FIELDS))
+    supported = BOJA_ARTIFACT_FIELDS if source_code == "BOJA" else BOE_ARTIFACT_FIELDS
+    unsupported = sorted(set(artifact_types) - set(supported))
     if unsupported:
-        raise BOEArtifactDownloadError(f"Unsupported artifact types: {', '.join(unsupported)}")
+        raise BOEArtifactDownloadError(
+            f"Unsupported {source_code} artifact types: {', '.join(unsupported)}"
+        )
     return artifact_types
 
 
@@ -849,6 +867,8 @@ def _parse_id_list(value: str | None, *, option_name: str) -> list[int]:
 def _resolve_download_selection(
     repository: OfficialSourcesRepository,
     args: argparse.Namespace,
+    *,
+    source_code: str = "BOE",
 ) -> tuple[str | None, list[dict[str, Any]]]:
     candidate_ids = _parse_id_list(args.candidate_ids, option_name="--candidate-ids")
     document_ids = _parse_id_list(args.document_ids, option_name="--document-ids")
@@ -861,21 +881,45 @@ def _resolve_download_selection(
         documents = repository.list_documents_by_candidate_ids(candidate_ids)
         if len(documents) != len(candidate_ids):
             raise ValueError("One or more --candidate-ids were not found")
+        _ensure_documents_match_source(documents, source_code)
         return None, documents
     if document_ids:
         documents = repository.list_documents_by_ids(document_ids)
         if len(documents) != len(document_ids):
             raise ValueError("One or more --document-ids were not found")
+        _ensure_documents_match_source(documents, source_code)
         return None, documents
     if not args.date:
         raise ValueError("--date, --candidate-ids, or --document-ids is required")
     target_date = resolve_target_date(args.date)
-    return target_date, repository.list_documents_by_date(target_date)
+    documents = repository.search_documents(
+        date_from=target_date,
+        date_to=target_date,
+        source_code=source_code,
+        limit=100000,
+    )
+    _ensure_documents_match_source(documents, source_code)
+    return target_date, documents
+
+
+def _ensure_documents_match_source(documents: list[dict[str, Any]], source_code: str) -> None:
+    mismatched = sorted(
+        {
+            str(document.get("source_code") or "unknown")
+            for document in documents
+            if document.get("source_code") != source_code
+        }
+    )
+    if mismatched:
+        raise ValueError(
+            f"Selected documents must belong to source {source_code}; found {','.join(mismatched)}"
+        )
 
 
 def _run_download(
     repository: OfficialSourcesRepository,
     *,
+    source_code: str,
     target_date: str | None,
     documents: list[dict[str, Any]],
     artifact_types: list[str],
@@ -885,7 +929,9 @@ def _run_download(
     stderr: TextIO,
 ) -> int:
     latest_run = (
-        repository.get_latest_ingestion_run("BOE", target_date) if target_date is not None else None
+        repository.get_latest_ingestion_run(source_code, target_date)
+        if target_date is not None
+        else None
     )
     if latest_run and latest_run["status"] == NO_PUBLICATION_STATUS:
         print(
@@ -903,8 +949,13 @@ def _run_download(
             file=stdout,
         )
         return 0
-    run_record = repository.create_ingestion_run(source_code="BOE", target_date=target_date)
-    downloader = BOEArtifactDownloader(repository, cache_dir=artifact_dir, client=client)
+    run_record = repository.create_ingestion_run(source_code=source_code, target_date=target_date)
+    downloader = _artifact_downloader_for_source(
+        source_code,
+        repository,
+        artifact_dir=artifact_dir,
+        client=client,
+    )
     counts = {
         "selected_documents": len(documents),
         "artifact_types": ",".join(artifact_types),
@@ -912,6 +963,7 @@ def _run_download(
         "skipped": 0,
         "changed": 0,
         "failed": 0,
+        "missing_artifact_url": 0,
         "retries": 0,
         "throttle_events": 0,
     }
@@ -931,6 +983,8 @@ def _run_download(
                 continue
             if artifact_type not in result:
                 counts["skipped"] += 1
+                if not document[_artifact_url_field(source_code, artifact_type)]:
+                    counts["missing_artifact_url"] += 1
                 continue
             counts["downloaded"] += 1
             after = result[artifact_type]
@@ -956,6 +1010,23 @@ def _run_download(
     )
     print(_format_counts(counts), file=stdout)
     return 0 if counts["failed"] == 0 and counts["changed"] == 0 else 1
+
+
+def _artifact_downloader_for_source(
+    source_code: str,
+    repository: OfficialSourcesRepository,
+    *,
+    artifact_dir: Path,
+    client: httpx.Client | None,
+) -> BOEArtifactDownloader:
+    if source_code == "BOJA":
+        return BOJAArtifactDownloader(repository, cache_dir=artifact_dir, client=client)
+    return BOEArtifactDownloader(repository, cache_dir=artifact_dir, client=client)
+
+
+def _artifact_url_field(source_code: str, artifact_type: str) -> str:
+    fields = BOJA_ARTIFACT_FIELDS if source_code == "BOJA" else BOE_ARTIFACT_FIELDS
+    return fields[artifact_type][0]
 
 
 def _file_hashes(

@@ -38,6 +38,22 @@ def _seed_document(db_path: Path) -> dict:
     )
 
 
+def _seed_boja_document(db_path: Path, *, url_pdf: str | None = None) -> dict:
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boja()
+    return repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOJA:disposition.2026.94.5",
+        publication_date="2026-05-19",
+        title="BOJA scholarship document",
+        department="Universidades",
+        section="1. Disposiciones generales",
+        url_pdf=url_pdf,
+    )
+
+
 def test_cli_help_works(capsys):
     from official_sources.cli import run
 
@@ -462,6 +478,183 @@ def test_download_boe_artifacts_document_ids_default_to_xml_html_not_pdf(tmp_pat
     assert document["url_pdf"] not in seen_urls
     assert {item["file_type"] for item in stored} == {"xml", "html"}
     assert "artifact_types=xml,html" in captured.out
+
+
+def test_download_boe_artifacts_supports_scoped_boja_pdf_candidate_download(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    pdf_url = "https://www.juntadeandalucia.es/eboja/2026/94/BOJA26-094-00005.pdf"
+    document = _seed_boja_document(db_path, url_pdf=pdf_url)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="boja-ayudas",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["becas"]},
+    )
+    seen_urls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_urls.append(str(request.url))
+        return httpx.Response(200, content=b"%PDF-1.4 BOJA", request=request)
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-boe-artifacts",
+            "--source",
+            "BOJA",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ],
+        artifact_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    stored = repository.list_document_files(document["id"])
+    attempts = repository.list_artifact_download_attempts(document_id=document["id"])
+    candidate_count = connection.execute("SELECT COUNT(*) FROM source_candidates").fetchone()[0]
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert seen_urls == [pdf_url]
+    assert candidate_count == 1
+    assert stored[0]["file_type"] == "pdf"
+    assert stored[0]["sha256"] == sha256_bytes(b"%PDF-1.4 BOJA")
+    assert attempts[-1]["status"] == "success"
+    assert attempts[-1]["file_type"] == "pdf"
+    assert "source_code=BOJA" in captured.out
+    assert "selected_documents=1" in captured.out
+    assert "downloaded=1" in captured.out
+    assert "missing_artifact_url=0" in captured.out
+    assert (artifact_dir / "boja" / "2026" / "05" / "19" / "BOJA_disposition.2026.94.5").exists()
+
+
+def test_download_boe_artifacts_boja_missing_pdf_url_is_skipped(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    document = _seed_boja_document(db_path)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="boja-ayudas",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["becas"]},
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "download-boe-artifacts",
+            "--source",
+            "BOJA",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ]
+    )
+
+    attempts = repository.list_artifact_download_attempts(document_id=document["id"])
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert repository.list_document_files(document["id"]) == []
+    assert attempts[-1]["status"] == "skipped"
+    assert attempts[-1]["official_url"] is None
+    assert "skipped=1" in captured.out
+    assert "missing_artifact_url=1" in captured.out
+
+
+def test_download_boe_artifacts_boja_source_rejects_non_boja_candidate(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    document = _seed_document(db_path)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="la-ayuda",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["ayudas"]},
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "download-boe-artifacts",
+            "--source",
+            "BOJA",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "Selected documents must belong to source BOJA" in captured.err
+
+
+def test_download_boe_artifacts_boja_rejects_date_level_download(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "download-boe-artifacts",
+            "--source",
+            "BOJA",
+            "--date",
+            "2026-05-19",
+            "--types",
+            "pdf",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "BOJA artifact downloads require --candidate-ids or --document-ids" in captured.err
+
+
+def test_download_boe_artifacts_boja_rejects_xml_html_for_now(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "download-boe-artifacts",
+            "--source",
+            "BOJA",
+            "--candidate-ids",
+            "1",
+            "--types",
+            "xml,html",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "Unsupported BOJA artifact types: html, xml" in captured.err
 
 
 def test_download_boe_artifacts_rejects_mixed_date_and_scoped_selection(tmp_path, capsys):
