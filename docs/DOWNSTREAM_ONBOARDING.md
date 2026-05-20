@@ -65,6 +65,15 @@ admin/staff review surface
 
 If a downstream project does not have these, the first task is foundation, not integration.
 
+Before running any import task, use the operational checklist in:
+
+```text
+docs/DOWNSTREAM_IMPORT_CHECKLIST.md
+```
+
+The checklist is intentionally downstream-agnostic and applies to EduAyudas, `la-ayuda`, and
+future projects.
+
 ## Evidence Contract
 
 Downstream projects should consume the contract documented in:
@@ -328,6 +337,7 @@ Do not model procurement around BOE/BOJA alone.
 
 Before integration:
 
+- run the downstream import checklist in `docs/DOWNSTREAM_IMPORT_CHECKLIST.md`;
 - project profile exists;
 - evidence contract fields are stored;
 - preview-only import passes;

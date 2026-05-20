@@ -191,14 +191,21 @@ official-sources download-boe-artifacts --candidate-ids 1,3,10 --types pdf
 
 ## Candidate Prefiltering Policy
 
-`find-boe-candidates` performs keyword matching on stored BOE document titles and metadata
-only. It does not parse full document content, call BOE, download artifacts, use LLMs,
-classify legal meaning, approve anything, publish anything, or write to downstream projects.
+`find-source-candidates` is the preferred generic command for candidate prefiltering across
+supported official sources. It performs keyword matching on stored official document titles and
+metadata only. It does not parse full document content, call BOE/BOJA live APIs, download
+artifacts, use LLMs, classify legal meaning, approve anything, publish anything, or write to
+downstream projects.
+
+`find-boe-candidates` remains as a backwards-compatible legacy/BOE-default command. It is
+source-aware and accepts `--source`, but new operational docs should prefer
+`find-source-candidates`.
 
 Safe preview modes are available:
 
 ```bash
-official-sources find-boe-candidates \
+official-sources find-source-candidates \
+  --source BOE \
   --date-from YYYY-MM-DD \
   --date-to YYYY-MM-DD \
   --keywords "beca,ayuda,subvencion,convocatoria" \
@@ -227,7 +234,8 @@ Matching precision rules:
 Optional filters are available:
 
 ```bash
-official-sources find-boe-candidates \
+official-sources find-source-candidates \
+  --source BOE \
   --date-from YYYY-MM-DD \
   --date-to YYYY-MM-DD \
   --keywords "convocatoria de ayudas,bases reguladoras" \
@@ -244,7 +252,8 @@ notices.
 The `la-ayuda` / `EduAyudas` profile is available:
 
 ```bash
-official-sources find-boe-candidates \
+official-sources find-source-candidates \
+  --source BOE \
   --date-from YYYY-MM-DD \
   --date-to YYYY-MM-DD \
   --profile la-ayuda \
@@ -255,7 +264,8 @@ official-sources find-boe-candidates \
 Small write-mode pilots should use an explicit cap:
 
 ```bash
-official-sources find-boe-candidates \
+official-sources find-source-candidates \
+  --source BOE \
   --date-from YYYY-MM-DD \
   --date-to YYYY-MM-DD \
   --profile la-ayuda \
@@ -302,7 +312,7 @@ These keywords are not authoritative classification.
 The BOJA-specific `boja-ayudas` profile is separate from `la-ayuda`:
 
 ```bash
-official-sources find-boe-candidates \
+official-sources find-source-candidates \
   --source BOJA \
   --date-from YYYY-MM-DD \
   --date-to YYYY-MM-DD \

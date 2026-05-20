@@ -1554,6 +1554,60 @@ def test_find_boe_candidates_source_filter_supports_boja_dry_run(tmp_path, capsy
     assert "BOE-A-2024-11111" not in captured.out
 
 
+def test_find_source_candidates_alias_supports_boja_dry_run(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    boe_source = repository.ensure_official_source_boe()
+    boja_source = repository.ensure_official_source_boja()
+    repository.upsert_document(
+        source_id=boe_source["id"],
+        external_id="BOE-A-2024-11111",
+        publication_date="2024-05-29",
+        title="Convocatoria de ayudas estatales",
+    )
+    repository.upsert_document(
+        source_id=boja_source["id"],
+        external_id="BOJA:disposition.2026.94.5",
+        publication_date="2024-05-29",
+        title="Subvenciones para formacion profesional",
+        department="Consejeria de Desarrollo Educativo y Formacion Profesional",
+        section="3. Otras disposiciones",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "BOJA",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--profile",
+            "la-ayuda",
+            "--dry-run",
+        ]
+    )
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert candidate_count == 0
+    assert "source=BOJA" in captured.out
+    assert "documents_scanned=1" in captured.out
+    assert "matches_after_filters=1" in captured.out
+    assert "BOJA:disposition.2026.94.5" in captured.out
+    assert "BOE-A-2024-11111" not in captured.out
+
+
 def test_find_boe_candidates_boja_profile_excludes_generic_ayudas_only(tmp_path, capsys):
     from official_sources.cli import run
 
@@ -1906,6 +1960,19 @@ def test_find_boe_candidates_help_contains_false_positive_warning(capsys):
     assert "--write" in captured.out
     assert "explicit" in captured.out
     assert "--limit" in captured.out
+
+
+def test_find_source_candidates_help_is_available(capsys):
+    from official_sources.cli import run
+
+    exit_code = run(["find-source-candidates", "--help"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "preferred" in captured.out.lower()
+    assert "--source" in captured.out
+    assert "--dry-run" in captured.out
+    assert "--write" in captured.out
 
 
 def test_find_boe_candidates_normalizes_accents_case_and_whitespace(tmp_path, capsys):

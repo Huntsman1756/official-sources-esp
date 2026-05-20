@@ -449,19 +449,41 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print official block text content after the compact status line.",
     )
-    candidates = subparsers.add_parser(
-        "find-boe-candidates",
+    _add_find_candidates_parser(
+        subparsers,
+        "find-source-candidates",
         description=(
-            "Create human-review candidates by keyword matching locally stored official-source "
-            "titles and metadata only. This is not legal classification and may produce false "
-            "positives."
+            "Preferred generic source-aware candidate finder. Creates human-review candidates "
+            "by keyword matching locally stored official-source titles and metadata only. This "
+            "is not legal classification and may produce false positives."
         ),
         help=(
-            "Create human-review candidates by keyword matching locally stored official-source "
-            "titles and metadata only. This is not legal classification and may produce false "
-            "positives."
+            "Preferred generic source-aware candidate finder for locally stored official-source "
+            "metadata."
         ),
     )
+    _add_find_candidates_parser(
+        subparsers,
+        "find-boe-candidates",
+        description=(
+            "Legacy BOE-default candidate finder. This command is source-aware and remains "
+            "backwards-compatible; prefer find-source-candidates for new source families. It "
+            "matches locally stored official-source titles and metadata only, is not legal "
+            "classification, and may produce false positives."
+        ),
+        help=("Legacy BOE-default source-aware candidate finder. Prefer find-source-candidates."),
+    )
+    return parser
+
+
+def _add_find_candidates_parser(
+    subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
+    command_name: str,
+    *,
+    description: str,
+    help: str,
+) -> argparse.ArgumentParser:
+    candidates = subparsers.add_parser(command_name, description=description, help=help)
     candidates.add_argument("--date-from", required=True, help="Start date in YYYY-MM-DD format.")
     candidates.add_argument("--date-to", required=True, help="End date in YYYY-MM-DD format.")
     candidates.add_argument(
@@ -525,7 +547,7 @@ def build_parser() -> argparse.ArgumentParser:
             "in explicit write mode. Default: 50."
         ),
     )
-    return parser
+    return candidates
 
 
 def run(
@@ -557,7 +579,7 @@ def run(
         return _run_enrich_boja_evidence_urls(repository, args, boja_detail_fetcher, stdout, stderr)
     if args.command == "ingest-boe-range":
         return _run_ingest_range(repository, args, stdout, stderr)
-    if args.command == "find-boe-candidates":
+    if args.command in {"find-source-candidates", "find-boe-candidates"}:
         return _run_find_candidates(repository, args, stdout, stderr)
     if args.command == "candidate-evidence-status":
         return _run_candidate_evidence_status(repository, args, stdout, stderr)
