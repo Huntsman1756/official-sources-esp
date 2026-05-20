@@ -1037,6 +1037,17 @@ class OfficialSourcesRepository:
             ).fetchone()
         )
 
+    def source_candidate_exists(self, *, document_id: int, project_key: str) -> bool:
+        row = self.connection.execute(
+            """
+            SELECT 1 FROM source_candidates
+            WHERE document_id = ? AND project_key = ?
+            LIMIT 1
+            """,
+            (document_id, project_key),
+        ).fetchone()
+        return row is not None
+
     def get_source_candidate(self, source_candidate_id: int) -> dict[str, Any] | None:
         return row_to_dict(
             self.connection.execute(

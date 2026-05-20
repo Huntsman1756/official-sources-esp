@@ -1113,8 +1113,17 @@ def _run_find_candidates(
         matches = _candidate_evidence_metadata(document, matches, profile=args.profile)
         matched_items.append((document, matches))
     created = 0
+    skipped_existing = 0
     if args.write:
-        for document, matches in matched_items[: args.limit]:
+        for document, matches in matched_items:
+            if created >= args.limit:
+                break
+            if repository.source_candidate_exists(
+                document_id=document["id"],
+                project_key=args.project_key,
+            ):
+                skipped_existing += 1
+                continue
             repository.create_source_candidate(
                 document_id=document["id"],
                 project_key=args.project_key,
@@ -1141,6 +1150,7 @@ def _run_find_candidates(
                 "matches_after_filters": len(matched_items),
                 "documents_matched": len(matched_items),
                 "candidates_created": created,
+                "candidates_skipped_existing": skipped_existing,
                 "review_status": "human_review_required",
                 "write_mode": "dry_run" if dry_run else "write",
                 "write_limit": args.limit if args.write else "none",

@@ -1184,6 +1184,75 @@ def test_find_boe_candidates_write_mode_respects_limit(tmp_path, capsys):
     assert "write_limit=2" in captured.out
 
 
+def test_find_boe_candidates_write_mode_skips_existing_candidates(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    existing_document = repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2024-11110",
+        publication_date="2024-05-29",
+        title="Convocatoria de ayudas existing",
+    )
+    repository.create_source_candidate(
+        document_id=existing_document["id"],
+        project_key="generic",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["ayudas"]},
+    )
+    for index in range(3):
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=f"BOE-A-2024-1112{index}",
+            publication_date="2024-05-29",
+            title=f"Convocatoria de ayudas new {index}",
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--date-from",
+            "2024-05-29",
+            "--date-to",
+            "2024-05-29",
+            "--keywords",
+            "ayudas",
+            "--write",
+            "--limit",
+            "2",
+        ]
+    )
+
+    rows = connection.execute(
+        """
+        SELECT d.external_id, COUNT(c.id) AS candidate_count
+        FROM source_candidates c
+        JOIN official_documents d ON d.id = c.document_id
+        GROUP BY d.external_id
+        ORDER BY d.external_id
+        """
+    ).fetchall()
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert sum(row["candidate_count"] for row in rows) == 3
+    assert {row["external_id"] for row in rows} == {
+        "BOE-A-2024-11110",
+        "BOE-A-2024-11120",
+        "BOE-A-2024-11121",
+    }
+    assert {row["candidate_count"] for row in rows} == {1}
+    assert "candidates_created=2" in captured.out
+    assert "candidates_skipped_existing=1" in captured.out
+
+
 def test_find_boe_candidates_dry_run_does_not_create_candidates(tmp_path, capsys):
     from official_sources.cli import run
 
