@@ -412,6 +412,24 @@ implemented. PDF downloads require a persisted official `url_pdf` derived from v
 metadata. If `url_pdf` is missing, the scoped operation records a skipped artifact attempt and
 does not infer or invent a URL.
 
+BOJA evidence URL enrichment is a separate scoped metadata operation. The search endpoint's default
+`campos` selection omits PDF/public URL fields. For selected documents, the detail endpoint can be
+queried by stable BOJA `id`:
+
+```text
+GET /api/v0/boja/{bid}
+```
+
+The enrichment command is:
+
+```bash
+official-sources enrich-boja-evidence-urls \
+  --candidate-ids 77,78
+```
+
+It accepts only explicit candidate or document IDs, updates persisted BOJA evidence URL metadata,
+rejects non-official PDF URLs, and does not download PDFs.
+
 BOJA no-publication semantics are independent from BOE. A BOJA API response with an empty `results` array is recorded as `no_publication`; BOE Sunday rules must not be reused.
 
 Observed BOJA empty-date behavior can also be:

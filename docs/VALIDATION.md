@@ -1,5 +1,58 @@
 # Validation
 
+## 2026-05-20 - TASK-AUTO-007B BOJA evidence URL enrichment
+
+Local code validation:
+
+```text
+git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+pytest: 246 passed
+ruff check: passed
+ruff format --check: passed
+```
+
+VPS operational validation:
+
+```text
+deployed_commit=1eb9070
+selected_candidates=77,78,79,80,81,82,86,87,93,98
+selected_count=10
+source_code=BOJA for all selected candidates
+pre_enrichment_selected_with_url_pdf=0
+enrichment_selected_documents=10
+enriched=10
+skipped=0
+failed=0
+missing_evidence_url=0
+http_status_summary=200:10
+selected_with_url_pdf_after=10
+url_html_after=0/10
+source_candidates_before=100
+source_candidates_after=100
+selected_review_status_distribution=human_review_required:10
+all_review_status_distribution=human_review_required:100
+artifact_download_attempts_before=402
+artifact_download_attempts_after=402
+BOJA PDF document_files_before=0
+BOJA PDF document_files_after=0
+artifact_directory_size_before=24M
+artifact_directory_size_after=24M
+db_validate=valid
+MCP listener check=no matching listener observed
+pre_run_backup=created
+post_run_backup=created
+PDFs downloaded=0
+```
+
 ## 2026-05-20 - TASK-AUTO-007 BOJA selected candidate evidence download
 
 Local code validation:
