@@ -1,5 +1,35 @@
 # Validation
 
+## 2026-05-20 - TASK-AUTO-008 BOJA selected candidate evidence review
+
+VPS read-only validation:
+
+```text
+deployed_commit=6466f23
+selected_candidates=77,78,79,80,81,82,86,87,93,98
+selected_count=10
+source_code=BOJA for all selected candidates
+url_pdf present=10/10
+pdf_available=10/10
+pdf_hash_present=10/10
+decision_distribution=accept_for_downstream_pilot:4,out_of_scope:6,needs_more_evidence:0,false_positive:0,defer:0
+accepted_for_downstream_pilot=77,78,80,86
+downstream_fit_EduAyudas=77,78,80,86
+source_candidates=100
+artifact_download_attempts=432
+BOJA PDF document_files=10
+selected_pdf_files=10
+selected_review_status_distribution=human_review_required:10
+all_review_status_distribution=human_review_required:100
+selected_integrity_warnings=0
+artifact_directory_size=26M
+db_validate=valid
+MCP listener check=no matching listener observed
+```
+
+No source candidate status changes, downstream writes, approvals, publications, new artifact
+downloads, BOJA live API calls, or new candidates were performed during evidence review.
+
 ## 2026-05-20 - TASK-AUTO-007C BOJA selected candidate PDF download
 
 Local code validation after BOJA URL canonicalization fixes:
