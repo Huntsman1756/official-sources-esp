@@ -68,8 +68,105 @@ LA_AYUDA_PROFILE_KEYWORDS = [
     "transporte",
     "vivienda",
 ]
+BOJA_AYUDAS_PROFILE_KEYWORDS = [
+    "beca",
+    "becas",
+    "ayuda",
+    "ayudas",
+    "subvenciones",
+    "bases reguladoras",
+    "convocatoria",
+    "convocatoria de ayudas",
+    "convocatoria de subvenciones",
+    "ayudas al estudio",
+    "subvenciones para alumnado",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "formacion profesional",
+    "educacion",
+    "universidad",
+    "universidades",
+    "alumnado",
+    "estudiantes",
+    "necesidades especificas",
+    "familias",
+    "material escolar",
+    "libros de texto",
+    "transporte escolar",
+    "comedor escolar",
+    "discapacidad",
+    "vivienda",
+    "alquiler",
+    "joven",
+    "jovenes",
+]
 LA_AYUDA_DEFAULT_EXCLUDED_SECTIONS = ["V-A"]
 GENERIC_WEAK_KEYWORDS = {"convocatoria", "transporte"}
+BOJA_GENERIC_WEAK_KEYWORDS = {
+    "ayuda",
+    "ayudas",
+    "subvenciones",
+    "bases reguladoras",
+    "convocatoria",
+    "vivienda",
+    "alquiler",
+}
+BOJA_HIGH_INTENT_KEYWORDS = {
+    "beca",
+    "becas",
+    "ayudas al estudio",
+    "subvenciones para alumnado",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "formacion profesional",
+    "educacion",
+    "universidad",
+    "universidades",
+    "alumnado",
+    "estudiantes",
+    "necesidades especificas",
+    "familias",
+    "material escolar",
+    "libros de texto",
+    "transporte escolar",
+    "comedor escolar",
+    "discapacidad",
+    "joven",
+    "jovenes",
+}
+BOJA_EDUCATION_DEPARTMENT_TERMS = {
+    "desarrollo educativo",
+    "formacion profesional",
+    "universidad",
+    "universidades",
+}
+BOJA_NOISE_DEPARTMENT_TERMS = {
+    "ayuntamientos",
+    "agricultura",
+    "pesca",
+    "agua",
+    "industria",
+    "energia",
+    "minas",
+    "infraestructuras",
+    "fomento",
+    "vivienda",
+    "turismo",
+    "cultura",
+    "deporte",
+    "empresas publicas",
+}
+BOJA_NOISE_TEXT_TERMS = {
+    "licitacion",
+    "contratacion",
+    "concesion administrativa",
+    "expropiacion",
+    "urbanismo",
+    "cooperativas",
+    "asociaciones empresariales",
+    "entidades locales",
+    "diputaciones",
+}
 TRANSPORT_SUPPORT_KEYWORDS = {
     "ayuda",
     "ayudas",
@@ -88,6 +185,15 @@ STRONG_PHRASES = {
     "bono alquiler",
     "bono social",
     "familia numerosa",
+    "subvenciones para alumnado",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "formacion profesional",
+    "necesidades especificas",
+    "material escolar",
+    "libros de texto",
+    "transporte escolar",
+    "comedor escolar",
 }
 STRONG_KEYWORDS = {
     "beca",
@@ -101,6 +207,13 @@ STRONG_KEYWORDS = {
     "educación",
     "estudiantes",
     "vivienda",
+    "educacion",
+    "universidad",
+    "universidades",
+    "alumnado",
+    "familias",
+    "joven",
+    "jovenes",
 }
 
 
@@ -353,8 +466,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     candidates.add_argument(
         "--profile",
-        choices=["la-ayuda"],
-        help="Use a documented keyword/filter profile. Currently supported: la-ayuda.",
+        choices=["la-ayuda", "boja-ayudas"],
+        help="Use a documented keyword/filter profile. Currently supported: la-ayuda, boja-ayudas.",
     )
     candidates.add_argument(
         "--include-sections",
@@ -1289,6 +1402,8 @@ def _candidate_keywords(args: argparse.Namespace) -> list[str]:
     keywords: list[str] = []
     if args.profile == "la-ayuda":
         keywords.extend(LA_AYUDA_PROFILE_KEYWORDS)
+    if args.profile == "boja-ayudas":
+        keywords.extend(BOJA_AYUDAS_PROFILE_KEYWORDS)
     if args.keywords:
         keywords.extend(keyword.strip() for keyword in args.keywords.split(",") if keyword.strip())
     return list(dict.fromkeys(keywords))
@@ -1373,6 +1488,11 @@ def _candidate_exclusion_reason(
         return "department"
     if filters["profile"] == ["la-ayuda"] and _weak_only_match(matches["keywords"]):
         return "keyword_rules"
+    if filters["profile"] == ["boja-ayudas"] and _boja_profile_exclusion_reason(
+        document,
+        matches,
+    ):
+        return "keyword_rules"
     return None
 
 
@@ -1436,6 +1556,9 @@ def _score_candidate_match(
     if profile == "la-ayuda" and _weak_only_match(keywords):
         score -= 1
         reasons.append("weak_only_generic_match:-1")
+    if profile == "boja-ayudas" and _boja_weak_only_match(keywords):
+        score -= 2
+        reasons.append("boja_weak_only_generic_match:-2")
     return score, reasons
 
 
@@ -1447,6 +1570,53 @@ def _weak_only_match(keywords: list[str]) -> bool:
         return True
     transport_support = {_normalize_search_text(keyword) for keyword in TRANSPORT_SUPPORT_KEYWORDS}
     return "transporte" in normalized_keywords and not (normalized_keywords & transport_support)
+
+
+def _boja_profile_exclusion_reason(
+    document: dict[str, Any],
+    matches: dict[str, Any],
+) -> str | None:
+    keywords = matches["keywords"]
+    normalized_keywords = {_normalize_search_text(keyword) for keyword in keywords}
+    combined_text = _normalize_search_text(
+        " ".join(
+            [
+                str(document.get("title") or ""),
+                str(document.get("department") or ""),
+                str(document.get("section") or ""),
+                str(document.get("document_type") or ""),
+                str(document.get("raw_metadata_json") or ""),
+            ]
+        )
+    )
+    if _boja_weak_only_match(keywords):
+        return "boja_weak_only"
+    if {"vivienda", "alquiler"} & normalized_keywords and not (
+        {"joven", "jovenes", "estudiantes", "alumnado"} & normalized_keywords
+        or any(term in combined_text for term in {"joven", "jovenes", "estudiantes", "alumnado"})
+    ):
+        return "boja_housing_noise"
+    high_intent = {_normalize_search_text(keyword) for keyword in BOJA_HIGH_INTENT_KEYWORDS}
+    education_departments = {
+        _normalize_search_text(term) for term in BOJA_EDUCATION_DEPARTMENT_TERMS
+    }
+    noise_departments = {_normalize_search_text(term) for term in BOJA_NOISE_DEPARTMENT_TERMS}
+    noise_text_terms = {_normalize_search_text(term) for term in BOJA_NOISE_TEXT_TERMS}
+    has_high_intent = bool(normalized_keywords & high_intent) or any(
+        term in combined_text for term in education_departments
+    )
+    has_noise_term = any(term in combined_text for term in noise_departments | noise_text_terms)
+    if has_noise_term and not has_high_intent:
+        return "boja_institutional_or_sector_noise"
+    return None
+
+
+def _boja_weak_only_match(keywords: list[str]) -> bool:
+    normalized_keywords = {_normalize_search_text(keyword) for keyword in keywords}
+    if not normalized_keywords:
+        return True
+    high_intent = {_normalize_search_text(keyword) for keyword in BOJA_HIGH_INTENT_KEYWORDS}
+    return not bool(normalized_keywords & high_intent)
 
 
 def _section_aliases(section: str) -> set[str]:

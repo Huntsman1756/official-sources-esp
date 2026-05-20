@@ -1361,6 +1361,180 @@ def test_find_boe_candidates_source_filter_supports_boja_dry_run(tmp_path, capsy
     assert "BOE-A-2024-11111" not in captured.out
 
 
+def test_find_boe_candidates_boja_profile_excludes_generic_ayudas_only(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    boja_source = repository.ensure_official_source_boja()
+    repository.upsert_document(
+        source_id=boja_source["id"],
+        external_id="BOJA:generic-ayudas",
+        publication_date="2026-05-20",
+        title="Resolucion por la que se conceden ayudas a entidades locales",
+        department="Ayuntamientos",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--source",
+            "BOJA",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--profile",
+            "boja-ayudas",
+            "--dry-run",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "source=BOJA" in captured.out
+    assert "matches_total=1" in captured.out
+    assert "matches_after_filters=0" in captured.out
+    assert "excluded_by_keyword_rules=1" in captured.out
+    assert "BOJA:generic-ayudas" not in captured.out
+
+
+def test_find_boe_candidates_boja_profile_matches_education_signals(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    boja_source = repository.ensure_official_source_boja()
+    repository.upsert_document(
+        source_id=boja_source["id"],
+        external_id="BOJA:student-aid",
+        publication_date="2026-05-20",
+        title="Convocatoria de becas para estudiantes universitarios",
+        department="Universidades",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--source",
+            "BOJA",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--profile",
+            "boja-ayudas",
+            "--dry-run",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "matches_after_filters=1" in captured.out
+    assert "matched_keywords=becas,convocatoria,universidades,estudiantes" in captured.out
+    assert "strong_keyword:becas" in captured.out
+    assert "BOJA:student-aid" in captured.out
+
+
+def test_find_boe_candidates_boja_profile_treats_transport_contextually(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    boja_source = repository.ensure_official_source_boja()
+    repository.upsert_document(
+        source_id=boja_source["id"],
+        external_id="BOJA:transport-generic",
+        publication_date="2026-05-20",
+        title="Subvenciones para transporte de mercancias",
+        department="Consejeria de Fomento, Articulacion del Territorio y Vivienda",
+    )
+    repository.upsert_document(
+        source_id=boja_source["id"],
+        external_id="BOJA:transport-school",
+        publication_date="2026-05-20",
+        title="Ayudas para transporte escolar del alumnado",
+        department="Consejeria de Desarrollo Educativo y Formacion Profesional",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--source",
+            "BOJA",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--profile",
+            "boja-ayudas",
+            "--dry-run",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "matches_total=2" in captured.out
+    assert "matches_after_filters=1" in captured.out
+    assert "BOJA:transport-school" in captured.out
+    assert "BOJA:transport-generic" not in captured.out
+    assert "transporte escolar" in captured.out
+
+
+def test_find_boe_candidates_boja_profile_allows_young_housing_context(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    boja_source = repository.ensure_official_source_boja()
+    repository.upsert_document(
+        source_id=boja_source["id"],
+        external_id="BOJA:young-rent",
+        publication_date="2026-05-20",
+        title="Ayudas al alquiler para jovenes",
+        department="Consejeria de Fomento, Articulacion del Territorio y Vivienda",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--source",
+            "BOJA",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--profile",
+            "boja-ayudas",
+            "--dry-run",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "matches_after_filters=1" in captured.out
+    assert "matched_keywords=ayudas,vivienda,alquiler,jovenes" in captured.out
+    assert "BOJA:young-rent" in captured.out
+
+
 def test_find_boe_candidates_default_source_remains_boe(tmp_path, capsys):
     from official_sources.cli import run
 
