@@ -430,6 +430,10 @@ official-sources enrich-boja-evidence-urls \
 It accepts only explicit candidate or document IDs, updates persisted BOJA evidence URL metadata,
 rejects non-official PDF URLs, and does not download PDFs.
 
+BOJA official detail responses may return PDF URLs on `https://juntadeandalucia.es`. The downloader
+does not follow arbitrary redirects. The parser therefore normalizes accepted BOJA PDF URLs to the
+canonical `https://www.juntadeandalucia.es/eboja/...pdf` form before persistence.
+
 BOJA no-publication semantics are independent from BOE. A BOJA API response with an empty `results` array is recorded as `no_publication`; BOE Sunday rules must not be reused.
 
 Observed BOJA empty-date behavior can also be:

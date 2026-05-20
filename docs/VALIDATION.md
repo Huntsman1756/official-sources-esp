@@ -1,5 +1,55 @@
 # Validation
 
+## 2026-05-20 - TASK-AUTO-007C BOJA selected candidate PDF download
+
+Local code validation after BOJA URL canonicalization fixes:
+
+```text
+git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+pytest: 246 passed
+ruff check: passed
+ruff format --check: passed
+```
+
+VPS operational validation:
+
+```text
+deployed_commit=6466f23
+selected_candidates=77,78,79,80,81,82,86,87,93,98
+selected_count=10
+url_pdf present before download=10/10
+initial_download_result=failed HTTP 307 for 10/10 before canonical URL refresh
+final_downloaded=10
+final_skipped=0
+final_failed=0
+final_missing_artifact_url=0
+final_http_status_summary=pdf:200:10
+source_candidates_before=100
+source_candidates_after=100
+selected_review_status_distribution=human_review_required:10
+all_review_status_distribution=human_review_required:100
+artifact_download_attempts_before=402
+artifact_download_attempts_after=432
+BOJA PDF document_files_before=0
+BOJA PDF document_files_after=10
+artifact_directory_size_before=24M
+artifact_directory_size_after=26M
+selected_integrity_warnings=0
+db_validate=valid
+MCP listener check=no matching listener observed
+pre_run_backup=created
+post_run_backup=created
+```
+
 ## 2026-05-20 - TASK-AUTO-007B BOJA evidence URL enrichment
 
 Local code validation:
