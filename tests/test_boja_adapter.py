@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import httpx
 import pytest
 
 from official_sources.citation.builder import build_citation
@@ -15,6 +16,28 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 def _fixture_bytes(name: str) -> bytes:
     return (FIXTURES / name).read_bytes()
+
+
+def _http_error_fetcher(status_code: int, fixture_name: str | None = None):
+    def fetcher(_target_date: str, _page: int, _size: int) -> bytes:
+        request = httpx.Request(
+            "GET", "https://datos.juntadeandalucia.es/api/v0/boja/get/search_pagination"
+        )
+        response = httpx.Response(
+            status_code,
+            request=request,
+            headers={"content-type": "application/json"},
+            content=_fixture_bytes(fixture_name)
+            if fixture_name
+            else b'{"status":500,"message":"Server error"}',
+        )
+        raise httpx.HTTPStatusError(
+            f"Client error '{status_code}' for url '{request.url}'",
+            request=request,
+            response=response,
+        )
+
+    return fetcher
 
 
 @pytest.mark.parametrize("value", ["2026-05-19", "1980-01-01"])
@@ -77,6 +100,48 @@ def test_boja_empty_fixture_records_no_publication(repository):
     assert run["status"] == "no_publication"
     assert run["documents_fetched"] == 0
     assert repository.list_documents_by_date("2026-05-17") == []
+
+
+def test_boja_observed_400_bad_request_body_records_no_publication(repository):
+    run = ingest_boja_date(
+        repository,
+        target_date="2026-04-25",
+        fetcher=_http_error_fetcher(400, "boja_http_400_no_publication.json"),
+    )
+
+    assert run["status"] == "no_publication"
+    assert run["last_http_status"] == 400
+    assert run["documents_fetched"] == 0
+    assert run["pagination_complete"] is True
+    assert "HTTP 400 Bad request" in run["error_message"]
+    assert repository.list_documents_by_date("2026-04-25") == []
+
+
+def test_boja_400_validation_error_remains_failed(repository):
+    run = ingest_boja_date(
+        repository,
+        target_date="2026-04-25",
+        fetcher=_http_error_fetcher(400, "boja_http_400_validation_error.json"),
+    )
+
+    assert run["status"] == "failed"
+    assert run["last_http_status"] == 400
+    assert run["pagination_complete"] is False
+    assert repository.list_documents_by_date("2026-04-25") == []
+
+
+@pytest.mark.parametrize("status_code", [404, 500])
+def test_boja_other_http_errors_remain_failed(repository, status_code):
+    run = ingest_boja_date(
+        repository,
+        target_date="2026-04-25",
+        fetcher=_http_error_fetcher(status_code),
+    )
+
+    assert run["status"] == "failed"
+    assert run["last_http_status"] == status_code
+    assert run["pagination_complete"] is False
+    assert repository.list_documents_by_date("2026-04-25") == []
 
 
 def test_boja_ingestion_persists_documents_raw_payload_and_citation(repository):

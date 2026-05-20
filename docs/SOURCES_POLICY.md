@@ -373,6 +373,14 @@ BOJA metadata ingestion stores official document metadata and `raw_api_response`
 
 BOJA no-publication semantics are independent from BOE. A BOJA API response with an empty `results` array is recorded as `no_publication`; BOE Sunday rules must not be reused.
 
+Observed BOJA empty-date behavior can also be:
+
+```json
+{"status":400,"message":"Bad request"}
+```
+
+For valid date queries, only this exact generic BOJA JSON 400 body is treated as `no_publication`. The ingestion run preserves `last_http_status=400` and a diagnostic message. Other HTTP 400 bodies, HTTP 404 responses, 5xx responses, network errors after retries, parser errors, and malformed payloads remain failures unless future source-specific evidence and tests justify a narrower exception.
+
 BOJA pagination completeness is mandatory. The adapter uses `total_hits` from the official API as the completeness target and continues fetching pages until all expected documents are collected. Missing `total_hits`, hitting `OFFICIAL_SOURCES_BOJA_MAX_PAGES_PER_DATE` before completion, or collecting fewer unique documents than `total_hits` fails the ingestion with `pagination_complete=false`. Page 0 must not be treated as complete when pagination metadata is ambiguous.
 
 ## Citation Requirements

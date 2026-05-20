@@ -4,7 +4,7 @@
 
 TASK-AUTO-003 attempted a controlled BOJA 30-day metadata-only backfill on the deployed `official-sources` VPS.
 
-The run was intentionally stopped on the first real failure. It did not complete the full 30-day range because BOJA returned HTTP 400 for `2026-04-25`.
+The run was intentionally stopped on the first ambiguous failure. It did not complete the full 30-day range because BOJA returned HTTP 400 for `2026-04-25`.
 
 No PDFs, HTML/XML artifacts, candidates, downstream writes, approvals, publications, MCP exposure, BOE tasks, or additional autonomous adapters were run.
 
@@ -150,9 +150,9 @@ pagination_complete=false
 documents_fetched=0
 ```
 
-The adapter recorded the HTTP 400 as a failed ingestion run. This is the correct conservative behavior for now because BOJA no-publication semantics for HTTP 400 have not yet been defined or fixture-covered.
+The adapter recorded the HTTP 400 as a failed ingestion run. This was the correct conservative behavior at the time because BOJA no-publication semantics for HTTP 400 had not yet been defined or fixture-covered.
 
-Do not reinterpret this failure as `no_publication` without a dedicated BOJA no-publication behavior fix and tests.
+TASK-AUTO-003B later confirmed that BOJA uses this exact generic JSON 400 body for valid no-publication dates and added a narrow tested classifier. Do not reinterpret other BOJA HTTP 400 bodies as `no_publication`.
 
 ## Selected Status Checks
 
@@ -214,8 +214,8 @@ The post-run backup was created because the database remained valid and the run 
 ## Known Limitations
 
 - The requested 30-day range was not completed.
-- BOJA returned HTTP 400 for `2026-04-25`; the adapter currently records this as failure.
-- BOJA HTTP 400/no-publication semantics are not yet documented or tested.
+- BOJA returned HTTP 400 for `2026-04-25`; TASK-AUTO-003B now classifies only the observed generic BOJA 400 body as `no_publication`.
+- BOJA HTTP 400/no-publication semantics are now documented and fixture-covered for the observed body only.
 - The VPS virtual environment still emits pre-existing `Ignoring invalid distribution ~fficial-sources` warnings during editable install.
 - No BOJA range command exists yet; the run used a conservative shell loop.
 - No BOJA candidate extraction exists yet.
@@ -228,13 +228,14 @@ Do not start BOJA candidate dry-run yet.
 Recommended next task:
 
 ```text
-TASK-AUTO-003B - BOJA no-publication HTTP behavior hardening
+TASK-AUTO-003C - Resume controlled BOJA 30-day metadata backfill
 ```
 
 Scope:
 
-- inspect official BOJA behavior for weekend/no-publication dates with one or two safe requests;
-- determine whether HTTP 400 for `2026-04-25` is a normal no-publication response;
-- add fixture coverage for BOJA HTTP 400/no-publication if confirmed;
-- keep real parser errors and malformed responses as failures;
-- rerun the controlled BOJA 30-day metadata backfill after the behavior is explicit.
+- deploy the BOJA no-publication hardening commit to the VPS;
+- resume from `2026-04-25` through `2026-05-20`;
+- keep metadata-only behavior;
+- no PDFs;
+- no candidates;
+- no downstream.

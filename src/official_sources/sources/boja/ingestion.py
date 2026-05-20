@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import inspect
+import json
 from collections.abc import Callable
+from typing import Any
 
 import httpx
 
@@ -168,6 +170,26 @@ def ingest_boja_date(
             exc,
             fallback=client.last_request_audit if client else request_audit,
         )
+        if _http_error_indicates_observed_no_publication(exc):
+            run_record = repository.finish_ingestion_run(
+                run_id=run["id"],
+                status=NO_PUBLICATION_STATUS,
+                documents_fetched=0,
+                documents_new=0,
+                documents_updated=0,
+                error_message=(
+                    f"BOJA returned HTTP 400 Bad request for date {target_date}; "
+                    "classified as no_publication based on observed empty-date API behavior"
+                ),
+                retry_count=request_audit.retry_count,
+                throttle_triggered=request_audit.throttle_triggered,
+                last_http_status=request_audit.last_http_status,
+            )
+            return _with_pagination_metadata(
+                run_record,
+                pages_fetched=0,
+                pagination_complete=True,
+            )
         run_record = repository.finish_ingestion_run(
             run_id=run["id"],
             status="failed",
@@ -251,6 +273,34 @@ def _call_boja_fetcher(fetcher: Callable, target_date: str, page: int, page_size
     if page == 0:
         return fetcher(target_date)
     raise ValueError("BOJA fetcher does not support pagination")
+
+
+def _http_error_indicates_observed_no_publication(exc: Exception) -> bool:
+    if not isinstance(exc, httpx.HTTPStatusError):
+        return False
+    response = exc.response
+    if response.status_code != 400:
+        return False
+    payload = _json_object_from_response(response)
+    if payload is None:
+        return False
+    message = str(payload.get("message") or "").strip().lower()
+    status = payload.get("status")
+    keys = set(payload)
+    return status == 400 and message == "bad request" and keys <= {"status", "message"}
+
+
+def _json_object_from_response(response: httpx.Response) -> dict[str, Any] | None:
+    content_type = response.headers.get("content-type", "").lower()
+    if "json" not in content_type:
+        return None
+    try:
+        payload = response.json()
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return payload
 
 
 def _with_pagination_metadata(

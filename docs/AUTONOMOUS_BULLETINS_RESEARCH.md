@@ -26,6 +26,7 @@ TASK-AUTO-002 - BOJA adapter MVP
 
 TASK-AUTO-002 status: implemented as a metadata/date MVP.
 TASK-AUTO-002B status: pagination and completeness guard implemented.
+TASK-AUTO-003B status: BOJA HTTP 400 no-publication behavior hardened.
 
 Implemented scope:
 
@@ -44,6 +45,8 @@ Implemented scope:
 Completeness policy:
 
 - `total_hits=0` with empty results is `no_publication`;
+- exact observed JSON body `{"status":400,"message":"Bad request"}` for a valid date is `no_publication` with `last_http_status=400`;
+- other 400 bodies remain failures;
 - missing `total_hits` is ambiguous and fails the ingestion;
 - reaching the max-page limit before collecting `total_hits` fails the ingestion;
 - incomplete runs must not silently store page 0 as complete.

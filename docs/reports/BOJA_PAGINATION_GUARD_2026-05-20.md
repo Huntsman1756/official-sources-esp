@@ -68,6 +68,8 @@ unique collected documents < total_hits -> status=failed, pagination_complete=fa
 
 Incomplete runs do not store partial BOJA documents.
 
+TASK-AUTO-003B added one BOJA-specific HTTP no-publication rule outside normal pagination: a valid-date request that receives the exact observed generic JSON body `{"status":400,"message":"Bad request"}` is recorded as `no_publication` with `last_http_status=400`, `pages_fetched=0`, and `pagination_complete=true`. Other 400 bodies remain failures.
+
 ## Max-Page Guard
 
 The default page safety limit is:

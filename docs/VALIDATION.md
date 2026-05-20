@@ -2,6 +2,32 @@
 
 ## Commands Executed
 
+TASK-AUTO-003B BOJA no-publication HTTP behavior hardening:
+
+```bash
+rtk python -m pytest tests/test_boja_adapter.py tests/test_cli_boja.py -q
+rtk powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path 'G:\tmp\official-sources-boja-400-probe-20260520' | Out-Null; python -c 'import sys; sys.path.insert(0, ''src''); from official_sources.cli import main; main()' --db-path 'G:\tmp\official-sources-boja-400-probe-20260520\official_sources_boja_400.sqlite' ingest-boja-date --date 2026-04-25; python -c 'import sys; sys.path.insert(0, ''src''); from official_sources.cli import main; main()' --db-path 'G:\tmp\official-sources-boja-400-probe-20260520\official_sources_boja_400.sqlite' db validate"
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+- Empirical probe dates: `2026-04-25`, `2026-04-26`, `2026-04-27`, `2026-05-01`, `2026-05-19`.
+- Probe result: `2026-04-25`, `2026-04-26`, and `2026-05-01` returned `400 application/json {"status":400,"message":"Bad request"}`.
+- Probe result: `2026-04-27` returned `200` with `hits=44 total_hits=44 results=44`.
+- Probe result: `2026-05-19` returned `200` with `hits=72 total_hits=72 results=72`.
+- Red focused tests failed before implementation because observed BOJA HTTP 400 still mapped to `failed`.
+- Focused BOJA/CLI tests after implementation: `23 passed`.
+- Live re-test for `2026-04-25`: `status=no_publication pages_fetched=0 pagination_complete=true documents_fetched=0 documents_new=0 documents_updated=0 retry_count=0 throttle_triggered=0 last_http_status=400`.
+- Temporary live re-test database validation: `current_version=8 latest_version=8 status=valid`.
+- Full tests: `231 passed`.
+- Lint: `All checks passed!`.
+- Formatting: `65 files already formatted`.
+- Only the exact observed generic BOJA JSON 400 body is classified as `no_publication`; other 400 responses remain failures.
+- No BOJA 30-day backfill, candidate extraction, PDF download, downstream write, approval, publication, MCP exposure, RAG, or legal interpretation was run.
+
 TASK-AUTO-003 controlled BOJA 30-day metadata backfill:
 
 ```bash
