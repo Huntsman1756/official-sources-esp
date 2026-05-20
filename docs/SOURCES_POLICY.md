@@ -446,6 +446,16 @@ For valid date queries, only this exact generic BOJA JSON 400 body is treated as
 
 BOJA pagination completeness is mandatory. The adapter uses `total_hits` from the official API as the completeness target and continues fetching pages until all expected documents are collected. Missing `total_hits`, hitting `OFFICIAL_SOURCES_BOJA_MAX_PAGES_PER_DATE` before completion, or collecting fewer unique documents than `total_hits` fails the ingestion with `pagination_complete=false`. Page 0 must not be treated as complete when pagination metadata is ambiguous.
 
+BOJA pilot closure:
+
+- The first BOJA pilot validated metadata ingestion, source-specific candidate dry-runs, limited
+  candidate creation, scoped URL enrichment, scoped PDF download, PDF evidence review, and
+  `candidate_evidence_reviews` decision storage.
+- BOJA produced `4` accepted downstream pilot candidates from the first reviewed evidence set.
+- No downstream import has been performed.
+- BOJA evidence should not be imported into EduAyudas or another downstream project until the
+  downstream onboarding contract and environment-safe import path are documented.
+
 ## Citation Requirements
 
 Citations must identify the source code, external official identifier, publication date, title, and best official URL.

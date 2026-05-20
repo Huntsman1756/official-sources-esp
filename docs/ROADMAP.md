@@ -96,8 +96,7 @@ Excluded unless separately specified:
 
 ## Future phase - Autonomous bulletins
 
-Status: First MVP implemented for BOJA metadata ingestion and metadata-only candidate
-dry-run refinement.
+Status: BOJA pilot closed through reviewed evidence decisions.
 
 Latest audit:
 
@@ -105,19 +104,25 @@ Latest audit:
 
 Recommended first implementation:
 
-- `TASK-AUTO-002 - BOJA adapter MVP` - implemented as metadata/index ingestion only.
+- `TASK-AUTO-002 - BOJA adapter MVP` - implemented.
 
-Initial autonomous/statutory territory adapters must remain metadata/index-only until separately approved. Do not create candidates, download large PDFs, write downstream evidence, or implement publication decisions in the first adapter MVP.
+Future autonomous/statutory territory adapter MVPs must start metadata/index-only until separately approved. Do not create candidates, download large PDFs, write downstream evidence, or implement publication decisions in a first adapter MVP.
 
-Latest BOJA candidate dry-run:
+Latest BOJA pilot result:
 
-- `TASK-AUTO-004B - BOJA-specific candidate profile refinement` reduced filtered matches
-  from `217/1500 = 14.47%` with `la-ayuda` to `36/1500 = 2.40%` with `boja-ayudas`.
+- 30-day BOJA metadata window: `1500` documents.
+- Limited BOJA candidates created: `25`, all `human_review_required`.
+- Selected BOJA PDF evidence candidates: `10`.
+- BOJA PDFs downloaded by explicit candidate IDs: `10`.
+- Evidence decisions applied: `4` accepted for downstream pilot, `6` out of scope.
+- Downstream writes, approvals, and publications: `0`.
 
 Recommended next step:
 
-- `TASK-AUTO-005 - Create limited BOJA candidates` with a small explicit cap, for example
-  `max_candidates=25`.
+- `TASK-PLATFORM-001 - Downstream onboarding kit for official-sources`.
+
+Do not import BOJA evidence into EduAyudas until the downstream onboarding contract and
+environment-safe import path are documented.
 
 ## Future phase - EUR-Lex
 

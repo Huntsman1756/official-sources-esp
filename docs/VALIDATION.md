@@ -1495,3 +1495,46 @@ status=success
 
 No artifacts were downloaded, no candidates were created, no downstream project was touched, and no
 approval or publication workflow was run.
+
+## TASK-AUTO-010 - BOJA Pilot Closure
+
+Documentation-only validation was performed locally for BOJA pilot closure.
+
+Closure report:
+
+```text
+docs/reports/BOJA_PILOT_CLOSURE_2026-05-20.md
+```
+
+Pilot metrics summarized:
+
+```text
+30-day BOJA documents=1500
+BOJA source_candidates_created=25
+selected_for_evidence=10
+PDFs_downloaded=10
+accepted_for_downstream_pilot=4
+out_of_scope_after_evidence_review=6
+downstream_writes=0
+approvals=0
+publications=0
+```
+
+Safety state preserved by closure:
+
+```text
+database_mutation=0
+new_artifacts=0
+new_candidates=0
+downstream_writes=0
+approvals=0
+publications=0
+```
+
+Validation:
+
+```text
+git diff --check: passed
+```
+
+No code changes were made, so the Python test suite was not run for this documentation-only closure.

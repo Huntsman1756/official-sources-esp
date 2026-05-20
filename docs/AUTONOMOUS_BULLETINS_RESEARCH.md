@@ -28,6 +28,7 @@ TASK-AUTO-002 status: implemented as a metadata/date MVP.
 TASK-AUTO-002B status: pagination and completeness guard implemented.
 TASK-AUTO-003B status: BOJA HTTP 400 no-publication behavior hardened.
 TASK-AUTO-004B status: BOJA-specific `boja-ayudas` dry-run profile implemented.
+TASK-AUTO-010 status: BOJA pilot closed through reviewed evidence decisions.
 
 Implemented scope:
 
@@ -42,6 +43,10 @@ Implemented scope:
 - raw JSON payload hash stored as `source_snapshot_hash`;
 - deterministic combined raw payload hash for multi-page responses;
 - ingestion run audit for success and empty/no-publication dates.
+- limited BOJA candidate creation with all candidates kept in `human_review_required`;
+- scoped BOJA evidence URL enrichment through the official detail endpoint;
+- scoped BOJA PDF download by explicit candidate IDs;
+- BOJA PDF evidence review and operational decision storage in `candidate_evidence_reviews`.
 
 Completeness policy:
 
@@ -54,9 +59,9 @@ Completeness policy:
 
 Still excluded:
 
-- candidate extraction;
+- automatic candidate extraction;
 - downstream writes;
-- PDF downloads by default;
+- PDF downloads by default or by date range;
 - text extraction;
 - legal interpretation;
 - generic all-autonomous framework.
@@ -66,3 +71,11 @@ Candidate profile note:
 - BOJA metadata over-matched with the BOE `la-ayuda` profile: `217/1500 = 14.47%`.
 - The source-specific `boja-ayudas` profile reduced filtered matches to `36/1500 = 2.40%`.
 - Real BOJA candidate creation should start with a small explicit cap and remain human-review only.
+
+Pilot closure note:
+
+- The BOJA 30-day pilot produced `1500` documents, `25` source candidates, `10` scoped PDF
+  evidence downloads, and `4` accepted downstream pilot candidates.
+- No downstream project was written, no candidate was approved, and nothing was published.
+- The recommended next step is a platform-level downstream onboarding kit before importing BOJA
+  evidence into EduAyudas.
