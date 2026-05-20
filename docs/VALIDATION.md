@@ -1,5 +1,25 @@
 # Validation
 
+## 2026-05-20 - TASK-AUTO-006 BOJA candidate triage
+
+VPS read-only validation:
+
+```text
+operational_deployed_commit=2ab44f0
+BOJA candidates reviewed=25
+candidate_ids=76-100
+triage_distribution=likely_relevant:9, unclear:10, out_of_scope:1, false_positive:5
+selected_evidence_candidates=77,78,79,80,81,82,86,87,93,98
+source_candidates_total=100
+BOJA source_candidates=25
+review_status_distribution=human_review_required:100
+BOJA review_status_distribution=human_review_required:25
+artifact_download_attempts=392
+artifact_directory_size=24M
+db_validate=valid
+MCP listener check=no matching listener observed
+```
+
 ## 2026-05-20 - TASK-AUTO-005 BOJA candidate batch
 
 VPS operational validation:
