@@ -91,7 +91,7 @@ def test_boja_detail_fixture_parses_nested_pdf_public_url():
 
     assert parsed.documents[0].external_id == "BOJA:disposition.2026.94.5"
     assert parsed.documents[0].url_pdf == (
-        "https://juntadeandalucia.es/eboja/2026/94/BOJA26-094-00002-6601-01_00337837.pdf"
+        "https://www.juntadeandalucia.es/eboja/2026/94/BOJA26-094-00002-6601-01_00337837.pdf"
     )
     assert parsed.documents[0].raw_metadata["pdf"][0]["pathPdf"] == (
         "BOJA26-094-00002-6601-01_00337837"

@@ -148,6 +148,8 @@ def _official_pdf_url_or_none(value: str | None) -> str | None:
         return None
     if not parsed.path.lower().endswith(".pdf"):
         return None
+    if parsed.hostname == "juntadeandalucia.es":
+        return parsed._replace(netloc="www.juntadeandalucia.es").geturl()
     return normalized
 
 
