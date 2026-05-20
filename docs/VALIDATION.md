@@ -1375,3 +1375,123 @@ Tests cover:
 - Automatic restore over the active database is not implemented.
 - Cloud backups, encryption, compression, and backup rotation are not implemented.
 - TASK-003E added operational documentation and ADRs only; no new adapters, endpoints, deployment automation, RAG, downstream integrations, or legal interpretation were implemented.
+
+## TASK-AUTO-009 - BOJA Evidence Review Decision Application
+
+Operational validation was performed on the official-sources VPS for applying BOJA selected
+candidate evidence review decisions.
+
+VPS state before applying decisions:
+
+```text
+deployed_commit=6466f23
+schema_version=8
+journal_mode=wal
+synchronous=normal
+db_validate=valid
+```
+
+Selected candidates:
+
+```text
+77, 78, 79, 80, 81, 82, 86, 87, 93, 98
+```
+
+Pre-run checks:
+
+```text
+source_code=BOJA for all selected candidates
+review_status=human_review_required for all selected candidates
+pdf_available=10/10
+pdf_hash_present=10/10
+integrity_warnings=0
+existing_candidate_evidence_reviews_for_selected=0
+source_candidates=100
+artifact_download_attempts=432
+BOJA PDF document_files=10
+artifact_directory_size=26M
+```
+
+Backup before mutation:
+
+```text
+path=/opt/official-sources/data/backups/official_sources_before_boja_evidence_review_apply_20260520_164233.sqlite
+verification=quick_check
+source_check=ok
+backup_check=ok
+size_bytes=49049600
+status=success
+```
+
+Applied evidence review decisions:
+
+```text
+accept_for_downstream_pilot: 77, 78, 80, 86
+out_of_scope: 79, 81, 82, 87, 93, 98
+needs_more_evidence: 0
+false_positive: 0
+defer: 0
+```
+
+Applied accepted fields:
+
+```text
+manual_decision=accept_for_downstream_pilot
+evidence_label=likely_relevant
+evidence_review_status=evidence_reviewed
+downstream_project_fit=EduAyudas
+needs_pdf=no
+selected_for_pdf=false
+reviewed_by=Dani
+reviewed_at=2026-05-20
+```
+
+Applied out-of-scope fields:
+
+```text
+manual_decision=out_of_scope
+evidence_label=out_of_scope
+evidence_review_status=out_of_scope
+downstream_project_fit=neither
+needs_pdf=no
+selected_for_pdf=false
+reviewed_by=Dani
+reviewed_at=2026-05-20
+```
+
+Post-run verification:
+
+```text
+manual_decision.accept_for_downstream_pilot=4
+manual_decision.out_of_scope=6
+evidence_review_status.evidence_reviewed=4
+evidence_review_status.out_of_scope=6
+selected_for_pdf_count=0
+needs_pdf_yes_count=0
+pdf_available_count=10
+source_candidates.review_status=human_review_required:100
+artifact_download_attempts=432 -> 432
+BOJA PDF document_files=10 -> 10
+artifact_directory_size=26M -> 26M
+db_validate=valid
+```
+
+MCP/privacy check:
+
+```text
+no matching listener observed for official, mcp, python, uvicorn, or fastmcp
+```
+
+Backup after validation:
+
+```text
+path=/opt/official-sources/data/backups/official_sources_after_boja_evidence_review_apply_20260520_164339.sqlite
+verification=quick_check
+source_check=ok
+backup_check=ok
+size_bytes=49049600
+status=success
+```
+
+No artifacts were downloaded, no candidates were created, no downstream project was touched, and no
+approval or publication workflow was run.
