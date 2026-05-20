@@ -1,0 +1,26 @@
+{
+  "hits": 2,
+  "total_hits": 3,
+  "results": [
+    {
+      "id": "disposition.2026.95.1",
+      "number": 95,
+      "date": "20/05/2026",
+      "titleSec": "1. Disposiciones generales",
+      "organisation": "Universidades",
+      "summaryNoHtml": "First BOJA paginated fixture document.",
+      "publicUrl": "https://www.juntadeandalucia.es/eboja/2026/95/BOJA26-095-00001.html",
+      "pathPdf": "/eboja/2026/95/BOJA26-095-00001.pdf"
+    },
+    {
+      "id": "disposition.2026.95.2",
+      "number": 95,
+      "date": "20/05/2026",
+      "titleSec": "3. Otras disposiciones",
+      "organisation": "Consejeria de Educacion",
+      "summaryNoHtml": "Second BOJA paginated fixture document.",
+      "publicUrl": "https://www.juntadeandalucia.es/eboja/2026/95/BOJA26-095-00002.html",
+      "pathPdf": "/eboja/2026/95/BOJA26-095-00002.pdf"
+    }
+  ]
+}

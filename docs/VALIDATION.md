@@ -2,6 +2,31 @@
 
 ## Commands Executed
 
+TASK-AUTO-002B BOJA pagination completeness guard:
+
+```bash
+rtk python -m pytest tests/test_boja_adapter.py tests/test_cli_boja.py -q
+rtk powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path 'G:\tmp\official-sources-boja-pagination-smoke-20260520' | Out-Null; python -c 'import sys; sys.path.insert(0, ''src''); from official_sources.cli import main; main()' --db-path 'G:\tmp\official-sources-boja-pagination-smoke-20260520\official_sources_boja_pagination.sqlite' ingest-boja-date --date 2026-05-19"
+rtk powershell -NoProfile -Command "python -c 'import sys; sys.path.insert(0, ''src''); from official_sources.cli import main; main()' --db-path 'G:\tmp\official-sources-boja-pagination-smoke-20260520\official_sources_boja_pagination.sqlite' db validate"
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+- Focused BOJA pagination/CLI tests: `18 passed`.
+- Live smoke used one BOJA date only, `2026-05-19`, against a temporary local database.
+- Live smoke result: `status=success pages_fetched=1 pagination_complete=true documents_fetched=72 documents_new=72 documents_updated=0 retry_count=0 throttle_triggered=0 last_http_status=200`.
+- Temporary smoke database validation: `current_version=8 latest_version=8 status=valid`.
+- Full tests: `226 passed`.
+- Lint: `All checks passed!`.
+- Formatting: `65 files already formatted`.
+- BOJA pagination now uses `total_hits` as the completeness target.
+- Missing pagination metadata or max-page exhaustion fails with `pagination_complete=false`.
+- Paginated raw API payloads use a deterministic combined raw hash before parsing.
+- No BOJA 30-day backfill, candidate extraction, PDF download, downstream write, approval, publication, MCP exposure, RAG, or legal interpretation was implemented.
+
 TASK-AUTO-002 BOJA adapter MVP:
 
 ```bash

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import os
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import date
 from urllib.parse import urlencode
 
@@ -12,6 +13,18 @@ from official_sources.sources.boe.http_policy import BOERequestAudit, BOERequest
 BOJA_API_BASE_URL = "https://datos.juntadeandalucia.es/api/v0/boja"
 BOJA_SEARCH_ENDPOINT = "/get/search_pagination"
 BOJA_DEFAULT_PAGE_SIZE = 200
+BOJA_DEFAULT_MAX_PAGES_PER_DATE = 20
+
+
+def boja_max_pages_from_env(environ: Mapping[str, str] | None = None) -> int:
+    environ = environ or os.environ
+    raw = environ.get("OFFICIAL_SOURCES_BOJA_MAX_PAGES_PER_DATE")
+    if raw is None:
+        return BOJA_DEFAULT_MAX_PAGES_PER_DATE
+    value = int(raw)
+    if value <= 0:
+        raise ValueError("OFFICIAL_SOURCES_BOJA_MAX_PAGES_PER_DATE must be greater than zero")
+    return value
 
 
 def validate_boja_date(value: str) -> date:
@@ -61,8 +74,14 @@ class BOJAClient:
         self.client = client
         self.last_request_audit = BOERequestAudit()
 
-    def fetch_date(self, target_date: str) -> bytes:
-        url = build_boja_search_url(target_date, base_url=self.base_url)
+    def fetch_date_page(
+        self,
+        target_date: str,
+        *,
+        page: int = 0,
+        size: int = BOJA_DEFAULT_PAGE_SIZE,
+    ) -> bytes:
+        url = build_boja_search_url(target_date, base_url=self.base_url, page=page, size=size)
         if self.client is not None:
             result = self._get(url, self.client)
         else:
@@ -71,6 +90,9 @@ class BOJAClient:
         self.last_request_audit = result.audit
         result.raise_for_status()
         return result.content
+
+    def fetch_date(self, target_date: str) -> bytes:
+        return self.fetch_date_page(target_date, page=0, size=BOJA_DEFAULT_PAGE_SIZE)
 
     def _get(self, url: str, client: httpx.Client):
         return self.request_policy.get(

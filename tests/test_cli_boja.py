@@ -32,6 +32,8 @@ def test_ingest_boja_date_cli_creates_ingestion_run(tmp_path, capsys):
     assert (
         "command_started=ingest-boja-date source_code=BOJA target_date=2026-05-19" in captured.out
     )
+    assert "pages_fetched=1" in captured.out
+    assert "pagination_complete=true" in captured.out
     assert "documents_fetched=2" in captured.out
 
 
@@ -52,4 +54,6 @@ def test_ingest_boja_date_cli_records_no_publication(tmp_path, capsys):
     assert exit_code == 0
     assert run_record["status"] == "no_publication"
     assert "status=no_publication" in captured.out
+    assert "pages_fetched=1" in captured.out
+    assert "pagination_complete=true" in captured.out
     assert "documents_fetched=0" in captured.out

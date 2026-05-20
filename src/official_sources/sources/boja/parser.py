@@ -32,7 +32,9 @@ class BOJADocumentMetadata:
 class BOJASearchResponse:
     target_date: str
     raw_payload_sha256: str
+    hits: int
     total_hits: int
+    has_total_hits: bool
     raw: dict[str, Any]
     documents: list[BOJADocumentMetadata]
 
@@ -45,7 +47,9 @@ def parse_boja_search_response(payload: bytes, *, target_date: str) -> BOJASearc
     return BOJASearchResponse(
         target_date=target_date,
         raw_payload_sha256=sha256_bytes(payload),
+        hits=_int_value(raw.get("hits", len(results))),
         total_hits=_int_value(raw.get("total_hits", raw.get("hits", len(results)))),
+        has_total_hits="total_hits" in raw,
         raw=raw,
         documents=[document for document in _extract_documents(results) if document is not None],
     )

@@ -352,12 +352,18 @@ Implemented BOJA query parameters:
 order_by=date
 mode=DESC
 size=200
-page=0
+page=0..n
 date_from=YYYY-MM-DD
 date_to=YYYY-MM-DD
 ```
 
-Accepted content type is JSON. The adapter treats the raw JSON API response as the canonical metadata payload and hashes the exact raw bytes before parsing. Stored BOJA document identifiers use the stable API `id` prefixed with the source code, for example:
+Accepted content type is JSON. The adapter treats the raw JSON API response as the canonical metadata payload and hashes the exact raw bytes before parsing. Paginated BOJA responses are combined in page order before hashing:
+
+```text
+sha256(page0_raw + "\n---BOJA-PAGE---\n" + page1_raw + ...)
+```
+
+Stored BOJA document identifiers use the stable API `id` prefixed with the source code, for example:
 
 ```text
 BOJA:disposition.2026.94.5
@@ -366,6 +372,8 @@ BOJA:disposition.2026.94.5
 BOJA metadata ingestion stores official document metadata and `raw_api_response` file records. It preserves `publicUrl` as the best official public URL and `pathPdf` as the official PDF URL when available. It does not download PDFs, extract text, create candidates, write downstream projects, approve, or publish anything.
 
 BOJA no-publication semantics are independent from BOE. A BOJA API response with an empty `results` array is recorded as `no_publication`; BOE Sunday rules must not be reused.
+
+BOJA pagination completeness is mandatory. The adapter uses `total_hits` from the official API as the completeness target and continues fetching pages until all expected documents are collected. Missing `total_hits`, hitting `OFFICIAL_SOURCES_BOJA_MAX_PAGES_PER_DATE` before completion, or collecting fewer unique documents than `total_hits` fails the ingestion with `pagination_complete=false`. Page 0 must not be treated as complete when pagination metadata is ambiguous.
 
 ## Citation Requirements
 

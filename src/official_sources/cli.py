@@ -700,6 +700,8 @@ def _run_ingest_boja(
         " ".join(
             [
                 f"status={run_record['status']}",
+                f"pages_fetched={run_record.get('pages_fetched', 0)}",
+                f"pagination_complete={_bool_token(run_record.get('pagination_complete'))}",
                 f"documents_fetched={run_record['documents_fetched']}",
                 f"documents_new={run_record['documents_new']}",
                 f"documents_updated={run_record['documents_updated']}",

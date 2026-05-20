@@ -6,8 +6,8 @@ import pytest
 
 from official_sources.citation.builder import build_citation
 from official_sources.integrity.hashing import sha256_bytes
-from official_sources.sources.boja.client import validate_boja_date
-from official_sources.sources.boja.ingestion import ingest_boja_date
+from official_sources.sources.boja.client import BOJA_DEFAULT_PAGE_SIZE, validate_boja_date
+from official_sources.sources.boja.ingestion import BOJA_PAGE_SEPARATOR, ingest_boja_date
 from official_sources.sources.boja.parser import parse_boja_search_response
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -109,6 +109,85 @@ def test_boja_ingestion_persists_documents_raw_payload_and_citation(repository):
     assert citation["pdf_url"] == document["url_pdf"]
     assert candidate_count == 0
     assert download_attempt_count == 0
+
+
+def test_boja_ingestion_fetches_all_pages_and_stores_every_document(repository):
+    page_payloads = {
+        0: _fixture_bytes("boja_date_page_0.json"),
+        1: _fixture_bytes("boja_date_page_1.json"),
+    }
+    calls: list[tuple[str, int, int]] = []
+
+    def fetcher(target_date: str, page: int, size: int) -> bytes:
+        calls.append((target_date, page, size))
+        return page_payloads[page]
+
+    run = ingest_boja_date(repository, target_date="2026-05-20", fetcher=fetcher)
+
+    documents = repository.list_documents_by_date("2026-05-20")
+    document = repository.get_document_by_external_id("BOJA:disposition.2026.95.3")
+    files = repository.list_document_files(document["id"])
+    combined_payload = BOJA_PAGE_SEPARATOR.join([page_payloads[0], page_payloads[1]])
+
+    assert run["status"] == "success"
+    assert run["pages_fetched"] == 2
+    assert run["pagination_complete"] is True
+    assert run["documents_fetched"] == 3
+    assert [call[1] for call in calls] == [0, 1]
+    assert {document["external_id"] for document in documents} == {
+        "BOJA:disposition.2026.95.1",
+        "BOJA:disposition.2026.95.2",
+        "BOJA:disposition.2026.95.3",
+    }
+    assert files[0]["source_snapshot_hash"] == sha256_bytes(combined_payload)
+
+
+def test_boja_ingestion_deduplicates_documents_across_pages(repository):
+    page_payloads = {
+        0: _fixture_bytes("boja_date_page_0.json"),
+        1: _fixture_bytes("boja_date_page_0.json"),
+    }
+
+    def fetcher(_target_date: str, page: int, _size: int) -> bytes:
+        return page_payloads[page]
+
+    run = ingest_boja_date(repository, target_date="2026-05-20", fetcher=fetcher, max_pages=2)
+
+    documents = repository.list_documents_by_date("2026-05-20")
+    assert run["status"] == "failed"
+    assert run["pagination_complete"] is False
+    assert "BOJA pagination exceeded max pages" in run["error_message"]
+    assert len({document["external_id"] for document in documents}) == len(documents)
+
+
+def test_boja_max_page_safety_fails_without_silent_partial_storage(repository):
+    def fetcher(_target_date: str, _page: int, _size: int) -> bytes:
+        return _fixture_bytes("boja_date_page_0.json")
+
+    run = ingest_boja_date(repository, target_date="2026-05-20", fetcher=fetcher, max_pages=1)
+
+    assert run["status"] == "failed"
+    assert run["pages_fetched"] == 1
+    assert run["pagination_complete"] is False
+    assert "BOJA pagination exceeded max pages" in run["error_message"]
+    assert repository.list_documents_by_date("2026-05-20") == []
+
+
+def test_boja_ambiguous_pagination_metadata_is_not_silently_accepted(repository):
+    run = ingest_boja_date(
+        repository,
+        target_date="2026-05-21",
+        payload=_fixture_bytes("boja_date_ambiguous_pagination.json"),
+    )
+
+    assert run["status"] == "failed"
+    assert run["pagination_complete"] is False
+    assert "missing total_hits" in run["error_message"]
+    assert repository.list_documents_by_date("2026-05-21") == []
+
+
+def test_boja_default_page_size_is_conservative():
+    assert BOJA_DEFAULT_PAGE_SIZE == 200
 
 
 def test_boja_ingestion_updates_existing_document(repository):

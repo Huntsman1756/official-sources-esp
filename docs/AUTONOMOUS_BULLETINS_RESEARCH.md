@@ -25,16 +25,28 @@ TASK-AUTO-002 - BOJA adapter MVP
 ```
 
 TASK-AUTO-002 status: implemented as a metadata/date MVP.
+TASK-AUTO-002B status: pagination and completeness guard implemented.
 
 Implemented scope:
 
 - official API endpoint `/api/v0/boja/get/search_pagination`;
 - one-date ingestion through `official-sources ingest-boja-date --date YYYY-MM-DD`;
+- all-page ingestion for one date using BOJA `total_hits` as the completeness target;
+- CLI reporting of `pages_fetched` and `pagination_complete`;
+- max-page safety through `OFFICIAL_SOURCES_BOJA_MAX_PAGES_PER_DATE` with default `20`;
 - stable external IDs prefixed as `BOJA:<api_id>`;
 - `publicUrl` preservation;
 - `pathPdf` preservation as metadata only;
 - raw JSON payload hash stored as `source_snapshot_hash`;
+- deterministic combined raw payload hash for multi-page responses;
 - ingestion run audit for success and empty/no-publication dates.
+
+Completeness policy:
+
+- `total_hits=0` with empty results is `no_publication`;
+- missing `total_hits` is ambiguous and fails the ingestion;
+- reaching the max-page limit before collecting `total_hits` fails the ingestion;
+- incomplete runs must not silently store page 0 as complete.
 
 Still excluded:
 

@@ -26,7 +26,7 @@ Implemented query shape:
 order_by=date
 mode=DESC
 size=200
-page=0
+page=0..n
 date_from=YYYY-MM-DD
 date_to=YYYY-MM-DD
 ```
@@ -48,11 +48,12 @@ official-sources ingest-boja-date --date YYYY-MM-DD
 The command:
 
 - validates the date;
-- fetches one BOJA API date result;
+- fetches all available BOJA API pages for one date;
 - creates an `ingestion_runs` row with `source_code=BOJA`;
 - stores BOJA source metadata if missing;
 - stores official document metadata;
 - stores a `raw_api_response` file row with source snapshot hash;
+- reports `pages_fetched` and `pagination_complete`;
 - reports fetched/new/updated document counts;
 - records empty result sets as `no_publication`.
 
@@ -109,9 +110,17 @@ The MVP normalizes:
 | `url_pdf` | `pathPdf`, converted to an absolute official URL if relative |
 | `raw_metadata_json` | original item plus `boja_official_id` |
 
-## Hash and integrity behavior
+## Pagination, hash, and integrity behavior
 
-The adapter computes SHA-256 from the exact raw JSON response bytes before parsing. That value is stored as the `source_snapshot_hash` for the `raw_api_response` document file.
+TASK-AUTO-002B added pagination and completeness checks. The adapter uses BOJA `total_hits` metadata as the completeness target. It continues fetching pages until all expected documents are collected, or records a failed incomplete ingestion if pagination metadata is missing, ambiguous, or exceeds the configured safety limit.
+
+For paginated responses, the adapter computes SHA-256 from a deterministic combined raw payload:
+
+```text
+page0_raw + "\n---BOJA-PAGE---\n" + page1_raw + ...
+```
+
+That combined hash is stored as the `source_snapshot_hash` for the `raw_api_response` document file. Hashing still happens before parsing and never from normalized fields.
 
 This is an integrity signal only. It is not electronic signature validation.
 
@@ -150,6 +159,9 @@ Added fixtures:
 ```text
 tests/fixtures/boja_date_with_documents.json
 tests/fixtures/boja_date_empty_or_no_publication.json
+tests/fixtures/boja_date_page_0.json
+tests/fixtures/boja_date_page_1.json
+tests/fixtures/boja_date_ambiguous_pagination.json
 ```
 
 Added tests for:
@@ -168,6 +180,10 @@ Added tests for:
 - no candidate creation;
 - citation generation;
 - CLI command behavior.
+- multi-page ingestion;
+- pagination completeness reporting;
+- max-page safety failure;
+- ambiguous pagination metadata failure;
 
 ## Live smoke
 
@@ -182,6 +198,8 @@ Result:
 
 ```text
 status=success
+pages_fetched=1
+pagination_complete=true
 documents_fetched=72
 documents_new=72
 documents_updated=0
@@ -195,13 +213,13 @@ Do not run a broad BOJA range in this MVP task.
 
 ## Limitations
 
-- Only one-page date metadata ingestion is implemented with `size=200`.
 - No range command exists for BOJA yet.
 - No PDF download is implemented for BOJA.
 - No XML/HTML extraction is implemented for BOJA.
 - No candidate extraction is implemented.
 - No downstream evidence export/import is implemented.
 - Rate-limit policy is conservative but BOJA-specific public quotas were not found.
+- Completeness depends on BOJA continuing to expose reliable `total_hits`; missing pagination metadata now fails instead of silently storing partial results.
 - The MVP does not validate electronic signatures.
 
 ## Next recommended task
