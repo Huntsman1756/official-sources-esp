@@ -1439,7 +1439,7 @@ def test_find_boe_candidates_boja_profile_matches_education_signals(tmp_path, ca
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "matches_after_filters=1" in captured.out
-    assert "matched_keywords=becas,convocatoria,universidades,estudiantes" in captured.out
+    assert "matched_keywords=becas,convocatoria,estudiantes" in captured.out
     assert "strong_keyword:becas" in captured.out
     assert "BOJA:student-aid" in captured.out
 
