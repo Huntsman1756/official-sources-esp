@@ -1,5 +1,44 @@
 # Validation
 
+## 2026-05-20 - TASK-AUTO-004B BOJA candidate profile refinement
+
+Local validation:
+
+```text
+git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+pytest: 237 passed
+ruff check: passed
+ruff format --check: passed
+```
+
+VPS dry-run validation:
+
+```text
+deployed_commit=3123763
+source=BOJA
+date_from=2026-04-21
+date_to=2026-05-20
+profile=boja-ayudas
+documents_scanned=1500
+matches_total=372
+matches_after_filters=36
+filtered_match_rate=2.40%
+source_candidates=75
+artifact_download_attempts=392
+artifact_directory_size=24M
+db_validate=valid
+MCP listener check=no matching listener observed
+```
+
 ## Commands Executed
 
 TASK-AUTO-004 BOJA candidate dry-run:

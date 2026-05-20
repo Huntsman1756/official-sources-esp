@@ -27,6 +27,7 @@ TASK-AUTO-002 - BOJA adapter MVP
 TASK-AUTO-002 status: implemented as a metadata/date MVP.
 TASK-AUTO-002B status: pagination and completeness guard implemented.
 TASK-AUTO-003B status: BOJA HTTP 400 no-publication behavior hardened.
+TASK-AUTO-004B status: BOJA-specific `boja-ayudas` dry-run profile implemented.
 
 Implemented scope:
 
@@ -59,3 +60,9 @@ Still excluded:
 - text extraction;
 - legal interpretation;
 - generic all-autonomous framework.
+
+Candidate profile note:
+
+- BOJA metadata over-matched with the BOE `la-ayuda` profile: `217/1500 = 14.47%`.
+- The source-specific `boja-ayudas` profile reduced filtered matches to `36/1500 = 2.40%`.
+- Real BOJA candidate creation should start with a small explicit cap and remain human-review only.

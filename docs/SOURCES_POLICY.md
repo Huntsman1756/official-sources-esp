@@ -299,6 +299,33 @@ vivienda
 
 These keywords are not authoritative classification.
 
+The BOJA-specific `boja-ayudas` profile is separate from `la-ayuda`:
+
+```bash
+official-sources find-boe-candidates \
+  --source BOJA \
+  --date-from YYYY-MM-DD \
+  --date-to YYYY-MM-DD \
+  --profile boja-ayudas \
+  --dry-run \
+  --limit 100
+```
+
+`boja-ayudas` keeps broad terms such as `ayudas`, `subvenciones`, `bases reguladoras`,
+`convocatoria`, `vivienda`, and `alquiler` visible for exclusion accounting, but only
+allows a candidate through when stronger metadata signals are present. Examples include
+student/scholarship terms, `alumnado`, disability support, school material/transport/meal
+terms, or youth-rent context. The profile intentionally avoids broad BOJA department terms
+such as `universidad`, `educacion`, `formacion profesional`, and `familias` as direct
+candidate keywords because they over-match BOJA metadata.
+
+TASK-AUTO-004B refined BOJA 30-day metadata dry-run results from:
+
+```text
+la-ayuda on BOJA: 217/1500 = 14.47%
+boja-ayudas on BOJA: 36/1500 = 2.40%
+```
+
 ## Third-Party Sources
 
 Third-party APIs, mirrors, and MCP projects may be used as prototyping references only. They must not be used as canonical infrastructure.

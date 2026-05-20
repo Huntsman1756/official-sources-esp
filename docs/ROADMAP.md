@@ -96,7 +96,8 @@ Excluded unless separately specified:
 
 ## Future phase - Autonomous bulletins
 
-Status: First MVP implemented for BOJA metadata ingestion.
+Status: First MVP implemented for BOJA metadata ingestion and metadata-only candidate
+dry-run refinement.
 
 Latest audit:
 
@@ -108,9 +109,15 @@ Recommended first implementation:
 
 Initial autonomous/statutory territory adapters must remain metadata/index-only until separately approved. Do not create candidates, download large PDFs, write downstream evidence, or implement publication decisions in the first adapter MVP.
 
+Latest BOJA candidate dry-run:
+
+- `TASK-AUTO-004B - BOJA-specific candidate profile refinement` reduced filtered matches
+  from `217/1500 = 14.47%` with `la-ayuda` to `36/1500 = 2.40%` with `boja-ayudas`.
+
 Recommended next step:
 
-- `TASK-AUTO-003 - Controlled BOJA 30-day metadata backfill`
+- `TASK-AUTO-005 - Create limited BOJA candidates` with a small explicit cap, for example
+  `max_candidates=25`.
 
 ## Future phase - EUR-Lex
 
