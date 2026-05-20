@@ -63,6 +63,17 @@ class OfficialSourcesRepository:
             reliability_level="canonical",
         )
 
+    def ensure_official_source_boja(self) -> dict[str, Any]:
+        return self.upsert_official_source(
+            code="BOJA",
+            name="Boletin Oficial de la Junta de Andalucia",
+            jurisdiction="autonomous",
+            region_code="ES-AN",
+            base_url="https://datos.juntadeandalucia.es/api/v0/boja",
+            access_type="official_api",
+            reliability_level="canonical",
+        )
+
     def upsert_official_source(
         self,
         *,

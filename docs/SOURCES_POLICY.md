@@ -325,6 +325,48 @@ Each autonomous bulletin needs its own adapter assessment. RSS availability does
 
 Ceuta and Melilla require explicit modeling notes and must not be forced into the same model as ordinary autonomous communities without that note.
 
+The 2026-05-20 source audit recommends BOJA as the first autonomous/statutory territory adapter candidate because it exposes an official OpenAPI endpoint with date search and structured document metadata. BOCM is a strong follow-up candidate because it exposes official RSS/current-issue XML, issue pages, and stable PDF paths, but it needs more custom parsing.
+
+Autonomous/statutory territory adapter MVPs must start as metadata/index ingestion only:
+
+- no candidate extraction by default;
+- no downstream writes;
+- no automatic approvals;
+- no publication decisions;
+- no large PDF downloads by default;
+- raw official payloads must be hashed before parsing;
+- each source needs source-specific citation and integrity rules.
+
+DOGV, BOCCE, and BOME need additional endpoint hardening before implementation.
+
+## BOJA MVP Source
+
+TASK-AUTO-002 implements a narrow BOJA metadata adapter using the official Andalusian open-data API:
+
+- OpenAPI: <https://datos.juntadeandalucia.es/api/v0/boja/openapi.json>
+- Search endpoint: `/api/v0/boja/get/search_pagination`
+
+Implemented BOJA query parameters:
+
+```text
+order_by=date
+mode=DESC
+size=200
+page=0
+date_from=YYYY-MM-DD
+date_to=YYYY-MM-DD
+```
+
+Accepted content type is JSON. The adapter treats the raw JSON API response as the canonical metadata payload and hashes the exact raw bytes before parsing. Stored BOJA document identifiers use the stable API `id` prefixed with the source code, for example:
+
+```text
+BOJA:disposition.2026.94.5
+```
+
+BOJA metadata ingestion stores official document metadata and `raw_api_response` file records. It preserves `publicUrl` as the best official public URL and `pathPdf` as the official PDF URL when available. It does not download PDFs, extract text, create candidates, write downstream projects, approve, or publish anything.
+
+BOJA no-publication semantics are independent from BOE. A BOJA API response with an empty `results` array is recorded as `no_publication`; BOE Sunday rules must not be reused.
+
 ## Citation Requirements
 
 Citations must identify the source code, external official identifier, publication date, title, and best official URL.

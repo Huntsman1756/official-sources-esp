@@ -1,0 +1,1 @@
+"""BOJA official source adapter."""

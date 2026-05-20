@@ -15,6 +15,8 @@ def build_citation(repository: OfficialSourcesRepository, external_id: str) -> d
         "title": document["title"],
         "publication_date": document["publication_date"],
         "source_url": source_url,
+        "official_url": source_url,
+        "pdf_url": document["url_pdf"],
         "citation": (
             f"{document['source_code']} {document['external_id']}, "
             f"{document['publication_date']}, {document['title']}"

@@ -1,0 +1,31 @@
+{
+  "hits": 2,
+  "total_hits": 2,
+  "results": [
+    {
+      "id": "disposition.2026.94.5",
+      "number": 94,
+      "date": "19/05/2026",
+      "titleSec": "1. Disposiciones generales",
+      "organisation": "Universidades",
+      "type": "Resolucion",
+      "summary": "<p>Extracto de la Resolucion de 8 de mayo de 2026, de la Universidad de Huelva, por la que se convocan ayudas a estudiantes universitarios para practicas academicas externas.</p>",
+      "summaryNoHtml": "Extracto de la Resolucion de 8 de mayo de 2026, de la Universidad de Huelva, por la que se convocan ayudas a estudiantes universitarios para practicas academicas externas.",
+      "publicUrl": "https://www.juntadeandalucia.es/eboja/2026/94/BOJA26-094-00005-8702-01_00321045.pdf",
+      "pathPdf": "/eboja/2026/94/BOJA26-094-00005-8702-01_00321045.pdf",
+      "hashPdf": "fixture-hash-1"
+    },
+    {
+      "id": "disposition.2026.94.6",
+      "number": 94,
+      "date": "19/05/2026",
+      "titleSec": "3. Otras disposiciones",
+      "organisation": "Consejeria de Desarrollo Educativo y Formacion Profesional",
+      "type": "Orden",
+      "summaryNoHtml": "Orden por la que se establecen bases reguladoras para un programa educativo.",
+      "publicUrl": "https://www.juntadeandalucia.es/eboja/2026/94/BOJA26-094-00006-8703-01_00321046.html",
+      "pathPdf": "https://www.juntadeandalucia.es/eboja/2026/94/BOJA26-094-00006-8703-01_00321046.pdf",
+      "hashPdf": "fixture-hash-2"
+    }
+  ]
+}

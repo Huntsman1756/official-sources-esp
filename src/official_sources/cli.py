@@ -27,6 +27,8 @@ from official_sources.sources.boe.consolidated import (
 )
 from official_sources.sources.boe.http_policy import BOERequestPolicy
 from official_sources.sources.boe.ingestion import NO_PUBLICATION_STATUS, ingest_boe_summary
+from official_sources.sources.boja.client import validate_boja_date
+from official_sources.sources.boja.ingestion import ingest_boja_date
 from official_sources.storage.backup import SQLiteBackupError, backup_sqlite_database
 from official_sources.storage.database import connect, initialize_database, sqlite_runtime_pragmas
 from official_sources.storage.migrations.runner import (
@@ -155,6 +157,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     ingest = subparsers.add_parser("ingest-boe-summary", help="Ingest one BOE daily summary.")
     ingest.add_argument(
+        "--date",
+        required=True,
+        help="Target date in YYYY-MM-DD format or today.",
+    )
+    ingest_boja = subparsers.add_parser(
+        "ingest-boja-date",
+        help="Ingest BOJA official API metadata for one date.",
+    )
+    ingest_boja.add_argument(
         "--date",
         required=True,
         help="Target date in YYYY-MM-DD format or today.",
@@ -390,6 +401,7 @@ def run(
     argv: list[str] | None = None,
     *,
     summary_fetcher=None,
+    boja_fetcher=None,
     artifact_client: httpx.Client | None = None,
     consolidated_client: httpx.Client | None = None,
     stdout: TextIO | None = None,
@@ -407,6 +419,8 @@ def run(
         return _run_db_command(args, stdout, stderr)
 
     repository = _open_repository(args.db_path)
+    if args.command == "ingest-boja-date":
+        return _run_ingest_boja(repository, args, boja_fetcher, stdout, stderr)
     if args.command == "ingest-boe-range":
         return _run_ingest_range(repository, args, stdout, stderr)
     if args.command == "find-boe-candidates":
@@ -488,6 +502,12 @@ def resolve_target_date(value: str) -> str:
     if value == "today":
         return date.today().isoformat()
     return validate_boe_date(value).isoformat()
+
+
+def resolve_boja_target_date(value: str) -> str:
+    if value == "today":
+        return date.today().isoformat()
+    return validate_boja_date(value).isoformat()
 
 
 def _open_repository(db_path: str) -> OfficialSourcesRepository:
@@ -642,6 +662,40 @@ def _run_ingest(
         target_date=target_date,
         fetcher=summary_fetcher,
     )
+    print(
+        " ".join(
+            [
+                f"status={run_record['status']}",
+                f"documents_fetched={run_record['documents_fetched']}",
+                f"documents_new={run_record['documents_new']}",
+                f"documents_updated={run_record['documents_updated']}",
+                f"retry_count={run_record['retry_count']}",
+                f"throttle_triggered={run_record['throttle_triggered']}",
+                f"last_http_status={_status_value(run_record['last_http_status'])}",
+            ]
+        ),
+        file=stdout,
+    )
+    return 0 if run_record["status"] in {"success", NO_PUBLICATION_STATUS} else 1
+
+
+def _run_ingest_boja(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        target_date = resolve_boja_target_date(args.date)
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        f"command_started={args.command} source_code=BOJA target_date={target_date}",
+        file=stdout,
+    )
+    run_record = ingest_boja_date(repository, target_date=target_date, fetcher=fetcher)
     print(
         " ".join(
             [

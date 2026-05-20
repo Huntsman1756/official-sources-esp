@@ -96,7 +96,21 @@ Excluded unless separately specified:
 
 ## Future phase - Autonomous bulletins
 
-Status: Not started.
+Status: First MVP implemented for BOJA metadata ingestion.
+
+Latest audit:
+
+- `docs/reports/AUTONOMOUS_BULLETIN_SOURCE_AUDIT_2026-05-20.md`
+
+Recommended first implementation:
+
+- `TASK-AUTO-002 - BOJA adapter MVP` - implemented as metadata/index ingestion only.
+
+Initial autonomous/statutory territory adapters must remain metadata/index-only until separately approved. Do not create candidates, download large PDFs, write downstream evidence, or implement publication decisions in the first adapter MVP.
+
+Recommended next step:
+
+- `TASK-AUTO-003 - Controlled BOJA 30-day metadata backfill`
 
 ## Future phase - EUR-Lex
 

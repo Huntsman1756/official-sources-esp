@@ -24,6 +24,7 @@ Current migrations:
 - `0005_request_audit_fields`
 - `0006_ingestion_no_publication_status`
 - `0007_candidate_evidence_reviews`
+- `0008_candidate_manual_review_fields`
 
 Before running migrations on a persistent installation, create a database backup.
 
@@ -63,11 +64,21 @@ Initial source:
 - `access_type`: `official_api`
 - `reliability_level`: `canonical`
 
+TASK-AUTO-002 adds a BOJA source record without adding source-specific tables:
+
+- `code`: `BOJA`
+- `jurisdiction`: `autonomous`
+- `region_code`: `ES-AN`
+- `access_type`: `official_api`
+- `reliability_level`: `canonical`
+
 ### official_documents
 
 Stores normalized official document metadata. Required fields include source link, external official identifier, publication date, title, department, section, document type, official URLs, raw metadata JSON, and timestamps.
 
-`external_id` stores the official BOE identifier when available, for example `BOE-A-YYYY-NNNNN`.
+`external_id` stores the official source identifier when available. BOE uses identifiers such
+as `BOE-A-YYYY-NNNNN`. BOJA stores the stable API `id` with a source prefix, for example
+`BOJA:disposition.2026.94.5`, to avoid ambiguity with identifiers from other sources.
 
 ### document_files
 
@@ -110,6 +121,7 @@ Default: `not_checked`.
 The raw source payload may be:
 
 - the raw BOE API response body;
+- the raw BOJA API JSON response body;
 - the raw XML document;
 - the raw HTML document;
 - the raw downloaded PDF file;

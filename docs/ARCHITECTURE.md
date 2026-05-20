@@ -62,6 +62,7 @@ The MCP layer is an interface on top of the core system. It is not the core arch
 
 - `storage`: schema initialization and repository functions.
 - `sources/boe`: date validation, BOE summary fetch, parsing, controlled artifact download, ingestion run handling, and persistence.
+- `sources/boja`: BOJA official API date fetch, JSON parsing, metadata-only ingestion run handling, and persistence.
 - `normalization`: deterministic text cleanup only, with XML/HTML extraction for stored official artifacts.
 - `citation`: answers where a document came from.
 - `integrity`: answers whether the stored artifact matches what was ingested.
@@ -88,10 +89,11 @@ Current implementation is Tier 1 only:
 - BOE controlled XML/HTML/PDF artifacts.
 - BOE consolidated legislation.
 - BOE consolidated index and block retrieval.
+- BOJA metadata-only API ingestion as the first Tier 2 MVP.
 
 Future tiers are conceptual only until explicitly scheduled:
 
-- Tier 2: autonomous/statutory territory official journals, including Ceuta and Melilla with explicit modeling notes.
+- Tier 2: autonomous/statutory territory official journals, including Ceuta and Melilla with explicit modeling notes. BOJA metadata ingestion is the first narrow Tier 2 MVP.
 - Tier 3: provincial/local bulletins and municipal gazettes where required.
 - Tier 4: EUR-Lex/DOUE and separate TED/OJ S procurement support.
 
@@ -138,6 +140,7 @@ official-sources db backup --output PATH
 official-sources db migrate
 official-sources db validate
 official-sources ingest-boe-summary --date YYYY-MM-DD
+official-sources ingest-boja-date --date YYYY-MM-DD
 official-sources ingest-boe-range --date-from YYYY-MM-DD --date-to YYYY-MM-DD
 official-sources download-boe-artifacts --date YYYY-MM-DD --types xml,html
 official-sources download-boe-artifacts --candidate-ids 1,3,10 --types pdf
@@ -155,6 +158,12 @@ This command shape is intended to be run later from `systemd` timers on a privat
 Range ingestion is deliberately summary-only. It reuses the conservative BOE HTTP request
 policy with a shared client-side limiter across the date range, finite retries, retry/backoff
 audit fields, and explicit range limits. It does not download XML, HTML, or PDF artifacts.
+
+BOJA ingestion is metadata-only and date-scoped. It uses the official BOJA open-data endpoint
+`/api/v0/boja/get/search_pagination` with `date_from` and `date_to` set to the same date.
+The adapter stores normalized document metadata, preserves `publicUrl` and `pathPdf` values,
+and stores the raw JSON response as a `raw_api_response` source snapshot. It does not download
+PDFs, create candidates, write downstream evidence, or infer publication decisions.
 
 Keyword candidate prefiltering is a local metadata filter over stored BOE document titles and
 metadata. It creates `source_candidates` with `review_status=human_review_required`; it does

@@ -2,6 +2,35 @@
 
 ## Commands Executed
 
+TASK-AUTO-002 BOJA adapter MVP:
+
+```bash
+rtk python -m pytest tests/test_boja_adapter.py tests/test_cli_boja.py -q
+rtk python -m pytest tests/test_boja_adapter.py tests/test_cli_boja.py tests/test_citation.py -q
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:\tmp\official-sources-boja-smoke-20260520\official_sources_boja_smoke.sqlite ingest-boja-date --date 2026-05-19
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:\tmp\official-sources-boja-smoke-20260520\official_sources_boja_smoke.sqlite db validate
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+- Red focused run failed before implementation because `official_sources.sources.boja` did not exist.
+- Focused BOJA tests after implementation: `13 passed`.
+- Focused BOJA/citation/CLI regression tests: `16 passed`.
+- Live smoke used one BOJA date only, `2026-05-19`, against a temporary local database.
+- Live smoke result: `status=success documents_fetched=72 documents_new=72 documents_updated=0 retry_count=0 throttle_triggered=0 last_http_status=200`.
+- Temporary smoke database validation: `current_version=8 latest_version=8 status=valid`.
+- Full tests: `221 passed`.
+- Lint: `All checks passed!`.
+- Formatting: `65 files already formatted`.
+- BOJA stores metadata only through `ingest-boja-date`.
+- BOJA `raw_api_response` file records store `source_snapshot_hash` from raw JSON bytes before parsing.
+- BOJA empty `results=[]` responses are recorded as `no_publication`.
+- BOJA PDF URLs are preserved as metadata only; no PDF download is performed by the BOJA ingestion command.
+- No source candidates, downstream writes, approvals, publications, RAG, or legal interpretation were implemented.
+
 TASK-004C-RUN4 VPS candidate evidence review:
 
 ```bash
