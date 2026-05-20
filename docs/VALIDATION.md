@@ -2,6 +2,42 @@
 
 ## Commands Executed
 
+TASK-AUTO-004 BOJA candidate dry-run:
+
+```bash
+rtk python -m pytest tests/test_cli.py::test_find_boe_candidates_source_filter_supports_boja_dry_run tests/test_cli.py::test_find_boe_candidates_default_source_remains_boe tests/test_cli.py::test_find_boe_candidates_help_contains_false_positive_warning -q
+rtk git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+ssh mcpspain-official-sources-vps "git fetch origin && git checkout main && git pull --ff-only origin main"
+ssh mcpspain-official-sources-vps "python -m pip install -e ."
+ssh mcpspain-official-sources-vps "official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate"
+ssh mcpspain-official-sources-vps "official-sources --db-path /opt/official-sources/data/official_sources.sqlite find-boe-candidates --source BOJA --date-from 2026-04-21 --date-to 2026-05-20 --profile la-ayuda --dry-run --limit 200"
+ssh mcpspain-official-sources-vps "du -sh /opt/official-sources/data/artifacts"
+ssh mcpspain-official-sources-vps "ss -tulpn | grep -E 'official|mcp|python|uvicorn|fastmcp' || true"
+```
+
+Result:
+
+- Source-aware dry-run support was added before the VPS dry-run.
+- Source-aware focused tests: `3 passed`.
+- Full tests after code change: `233 passed`.
+- Lint: `All checks passed!`.
+- Formatting: `65 files already formatted`.
+- VPS deployed commit after fast-forward: `7e84235`.
+- BOJA coverage before dry-run: `official_documents=1500`, latest range status `success=21 no_publication=9 failed=0`.
+- Dry-run command used stored BOJA metadata only.
+- Dry-run result: `documents_scanned=1500`, `matches_total=376`, `matches_after_filters=217`, `candidates_created=0`.
+- Filtered BOJA match rate: `217/1500 = 14.47%`.
+- `source_candidates` remained `75`.
+- `artifact_download_attempts` remained `392`.
+- Artifact directory remained `24M`.
+- DB validation after dry-run: `status=valid`.
+- MCP privacy check found no matching public listener.
+- Decision: BOJA needs a source-specific profile before real candidate creation.
+- No BOJA API calls, backfills, PDFs, HTML/XML artifacts, candidates, downstream writes, approvals, publications, MCP exposure, RAG, or legal interpretation were run during the dry-run.
+
 TASK-AUTO-003C resumed BOJA 30-day metadata backfill:
 
 ```bash
