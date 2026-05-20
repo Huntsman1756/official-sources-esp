@@ -2,6 +2,42 @@
 
 ## Commands Executed
 
+TASK-AUTO-003C resumed BOJA 30-day metadata backfill:
+
+```bash
+ssh mcpspain-official-sources-vps "cd /opt/official-sources/app && git fetch origin && git checkout main && git pull --ff-only origin main"
+ssh mcpspain-official-sources-vps "cd /opt/official-sources/app && . /opt/official-sources/app/.venv/bin/activate && python -m pip install -e ."
+ssh mcpspain-official-sources-vps "/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db status"
+ssh mcpspain-official-sources-vps "/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate"
+ssh mcpspain-official-sources-vps "/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_before_boja_resume_$(date -u +%Y%m%d_%H%M%S).sqlite"
+ssh mcpspain-official-sources-vps "for each date from 2026-04-25 to 2026-05-20: official-sources --db-path /opt/official-sources/data/official_sources.sqlite ingest-boja-date --date YYYY-MM-DD"
+ssh mcpspain-official-sources-vps "/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate"
+ssh mcpspain-official-sources-vps "du -sh /opt/official-sources/data/artifacts"
+ssh mcpspain-official-sources-vps "ss -tulpn | grep -E 'official|mcp|python|uvicorn|fastmcp' || true"
+ssh mcpspain-official-sources-vps "/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_after_boja_resume_$(date -u +%Y%m%d_%H%M%S).sqlite"
+```
+
+Result:
+
+- VPS deployed commit after fast-forward: `c5d0c01`.
+- Pre-resume database validation: `status=valid`.
+- Pre-resume BOJA counts: `official_documents=225`, `ingestion_runs=5`.
+- Pre-resume artifact state: `artifact_download_attempts=392`, artifact directory `24M`.
+- Pre-resume backup: `official_sources_before_boja_resume_20260520_153705.sqlite`, `43.93 MB`, successful.
+- Resumed range: `2026-04-25` to `2026-05-20`.
+- Resume result: `dates_processed=26`, `success=17`, `no_publication=9`, `failed=0`.
+- Resume documents fetched/new/updated: `1275/1275/0`.
+- Resume pagination: `pages_fetched_total=17`, `pagination_complete_dates=26`.
+- Resume HTTP status distribution: `200=17`, `400 no_publication=9`.
+- Original 30-day window final latest status: `success=21`, `no_publication=9`, `failed=0`.
+- BOJA documents after resume: `1500`.
+- BOJA ingestion runs after resume: `31`; this includes the original failed 2026-04-25 run plus the newer no-publication run.
+- Post-resume database validation: `status=valid`.
+- Artifact directory remained `24M`; `artifact_download_attempts` remained `392`.
+- MCP privacy check found no matching public listener.
+- Post-resume backup: `official_sources_after_boja_resume_20260520_153959.sqlite`, `46.69 MB`, successful.
+- No PDFs, HTML/XML artifacts, candidates, downstream writes, approvals, publications, BOE tasks, broader BOJA ranges, additional autonomous adapters, MCP exposure, RAG, or legal interpretation were run.
+
 TASK-AUTO-003B BOJA no-publication HTTP behavior hardening:
 
 ```bash
