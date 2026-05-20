@@ -1,5 +1,35 @@
 # Validation
 
+## 2026-05-20 - TASK-AUTO-005 BOJA candidate batch
+
+VPS operational validation:
+
+```text
+deployed_commit=2ab44f0
+source=BOJA
+profile=boja-ayudas
+date_from=2026-04-21
+date_to=2026-05-20
+limit=25
+write_mode=write
+db_validate_before=valid
+pre_run_backup=created
+source_candidates_before=75
+BOJA source_candidates_before=0
+candidates_created=25
+candidates_skipped_existing=0
+source_candidates_after=100
+BOJA source_candidates_after=25
+review_status_distribution=human_review_required:100
+artifact_download_attempts_before=392
+artifact_download_attempts_after=392
+artifact_directory_size_before=24M
+artifact_directory_size_after=24M
+db_validate_after=valid
+MCP listener check=no matching listener observed
+post_run_backup=created
+```
+
 ## 2026-05-20 - TASK-AUTO-004B BOJA candidate profile refinement
 
 Local validation:
