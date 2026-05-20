@@ -2,6 +2,41 @@
 
 ## Commands Executed
 
+TASK-AUTO-003 controlled BOJA 30-day metadata backfill:
+
+```bash
+ssh mcpspain-official-sources-vps "cd /opt/official-sources/app && git fetch origin && git checkout main && git pull --ff-only origin main"
+ssh mcpspain-official-sources-vps "cd /opt/official-sources/app && . /opt/official-sources/app/.venv/bin/activate && python -m pip install -e ."
+ssh mcpspain-official-sources-vps "/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate"
+ssh mcpspain-official-sources-vps "/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_before_boja_30d_backfill_$(date -u +%Y%m%d_%H%M%S).sqlite"
+ssh mcpspain-official-sources-vps "for each date from 2026-04-21 to 2026-05-20: official-sources --db-path /opt/official-sources/data/official_sources.sqlite ingest-boja-date --date YYYY-MM-DD"
+ssh mcpspain-official-sources-vps "/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate"
+ssh mcpspain-official-sources-vps "du -sh /opt/official-sources/data/artifacts"
+ssh mcpspain-official-sources-vps "ss -tulpn | grep -E 'official|mcp|python|uvicorn|fastmcp' || true"
+ssh mcpspain-official-sources-vps "/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db backup --output /opt/official-sources/data/backups/official_sources_after_boja_30d_backfill_$(date -u +%Y%m%d_%H%M%S).sqlite"
+```
+
+Result:
+
+- VPS deployed commit after fast-forward: `d579eda`.
+- Pre-run database validation: `status=valid`.
+- Pre-run BOJA counts: `official_documents=0`, `ingestion_runs=0`.
+- Pre-run artifact state: `artifact_download_attempts=392`, artifact directory `24M`.
+- Pre-run backup: `official_sources_before_boja_30d_backfill_20260520_152436.sqlite`, `43.45 MB`, successful.
+- Requested range: `2026-04-21` to `2026-05-20`.
+- The run stopped on the first failed date: `2026-04-25`.
+- Successful dates: `2026-04-21`, `2026-04-22`, `2026-04-23`, `2026-04-24`.
+- Failed dates: `2026-04-25`.
+- Documents fetched/new/updated before stop: `225/225/0`.
+- Pagination for successful dates: `pages_fetched=1`, `pagination_complete=true`.
+- Failed date result: `last_http_status=400`, `pagination_complete=false`.
+- Post-run database validation: `status=valid`.
+- Artifact directory remained `24M`; `artifact_download_attempts` remained `392`.
+- MCP privacy check found no matching public listener.
+- Post-run backup: `official_sources_after_boja_30d_backfill_20260520_152610.sqlite`, `43.93 MB`, successful.
+- No PDFs, HTML/XML artifacts, candidates, downstream writes, approvals, publications, BOE tasks, additional autonomous adapters, MCP exposure, RAG, or legal interpretation were run.
+- Next required hardening: define and test BOJA HTTP 400/no-publication behavior before rerunning the 30-day backfill.
+
 TASK-AUTO-002B BOJA pagination completeness guard:
 
 ```bash
