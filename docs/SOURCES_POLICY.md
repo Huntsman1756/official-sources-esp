@@ -398,6 +398,20 @@ BOJA:disposition.2026.94.5
 
 BOJA metadata ingestion stores official document metadata and `raw_api_response` file records. It preserves `publicUrl` as the best official public URL and `pathPdf` as the official PDF URL when available. It does not download PDFs, extract text, create candidates, write downstream projects, approve, or publish anything.
 
+BOJA scoped artifact download is supported only for explicit candidate or document IDs:
+
+```bash
+official-sources download-boe-artifacts \
+  --source BOJA \
+  --candidate-ids 77,78 \
+  --types pdf
+```
+
+BOJA date-level artifact download is not allowed. BOJA XML/HTML artifact download is not
+implemented. PDF downloads require a persisted official `url_pdf` derived from verified BOJA
+metadata. If `url_pdf` is missing, the scoped operation records a skipped artifact attempt and
+does not infer or invent a URL.
+
 BOJA no-publication semantics are independent from BOE. A BOJA API response with an empty `results` array is recorded as `no_publication`; BOE Sunday rules must not be reused.
 
 Observed BOJA empty-date behavior can also be:

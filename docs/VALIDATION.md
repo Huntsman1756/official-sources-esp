@@ -1,5 +1,51 @@
 # Validation
 
+## 2026-05-20 - TASK-AUTO-007 BOJA selected candidate evidence download
+
+Local code validation:
+
+```text
+git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+pytest: 242 passed
+ruff check: passed
+ruff format --check: passed
+```
+
+VPS operational validation:
+
+```text
+deployed_commit=cbebb84
+selected_candidates=77,78,79,80,81,82,86,87,93,98
+selected_count=10
+source_code=BOJA for all selected candidates
+selected_review_status_distribution=human_review_required:10
+url_pdf/publicUrl/pathPdf present=0/10
+artifact_types_requested=pdf
+downloaded=0
+skipped=10
+failed=0
+missing_artifact_url=10
+artifact_download_attempts_before=392
+artifact_download_attempts_after=402
+BOJA PDF document_files_before=0
+BOJA PDF document_files_after=0
+artifact_directory_size_before=24M
+artifact_directory_size_after=24M
+db_validate=valid
+MCP listener check=no matching listener observed
+pre_run_backup=created
+post_run_backup=created
+```
+
 ## 2026-05-20 - TASK-AUTO-006 BOJA candidate triage
 
 VPS read-only validation:
