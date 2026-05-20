@@ -119,6 +119,7 @@ def test_boja_selected_candidate_enrichment_updates_only_selected_documents(repo
         title="Selected BOJA document",
         department="Universidades",
         section="1. Disposiciones generales",
+        url_pdf="https://juntadeandalucia.es/eboja/2026/94/old.pdf",
         raw_metadata={"id": "disposition.2026.94.5"},
     )
     unselected = repository.upsert_document(
@@ -170,7 +171,9 @@ def test_boja_selected_candidate_enrichment_updates_only_selected_documents(repo
     assert result["selected_documents"] == 1
     assert result["enriched"] == 1
     assert calls == ["disposition.2026.94.5"]
-    assert selected_after["url_pdf"].endswith("BOJA26-094-00002-6601-01_00337837.pdf")
+    assert selected_after["url_pdf"] == (
+        "https://www.juntadeandalucia.es/eboja/2026/94/BOJA26-094-00002-6601-01_00337837.pdf"
+    )
     assert unselected_after["url_pdf"] is None
     assert candidate_count == 2
 

@@ -64,7 +64,7 @@ def enrich_boja_evidence_urls(
                 document_type=document["document_type"],
                 url_html=document["url_html"] or detail.url_html,
                 url_xml=document["url_xml"],
-                url_pdf=document["url_pdf"] or detail.url_pdf,
+                url_pdf=detail.url_pdf or document["url_pdf"],
                 raw_metadata=raw_metadata,
             )
             counts["enriched"] += 1
