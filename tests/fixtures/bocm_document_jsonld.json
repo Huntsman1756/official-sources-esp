@@ -1,0 +1,12 @@
+{
+  "@context": "https://schema.org",
+  "@id": "https://www.bocm.es/bocm-20260520-37",
+  "@type": "Legislation",
+  "datePublished": "2026-05-20",
+  "inLanguage": "es",
+  "legislationIdentifier": "BOCM-20260520-37",
+  "legislationResponsible": "Consejería de Educación, Ciencia y Universidades",
+  "legislationType": "ADENDA",
+  "name": "Adenda de prórroga al convenio entre la Comunidad de Madrid y una entidad pública",
+  "jurisdiction": "Comunidad de Madrid"
+}

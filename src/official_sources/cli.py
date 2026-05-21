@@ -13,6 +13,8 @@ from typing import Any, TextIO
 import httpx
 
 from official_sources.integrity.hashing import sha256_bytes
+from official_sources.sources.bocm.client import validate_bocm_date
+from official_sources.sources.bocm.ingestion import ingest_bocm_date
 from official_sources.sources.boe.artifacts import (
     BOE_ARTIFACT_FIELDS,
     BOEArtifactDownloader,
@@ -271,6 +273,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Ingest BOJA official API metadata for one date.",
     )
     ingest_boja.add_argument(
+        "--date",
+        required=True,
+        help="Target date in YYYY-MM-DD format or today.",
+    )
+    ingest_bocm = subparsers.add_parser(
+        "ingest-bocm-date",
+        help="Ingest BOCM metadata for one date using official issue discovery.",
+    )
+    ingest_bocm.add_argument(
         "--date",
         required=True,
         help="Target date in YYYY-MM-DD format or today.",
@@ -556,6 +567,7 @@ def run(
     summary_fetcher=None,
     boja_fetcher=None,
     boja_detail_fetcher=None,
+    bocm_fetcher=None,
     artifact_client: httpx.Client | None = None,
     consolidated_client: httpx.Client | None = None,
     stdout: TextIO | None = None,
@@ -575,6 +587,8 @@ def run(
     repository = _open_repository(args.db_path)
     if args.command == "ingest-boja-date":
         return _run_ingest_boja(repository, args, boja_fetcher, stdout, stderr)
+    if args.command == "ingest-bocm-date":
+        return _run_ingest_bocm(repository, args, bocm_fetcher, stdout, stderr)
     if args.command == "enrich-boja-evidence-urls":
         return _run_enrich_boja_evidence_urls(repository, args, boja_detail_fetcher, stdout, stderr)
     if args.command == "ingest-boe-range":
@@ -672,6 +686,12 @@ def resolve_boja_target_date(value: str) -> str:
     if value == "today":
         return date.today().isoformat()
     return validate_boja_date(value).isoformat()
+
+
+def resolve_bocm_target_date(value: str) -> str:
+    if value == "today":
+        return date.today().isoformat()
+    return validate_bocm_date(value).isoformat()
 
 
 def _open_repository(db_path: str) -> OfficialSourcesRepository:
@@ -872,6 +892,42 @@ def _run_ingest_boja(
                 f"retry_count={run_record['retry_count']}",
                 f"throttle_triggered={run_record['throttle_triggered']}",
                 f"last_http_status={_status_value(run_record['last_http_status'])}",
+            ]
+        ),
+        file=stdout,
+    )
+    return 0 if run_record["status"] in {"success", NO_PUBLICATION_STATUS} else 1
+
+
+def _run_ingest_bocm(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        target_date = resolve_bocm_target_date(args.date)
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        f"command_started={args.command} source_code=BOCM target_date={target_date}",
+        file=stdout,
+    )
+    run_record = ingest_bocm_date(repository, target_date=target_date, fetcher=fetcher)
+    print(
+        " ".join(
+            [
+                f"status={run_record['status']}",
+                f"issue_identifier={run_record.get('issue_identifier') or 'none'}",
+                f"documents_fetched={run_record['documents_fetched']}",
+                f"documents_new={run_record['documents_new']}",
+                f"documents_updated={run_record['documents_updated']}",
+                f"retry_count={run_record['retry_count']}",
+                f"throttle_triggered={run_record['throttle_triggered']}",
+                f"last_http_status={_status_value(run_record['last_http_status'])}",
+                f"source_snapshot_hash={run_record.get('source_snapshot_hash') or 'none'}",
             ]
         ),
         file=stdout,

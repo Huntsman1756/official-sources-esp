@@ -22,10 +22,12 @@ Implemented now:
 - Tier 1: BOE controlled XML/HTML/PDF artifacts.
 - Tier 1: BOE consolidated legislation.
 - Tier 1: BOE consolidated index and block retrieval.
+- Tier 2: BOJA metadata-first autonomous source pilot.
+- Tier 2: BOCM metadata-only adapter MVP.
 
 Not implemented:
 
-- Tier 2: autonomous/statutory territory bulletins.
+- Tier 2: additional autonomous/statutory territory bulletins.
 - Tier 3: provincial/local bulletins.
 - Tier 4: EUR-Lex/DOUE.
 - TED/OJ S procurement adapter.

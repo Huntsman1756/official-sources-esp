@@ -38,10 +38,11 @@ Scope:
 - Pre-deploy VPS checklist.
 - ADR-001 official publication hierarchy.
 - Downstream onboarding kit for reusable project integrations.
+- BOCM metadata-only adapter MVP.
 
 ## Not Implemented
 
-- Tier 2: autonomous/statutory territory bulletins.
+- Tier 2: autonomous/statutory territory bulletins beyond BOJA and BOCM metadata pilots.
 - Tier 3: provincial/local bulletins.
 - Tier 4: EUR-Lex/DOUE.
 - TED/OJ S procurement adapter.
@@ -133,9 +134,8 @@ Recommended next platform/downstream step:
 
 Recommended next autonomous-source option:
 
-- `TASK-AUTO-BOCM-002 - BOCM metadata adapter MVP`. The BOCM date-to-issue discovery probe
-  confirmed `/search-day-month` as the preferred resolver, with RSS/index pages as recent-issue
-  fallback.
+- `TASK-AUTO-BOCM-003 - Controlled BOCM 30-day metadata backfill`. The BOCM metadata MVP is
+  implemented and passed a one-date live smoke with no PDFs, candidates, or downstream writes.
 
 ## Future phase - EUR-Lex
 

@@ -1,0 +1,1 @@
+"""BOCM metadata source adapter."""

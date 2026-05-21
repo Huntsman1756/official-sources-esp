@@ -74,6 +74,17 @@ class OfficialSourcesRepository:
             reliability_level="canonical",
         )
 
+    def ensure_official_source_bocm(self) -> dict[str, Any]:
+        return self.upsert_official_source(
+            code="BOCM",
+            name="Boletin Oficial de la Comunidad de Madrid",
+            jurisdiction="autonomous",
+            region_code="ES-MD",
+            base_url="https://www.bocm.es",
+            access_type="official_html",
+            reliability_level="canonical",
+        )
+
     def upsert_official_source(
         self,
         *,

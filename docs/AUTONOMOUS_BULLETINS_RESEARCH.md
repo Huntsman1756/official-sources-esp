@@ -29,6 +29,7 @@ TASK-AUTO-002B status: pagination and completeness guard implemented.
 TASK-AUTO-003B status: BOJA HTTP 400 no-publication behavior hardened.
 TASK-AUTO-004B status: BOJA-specific `boja-ayudas` dry-run profile implemented.
 TASK-AUTO-010 status: BOJA pilot closed through reviewed evidence decisions.
+TASK-AUTO-BOCM-002 status: BOCM metadata adapter MVP implemented.
 
 Implemented scope:
 
@@ -65,6 +66,14 @@ Still excluded:
 - text extraction;
 - legal interpretation;
 - generic all-autonomous framework.
+
+BOCM MVP note:
+
+- BOCM date-to-issue discovery uses the official `/search-day-month` endpoint.
+- Document listing uses the official issue summary XML.
+- The adapter stores metadata and official URLs only; it does not create candidates or download
+  PDFs.
+- `docs/reports/BOCM_ADAPTER_MVP_2026-05-21.md` records the implementation result and live smoke.
 
 Candidate profile note:
 
