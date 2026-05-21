@@ -179,4 +179,5 @@ Follow-up status:
 ```text
 TASK-AUTO-BOCM-003B implemented timeout hardening in code.
 docs/reports/BOCM_TIMEOUT_HARDENING_2026-05-21.md records the retry strategy and smoke result.
+VPS smoke for 2026-04-22 passed after hardening, adding 82 BOCM documents.
 ```

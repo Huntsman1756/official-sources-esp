@@ -96,7 +96,7 @@ Controlled live smoke:
 
 ```text
 date=2026-04-22
-environment=local
+environment=local temporary database
 ```
 
 Result:
@@ -115,10 +115,30 @@ artifact_download_attempts=0
 
 No PDFs were downloaded. No candidates were created. No downstream project was touched.
 
+Controlled VPS smoke after deploying commit `59d601e`:
+
+```text
+date=2026-04-22
+environment=VPS project database
+status=success
+issue_identifier=bocm-20260422-94
+documents_fetched=82
+documents_new=82
+documents_updated=0
+retry_count=0
+last_http_status=200
+BOCM official_documents total=142
+BOCM PDF document_files=0
+artifact_download_attempts=432
+source_candidates=100
+DB validation=valid
+```
+
+The VPS smoke did not download PDFs, create candidates, or touch downstream projects.
+
 ## Backfill Resume Decision
 
-The 30-day BOCM backfill can resume only after this code is deployed on the VPS and a scoped VPS
-smoke for `2026-04-22` passes.
+The scoped VPS smoke for `2026-04-22` passed after deploying the timeout hardening.
 
 Recommended next task:
 
@@ -126,11 +146,10 @@ Recommended next task:
 TASK-AUTO-BOCM-003C — Resume BOCM 30-day metadata backfill from 2026-04-22
 ```
 
-First step of that task should be a VPS smoke for:
+Recommended resume scope:
 
 ```text
-2026-04-22
+2026-04-23 -> 2026-05-20
 ```
 
-If that smoke fails again, stop and document the endpoint/network blocker. Do not move to BOCM
-candidate dry-run until the metadata window is closed.
+Do not move to BOCM candidate dry-run until the metadata window is closed.
