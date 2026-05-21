@@ -103,6 +103,7 @@ Latest audit:
 
 - `docs/reports/AUTONOMOUS_BULLETIN_SOURCE_AUDIT_2026-05-20.md`
 - `docs/reports/BOCM_SOURCE_AUDIT_2026-05-21.md`
+- `docs/reports/BOCM_DATE_TO_ISSUE_DISCOVERY_2026-05-21.md`
 
 Recommended first implementation:
 
@@ -132,8 +133,9 @@ Recommended next platform/downstream step:
 
 Recommended next autonomous-source option:
 
-- `TASK-AUTO-BOCM-002 - BOCM metadata adapter MVP`, optionally preceded by
-  `TASK-AUTO-BOCM-001B - BOCM date-to-issue discovery probe`.
+- `TASK-AUTO-BOCM-002 - BOCM metadata adapter MVP`. The BOCM date-to-issue discovery probe
+  confirmed `/search-day-month` as the preferred resolver, with RSS/index pages as recent-issue
+  fallback.
 
 ## Future phase - EUR-Lex
 
