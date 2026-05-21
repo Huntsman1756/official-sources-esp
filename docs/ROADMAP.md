@@ -145,3 +145,15 @@ Status: Not started.
 
 Status: Onboarding contract documented. EduAyudas has a validated local/dev path; no production
 downstream rollout is implemented.
+
+Current platform status as of 2026-05-21:
+
+- BOE is validated as the mature Tier 1 source and has exported reviewed downstream evidence.
+- BOJA is validated as the first autonomous metadata-first source through reviewed PDF evidence
+  decisions, with no downstream import.
+- EduAyudas integration is validated as a downstream pattern, but current EduAyudas product QA is
+  being repaired in that downstream repo by another agent.
+- `la-ayuda` has validated evidence staging, candidate staging, non-public draft creation, and
+  internal review without generating a public route.
+- `docs/reports/OFFICIAL_SOURCES_PLATFORM_STATUS_2026-05-21.md` records the current strategic
+  state and next options.
