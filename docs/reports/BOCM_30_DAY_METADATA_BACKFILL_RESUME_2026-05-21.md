@@ -225,4 +225,5 @@ Follow-up status:
 ```text
 TASK-AUTO-BOCM-003D identified the blocking phase as the summary XML request.
 docs/reports/BOCM_2026_05_06_TIMEOUT_DIAGNOSIS_2026-05-21.md records the diagnosis.
+After deployment, the scoped VPS smoke still failed intermittently in the search_day phase.
 ```
