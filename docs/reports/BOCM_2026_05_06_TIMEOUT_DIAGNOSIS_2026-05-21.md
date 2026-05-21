@@ -148,6 +148,14 @@ compare httpx vs curl behavior
 avoid candidates, PDFs, and downstream
 ```
 
+Follow-up status:
+
+```text
+TASK-AUTO-BOCM-003E compared curl and httpx from the VPS.
+During that task curl also failed to connect, so the issue is not httpx-only.
+docs/reports/BOCM_HTTPX_VS_CURL_DIAGNOSIS_2026-05-21.md records the result.
+```
+
 If that passes, the remaining metadata-only backfill can resume from:
 
 ```text
