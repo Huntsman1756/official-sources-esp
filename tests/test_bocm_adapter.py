@@ -196,9 +196,9 @@ def test_bocm_ingestion_retries_transient_read_timeout_and_stores_documents_once
         calls.append(kind)
         if kind == "search_day":
             return _fixture_bytes("bocm_search_day_with_issue.html")
-        if kind == "issue_page" and calls.count("issue_page") == 1:
+        if kind == "summary_xml" and calls.count("summary_xml") == 1:
             raise httpx.ReadTimeout("transient BOCM read timeout")
-        if kind == "issue_page":
+        if kind == "summary_xml":
             return _fixture_bytes("bocm_issue_page.html")
         raise AssertionError(f"unexpected BOCM fetch kind: {kind}")
 
@@ -228,7 +228,7 @@ def test_bocm_ingestion_retries_transient_read_timeout_and_stores_documents_once
     assert run["retry_count"] == 1
     assert run["documents_fetched"] == 2
     assert document_count == 2
-    assert calls == ["search_day", "issue_page", "issue_page"]
+    assert calls == ["search_day", "summary_xml", "summary_xml"]
     assert pdf_file_count == 0
     assert candidate_count == 0
 
@@ -237,7 +237,7 @@ def test_bocm_ingestion_repeated_read_timeout_records_failed_run(repository):
     def fetcher(kind: str, _target_date: str, _url: str) -> bytes:
         if kind == "search_day":
             return _fixture_bytes("bocm_search_day_with_issue.html")
-        raise httpx.ReadTimeout("persistent BOCM read timeout")
+        raise httpx.ReadTimeout("persistent BOCM summary XML read timeout")
 
     run = ingest_bocm_date(
         repository,
@@ -251,9 +251,33 @@ def test_bocm_ingestion_repeated_read_timeout_records_failed_run(repository):
     assert run["retry_count"] == 2
     assert run["last_http_status"] == 200
     assert "timed out after 3 attempts" in run["error_message"]
-    assert "persistent BOCM read timeout" in run["error_message"]
+    assert "persistent BOCM summary XML read timeout" in run["error_message"]
     assert run["documents_fetched"] == 0
     assert run["status"] != "no_publication"
+    assert repository.list_documents_by_date("2026-05-20") == []
+
+
+def test_bocm_ingestion_identifies_summary_xml_timeout_phase(repository):
+    def fetcher(kind: str, _target_date: str, _url: str) -> bytes:
+        if kind == "search_day":
+            return _fixture_bytes("bocm_search_day_with_issue.html")
+        assert kind == "summary_xml"
+        raise httpx.ReadTimeout("persistent BOCM summary XML read timeout")
+
+    run = ingest_bocm_date(
+        repository,
+        target_date="2026-05-20",
+        fetcher=fetcher,
+        max_timeout_retries=1,
+        sleeper=lambda _seconds: None,
+    )
+
+    assert run["status"] == "failed"
+    assert run["retry_count"] == 1
+    assert (
+        "BOCM summary_xml request for 2026-05-20 timed out after 2 attempts" in run["error_message"]
+    )
+    assert run["documents_fetched"] == 0
     assert repository.list_documents_by_date("2026-05-20") == []
 
 

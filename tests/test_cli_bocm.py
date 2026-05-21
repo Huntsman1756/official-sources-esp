@@ -20,7 +20,7 @@ def test_ingest_bocm_date_cli_creates_ingestion_run(tmp_path, capsys):
     def fetcher(kind: str, target_date: str, _url: str) -> bytes:
         if kind == "search_day":
             return _fixture_bytes("bocm_search_day_with_issue.html")
-        if kind == "issue_page":
+        if kind == "summary_xml":
             return _fixture_bytes("bocm_issue_page.html")
         raise AssertionError(f"unexpected BOCM fetch kind: {kind}")
 

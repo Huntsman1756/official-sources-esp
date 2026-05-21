@@ -214,8 +214,8 @@ def _fetch_issue_payload(
         return payload, audit, client
     if fetcher is not None:
         payload, retry_audit = _fetch_with_timeout_retries(
-            operation=lambda: _call_bocm_fetcher(fetcher, "issue_page", target_date, issue_url),
-            kind="issue_page",
+            operation=lambda: _call_bocm_fetcher(fetcher, "summary_xml", target_date, issue_url),
+            kind="summary_xml",
             target_date=target_date,
             base_audit=BOERequestAudit(
                 throttle_triggered=audit.throttle_triggered
@@ -234,8 +234,8 @@ def _fetch_issue_payload(
         )
     client = client or BOCMClient()
     result, retry_audit = _fetch_with_timeout_retries(
-        operation=lambda: client.fetch_issue_page(issue_url),
-        kind="issue_page",
+        operation=lambda: client.fetch_issue_summary_xml(issue_url),
+        kind="summary_xml",
         target_date=target_date,
         base_audit=audit,
         max_timeout_retries=max_timeout_retries,

@@ -122,7 +122,7 @@ class BOCMClient:
 
     def fetch_search_day(self, target_date: str) -> BOCMHTTPResponse:
         url = build_bocm_search_day_url(target_date, base_url=self.base_url)
-        result = self._get(url)
+        result = self._get(url, accept="text/html,application/xhtml+xml")
         self.last_request_audit = result.audit
         result.raise_for_status()
         return BOCMHTTPResponse(
@@ -132,7 +132,7 @@ class BOCMClient:
         )
 
     def fetch_issue_page(self, issue_url: str) -> BOCMHTTPResponse:
-        result = self._get(issue_url)
+        result = self._get(issue_url, accept="text/html,application/xhtml+xml")
         self.last_request_audit = result.audit
         result.raise_for_status()
         return BOCMHTTPResponse(
@@ -141,11 +141,21 @@ class BOCMClient:
             audit=result.audit,
         )
 
-    def _get(self, url: str):
+    def fetch_issue_summary_xml(self, summary_xml_url: str) -> BOCMHTTPResponse:
+        result = self._get(summary_xml_url, accept="application/xml,text/xml")
+        self.last_request_audit = result.audit
+        result.raise_for_status()
+        return BOCMHTTPResponse(
+            content=result.content,
+            final_url=str(result.request.url),
+            audit=result.audit,
+        )
+
+    def _get(self, url: str, *, accept: str):
         with httpx.Client(timeout=self._timeout, follow_redirects=True) as client:
             return self._policy.get(
                 url,
-                headers={"Accept": "text/html,application/xhtml+xml"},
+                headers={"Accept": accept},
                 client=client,
                 sleeper=self._sleeper or time.sleep,
             )
