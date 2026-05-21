@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import httpx
 import pytest
 
 from official_sources.citation.builder import build_citation
@@ -186,6 +187,74 @@ def test_bocm_ingestion_stores_documents_without_pdf_or_candidates(repository):
     assert run["source_snapshot_hash"] == sha256_bytes(
         search_payload + BOCM_PAYLOAD_SEPARATOR + issue_payload
     )
+
+
+def test_bocm_ingestion_retries_transient_read_timeout_and_stores_documents_once(repository):
+    calls: list[str] = []
+
+    def fetcher(kind: str, _target_date: str, _url: str) -> bytes:
+        calls.append(kind)
+        if kind == "search_day":
+            return _fixture_bytes("bocm_search_day_with_issue.html")
+        if kind == "issue_page" and calls.count("issue_page") == 1:
+            raise httpx.ReadTimeout("transient BOCM read timeout")
+        if kind == "issue_page":
+            return _fixture_bytes("bocm_issue_page.html")
+        raise AssertionError(f"unexpected BOCM fetch kind: {kind}")
+
+    run = ingest_bocm_date(
+        repository,
+        target_date="2026-05-20",
+        fetcher=fetcher,
+        sleeper=lambda _seconds: None,
+    )
+
+    document_count = repository.connection.execute(
+        """
+        SELECT COUNT(*) AS count
+        FROM official_documents d
+        JOIN official_sources s ON s.id = d.source_id
+        WHERE s.code = 'BOCM'
+        """
+    ).fetchone()["count"]
+    pdf_file_count = repository.connection.execute(
+        "SELECT COUNT(*) AS count FROM document_files WHERE file_type = 'pdf'"
+    ).fetchone()["count"]
+    candidate_count = repository.connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+
+    assert run["status"] == "success"
+    assert run["retry_count"] == 1
+    assert run["documents_fetched"] == 2
+    assert document_count == 2
+    assert calls == ["search_day", "issue_page", "issue_page"]
+    assert pdf_file_count == 0
+    assert candidate_count == 0
+
+
+def test_bocm_ingestion_repeated_read_timeout_records_failed_run(repository):
+    def fetcher(kind: str, _target_date: str, _url: str) -> bytes:
+        if kind == "search_day":
+            return _fixture_bytes("bocm_search_day_with_issue.html")
+        raise httpx.ReadTimeout("persistent BOCM read timeout")
+
+    run = ingest_bocm_date(
+        repository,
+        target_date="2026-05-20",
+        fetcher=fetcher,
+        max_timeout_retries=2,
+        sleeper=lambda _seconds: None,
+    )
+
+    assert run["status"] == "failed"
+    assert run["retry_count"] == 2
+    assert run["last_http_status"] == 200
+    assert "timed out after 3 attempts" in run["error_message"]
+    assert "persistent BOCM read timeout" in run["error_message"]
+    assert run["documents_fetched"] == 0
+    assert run["status"] != "no_publication"
+    assert repository.list_documents_by_date("2026-05-20") == []
 
 
 def test_bocm_ingestion_records_no_publication(repository):

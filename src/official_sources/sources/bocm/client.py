@@ -13,6 +13,7 @@ from official_sources.sources.boe.http_policy import BOERequestAudit, BOERequest
 
 BOCM_BASE_URL = "https://www.bocm.es"
 BOCM_SEARCH_DAY_PATH = "/search-day-month"
+BOCM_DEFAULT_TIMEOUT = httpx.Timeout(connect=10.0, read=90.0, write=30.0, pool=10.0)
 
 
 def validate_bocm_date(value: str) -> date:
@@ -111,10 +112,12 @@ class BOCMClient:
         base_url: str = BOCM_BASE_URL,
         request_policy: BOERequestPolicy | None = None,
         sleeper: Callable[[float], None] | None = None,
+        timeout: httpx.Timeout = BOCM_DEFAULT_TIMEOUT,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self._policy = request_policy or BOERequestPolicy.from_env()
         self._sleeper = sleeper
+        self._timeout = timeout
         self.last_request_audit = BOERequestAudit()
 
     def fetch_search_day(self, target_date: str) -> BOCMHTTPResponse:
@@ -139,7 +142,7 @@ class BOCMClient:
         )
 
     def _get(self, url: str):
-        with httpx.Client(timeout=30.0, follow_redirects=True) as client:
+        with httpx.Client(timeout=self._timeout, follow_redirects=True) as client:
             return self._policy.get(
                 url,
                 headers={"Accept": "text/html,application/xhtml+xml"},

@@ -929,6 +929,11 @@ def _run_ingest_bocm(
                 f"last_http_status={_status_value(run_record['last_http_status'])}",
                 f"source_snapshot_hash={run_record.get('source_snapshot_hash') or 'none'}",
             ]
+            + (
+                [f"error_message={_compact_token(run_record['error_message'])}"]
+                if run_record.get("error_message")
+                else []
+            )
         ),
         file=stdout,
     )

@@ -173,3 +173,10 @@ no downstream
 ```
 
 After that, rerun the controlled BOCM 30-day metadata backfill from the failed date.
+
+Follow-up status:
+
+```text
+TASK-AUTO-BOCM-003B implemented timeout hardening in code.
+docs/reports/BOCM_TIMEOUT_HARDENING_2026-05-21.md records the retry strategy and smoke result.
+```
