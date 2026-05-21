@@ -102,6 +102,7 @@ Status: BOJA pilot closed through reviewed evidence decisions.
 Latest audit:
 
 - `docs/reports/AUTONOMOUS_BULLETIN_SOURCE_AUDIT_2026-05-20.md`
+- `docs/reports/BOCM_SOURCE_AUDIT_2026-05-21.md`
 
 Recommended first implementation:
 
@@ -128,6 +129,11 @@ environment-safe import path are documented.
 Recommended next platform/downstream step:
 
 - `TASK-LAAYUDA-FOUNDATION - add evidence/candidate staging model`.
+
+Recommended next autonomous-source option:
+
+- `TASK-AUTO-BOCM-002 - BOCM metadata adapter MVP`, optionally preceded by
+  `TASK-AUTO-BOCM-001B - BOCM date-to-issue discovery probe`.
 
 ## Future phase - EUR-Lex
 
