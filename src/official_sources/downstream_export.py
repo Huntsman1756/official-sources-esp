@@ -215,5 +215,9 @@ def _group_name(fit: str) -> str:
 
 
 def _export_filename(candidate_id: int, source_code: str, official_identifier: str) -> str:
-    safe_identifier = official_identifier.replace(":", "_").replace("/", "_")
+    identifier = official_identifier
+    prefix = f"{source_code}:"
+    if identifier.startswith(prefix):
+        identifier = identifier[len(prefix) :]
+    safe_identifier = identifier.replace(":", "_").replace("/", "_")
     return f"{candidate_id}_{source_code}_{safe_identifier}.json"

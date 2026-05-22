@@ -145,6 +145,7 @@ def test_export_downstream_evidence_cli_writes_grouped_json_with_version_date(tm
     exported_files = list((output_dir / "la-ayuda").glob("*.json"))
     assert exit_code == 0
     assert len(exported_files) == 1
+    assert exported_files[0].name == "1_DOGV_DOGV-C-2026-14923.json"
     payload = json.loads(exported_files[0].read_text())
     assert payload["version_date"] is None
     assert payload["official_sources_candidate"]["candidate_id"] == candidate["id"]
