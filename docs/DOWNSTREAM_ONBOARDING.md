@@ -235,6 +235,25 @@ Use when:
 - candidate creation is explicit;
 - publication gates are tested.
 
+Candidate discovery should use the generic source-aware alias:
+
+```bash
+official-sources find-source-candidates \
+  --source BOE \
+  --date-from YYYY-MM-DD \
+  --date-to YYYY-MM-DD \
+  --profile la-ayuda \
+  --dry-run
+```
+
+Supported source filters are `BOE`, `BOJA`, `DOGV`, `BOCM`, and `BDNS`. Dry-run is a local
+metadata preview for all of them: it does not fetch missing source records, download artifacts,
+write candidates, write downstream rows, approve, or publish. Candidate writes require explicit
+`--write` and should start with a small `--limit`.
+
+`find-boe-candidates` remains available as the backwards-compatible BOE-default/source-aware
+command for older runbooks, but new downstream onboarding should use `find-source-candidates`.
+
 ### Pattern E - Draft Creation
 
 The downstream project creates a domain draft only after an explicit human decision and with a

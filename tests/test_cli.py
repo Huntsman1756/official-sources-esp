@@ -1608,6 +1608,58 @@ def test_find_source_candidates_alias_supports_boja_dry_run(tmp_path, capsys):
     assert "BOE-A-2024-11111" not in captured.out
 
 
+def test_find_source_candidates_alias_supports_all_metadata_sources_dry_run(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    sources = {
+        "DOGV": repository.ensure_official_source_dogv(),
+        "BOCM": repository.ensure_official_source_bocm(),
+        "BDNS": repository.ensure_official_source_bdns(),
+    }
+    for source_code, source in sources.items():
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=f"{source_code}:candidate-1",
+            publication_date="2026-05-20",
+            title=f"Convocatoria de ayudas {source_code}",
+        )
+
+    for source_code in sources:
+        exit_code = run(
+            [
+                "--db-path",
+                str(db_path),
+                "find-source-candidates",
+                "--source",
+                source_code,
+                "--date-from",
+                "2026-05-20",
+                "--date-to",
+                "2026-05-20",
+                "--keywords",
+                "ayudas",
+                "--dry-run",
+            ]
+        )
+
+        captured = capsys.readouterr()
+        assert exit_code == 0
+        assert f"source={source_code}" in captured.out
+        assert "documents_scanned=1" in captured.out
+        assert f"{source_code}:candidate-1" in captured.out
+        for other_source_code in sources.keys() - {source_code}:
+            assert f"{other_source_code}:candidate-1" not in captured.out
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    assert candidate_count == 0
+
+
 def test_find_boe_candidates_boja_profile_excludes_generic_ayudas_only(tmp_path, capsys):
     from official_sources.cli import run
 
@@ -1969,10 +2021,26 @@ def test_find_source_candidates_help_is_available(capsys):
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "preferred" in captured.out.lower()
+    assert "preferred generic command" in captured.out.lower()
     assert "--source" in captured.out
+    assert "BOE" in captured.out
+    assert "BOJA" in captured.out
+    assert "DOGV" in captured.out
+    assert "BOCM" in captured.out
+    assert "BDNS" in captured.out
     assert "--dry-run" in captured.out
     assert "--write" in captured.out
+
+
+def test_find_boe_candidates_help_identifies_backwards_compatible_command(capsys):
+    from official_sources.cli import run
+
+    exit_code = run(["find-boe-candidates", "--help"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "backwards-compatible" in captured.out.lower()
+    assert "boe-default" in captured.out.lower()
 
 
 def test_find_boe_candidates_normalizes_accents_case_and_whitespace(tmp_path, capsys):
