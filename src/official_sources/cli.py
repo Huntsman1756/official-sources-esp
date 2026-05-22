@@ -256,9 +256,6 @@ DOGV_DIRECT_TITLE_TERMS = {
     "libros de texto",
     "material escolar",
     "necesidades educativas",
-    "formacion profesional",
-    "universidad",
-    "universidades",
     "familias",
     "joven",
     "jovenes",
@@ -300,6 +297,22 @@ DOGV_CLOSED_OR_RESULT_TERMS = {
     "resolucion de concesion",
     "relacion de beneficiarios",
     "relacion de personas beneficiarias",
+}
+DOGV_AWARD_OR_PROCEDURE_TERMS = {
+    "premio",
+    "premios",
+    "concurso",
+    "certamen",
+    "admision",
+    "matricula",
+    "pruebas de acceso",
+    "instrucciones",
+    "procedimiento de admision",
+    "convenio",
+    "colaboracion",
+    "transferencia de credito",
+    "generacion de credito",
+    "ampliacion de credito",
 }
 DOGV_LOCAL_ENTITY_TERMS = {
     "entidades locales",
@@ -2227,6 +2240,8 @@ def _dogv_profile_exclusion_reason(
         return "dogv_procurement_noise"
     if any(term in title for term in _normalized_set(DOGV_CLOSED_OR_RESULT_TERMS)):
         return "dogv_closed_or_result_notice"
+    if any(term in title for term in _normalized_set(DOGV_AWARD_OR_PROCEDURE_TERMS)):
+        return "dogv_award_or_procedure_noise"
     if {"vivienda", "alquiler"} & {
         _normalize_search_text(keyword) for keyword in keywords
     } and not housing_context:

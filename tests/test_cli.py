@@ -1893,6 +1893,19 @@ def test_find_source_candidates_dogv_profile_filters_noise_and_keeps_direct_aid(
             "Conselleria de Industria, Turismo, Innovacion y Comercio",
             "III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
         ),
+        (
+            "DOGV:fp-admission",
+            "Resolucion por la que se dictan instrucciones del procedimiento de admision "
+            "y matricula en formacion profesional",
+            "Conselleria de Educacion, Cultura y Universidades",
+            "III. ACTOS ADMINISTRATIVOS / C) OTROS ASUNTOS",
+        ),
+        (
+            "DOGV:university-award",
+            "Extracto por el que se convoca un premio al mejor trabajo fin de grado",
+            "Universitat de Valencia",
+            "III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
+        ),
     ]
     for external_id, title, department, section in documents:
         repository.upsert_document(
@@ -1925,10 +1938,10 @@ def test_find_source_candidates_dogv_profile_filters_noise_and_keeps_direct_aid(
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "documents_scanned=8" in captured.out
-    assert "matches_total=8" in captured.out
+    assert "documents_scanned=10" in captured.out
+    assert "matches_total=10" in captured.out
     assert "matches_after_filters=3" in captured.out
-    assert "excluded_by_keyword_rules=5" in captured.out
+    assert "excluded_by_keyword_rules=7" in captured.out
     assert "DOGV:transporte-escolar" in captured.out
     assert "DOGV:ayudas-estudio" in captured.out
     assert "DOGV:vivienda-jovenes" in captured.out
@@ -1937,6 +1950,8 @@ def test_find_source_candidates_dogv_profile_filters_noise_and_keeps_direct_aid(
     assert "DOGV:oposiciones-vivienda" not in captured.out
     assert "DOGV:concesion-result" not in captured.out
     assert "DOGV:empresa-sectorial" not in captured.out
+    assert "DOGV:fp-admission" not in captured.out
+    assert "DOGV:university-award" not in captured.out
     assert "score_reasons=" in captured.out
 
 
