@@ -12,7 +12,8 @@
     "official_identifier": "BOE-B-2026-00000",
     "title": "Example official document title",
     "official_url": "https://www.boe.es/...",
-    "publication_date": "2026-05-20"
+    "publication_date": "2026-05-20",
+    "version_date": null
   },
   "integrity": {
     "source_snapshot_hash": "sha256:...",

@@ -12,6 +12,7 @@ from typing import Any, TextIO
 
 import httpx
 
+from official_sources.downstream_export import export_downstream_evidence_files
 from official_sources.integrity.hashing import sha256_bytes
 from official_sources.sources.bdns.client import (
     BDNS_DEFAULT_PAGE_SIZE,
@@ -670,6 +671,21 @@ def build_parser() -> argparse.ArgumentParser:
     mark_evidence.add_argument("--reviewed-by")
     mark_evidence.add_argument("--reviewed-at")
 
+    export_evidence = subparsers.add_parser(
+        "export-downstream-evidence",
+        help="Export reviewed source-candidate evidence JSON files for downstream staging.",
+    )
+    export_evidence.add_argument(
+        "--candidate-ids",
+        required=True,
+        help="Comma-separated source_candidate IDs to export.",
+    )
+    export_evidence.add_argument(
+        "--output-dir",
+        required=True,
+        help="Directory where grouped downstream evidence JSON files will be written.",
+    )
+
     check = subparsers.add_parser("integrity-check", help="Recompute local artifact hashes.")
     check.add_argument(
         "--date",
@@ -877,6 +893,8 @@ def run(
         return _run_candidate_evidence_status(repository, args, stdout, stderr)
     if args.command == "mark-candidate-evidence":
         return _run_mark_candidate_evidence(repository, args, stdout, stderr)
+    if args.command == "export-downstream-evidence":
+        return _run_export_downstream_evidence(repository, args, stdout, stderr)
     if args.command == "boe-consolidated-get":
         return _run_consolidated_get(
             repository, args.identifier, consolidated_client, stdout, stderr
@@ -1811,6 +1829,42 @@ def _run_mark_candidate_evidence(
         ),
         file=stdout,
     )
+    return 0
+
+
+def _run_export_downstream_evidence(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        candidate_ids = _parse_id_list(args.candidate_ids, option_name="--candidate-ids")
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    try:
+        paths = export_downstream_evidence_files(
+            repository,
+            candidate_ids,
+            Path(args.output_dir),
+        )
+    except KeyError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        _format_counts(
+            {
+                "command": "export-downstream-evidence",
+                "candidate_ids": ",".join(str(candidate_id) for candidate_id in candidate_ids),
+                "files_written": len(paths),
+                "output_dir": str(Path(args.output_dir)),
+            }
+        ),
+        file=stdout,
+    )
+    for path in paths:
+        print(f"exported_file={path}", file=stdout)
     return 0
 
 

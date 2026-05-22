@@ -1244,7 +1244,18 @@ def test_cli_does_not_expose_mcp_write_tools_or_downstream_publication():
         and "downstream-project" not in line
         and "downstream project fit" not in line
     ]
-    assert downstream_lines == []
+    allowed_downstream_fragments = {
+        "downstream_export",
+        "export_downstream_evidence",
+        "export-downstream-evidence",
+        "downstream evidence json files",
+        "downstream staging",
+    }
+    assert [
+        line
+        for line in downstream_lines
+        if not any(fragment in line for fragment in allowed_downstream_fragments)
+    ] == []
 
 
 def test_cli_accepts_today_for_systemd_templates(tmp_path, capsys):
