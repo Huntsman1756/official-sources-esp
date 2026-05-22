@@ -40,6 +40,7 @@ Scope:
 - Downstream onboarding kit for reusable project integrations.
 - BOCM metadata-only adapter MVP.
 - DOGV metadata-only adapter MVP and controlled 30-day metadata backfill.
+- BDNS metadata-only adapter MVP for public grant calls (`convocatorias`).
 
 ## Not Implemented
 
@@ -55,7 +56,6 @@ Scope:
 - Legal interpretation.
 - Automatic approval.
 - Automatic publication.
-- BDNS grants/subsidies registry adapter.
 
 ## Follow-up - Persistent database operations
 
@@ -122,18 +122,22 @@ Future autonomous/statutory territory adapter MVPs must start metadata/index-onl
 
 ## Future phase - Grants registry sources
 
-Status: BDNS source audit completed.
+Status: BDNS source audit completed and metadata-only adapter MVP implemented for convocatorias.
 
 Latest audit:
 
 - `docs/reports/BDNS_SOURCE_AUDIT_2026-05-21.md`
 
-Recommendation:
+Completed:
 
 - `TASK-BDNS-002 - BDNS metadata adapter MVP`
 
+Recommendation:
+
+- `TASK-BDNS-003 - Controlled BDNS latest calls ingestion`
+
 BDNS should be treated as a primary grants/subsidies registry, not as another bulletin. Initial
-implementation should be metadata-only, focused on convocatorias, raw JSON hashing, official
+implementation is metadata-only and focused on convocatorias, raw JSON hashing, official
 identifiers, citation metadata, and strict pagination/date caps. Candidate extraction, concessions,
 bulk historical backfills, and downstream exports require separate approval.
 

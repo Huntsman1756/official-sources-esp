@@ -25,11 +25,11 @@ Implemented now:
 - Tier 2: BOJA metadata-first autonomous source pilot.
 - Tier 2: BOCM metadata-only adapter MVP.
 - Tier 2: DOGV metadata-only adapter MVP.
+- Grants registry: BDNS metadata-only adapter MVP for public grant calls.
 
 Not implemented:
 
 - Tier 2: additional autonomous/statutory territory bulletins.
-- BDNS grants/subsidies registry adapter.
 - Tier 3: provincial/local bulletins.
 - Tier 4: EUR-Lex/DOUE.
 - TED/OJ S procurement adapter.
@@ -53,9 +53,9 @@ BDNS should be modeled as a primary grants/subsidies source family. It may suppo
 projects such as EduAyudas, `la-ayuda`, and subsidy-focused products more directly than bulletin
 metadata alone.
 
-Initial BDNS implementation must be metadata-only and focused on convocatorias unless a later task
-explicitly expands scope. Concesiones may include beneficiary data and retention/privacy constraints,
-so they require a separate privacy-aware design step.
+Initial BDNS implementation is metadata-only and focused on convocatorias. Concesiones may include
+beneficiary data and retention/privacy constraints, so they require a separate privacy-aware design
+step.
 
 Identifier policy:
 

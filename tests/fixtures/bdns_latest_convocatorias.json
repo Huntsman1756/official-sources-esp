@@ -1,0 +1,24 @@
+{
+  "content": [
+    {
+      "id": 1108923,
+      "mrr": false,
+      "numeroConvocatoria": "907362",
+      "descripcion": "Convocatoria Pyme Innova 2026 - Camara Tortosa",
+      "descripcionLeng": null,
+      "fechaRecepcion": "2026-05-21",
+      "nivel1": "OTROS",
+      "nivel2": "CAMARA DE COMERCIO DE TORTOSA",
+      "nivel3": null,
+      "codigoInvente": null
+    }
+  ],
+  "last": false,
+  "totalElements": 2,
+  "totalPages": 2,
+  "numberOfElements": 1,
+  "size": 1,
+  "number": 0,
+  "empty": false,
+  "advertencia": null
+}

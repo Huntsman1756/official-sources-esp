@@ -13,6 +13,18 @@ from typing import Any, TextIO
 import httpx
 
 from official_sources.integrity.hashing import sha256_bytes
+from official_sources.sources.bdns.client import (
+    BDNS_DEFAULT_PAGE_SIZE,
+    parse_bdns_date_filter,
+    validate_bdns_limit,
+    validate_bdns_max_pages,
+    validate_bdns_num_conv,
+)
+from official_sources.sources.bdns.ingestion import (
+    ingest_bdns_call,
+    ingest_bdns_latest,
+    search_bdns_calls,
+)
 from official_sources.sources.bocm.client import validate_bocm_date
 from official_sources.sources.bocm.ingestion import ingest_bocm_date
 from official_sources.sources.boe.artifacts import (
@@ -297,6 +309,43 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Target date in YYYY-MM-DD format or today.",
     )
+    ingest_bdns_latest = subparsers.add_parser(
+        "ingest-bdns-latest",
+        help="Ingest latest BDNS public grant calls with an explicit small limit.",
+    )
+    ingest_bdns_latest.add_argument(
+        "--limit",
+        type=int,
+        default=BDNS_DEFAULT_PAGE_SIZE,
+        help="Maximum latest convocatorias to ingest. Default: 10. Hard max: 100.",
+    )
+    ingest_bdns_call = subparsers.add_parser(
+        "ingest-bdns-call",
+        help="Ingest one BDNS convocatoria detail by numConv/codigoBDNS.",
+    )
+    ingest_bdns_call.add_argument(
+        "--num-conv",
+        required=True,
+        help="BDNS convocatoria number / codigoBDNS.",
+    )
+    search_bdns = subparsers.add_parser(
+        "search-bdns-calls",
+        help="Search BDNS convocatorias with strict pagination limits.",
+    )
+    search_bdns.add_argument("--date-from", help="Start date in DD/MM/YYYY format.")
+    search_bdns.add_argument("--date-to", help="End date in DD/MM/YYYY format.")
+    search_bdns.add_argument(
+        "--page-size",
+        type=int,
+        default=BDNS_DEFAULT_PAGE_SIZE,
+        help="Page size for BDNS search. Default: 10. Hard max: 100.",
+    )
+    search_bdns.add_argument(
+        "--max-pages",
+        type=int,
+        default=1,
+        help="Maximum pages to fetch. Default: 1. Hard max: 10.",
+    )
     enrich_boja = subparsers.add_parser(
         "enrich-boja-evidence-urls",
         help="Enrich stored BOJA documents with official evidence URLs for explicit IDs.",
@@ -580,6 +629,9 @@ def run(
     boja_detail_fetcher=None,
     bocm_fetcher=None,
     dogv_fetcher=None,
+    bdns_latest_fetcher=None,
+    bdns_call_fetcher=None,
+    bdns_search_fetcher=None,
     artifact_client: httpx.Client | None = None,
     consolidated_client: httpx.Client | None = None,
     stdout: TextIO | None = None,
@@ -603,6 +655,12 @@ def run(
         return _run_ingest_bocm(repository, args, bocm_fetcher, stdout, stderr)
     if args.command == "ingest-dogv-date":
         return _run_ingest_dogv(repository, args, dogv_fetcher, stdout, stderr)
+    if args.command == "ingest-bdns-latest":
+        return _run_ingest_bdns_latest(repository, args, bdns_latest_fetcher, stdout, stderr)
+    if args.command == "ingest-bdns-call":
+        return _run_ingest_bdns_call(repository, args, bdns_call_fetcher, stdout, stderr)
+    if args.command == "search-bdns-calls":
+        return _run_search_bdns_calls(repository, args, bdns_search_fetcher, stdout, stderr)
     if args.command == "enrich-boja-evidence-urls":
         return _run_enrich_boja_evidence_urls(repository, args, boja_detail_fetcher, stdout, stderr)
     if args.command == "ingest-boe-range":
@@ -999,6 +1057,107 @@ def _run_ingest_dogv(
         file=stdout,
     )
     return 0 if run_record["status"] in {"success", NO_PUBLICATION_STATUS} else 1
+
+
+def _run_ingest_bdns_latest(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        limit = validate_bdns_limit(args.limit, option_name="limit")
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        f"command_started={args.command} source_code=BDNS target=latest limit={limit}",
+        file=stdout,
+    )
+    run_record = ingest_bdns_latest(repository, limit=limit, fetcher=fetcher)
+    _print_bdns_run_record(run_record, stdout)
+    return 0 if run_record["status"] == "success" else 1
+
+
+def _run_ingest_bdns_call(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        num_conv = validate_bdns_num_conv(args.num_conv)
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        f"command_started={args.command} source_code=BDNS num_conv={num_conv}",
+        file=stdout,
+    )
+    run_record = ingest_bdns_call(repository, num_conv=num_conv, fetcher=fetcher)
+    _print_bdns_run_record(run_record, stdout)
+    return 0 if run_record["status"] == "success" else 1
+
+
+def _run_search_bdns_calls(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        date_from = parse_bdns_date_filter(args.date_from) if args.date_from else None
+        date_to = parse_bdns_date_filter(args.date_to) if args.date_to else None
+        page_size = validate_bdns_limit(args.page_size, option_name="page-size")
+        max_pages = validate_bdns_max_pages(args.max_pages)
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        (
+            f"command_started={args.command} source_code=BDNS "
+            f"date_from={date_from or 'none'} date_to={date_to or 'none'} "
+            f"page_size={page_size} max_pages={max_pages}"
+        ),
+        file=stdout,
+    )
+    run_record = search_bdns_calls(
+        repository,
+        date_from=date_from,
+        date_to=date_to,
+        page_size=page_size,
+        max_pages=max_pages,
+        fetcher=fetcher,
+    )
+    _print_bdns_run_record(run_record, stdout)
+    return 0 if run_record["status"] == "success" else 1
+
+
+def _print_bdns_run_record(run_record: dict, stdout: TextIO) -> None:
+    print(
+        " ".join(
+            [
+                f"status={run_record['status']}",
+                f"official_identifier={run_record.get('official_identifier') or 'none'}",
+                f"documents_fetched={run_record['documents_fetched']}",
+                f"documents_new={run_record['documents_new']}",
+                f"documents_updated={run_record['documents_updated']}",
+                f"retry_count={run_record['retry_count']}",
+                f"throttle_triggered={run_record['throttle_triggered']}",
+                f"last_http_status={_status_value(run_record['last_http_status'])}",
+                f"source_snapshot_hash={run_record.get('source_snapshot_hash') or 'none'}",
+            ]
+            + (
+                [f"error_message={_compact_token(run_record['error_message'])}"]
+                if run_record.get("error_message")
+                else []
+            )
+        ),
+        file=stdout,
+    )
 
 
 def _run_enrich_boja_evidence_urls(

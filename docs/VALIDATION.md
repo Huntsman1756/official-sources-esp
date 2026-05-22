@@ -1,5 +1,51 @@
 # Validation
 
+## 2026-05-21 - TASK-BDNS-002 BDNS metadata adapter MVP
+
+Local validation:
+
+```text
+git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+pytest: 299 passed
+ruff check: passed
+ruff format --check: passed
+```
+
+Controlled local live smoke with a temporary SQLite database:
+
+```text
+ingest-bdns-latest --limit 1:
+  status=success
+  documents_fetched=1
+  documents_new=1
+  documents_updated=0
+  last_http_status=200
+  retry_count=0
+
+ingest-bdns-call --num-conv 907364:
+  status=success
+  official_identifier=BDNS:907364
+  documents_fetched=1
+  documents_new=0
+  documents_updated=1
+  last_http_status=200
+  retry_count=0
+
+db_validate=valid
+```
+
+No BDNS concessions, source candidates, downstream writes, artifact downloads, approvals, or
+publications were performed.
+
 ## 2026-05-21 - TASK-AUTO-DOGV-003 DOGV 30-day metadata backfill
 
 VPS operational validation:

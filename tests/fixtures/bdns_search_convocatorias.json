@@ -1,0 +1,24 @@
+{
+  "content": [
+    {
+      "id": 1108603,
+      "mrr": false,
+      "numeroConvocatoria": "907042",
+      "descripcion": "CTP 2026 Ayudas a la comercializacion turistica y a la promocion",
+      "descripcionLeng": "2026 CTP Turismoa merkaturatzeko eta sustatzeko laguntzak",
+      "fechaRecepcion": "2026-05-20",
+      "nivel1": "AUTONOMICA",
+      "nivel2": "PAIS VASCO",
+      "nivel3": "DEPARTAMENTO DE TURISMO, COMERCIO Y CONSUMO",
+      "codigoInvente": null
+    }
+  ],
+  "last": true,
+  "totalElements": 1,
+  "totalPages": 1,
+  "numberOfElements": 1,
+  "size": 10,
+  "number": 0,
+  "empty": false,
+  "advertencia": null
+}

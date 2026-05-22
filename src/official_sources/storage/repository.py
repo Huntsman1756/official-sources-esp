@@ -96,6 +96,17 @@ class OfficialSourcesRepository:
             reliability_level="canonical",
         )
 
+    def ensure_official_source_bdns(self) -> dict[str, Any]:
+        return self.upsert_official_source(
+            code="BDNS",
+            name="Base de Datos Nacional de Subvenciones",
+            jurisdiction="state",
+            region_code="ES",
+            base_url="https://www.infosubvenciones.es/bdnstrans/api",
+            access_type="official_api",
+            reliability_level="canonical",
+        )
+
     def upsert_official_source(
         self,
         *,
