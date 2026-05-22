@@ -1,5 +1,40 @@
 # Validation
 
+## 2026-05-21 - TASK-AUTO-DOGV-003 DOGV 30-day metadata backfill
+
+VPS operational validation:
+
+```text
+deployed_commit=7f1f1ec
+date_range=2026-04-21 -> 2026-05-20
+dates_processed=30
+success=21
+no_publication=9
+failed=0
+documents_fetched=1113
+documents_new=1113
+documents_updated=0
+artifact_directory_size=26M -> 26M
+artifact_download_attempts=432 -> 432
+source_candidates=100 -> 100
+DOGV_official_documents=0 -> 1113
+DOGV_ingestion_runs=0 -> 30
+db_validate_before=valid
+db_validate_after=valid
+MCP listener check=no matching listener observed
+```
+
+Verified backups:
+
+```text
+before=/opt/official-sources/data/backups/official_sources_before_dogv_30d_backfill_20260522_054711.sqlite
+after=/opt/official-sources/data/backups/official_sources_after_dogv_30d_backfill_20260522_054936.sqlite
+backup_status=success
+```
+
+No DOGV PDF, XML, or HTML artifact downloads, source candidates, downstream writes, approvals, or
+publications were performed.
+
 ## 2026-05-21 - TASK-AUTO-DOGV-002 DOGV metadata adapter MVP
 
 Local validation:
