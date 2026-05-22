@@ -1,0 +1,321 @@
+version: 1
+source_code: BDNS
+source_family: grants_registry
+resource_type: grant_call
+status: design_only
+candidate_creation: disabled
+notes:
+  - "Example deterministic profile design for future BDNS dry-runs."
+  - "Synthetic examples are not real candidates."
+  - "Profiles are prefilter signals only, never approval or publication decisions."
+
+global_requirements:
+  accepted_resource_types:
+    - grant_call
+  rejected_resource_types:
+    - grant_award
+    - concession
+    - adjudication
+  required_metadata_fields:
+    any_identifier:
+      - official_identifier
+      - bdns_code
+      - codigo_bdns
+    searchable_text:
+      - title
+      - description
+      - description_finalidad
+      - beneficiary_type
+      - instrument_type
+      - sector_activity
+      - territorial_scope
+      - calling_body
+      - raw_metadata
+    deadline:
+      any:
+        - application_end_date
+        - deadline_text
+        - solicitud_hasta
+  hard_exclusions:
+    - reason: concession_or_award
+      when_any:
+        resource_type:
+          - grant_award
+          - concession
+        text:
+          - concesion
+          - concesiones
+          - beneficiario final
+          - codConcesion
+    - reason: adjudication_or_procurement
+      when_text_any:
+        - adjudicacion
+        - licitacion
+        - contrato
+        - contratacion publica
+        - expediente de contratacion
+    - reason: closed_procedure
+      when_any:
+        abierto:
+          - false
+        text:
+          - plazo cerrado
+          - convocatoria cerrada
+          - procedimiento cerrado
+    - reason: missing_deadline
+      when_missing_all:
+        - application_end_date
+        - deadline_text
+        - solicitud_hasta
+  default_downranking:
+    - reason: exclusively_public_entities
+      weight: -3
+      when_text_any:
+        - entidades locales
+        - ayuntamientos
+        - diputaciones
+        - comunidades autonomas
+        - universidades publicas como beneficiarias
+    - reason: generic_only
+      weight: -2
+      when_only_generic_terms:
+        - convocatoria
+        - ayuda
+        - ayudas
+        - subvencion
+        - subvenciones
+    - reason: missing_budget_or_amount
+      weight: -1
+      when_missing_all:
+        - budget
+        - presupuestoTotal
+        - importe
+        - amount_text
+
+scoring:
+  strong_profile_signal: 3
+  supporting_profile_signal: 2
+  generic_grant_signal: 1
+  fresh_open_deadline: 2
+  deadline_present: 1
+  budget_or_amount_present: 1
+  official_url_present: 1
+  downranking_applies: variable
+  hard_exclusion: exclude
+
+profiles:
+  bdns-eduayudas:
+    downstream_project: EduAyudas
+    purpose: "Scholarships, study aid, students, families, school material, meals, transport, NEAE, FP, university, and training."
+    include_terms:
+      strong:
+        - beca
+        - becas
+        - ayudas al estudio
+        - alumnado
+        - estudiantes
+        - libros de texto
+        - material escolar
+        - comedor escolar
+        - transporte escolar
+        - neae
+        - necesidades especificas de apoyo educativo
+        - formacion profesional
+        - fp
+        - universidad
+        - universitario
+        - universitaria
+      supporting:
+        - familias
+        - matricula
+        - movilidad
+        - practicas
+        - ensenanza
+        - educacion
+        - formacion
+      generic:
+        - ayuda
+        - ayudas
+        - subvencion
+        - subvenciones
+        - convocatoria
+    downrank:
+      - reason: generic_education_without_student_or_family_context
+        weight: -2
+        when_text_any:
+          - educacion
+          - formacion
+        unless_text_any:
+          - alumnado
+          - estudiante
+          - familia
+          - beca
+          - ayudas al estudio
+      - reason: company_or_sector_only
+        weight: -3
+        when_text_any:
+          - empresas
+          - pyme
+          - sector empresarial
+          - asociaciones empresariales
+        unless_text_any:
+          - alumnado
+          - estudiantes
+          - personas en formacion
+          - practicas
+
+  bdns-la-ayuda:
+    downstream_project: la-ayuda
+    purpose: "Direct aid for people, families, youth, housing/rent, social vouchers, vulnerability, disability, and dependency."
+    include_terms:
+      strong:
+        - ayudas directas
+        - personas
+        - familias
+        - joven
+        - jovenes
+        - vivienda
+        - alquiler
+        - bono alquiler
+        - bono social
+        - vulnerabilidad
+        - riesgo de exclusion
+        - emergencia social
+        - discapacidad
+        - dependencia
+      supporting:
+        - mayores
+        - familia numerosa
+        - monoparental
+        - inclusion social
+        - servicios sociales
+        - pobreza energetica
+      generic:
+        - ayuda
+        - ayudas
+        - subvencion
+        - subvenciones
+        - convocatoria
+    downrank:
+      - reason: association_or_entity_without_direct_person_benefit
+        weight: -3
+        when_text_any:
+          - asociaciones
+          - fundaciones
+          - entidades sin animo de lucro
+        unless_text_any:
+          - personas
+          - familias
+          - jovenes
+          - discapacidad
+          - dependencia
+          - vulnerabilidad
+      - reason: education_profile_better_fit
+        weight: -2
+        when_text_any:
+          - becas
+          - ayudas al estudio
+          - alumnado
+          - material escolar
+        unless_text_any:
+          - vulnerabilidad
+          - discapacidad
+          - dependencia
+          - alquiler
+
+  bdns-subvenciones:
+    downstream_project: subvenciones
+    purpose: "Broad grant and subsidy calls, including public/private beneficiaries, instruments, amount, issuer, sector, and territory."
+    include_terms:
+      strong:
+        - subvencion
+        - subvenciones
+        - convocatoria
+        - bases reguladoras
+        - concurrencia competitiva
+        - concesion directa
+        - presupuesto
+        - importe
+        - beneficiarios
+        - tiposBeneficiarios
+        - sectores
+        - regiones
+        - territorio
+        - instrumentos
+      supporting:
+        - organo
+        - entidad convocante
+        - actividad economica
+        - pyme
+        - empresas
+        - entidades locales
+        - asociaciones
+      generic:
+        - ayuda
+        - ayudas
+    allow_sector_or_company_only: true
+    downrank:
+      - reason: missing_structured_grant_context
+        weight: -2
+        when_missing_all:
+          - beneficiary_type
+          - instrument_type
+          - budget
+          - territorial_scope
+
+synthetic_cases:
+  - id: eduayudas_school_transport
+    profile: bdns-eduayudas
+    title: "Ayudas para transporte escolar del alumnado"
+    metadata:
+      resource_type: grant_call
+      application_end_date: "2026-09-15"
+      budget: 120000
+    expected: include
+    reasons:
+      - strong_profile_signal:transporte_escolar
+      - strong_profile_signal:alumnado
+      - deadline_present
+  - id: la_ayuda_young_rent
+    profile: bdns-la-ayuda
+    title: "Bono alquiler para jovenes"
+    metadata:
+      resource_type: grant_call
+      application_end_date: "2026-06-30"
+      budget: 500000
+    expected: include
+    reasons:
+      - strong_profile_signal:bono_alquiler
+      - strong_profile_signal:jovenes
+      - budget_or_amount_present
+  - id: subvenciones_company_sector
+    profile: bdns-subvenciones
+    title: "Subvenciones para digitalizacion de pymes industriales"
+    metadata:
+      resource_type: grant_call
+      application_end_date: "2026-07-31"
+      budget: 900000
+    expected: include
+    reasons:
+      - strong_profile_signal:subvenciones
+      - supporting_profile_signal:pyme
+      - allow_sector_or_company_only
+  - id: concession_excluded
+    profile: bdns-subvenciones
+    title: "Concesion de subvencion a beneficiario"
+    metadata:
+      resource_type: concession
+      application_end_date: "2026-07-31"
+    expected: exclude
+    reasons:
+      - hard_exclusion:concession_or_award
+  - id: closed_no_deadline_excluded
+    profile: bdns-la-ayuda
+    title: "Ayudas a familias"
+    metadata:
+      resource_type: grant_call
+      abierto: false
+    expected: exclude
+    reasons:
+      - hard_exclusion:closed_procedure
+      - hard_exclusion:missing_deadline
