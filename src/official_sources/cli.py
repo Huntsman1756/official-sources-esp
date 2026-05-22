@@ -1137,14 +1137,21 @@ def _run_search_bdns_calls(
 
 
 def _print_bdns_run_record(run_record: dict, stdout: TextIO) -> None:
+    sample_identifiers = run_record.get("sample_identifiers") or []
     print(
         " ".join(
             [
                 f"status={run_record['status']}",
+                f"bdns_result={run_record.get('bdns_result') or run_record['status']}",
                 f"official_identifier={run_record.get('official_identifier') or 'none'}",
                 f"documents_fetched={run_record['documents_fetched']}",
                 f"documents_new={run_record['documents_new']}",
                 f"documents_updated={run_record['documents_updated']}",
+                f"page_count={run_record.get('page_count', 0)}",
+                "pagination_limit_reached="
+                f"{_bool_token(run_record.get('pagination_limit_reached'))}",
+                "sample_identifiers="
+                f"{','.join(sample_identifiers) if sample_identifiers else 'none'}",
                 f"retry_count={run_record['retry_count']}",
                 f"throttle_triggered={run_record['throttle_triggered']}",
                 f"last_http_status={_status_value(run_record['last_http_status'])}",

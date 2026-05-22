@@ -15,6 +15,7 @@ from official_sources.sources.bdns.client import (
 from official_sources.sources.bdns.parser import (
     NO_RESULTS_STATUS,
     BDNSCallMetadata,
+    BDNSNotFoundError,
     parse_bdns_call_detail,
     parse_bdns_call_page,
 )
@@ -56,15 +57,26 @@ def ingest_bdns_latest(
             last_http_status=last_http_status or 200,
             retry_count=retry_count,
             throttle_triggered=throttle_triggered,
+            page_count=1,
+            pagination_limit_reached=False,
+            bdns_result="success" if page.status == "success" else "no_results",
         )
     except Exception as exc:
-        return _finish_failed(
-            repository,
-            run_id=run["id"],
-            error_message=str(exc),
-            last_http_status=last_http_status,
-            retry_count=retry_count,
-            throttle_triggered=throttle_triggered,
+        return _with_bdns_metadata(
+            _finish_failed(
+                repository,
+                run_id=run["id"],
+                error_message=str(exc),
+                last_http_status=last_http_status,
+                retry_count=retry_count,
+                throttle_triggered=throttle_triggered,
+            ),
+            official_identifier=None,
+            source_snapshot_hash=None,
+            bdns_result=_classify_bdns_error(exc),
+            page_count=0,
+            pagination_limit_reached=False,
+            sample_identifiers=[],
         )
 
 
@@ -120,6 +132,10 @@ def ingest_bdns_call(
             run_record,
             official_identifier=call.official_identifier,
             source_snapshot_hash=call.raw_metadata["detail_api_sha256"],
+            bdns_result="success",
+            page_count=1,
+            pagination_limit_reached=False,
+            sample_identifiers=[call.official_identifier],
         )
     except Exception as exc:
         return _with_bdns_metadata(
@@ -133,6 +149,10 @@ def ingest_bdns_call(
             ),
             official_identifier=None,
             source_snapshot_hash=None,
+            bdns_result=_classify_bdns_error(exc),
+            page_count=0,
+            pagination_limit_reached=False,
+            sample_identifiers=[],
         )
 
 
@@ -159,6 +179,10 @@ def search_bdns_calls(
     documents_updated = 0
     source_snapshot_hash: str | None = None
     last_http_status = None
+    page_count = 0
+    pagination_limit_reached = False
+    bdns_result = "no_results"
+    sample_identifiers: list[str] = []
     try:
         for page_number in range(1, max_pages + 1):
             source_url = build_bdns_search_url(
@@ -185,9 +209,11 @@ def search_bdns_calls(
                 payload = response.content
                 last_http_status = response.status_code
             page = parse_bdns_call_page(payload, source_url=source_url)
+            page_count += 1
             source_snapshot_hash = page.source_snapshot_hash
             if page.status == NO_RESULTS_STATUS:
                 break
+            bdns_result = "success"
             for call in page.calls:
                 existing = repository.get_document_by_external_id(call.external_id)
                 document = _upsert_call(repository, source_id=source["id"], call=call)
@@ -205,8 +231,12 @@ def search_bdns_calls(
                     documents_new += 1
                 else:
                     documents_updated += 1
+                if len(sample_identifiers) < 5:
+                    sample_identifiers.append(call.official_identifier)
             if page.last:
                 break
+            if page_number == max_pages:
+                pagination_limit_reached = True
         run_record = repository.finish_ingestion_run(
             run_id=run["id"],
             status="success",
@@ -219,13 +249,25 @@ def search_bdns_calls(
             run_record,
             official_identifier=None,
             source_snapshot_hash=source_snapshot_hash,
+            bdns_result=bdns_result,
+            page_count=page_count,
+            pagination_limit_reached=pagination_limit_reached,
+            sample_identifiers=sample_identifiers,
         )
     except Exception as exc:
-        return _finish_failed(
-            repository,
-            run_id=run["id"],
-            error_message=str(exc),
-            last_http_status=last_http_status,
+        return _with_bdns_metadata(
+            _finish_failed(
+                repository,
+                run_id=run["id"],
+                error_message=str(exc),
+                last_http_status=last_http_status,
+            ),
+            official_identifier=None,
+            source_snapshot_hash=source_snapshot_hash,
+            bdns_result=_classify_bdns_error(exc),
+            page_count=page_count,
+            pagination_limit_reached=pagination_limit_reached,
+            sample_identifiers=sample_identifiers,
         )
 
 
@@ -239,6 +281,9 @@ def _store_call_page(
     last_http_status: int,
     retry_count: int,
     throttle_triggered: bool,
+    page_count: int,
+    pagination_limit_reached: bool,
+    bdns_result: str,
 ) -> dict:
     source = repository.ensure_official_source_bdns()
     documents_new = 0
@@ -273,6 +318,10 @@ def _store_call_page(
         run_record,
         official_identifier=None,
         source_snapshot_hash=page.source_snapshot_hash,
+        bdns_result=bdns_result,
+        page_count=page_count,
+        pagination_limit_reached=pagination_limit_reached,
+        sample_identifiers=[call.official_identifier for call in page.calls[:5]],
     )
 
 
@@ -324,9 +373,23 @@ def _with_bdns_metadata(
     *,
     official_identifier: str | None,
     source_snapshot_hash: str | None,
+    bdns_result: str,
+    page_count: int,
+    pagination_limit_reached: bool,
+    sample_identifiers: list[str],
 ) -> dict:
     return {
         **run_record,
         "official_identifier": official_identifier,
         "source_snapshot_hash": source_snapshot_hash,
+        "bdns_result": bdns_result,
+        "page_count": page_count,
+        "pagination_limit_reached": pagination_limit_reached,
+        "sample_identifiers": sample_identifiers,
     }
+
+
+def _classify_bdns_error(exc: Exception) -> str:
+    if isinstance(exc, BDNSNotFoundError):
+        return "not_found"
+    return "failed"

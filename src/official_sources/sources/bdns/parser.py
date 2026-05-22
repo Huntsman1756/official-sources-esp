@@ -10,6 +10,10 @@ from official_sources.sources.bdns.client import build_bdns_call_detail_url, val
 NO_RESULTS_STATUS = "no_results"
 
 
+class BDNSNotFoundError(ValueError):
+    pass
+
+
 @dataclass(frozen=True)
 class BDNSCallMetadata:
     external_id: str
@@ -67,6 +71,8 @@ def parse_bdns_call_page(payload: bytes, *, source_url: str) -> BDNSCallPage:
 def parse_bdns_call_detail(payload: bytes, *, num_conv: str) -> BDNSCallMetadata:
     raw_hash = sha256_bytes(payload)
     data = json.loads(payload.decode("utf-8-sig"))
+    if data.get("status") == 404 or _clean_optional_text(data.get("error")) == "Not Found":
+        raise BDNSNotFoundError(f"BDNS call detail not found: {num_conv}")
     code = _first_text(data.get("codigoBDNS"), data.get("codigoBdns"), data.get("codigo"), num_conv)
     if not code:
         raise ValueError("BDNS call detail is missing codigoBDNS.")
@@ -126,7 +132,13 @@ def _page_items(data: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _call_from_list_item(item: dict[str, Any]) -> BDNSCallMetadata:
-    code = _first_text(item.get("numeroConvocatoria"), item.get("codigoBDNS"), item.get("codigo"))
+    code = _first_text(
+        item.get("numeroConvocatoria"),
+        item.get("codigoBDNS"),
+        item.get("codigoBdns"),
+        item.get("codigo"),
+        item.get("id"),
+    )
     if not code:
         raise ValueError("BDNS call list item is missing numeroConvocatoria.")
     validate_bdns_num_conv(code)

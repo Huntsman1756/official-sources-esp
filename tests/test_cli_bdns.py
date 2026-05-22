@@ -33,6 +33,12 @@ def test_ingest_bdns_latest_cli_creates_ingestion_run(tmp_path, capsys):
     assert "command_started=ingest-bdns-latest source_code=BDNS target=latest" in captured.out
     assert "status=success" in captured.out
     assert "documents_fetched=1" in captured.out
+    assert "documents_new=1" in captured.out
+    assert "documents_updated=0" in captured.out
+    assert "bdns_result=success" in captured.out
+    assert "page_count=1" in captured.out
+    assert "pagination_limit_reached=false" in captured.out
+    assert "sample_identifiers=BDNS:907362" in captured.out
     assert "source_snapshot_hash=" in captured.out
 
 
@@ -57,6 +63,25 @@ def test_ingest_bdns_call_cli_creates_call_detail(tmp_path, capsys):
     assert document["raw_metadata_json"]
     assert "command_started=ingest-bdns-call source_code=BDNS num_conv=907042" in captured.out
     assert "official_identifier=BDNS:907042" in captured.out
+    assert "bdns_result=success" in captured.out
+    assert "sample_identifiers=BDNS:907042" in captured.out
+
+
+def test_ingest_bdns_call_cli_reports_not_found(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+
+    exit_code = run(
+        ["--db-path", str(db_path), "ingest-bdns-call", "--num-conv", "999999"],
+        bdns_call_fetcher=lambda _num_conv: _fixture_bytes("bdns_not_found.json"),
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "status=failed" in captured.out
+    assert "bdns_result=not_found" in captured.out
 
 
 def test_search_bdns_calls_cli_requires_page_limits(tmp_path, capsys):
@@ -85,3 +110,63 @@ def test_search_bdns_calls_cli_requires_page_limits(tmp_path, capsys):
 
     assert exit_code == 2
     assert "max-pages" in captured.err
+
+
+def test_search_bdns_calls_cli_reports_pagination_and_samples(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "search-bdns-calls",
+            "--date-from",
+            "20/05/2026",
+            "--date-to",
+            "20/05/2026",
+            "--page-size",
+            "10",
+            "--max-pages",
+            "1",
+        ],
+        bdns_search_fetcher=lambda **_kwargs: _fixture_bytes("bdns_search_convocatorias.json"),
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "status=success" in captured.out
+    assert "bdns_result=success" in captured.out
+    assert "page_count=1" in captured.out
+    assert "pagination_limit_reached=false" in captured.out
+    assert "sample_identifiers=BDNS:907042" in captured.out
+
+
+def test_search_bdns_calls_cli_reports_no_results(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "search-bdns-calls",
+            "--page-size",
+            "10",
+            "--max-pages",
+            "2",
+        ],
+        bdns_search_fetcher=lambda **_kwargs: _fixture_bytes("bdns_empty_results.json"),
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "status=success" in captured.out
+    assert "bdns_result=no_results" in captured.out
+    assert "documents_fetched=0" in captured.out
+    assert "page_count=1" in captured.out
+    assert "sample_identifiers=none" in captured.out
