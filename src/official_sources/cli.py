@@ -63,6 +63,8 @@ from official_sources.storage.repository import (
     OfficialSourcesRepository,
 )
 
+SOURCE_CANDIDATE_SOURCE_CODES = ("BOE", "BOJA", "DOGV", "BOCM", "BDNS")
+
 LA_AYUDA_PROFILE_KEYWORDS = [
     "beca",
     "becas",
@@ -524,23 +526,23 @@ def build_parser() -> argparse.ArgumentParser:
         subparsers,
         "find-source-candidates",
         description=(
-            "Preferred generic source-aware candidate finder. Creates human-review candidates "
-            "by keyword matching locally stored official-source titles and metadata only. This "
-            "is not legal classification and may produce false positives."
+            "find-source-candidates = preferred generic command. Creates human-review "
+            "candidates by keyword matching locally stored official-source titles and metadata "
+            "only. This is not legal classification and may produce false positives."
         ),
         help=(
-            "Preferred generic source-aware candidate finder for locally stored official-source "
-            "metadata."
+            "find-source-candidates = preferred generic command for locally stored "
+            "official-source metadata."
         ),
     )
     _add_find_candidates_parser(
         subparsers,
         "find-boe-candidates",
         description=(
-            "Legacy BOE-default candidate finder. This command is source-aware and remains "
-            "backwards-compatible; prefer find-source-candidates for new source families. It "
-            "matches locally stored official-source titles and metadata only, is not legal "
-            "classification, and may produce false positives."
+            "find-boe-candidates = backwards-compatible BOE-default/source-aware command. "
+            "Prefer find-source-candidates for new source families. It matches locally stored "
+            "official-source titles and metadata only, is not legal classification, and may "
+            "produce false positives."
         ),
         help=("Legacy BOE-default source-aware candidate finder. Prefer find-source-candidates."),
     )
@@ -559,9 +561,12 @@ def _add_find_candidates_parser(
     candidates.add_argument("--date-to", required=True, help="End date in YYYY-MM-DD format.")
     candidates.add_argument(
         "--source",
-        choices=["BOE", "BOJA"],
+        choices=SOURCE_CANDIDATE_SOURCE_CODES,
         default="BOE",
-        help="Official source code to scan. Default: BOE.",
+        help=(
+            "Official source code to scan. Supported: "
+            f"{', '.join(SOURCE_CANDIDATE_SOURCE_CODES)}. Default: BOE."
+        ),
     )
     candidates.add_argument(
         "--keywords",

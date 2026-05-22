@@ -231,12 +231,12 @@ official-sources download-boe-artifacts --candidate-ids 1,3,10 --types pdf
 
 `find-source-candidates` is the preferred generic command for candidate prefiltering across
 supported official sources. It performs keyword matching on stored official document titles and
-metadata only. It does not parse full document content, call BOE/BOJA live APIs, download
-artifacts, use LLMs, classify legal meaning, approve anything, publish anything, or write to
-downstream projects.
+metadata only. Supported `--source` values are `BOE`, `BOJA`, `DOGV`, `BOCM`, and `BDNS`. It
+does not parse full document content, call live source APIs, download artifacts, use LLMs,
+classify legal meaning, approve anything, publish anything, or write to downstream projects.
 
-`find-boe-candidates` remains as a backwards-compatible legacy/BOE-default command. It is
-source-aware and accepts `--source`, but new operational docs should prefer
+`find-boe-candidates` remains as a backwards-compatible BOE-default/source-aware command. It is
+source-aware and accepts the same `--source` values, but new operational docs should prefer
 `find-source-candidates`.
 
 Safe preview modes are available:
@@ -255,6 +255,11 @@ creating `source_candidates`. Write mode is explicit: operators must pass `--wri
 candidate rows. In dry-run mode, `--limit` controls the number of sample matches printed. In
 write mode, `--limit` caps the number of candidates created. It does not change the date range
 scanned.
+
+Dry-run is complete for the local candidate-prefilter layer for every supported source: it scans
+only metadata already stored in the local database and does not fetch missing days, details, PDFs,
+XML, HTML, or downstream evidence. If a source has no local metadata for the requested date range,
+the dry-run result is an empty scan rather than a live backfill.
 
 Results will include false positives. All candidates default to
 `review_status=human_review_required`.
