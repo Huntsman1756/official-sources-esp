@@ -105,6 +105,7 @@ Latest audit:
 - `docs/reports/AUTONOMOUS_BULLETIN_SOURCE_AUDIT_2026-05-20.md`
 - `docs/reports/BOCM_SOURCE_AUDIT_2026-05-21.md`
 - `docs/reports/BOCM_DATE_TO_ISSUE_DISCOVERY_2026-05-21.md`
+- `docs/reports/DOGV_SOURCE_AUDIT_2026-05-21.md`
 
 Recommended first implementation:
 
@@ -134,8 +135,9 @@ Recommended next platform/downstream step:
 
 Recommended next autonomous-source option:
 
-- `TASK-AUTO-BOCM-003 - Controlled BOCM 30-day metadata backfill`. The BOCM metadata MVP is
-  implemented and passed a one-date live smoke with no PDFs, candidates, or downstream writes.
+- `TASK-AUTO-DOGV-002 - DOGV metadata adapter MVP`. BOCM remains paused on the incomplete
+  metadata-only backfill because `2026-05-06` still fails from the VPS; DOGV has a direct
+  official JSON date endpoint and is the cleaner next source to test.
 
 ## Future phase - EUR-Lex
 
