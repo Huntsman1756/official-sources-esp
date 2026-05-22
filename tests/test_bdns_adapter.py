@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -27,6 +28,10 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 def _fixture_bytes(name: str) -> bytes:
     return (FIXTURES / name).read_bytes()
+
+
+def _payload(value: dict) -> bytes:
+    return json.dumps(value).encode("utf-8")
 
 
 def test_bdns_source_record_creation(repository):
@@ -83,6 +88,52 @@ def test_search_result_parsing_handles_content_shape():
     assert page.calls[0].raw_metadata["source_family"] == "grants_registry"
 
 
+def test_list_parsing_accepts_items_shape_and_codigo_bdns_variant():
+    payload = _payload(
+        {
+            "items": [
+                {
+                    "codigoBdns": "907777",
+                    "descripcion": "Convocatoria con codigoBdns",
+                    "fechaRecepcion": "2026-05-19",
+                    "nivel2": "ORGANO CONVOCANTE",
+                }
+            ],
+            "totalElements": 1,
+            "totalPages": 1,
+            "number": 0,
+            "last": True,
+        }
+    )
+
+    page = parse_bdns_call_page(payload, source_url=build_bdns_search_url(page_size=10))
+
+    assert page.status == "success"
+    assert page.calls[0].external_id == "BDNS:907777"
+    assert page.calls[0].publication_date == "2026-05-19"
+    assert page.calls[0].department == "ORGANO CONVOCANTE"
+
+
+def test_list_parsing_accepts_id_when_num_conv_aliases_are_absent():
+    payload = _payload(
+        {
+            "content": [
+                {
+                    "id": 907778,
+                    "descripcion": "Convocatoria con id como identificador",
+                    "fechaRegistro": "2026-05-18",
+                }
+            ]
+        }
+    )
+
+    page = parse_bdns_call_page(payload, source_url=build_bdns_latest_url(page_size=1))
+
+    assert page.status == "success"
+    assert page.calls[0].external_id == "BDNS:907778"
+    assert page.calls[0].publication_date == "2026-05-18"
+
+
 def test_detail_by_num_conv_parsing_preserves_fields_and_urls():
     payload = _fixture_bytes("bdns_convocatoria_detail.json")
 
@@ -101,6 +152,31 @@ def test_detail_by_num_conv_parsing_preserves_fields_and_urls():
         "https://www.euskadi.eus/ayuda_subvencion/2026/ctp-2026/web01-tramite/es/"
     )
     assert detail.raw_metadata["base_regulation_url"] == "https://www.euskadi.eus/bases-reguladoras"
+
+
+@pytest.mark.parametrize(
+    ("amount_field", "amount_value"),
+    [
+        ("presupuestoTotal", 1234),
+        ("presupuesto", "1.234,56"),
+        ("importeTotal", 9876.5),
+        ("importe", "5000"),
+    ],
+)
+def test_detail_parsing_accepts_amount_variants(amount_field, amount_value):
+    detail_payload = {
+        "codigo": "907779",
+        "descripcion": "Convocatoria con importe variable",
+        "fechaRegistro": "2026-05-17",
+        amount_field: amount_value,
+    }
+
+    detail = parse_bdns_call_detail(_payload(detail_payload), num_conv="907779")
+
+    assert detail.raw_metadata["budget"] == amount_value
+    assert detail.department is None
+    assert detail.section is None
+    assert detail.document_type is None
 
 
 def test_empty_results_parse_as_no_results():
@@ -123,6 +199,27 @@ def test_missing_num_conv_detail_records_failed_ingestion(repository):
     assert run["status"] == "failed"
     assert run["documents_fetched"] == 0
     assert repository.get_document_by_external_id("BDNS:999999") is None
+
+
+def test_detail_without_num_conv_is_classified_as_not_found(repository):
+    run = ingest_bdns_call(
+        repository,
+        num_conv="999999",
+        detail_payload=_fixture_bytes("bdns_not_found.json"),
+    )
+
+    assert run["bdns_result"] == "not_found"
+
+
+def test_malformed_detail_payload_is_classified_as_failed(repository):
+    run = ingest_bdns_call(
+        repository,
+        num_conv="999998",
+        detail_payload=_payload({"codigoBDNS": "999998", "fechaPublicacion": "2026-05-16"}),
+    )
+
+    assert run["status"] == "failed"
+    assert run["bdns_result"] == "failed"
 
 
 def test_bdns_latest_ingestion_stores_calls_without_candidates_or_artifacts(repository):
@@ -150,6 +247,10 @@ def test_bdns_latest_ingestion_stores_calls_without_candidates_or_artifacts(repo
     assert candidate_count == 0
     assert attempt_count == 0
     assert run["source_snapshot_hash"] == sha256_bytes(payload)
+    assert run["bdns_result"] == "success"
+    assert run["page_count"] == 1
+    assert run["pagination_limit_reached"] is False
+    assert run["sample_identifiers"] == ["BDNS:907362"]
 
 
 def test_bdns_call_ingestion_supports_citation_generation(repository):
@@ -185,6 +286,73 @@ def test_bdns_search_enforces_pagination_limit(repository):
             page_size=10,
             max_pages=11,
         )
+
+
+def test_bdns_search_stops_at_max_pages_and_reports_limit(repository):
+    payload = _payload(
+        {
+            "content": [
+                {
+                    "codigoBDNS": "907780",
+                    "descripcion": "Pagina uno",
+                    "fechaPublicacion": "2026-05-16",
+                }
+            ],
+            "totalElements": 2,
+            "totalPages": 2,
+            "number": 0,
+            "last": False,
+        }
+    )
+    calls = []
+
+    def fetcher(**kwargs):
+        calls.append(kwargs["page"])
+        return payload
+
+    run = search_bdns_calls(
+        repository,
+        date_from="20/05/2026",
+        date_to="20/05/2026",
+        page_size=1,
+        max_pages=1,
+        fetcher=fetcher,
+    )
+
+    candidate_count = repository.connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    attempt_count = repository.connection.execute(
+        "SELECT COUNT(*) AS count FROM artifact_download_attempts"
+    ).fetchone()["count"]
+
+    assert calls == [1]
+    assert run["status"] == "success"
+    assert run["documents_fetched"] == 1
+    assert run["page_count"] == 1
+    assert run["pagination_limit_reached"] is True
+    assert run["bdns_result"] == "success"
+    assert run["sample_identifiers"] == ["BDNS:907780"]
+    assert candidate_count == 0
+    assert attempt_count == 0
+
+
+def test_bdns_search_empty_result_reports_no_results(repository):
+    run = search_bdns_calls(
+        repository,
+        date_from="20/05/2026",
+        date_to="20/05/2026",
+        page_size=10,
+        max_pages=2,
+        fetcher=lambda **_kwargs: _fixture_bytes("bdns_empty_results.json"),
+    )
+
+    assert run["status"] == "success"
+    assert run["bdns_result"] == "no_results"
+    assert run["documents_fetched"] == 0
+    assert run["page_count"] == 1
+    assert run["pagination_limit_reached"] is False
+    assert run["sample_identifiers"] == []
 
 
 def test_bdns_mvp_does_not_ingest_concesiones(repository):
