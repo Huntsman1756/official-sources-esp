@@ -39,6 +39,7 @@ Scope:
 - ADR-001 official publication hierarchy.
 - Downstream onboarding kit for reusable project integrations.
 - BOCM metadata-only adapter MVP.
+- DOGV metadata-only adapter MVP and controlled 30-day metadata backfill.
 
 ## Not Implemented
 
@@ -54,6 +55,7 @@ Scope:
 - Legal interpretation.
 - Automatic approval.
 - Automatic publication.
+- BDNS grants/subsidies registry adapter.
 
 ## Follow-up - Persistent database operations
 
@@ -117,6 +119,23 @@ Recommended first implementation:
 - `TASK-AUTO-002 - BOJA adapter MVP` - implemented.
 
 Future autonomous/statutory territory adapter MVPs must start metadata/index-only until separately approved. Do not create candidates, download large PDFs, write downstream evidence, or implement publication decisions in a first adapter MVP.
+
+## Future phase - Grants registry sources
+
+Status: BDNS source audit completed.
+
+Latest audit:
+
+- `docs/reports/BDNS_SOURCE_AUDIT_2026-05-21.md`
+
+Recommendation:
+
+- `TASK-BDNS-002 - BDNS metadata adapter MVP`
+
+BDNS should be treated as a primary grants/subsidies registry, not as another bulletin. Initial
+implementation should be metadata-only, focused on convocatorias, raw JSON hashing, official
+identifiers, citation metadata, and strict pagination/date caps. Candidate extraction, concessions,
+bulk historical backfills, and downstream exports require separate approval.
 
 Latest BOJA pilot result:
 

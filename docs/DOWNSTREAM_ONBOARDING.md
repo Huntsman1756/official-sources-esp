@@ -24,6 +24,10 @@ It provides:
 It is designed to preserve source provenance and review safety while downstream projects make their
 own domain decisions.
 
+BDNS is expected to become a distinct grants/subsidies registry source family. Downstreams should
+treat BDNS records as official evidence for grants workflows, but not as automatic eligibility,
+approval, or publication decisions.
+
 ## What `official-sources` Is Not
 
 `official-sources` is not:

@@ -24,15 +24,51 @@ Implemented now:
 - Tier 1: BOE consolidated index and block retrieval.
 - Tier 2: BOJA metadata-first autonomous source pilot.
 - Tier 2: BOCM metadata-only adapter MVP.
+- Tier 2: DOGV metadata-only adapter MVP.
 
 Not implemented:
 
 - Tier 2: additional autonomous/statutory territory bulletins.
+- BDNS grants/subsidies registry adapter.
 - Tier 3: provincial/local bulletins.
 - Tier 4: EUR-Lex/DOUE.
 - TED/OJ S procurement adapter.
 
 Do not use `autonomous BOE`. BOE is the state-level source and not a generic synonym for official bulletins.
+
+## BDNS Source Policy
+
+BDNS / SNPSAP is an official grants and subsidies registry, not a bulletin.
+
+Audited official surfaces:
+
+```text
+GET https://www.infosubvenciones.es/bdnstrans/api/convocatorias/ultimas
+GET https://www.infosubvenciones.es/bdnstrans/api/convocatorias/busqueda
+GET https://www.infosubvenciones.es/bdnstrans/api/convocatorias?numConv=<codigoBDNS>
+GET https://www.infosubvenciones.es/bdnstrans/api/concesiones/busqueda
+```
+
+BDNS should be modeled as a primary grants/subsidies source family. It may support downstream
+projects such as EduAyudas, `la-ayuda`, and subsidy-focused products more directly than bulletin
+metadata alone.
+
+Initial BDNS implementation must be metadata-only and focused on convocatorias unless a later task
+explicitly expands scope. Concesiones may include beneficiary data and retention/privacy constraints,
+so they require a separate privacy-aware design step.
+
+Identifier policy:
+
+```text
+grant call official_identifier=BDNS-<codigoBDNS>
+grant award official_identifier=BDNS-CONCESION-<codConcesion or id>
+```
+
+Raw JSON response bytes must be hashed before parsing. Search filters must use the Spanish date
+format required by the official API (`DD/MM/YYYY`). Pagination must be capped and audited during
+early pilots.
+
+BDNS records must not imply approval, eligibility, legal interpretation, or downstream publication.
 
 ## BOE MVP Source
 
