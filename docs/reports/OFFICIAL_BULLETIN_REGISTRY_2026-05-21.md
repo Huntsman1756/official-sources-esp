@@ -8,7 +8,9 @@ Source index rechecked: 2026-05-22.
 ## Objective
 
 Create a canonical static registry of official bulletin sources for `official-sources` using the
-BOE "Otros diarios oficiales" page as the starting official index.
+BOE "Otros diarios oficiales" page as the starting official index. The registry also records BDNS
+as a non-bulletin official grants registry because its MVP status and ingestion priority are part
+of the current source plan.
 
 Source index:
 
@@ -46,10 +48,12 @@ notes
 
 | coverage group | count |
 | --- | ---: |
-| State project source | 1 |
+| State project/non-BOE-indexed official sources | 2 |
 | European source from BOE index | 1 |
 | Autonomous/statutory territory sources from BOE index | 19 |
 | Provincial sources from BOE index | 43 |
+
+Total sources listed: 65.
 
 The autonomous/statutory count includes the 17 autonomous/community-level sources plus BOCCE and
 BOME for Ceuta and Melilla.
@@ -60,17 +64,20 @@ BOME for Ceuta and Melilla.
 | --- | --- | --- |
 | BOE | `implemented` | Existing Tier 1 source in this project. |
 | BOJA | `pilot_validated` | BOJA metadata adapter and controlled pilot have been validated. |
+| DOGV | `mvp_implemented_backfill_validated` | Metadata MVP and controlled 30-day metadata backfill have been validated. |
 | BOCM | `mvp_implemented_paused` | Metadata MVP exists, but broader work is paused on observed connectivity/endpoint instability. |
-| DOGV | `audited_p1` | DOGV audit found direct official JSON by date and recommends a metadata adapter MVP. |
+| BDNS | `mvp_implemented` | Metadata-only MVP exists for public grant calls (`convocatorias`). |
 | All other BOE-indexed sources | `not_audited` | Listed by the BOE index but not yet audited for adapter feasibility. |
 
 ## Recommended Next Source Work
 
-1. `TASK-AUTO-DOGV-002 - DOGV metadata adapter MVP`.
-   DOGV should be next because the audit found direct official JSON by date.
+1. DOGV candidate dry-run.
+   DOGV should be next because its metadata MVP and controlled backfill are already validated.
 2. BOCM retry later.
-   Keep BOCM paused until the connectivity/endpoint instability can be retried cleanly.
-3. Provincial bulletins after one more autonomous source is stable.
+   Keep BOCM paused until the connectivity/endpoint issue can be resolved and retried cleanly.
+3. BDNS controlled ingestion.
+   BDNS is high value for grants/subsidies and should stay ahead of broad bulletin expansion.
+4. Provincial bulletins after a strategy is defined.
    The BOE page is a good coverage inventory, but BOPs are heterogeneous and need individual
    source audits before adapter work.
 

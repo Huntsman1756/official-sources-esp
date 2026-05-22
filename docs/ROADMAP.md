@@ -163,10 +163,9 @@ Recommended next platform/downstream step:
 
 Recommended next autonomous-source option:
 
-- `TASK-AUTO-DOGV-003 - Controlled DOGV 30-day metadata backfill`. The DOGV metadata MVP is
-  implemented and passed a one-date live smoke with no PDFs, candidates, or downstream writes.
-  BOCM remains paused on the incomplete metadata-only backfill because `2026-05-06` still fails
-  from the VPS.
+- DOGV candidate dry-run. The DOGV metadata MVP and controlled 30-day metadata backfill are
+  validated with no PDFs, candidates, or downstream writes. BOCM remains paused on the incomplete
+  metadata-only backfill because `2026-05-06` still fails from the VPS.
 
 ## Future phase - EUR-Lex
 

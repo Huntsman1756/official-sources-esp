@@ -18,22 +18,17 @@ Last checked: 2026-05-22.
 | --- | --- |
 | `implemented` | Adapter/source support is already implemented and validated in this project. |
 | `pilot_validated` | Metadata/source pilot has been validated, but the source is not a fully generalized coverage surface. |
+| `mvp_implemented_backfill_validated` | Metadata MVP exists and controlled metadata backfill has been validated. |
 | `mvp_implemented_paused` | MVP exists, but further backfill/source work is paused on a known operational issue. |
-| `audited_p1` | Source has a completed audit and is recommended as a P1 implementation candidate. |
+| `mvp_implemented` | Metadata MVP exists for the official source. |
 | `not_audited` | Source is listed in the official registry but has not been assessed for adapter feasibility. |
-| `audited` | Source has been assessed but no adapter decision is recorded here. |
-| `mvp_ready` | Source audit has produced enough detail to start an MVP implementation. |
-| `adapter_implemented` | Adapter exists, but this registry has not recorded a broader validation status. |
-| `backfill_validated` | Backfill has been validated for the source. |
-| `candidate_profile_validated` | Candidate filtering/profile has been validated for the source. |
-| `paused` | Source work is deliberately paused. |
-| `defer` | Source is deliberately deferred. |
 
 ## Coverage Matrix
 
 | source_code | official_name | level | jurisdiction | territory | official_url | boe_index_label | current_status | adapter_priority | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | BOE | Boletin Oficial del Estado | state | ES | Spain | https://www.boe.es/diario_boe/ | Project Tier 1 source, not part of BOE "Otros diarios oficiales" page | implemented | P0 | Mature project source for state publications, artifacts, and consolidated legislation. |
+| BDNS | Base de Datos Nacional de Subvenciones / Sistema Nacional de Publicidad de Subvenciones y Ayudas Publicas | state | ES | Spain | https://www.infosubvenciones.es/bdnstrans/GE/es/index | Not listed on BOE "Otros diarios oficiales"; tracked here as an official high-value grants registry | mvp_implemented | P0 | Metadata-only MVP is implemented for public grant calls (`convocatorias`). BDNS ingestion is high value for subsidy-focused products, but BDNS is not a bulletin source. |
 | DOUE | Diario Oficial de la Union Europea | eu | EU | European Union | http://eur-lex.europa.eu/JOIndex.do?ihmlang=es | Diario Oficial de la Union Europea (DOUE) | not_audited | not_prioritized | Listed by BOE under Union Europea. Treat as registry coverage only until a EUR-Lex/DOUE audit exists. |
 | BOJA | Boletin Oficial de la Junta de Andalucia | autonomous | ES-AN | Andalucia | https://www.juntadeandalucia.es/eboja | Boletin Oficial de la Junta de Andalucia (BOJA) y base de datos de legislacion | pilot_validated | done | Metadata adapter and controlled pilot have been validated; candidate/downstream work remains controlled. |
 | BOA | Boletin Oficial de Aragon | autonomous | ES-AR | Aragon | https://www.boa.aragon.es/ | Boletin Oficial de Aragon (BOA) y base de datos de legislacion | not_audited | not_prioritized | Registry entry only. Audit endpoint model, identifiers, robots, and fixture strategy before implementation. |
@@ -51,7 +46,7 @@ Last checked: 2026-05-22.
 | BORM | Boletin Oficial de la Region de Murcia | autonomous | ES-MC | Region de Murcia | https://www.borm.es/#/home/ | Boletin Oficial de la Region de Murcia (BORM) | not_audited | not_prioritized | Registry entry only. BOE also links a separate legislation database for this territory. |
 | BON | Boletin Oficial de Navarra | autonomous | ES-NC | Comunidad Foral de Navarra | http://www.navarra.es/home_es/Actualidad/BON/ | Boletin Oficial de Navarra (BON) | not_audited | not_prioritized | Registry entry only. BOE also links a separate legislation database for this territory. |
 | BOPV | Boletin Oficial del Pais Vasco | autonomous | ES-PV | Pais Vasco | https://www.euskadi.eus/y22-bopv/es/bopv2/datos/Ultimo.shtml | Boletin Oficial del Pais Vasco (BOPV) | not_audited | not_prioritized | Registry entry only. BOE also links a separate legislation database for this territory. |
-| DOGV | Diari Oficial de la Generalitat Valenciana | autonomous | ES-VC | Comunitat Valenciana | https://dogv.gva.es/es/inici | Diari Oficial de la Generalitat Valenciana (DOGV) y base de datos de legislacion | audited_p1 | P1 | Audit found direct official JSON by date. Recommended next adapter MVP. |
+| DOGV | Diari Oficial de la Generalitat Valenciana | autonomous | ES-VC | Comunitat Valenciana | https://dogv.gva.es/es/inici | Diari Oficial de la Generalitat Valenciana (DOGV) y base de datos de legislacion | mvp_implemented_backfill_validated | P1 | Metadata MVP and controlled 30-day metadata backfill are validated. Recommended next step: candidate dry-run, not more adapter discovery. |
 | BOCCE | Boletin Oficial de la Ciudad Autonoma de Ceuta | statutory_city | ES-CE | Ceuta | http://www.ceuta.es/ceuta/documentos/ | Boletin Oficial de la Ciudad Autonoma de Ceuta (BOCCE) | not_audited | not_prioritized | Registry entry only. Prior audit notes suggest deferring implementation until another cleaner autonomous adapter is stable. |
 | BOME | Boletin Oficial de la Ciudad Autonoma de Melilla | statutory_city | ES-ML | Melilla | https://bomemelilla.es/ | Boletin Oficial de la Ciudad Autonoma de Melilla (BOME) | not_audited | not_prioritized | Registry entry only. Prior audit notes suggest deferring implementation until another cleaner autonomous adapter is stable. |
 | BOP_A_CORUNA | Boletin Oficial de la Provincia de A Coruna | provincial | A Coruna | A Coruna | https://bop.dacoruna.gal/bopportal/ | A Coruna | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
@@ -102,17 +97,19 @@ Last checked: 2026-05-22.
 
 Recommended next audits and implementation work:
 
-1. `TASK-AUTO-DOGV-002 - DOGV metadata adapter MVP`: DOGV is the cleanest next autonomous source
-   because the source audit found direct official JSON by date.
+1. DOGV candidate dry-run next: DOGV already has a validated metadata MVP and controlled metadata
+   backfill, so the next useful step is a constrained candidate dry-run.
 2. BOCM retry later: keep BOCM paused until the connectivity/endpoint instability observed during
-   the metadata backfill can be retried cleanly.
-3. Provincial bulletins: audit BOP sources after one more autonomous source is stable. The BOE page
-   is useful as coverage inventory, but each provincial source needs its own endpoint, identifier,
+   the metadata backfill can be retried cleanly and the endpoint issue is resolved.
+3. BDNS ingestion: keep BDNS high priority because public grant calls are high-value source data
+   for subsidy-focused downstream products.
+4. Provincial bulletins: defer BOP sources until a provincial strategy is defined. The BOE page is
+   useful as coverage inventory, but each provincial source needs its own endpoint, identifier,
    robots, fixture, and citation assessment.
 
 ## Counts
 
-- State sources listed: 1.
+- State sources listed: 2, including BDNS as a non-bulletin official grants registry.
 - European sources listed from BOE index: 1.
 - Autonomous/statutory territory sources listed from BOE index: 19.
 - Provincial sources listed from BOE index: 43.
