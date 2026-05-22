@@ -1894,6 +1894,13 @@ def test_find_source_candidates_dogv_profile_filters_noise_and_keeps_direct_aid(
             "III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
         ),
         (
+            "DOGV:vineyard-sector",
+            "Extracto por el que se amplia el plazo de presentacion de solicitudes "
+            "de pago de las ayudas a la reestructuracion y reconversion de vinedo",
+            "Agencia Valenciana de Fomento y Garantia Agraria",
+            "III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
+        ),
+        (
             "DOGV:fp-admission",
             "Resolucion por la que se dictan instrucciones del procedimiento de admision "
             "y matricula en formacion profesional",
@@ -1938,10 +1945,10 @@ def test_find_source_candidates_dogv_profile_filters_noise_and_keeps_direct_aid(
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "documents_scanned=10" in captured.out
-    assert "matches_total=10" in captured.out
+    assert "documents_scanned=11" in captured.out
+    assert "matches_total=11" in captured.out
     assert "matches_after_filters=3" in captured.out
-    assert "excluded_by_keyword_rules=7" in captured.out
+    assert "excluded_by_keyword_rules=8" in captured.out
     assert "DOGV:transporte-escolar" in captured.out
     assert "DOGV:ayudas-estudio" in captured.out
     assert "DOGV:vivienda-jovenes" in captured.out
@@ -1950,6 +1957,7 @@ def test_find_source_candidates_dogv_profile_filters_noise_and_keeps_direct_aid(
     assert "DOGV:oposiciones-vivienda" not in captured.out
     assert "DOGV:concesion-result" not in captured.out
     assert "DOGV:empresa-sectorial" not in captured.out
+    assert "DOGV:vineyard-sector" not in captured.out
     assert "DOGV:fp-admission" not in captured.out
     assert "DOGV:university-award" not in captured.out
     assert "score_reasons=" in captured.out
