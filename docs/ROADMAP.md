@@ -100,6 +100,11 @@ Excluded unless separately specified:
 
 Status: BOJA pilot closed through reviewed evidence decisions.
 
+Coverage registry:
+
+- `docs/OFFICIAL_BULLETIN_REGISTRY.md`
+- `docs/reports/OFFICIAL_BULLETIN_REGISTRY_2026-05-21.md`
+
 Latest audit:
 
 - `docs/reports/AUTONOMOUS_BULLETIN_SOURCE_AUDIT_2026-05-20.md`
