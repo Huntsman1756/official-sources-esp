@@ -1834,6 +1834,156 @@ def test_find_boe_candidates_boja_profile_allows_young_housing_context(tmp_path,
     assert "BOJA:young-rent" in captured.out
 
 
+def test_find_source_candidates_dogv_profile_filters_noise_and_keeps_direct_aid(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    dogv_source = repository.ensure_official_source_dogv()
+    documents = [
+        (
+            "DOGV:generic-ayudas",
+            "Resolucion de concesion de ayudas a entidades locales",
+            "Vicepresidencia Segunda y Conselleria de Presidencia",
+            "III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
+        ),
+        (
+            "DOGV:sector-agrario",
+            "Resolucion por la que se convocan subvenciones para el sector agrario",
+            "Conselleria de Agricultura, Agua, Ganaderia y Pesca",
+            "III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
+        ),
+        (
+            "DOGV:oposiciones-vivienda",
+            "Resolucion por la que se publica la relacion definitiva de personas "
+            "que han superado las pruebas selectivas de la convocatoria 6/2025",
+            "Entidad Valenciana de Vivienda y Suelo",
+            "II. AUTORIDADES Y PERSONAL / A) OFERTAS DE EMPLEO PUBLICO, OPOSICIONES Y CONCURSOS",
+        ),
+        (
+            "DOGV:concesion-result",
+            "Resolucion de concesion de ayudas a empresas beneficiarias",
+            "Conselleria de Industria, Turismo, Innovacion y Comercio",
+            "III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
+        ),
+        (
+            "DOGV:transporte-escolar",
+            "Convocatoria de ayudas para transporte escolar del alumnado",
+            "Conselleria de Educacion, Cultura y Universidades",
+            "III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
+        ),
+        (
+            "DOGV:ayudas-estudio",
+            "Extracto de la resolucion por la que se convocan ayudas al estudio "
+            "para estudiantes universitarios",
+            "Universidad de Alicante",
+            "III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
+        ),
+        (
+            "DOGV:vivienda-jovenes",
+            "Convocatoria de ayudas al alquiler de vivienda para jovenes",
+            "Vicepresidencia Primera y Conselleria de Vivienda, Empleo, Juventud e Igualdad",
+            "III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
+        ),
+        (
+            "DOGV:empresa-sectorial",
+            "Convocatoria de subvenciones para empresas del sector industrial",
+            "Conselleria de Industria, Turismo, Innovacion y Comercio",
+            "III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
+        ),
+    ]
+    for external_id, title, department, section in documents:
+        repository.upsert_document(
+            source_id=dogv_source["id"],
+            external_id=external_id,
+            publication_date="2026-05-20",
+            title=title,
+            department=department,
+            section=section,
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "DOGV",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--profile",
+            "dogv-ayudas",
+            "--dry-run",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "documents_scanned=8" in captured.out
+    assert "matches_total=8" in captured.out
+    assert "matches_after_filters=3" in captured.out
+    assert "excluded_by_keyword_rules=5" in captured.out
+    assert "DOGV:transporte-escolar" in captured.out
+    assert "DOGV:ayudas-estudio" in captured.out
+    assert "DOGV:vivienda-jovenes" in captured.out
+    assert "DOGV:generic-ayudas" not in captured.out
+    assert "DOGV:sector-agrario" not in captured.out
+    assert "DOGV:oposiciones-vivienda" not in captured.out
+    assert "DOGV:concesion-result" not in captured.out
+    assert "DOGV:empresa-sectorial" not in captured.out
+    assert "score_reasons=" in captured.out
+
+
+def test_find_source_candidates_dogv_profile_dry_run_does_not_write(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    dogv_source = repository.ensure_official_source_dogv()
+    repository.upsert_document(
+        source_id=dogv_source["id"],
+        external_id="DOGV:study-aid",
+        publication_date="2026-05-20",
+        title="Convocatoria de ayudas al estudio para alumnado universitario",
+        department="Universidad de Alicante",
+        section="III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "DOGV",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--profile",
+            "dogv-ayudas",
+            "--dry-run",
+        ]
+    )
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert candidate_count == 0
+    assert "write_mode=dry_run" in captured.out
+    assert "DOGV:study-aid" in captured.out
+
+
 def test_find_boe_candidates_default_source_remains_boe(tmp_path, capsys):
     from official_sources.cli import run
 

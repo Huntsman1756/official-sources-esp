@@ -115,6 +115,39 @@ BOJA_AYUDAS_PROFILE_KEYWORDS = [
     "joven",
     "jovenes",
 ]
+DOGV_AYUDAS_PROFILE_KEYWORDS = [
+    "beca",
+    "becas",
+    "ayuda",
+    "ayudas",
+    "subvencion",
+    "subvenciones",
+    "bases reguladoras",
+    "convocatoria",
+    "convocatoria de ayudas",
+    "convocatoria de subvenciones",
+    "ayudas al estudio",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "alumnado",
+    "estudiantes",
+    "comedor escolar",
+    "transporte escolar",
+    "libros de texto",
+    "material escolar",
+    "necesidades educativas",
+    "formacion profesional",
+    "universidad",
+    "universidades",
+    "familias",
+    "joven",
+    "jovenes",
+    "vivienda",
+    "alquiler",
+    "empleo",
+    "formacion",
+    "discapacidad",
+]
 LA_AYUDA_DEFAULT_EXCLUDED_SECTIONS = ["V-A"]
 GENERIC_WEAK_KEYWORDS = {"convocatoria", "transporte"}
 BOJA_GENERIC_WEAK_KEYWORDS = {
@@ -177,6 +210,127 @@ BOJA_NOISE_TEXT_TERMS = {
     "entidades locales",
     "diputaciones",
 }
+DOGV_GENERIC_WEAK_KEYWORDS = {
+    "ayuda",
+    "ayudas",
+    "subvencion",
+    "subvenciones",
+    "bases reguladoras",
+    "convocatoria",
+    "convocatoria de ayudas",
+    "convocatoria de subvenciones",
+    "vivienda",
+    "empleo",
+    "formacion",
+    "alquiler",
+}
+DOGV_HIGH_INTENT_KEYWORDS = {
+    "beca",
+    "becas",
+    "ayudas al estudio",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "alumnado",
+    "estudiantes",
+    "comedor escolar",
+    "transporte escolar",
+    "libros de texto",
+    "material escolar",
+    "necesidades educativas",
+    "formacion profesional",
+    "universidad",
+    "universidades",
+    "familias",
+    "joven",
+    "jovenes",
+    "discapacidad",
+}
+DOGV_DIRECT_TITLE_TERMS = {
+    "ayudas al estudio",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "alumnado",
+    "estudiantes",
+    "comedor escolar",
+    "transporte escolar",
+    "libros de texto",
+    "material escolar",
+    "necesidades educativas",
+    "formacion profesional",
+    "universidad",
+    "universidades",
+    "familias",
+    "joven",
+    "jovenes",
+    "discapacidad",
+    "beca",
+    "becas",
+}
+DOGV_NOISE_SECTION_TERMS = {
+    "autoridades y personal",
+    "ofertas de empleo publico",
+    "oposiciones y concursos",
+    "nombramientos y ceses",
+}
+DOGV_PUBLIC_EMPLOYMENT_TERMS = {
+    "oposicion",
+    "oposiciones",
+    "bolsa de empleo",
+    "bolsas de empleo",
+    "pruebas selectivas",
+    "lista provisional",
+    "listas provisionales",
+    "lista definitiva",
+    "listas definitivas",
+    "relacion provisional",
+    "relacion definitiva",
+    "tribunal",
+    "tribunales",
+    "nombramiento",
+    "nombramientos",
+    "cese",
+    "ceses",
+}
+DOGV_CLOSED_OR_RESULT_TERMS = {
+    "concesion",
+    "concedidas",
+    "personas beneficiarias",
+    "empresas beneficiarias",
+    "entidades beneficiarias",
+    "resolucion de concesion",
+    "relacion de beneficiarios",
+    "relacion de personas beneficiarias",
+}
+DOGV_LOCAL_ENTITY_TERMS = {
+    "entidades locales",
+    "entidad local",
+    "ayuntamiento",
+    "ayuntamientos",
+    "municipio",
+    "municipios",
+    "diputacion",
+    "diputaciones",
+    "administracion local",
+}
+DOGV_SECTOR_COMPANY_TERMS = {
+    "empresa",
+    "empresas",
+    "sector agrario",
+    "agricultura",
+    "ganaderia",
+    "pesca",
+    "industria",
+    "industrial",
+    "energia",
+    "infraestructuras",
+    "competitividad empresarial",
+    "turismo",
+    "comercio",
+}
+DOGV_PROCUREMENT_TERMS = {
+    "contratacion",
+    "licitacion",
+}
 TRANSPORT_SUPPORT_KEYWORDS = {
     "ayuda",
     "ayudas",
@@ -204,6 +358,7 @@ STRONG_PHRASES = {
     "libros de texto",
     "transporte escolar",
     "comedor escolar",
+    "necesidades educativas",
 }
 STRONG_KEYWORDS = {
     "beca",
@@ -574,8 +729,11 @@ def _add_find_candidates_parser(
     )
     candidates.add_argument(
         "--profile",
-        choices=["la-ayuda", "boja-ayudas"],
-        help="Use a documented keyword/filter profile. Currently supported: la-ayuda, boja-ayudas.",
+        choices=["la-ayuda", "boja-ayudas", "dogv-ayudas"],
+        help=(
+            "Use a documented keyword/filter profile. Currently supported: "
+            "la-ayuda, boja-ayudas, dogv-ayudas."
+        ),
     )
     candidates.add_argument(
         "--include-sections",
@@ -1820,6 +1978,8 @@ def _candidate_keywords(args: argparse.Namespace) -> list[str]:
         keywords.extend(LA_AYUDA_PROFILE_KEYWORDS)
     if args.profile == "boja-ayudas":
         keywords.extend(BOJA_AYUDAS_PROFILE_KEYWORDS)
+    if args.profile == "dogv-ayudas":
+        keywords.extend(DOGV_AYUDAS_PROFILE_KEYWORDS)
     if args.keywords:
         keywords.extend(keyword.strip() for keyword in args.keywords.split(",") if keyword.strip())
     return list(dict.fromkeys(keywords))
@@ -1909,6 +2069,11 @@ def _candidate_exclusion_reason(
         matches,
     ):
         return "keyword_rules"
+    if filters["profile"] == ["dogv-ayudas"] and _dogv_profile_exclusion_reason(
+        document,
+        matches,
+    ):
+        return "keyword_rules"
     return None
 
 
@@ -1975,6 +2140,9 @@ def _score_candidate_match(
     if profile == "boja-ayudas" and _boja_weak_only_match(keywords):
         score -= 2
         reasons.append("boja_weak_only_generic_match:-2")
+    if profile == "dogv-ayudas" and _dogv_weak_only_match(keywords):
+        score -= 2
+        reasons.append("dogv_weak_only_generic_match:-2")
     return score, reasons
 
 
@@ -2033,6 +2201,88 @@ def _boja_weak_only_match(keywords: list[str]) -> bool:
         return True
     high_intent = {_normalize_search_text(keyword) for keyword in BOJA_HIGH_INTENT_KEYWORDS}
     return not bool(normalized_keywords & high_intent)
+
+
+def _dogv_profile_exclusion_reason(
+    document: dict[str, Any],
+    matches: dict[str, Any],
+) -> str | None:
+    keywords = matches["keywords"]
+    title = _normalize_search_text(str(document.get("title") or ""))
+    department = _normalize_search_text(str(document.get("department") or ""))
+    section = _normalize_search_text(str(document.get("section") or ""))
+    document_type = _normalize_search_text(str(document.get("document_type") or ""))
+    raw_metadata = _normalize_search_text(str(document.get("raw_metadata_json") or ""))
+    combined_text = " ".join([title, department, section, document_type, raw_metadata])
+    title_has_direct_signal = _dogv_title_has_direct_signal(title)
+    housing_context = _dogv_has_housing_context(title)
+
+    if _dogv_weak_only_match(keywords):
+        return "dogv_weak_only"
+    if any(term in section for term in _normalized_set(DOGV_NOISE_SECTION_TERMS)):
+        return "dogv_public_employment_section"
+    if any(term in title for term in _normalized_set(DOGV_PUBLIC_EMPLOYMENT_TERMS)):
+        return "dogv_public_employment_notice"
+    if any(term in combined_text for term in _normalized_set(DOGV_PROCUREMENT_TERMS)):
+        return "dogv_procurement_noise"
+    if any(term in title for term in _normalized_set(DOGV_CLOSED_OR_RESULT_TERMS)):
+        return "dogv_closed_or_result_notice"
+    if {"vivienda", "alquiler"} & {
+        _normalize_search_text(keyword) for keyword in keywords
+    } and not housing_context:
+        return "dogv_housing_noise"
+    title_has_local_entity_noise = any(
+        term in title for term in _normalized_set(DOGV_LOCAL_ENTITY_TERMS)
+    )
+    if any(term in combined_text for term in _normalized_set(DOGV_LOCAL_ENTITY_TERMS)) and not (
+        title_has_direct_signal and not title_has_local_entity_noise
+    ):
+        return "dogv_local_entity_noise"
+    title_has_sector_company_noise = any(
+        term in title for term in _normalized_set(DOGV_SECTOR_COMPANY_TERMS)
+    )
+    if any(term in combined_text for term in _normalized_set(DOGV_SECTOR_COMPANY_TERMS)) and not (
+        title_has_direct_signal and not title_has_sector_company_noise
+    ):
+        return "dogv_sector_or_company_noise"
+    if not title_has_direct_signal and "subvenciones y becas" not in section:
+        return "dogv_no_direct_signal"
+    return None
+
+
+def _dogv_weak_only_match(keywords: list[str]) -> bool:
+    normalized_keywords = {_normalize_search_text(keyword) for keyword in keywords}
+    if not normalized_keywords:
+        return True
+    high_intent = _normalized_set(DOGV_HIGH_INTENT_KEYWORDS)
+    return not bool(normalized_keywords & high_intent)
+
+
+def _dogv_title_has_direct_signal(title: str) -> bool:
+    if any(term in title for term in _normalized_set(DOGV_DIRECT_TITLE_TERMS)):
+        return True
+    return _dogv_has_housing_context(title)
+
+
+def _dogv_has_housing_context(title: str) -> bool:
+    has_housing = any(term in title for term in {"vivienda", "alquiler"})
+    has_person_context = any(
+        term in title
+        for term in {
+            "joven",
+            "jovenes",
+            "familia",
+            "familias",
+            "estudiante",
+            "estudiantes",
+            "alumnado",
+        }
+    )
+    return has_housing and has_person_context
+
+
+def _normalized_set(values: set[str]) -> set[str]:
+    return {_normalize_search_text(value) for value in values}
 
 
 def _section_aliases(section: str) -> set[str]:
