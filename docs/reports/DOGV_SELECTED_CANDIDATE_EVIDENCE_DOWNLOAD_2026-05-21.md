@@ -202,3 +202,19 @@ candidate_ids=101,102,103,104,106,108,109,111,117,124
 types=pdf
 expected_attempts=10
 ```
+
+## Follow-Up Implementation
+
+TASK-AUTO-DOGV-007B adds the missing command support:
+
+```bash
+official-sources download-source-artifacts \
+  --source DOGV \
+  --candidate-ids 101,102,103,104,106,108,109,111,117,124 \
+  --types pdf
+```
+
+The implementation keeps the original blocker decision intact: DOGV PDF download must remain scoped
+to explicit candidate IDs and must use only persisted `url_pdf` values. Date-level DOGV artifact
+download, inferred URLs, HTML/XML downloads, downstream writes, approvals, and publications remain out
+of scope.

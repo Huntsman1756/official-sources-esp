@@ -1,5 +1,38 @@
 # Validation
 
+## 2026-05-21 - TASK-AUTO-DOGV-007B scoped DOGV artifact downloader
+
+Local validation:
+
+```text
+git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+pytest: 323 passed
+ruff check: passed
+ruff format --check: passed
+```
+
+Scope:
+
+```text
+command=download-source-artifacts
+source=DOGV
+selection=--candidate-ids only
+types=pdf only
+url_source=persisted url_pdf only
+```
+
+No broad DOGV downloads, downstream writes, approvals, publications, or candidate status changes are
+allowed by the new DOGV scoped download path.
+
 ## 2026-05-21 - TASK-BDNS-002 BDNS metadata adapter MVP
 
 Local validation:

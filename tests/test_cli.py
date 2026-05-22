@@ -54,6 +54,29 @@ def _seed_boja_document(db_path: Path, *, url_pdf: str | None = None) -> dict:
     )
 
 
+def _seed_dogv_document(
+    db_path: Path,
+    *,
+    external_id: str = "DOGV:DOGV-C-2026-16062",
+    url_pdf: str | None = "https://dogv.gva.es/datos/2026/05/20/pdf/2026_16062_es.pdf",
+) -> dict:
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_dogv()
+    return repository.upsert_document(
+        source_id=source["id"],
+        external_id=external_id,
+        publication_date="2026-05-20",
+        title="DOGV scholarship document",
+        department="Universitat Politecnica de Valencia",
+        section="III. ACTOS ADMINISTRATIVOS / B) SUBVENCIONES Y BECAS",
+        url_html="https://dogv.gva.es/es/resultat-dogv?signatura=2026/16062",
+        url_xml="https://dogv.gva.es/dogv-portal/export/disposicion/xml/dinamico/477349?lang=es",
+        url_pdf=url_pdf,
+    )
+
+
 def test_cli_help_works(capsys):
     from official_sources.cli import run
 
@@ -62,7 +85,20 @@ def test_cli_help_works(capsys):
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "ingest-boe-summary" in captured.out
+    assert "download-source-artifacts" in captured.out
     assert "download-boe-artifacts" in captured.out
+
+
+def test_download_source_artifacts_help_lists_dogv(capsys):
+    from official_sources.cli import run
+
+    exit_code = run(["download-source-artifacts", "--help"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "DOGV" in captured.out
+    assert "--candidate-ids" in captured.out
+    assert "--types" in captured.out
 
 
 def test_cli_invalid_date_rejected(tmp_path, capsys):
@@ -655,6 +691,243 @@ def test_download_boe_artifacts_boja_rejects_xml_html_for_now(tmp_path, capsys):
     captured = capsys.readouterr()
     assert exit_code == 2
     assert "Unsupported BOJA artifact types: html, xml" in captured.err
+
+
+def test_download_source_artifacts_supports_scoped_dogv_pdf_candidate_download(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    pdf_url = "https://dogv.gva.es/datos/2026/05/20/pdf/2026_16062_es.pdf"
+    document = _seed_dogv_document(db_path, url_pdf=pdf_url)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="dogv-ayudas",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["becas"]},
+    )
+    seen_urls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_urls.append(str(request.url))
+        return httpx.Response(200, content=b"%PDF-1.4 DOGV", request=request)
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-source-artifacts",
+            "--source",
+            "DOGV",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ],
+        artifact_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    stored = repository.list_document_files(document["id"])
+    attempts = repository.list_artifact_download_attempts(document_id=document["id"])
+    candidate_count = connection.execute("SELECT COUNT(*) FROM source_candidates").fetchone()[0]
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert seen_urls == [pdf_url]
+    assert candidate_count == 1
+    assert stored[0]["file_type"] == "pdf"
+    assert stored[0]["official_url"] == pdf_url
+    assert stored[0]["sha256"] == sha256_bytes(b"%PDF-1.4 DOGV")
+    assert attempts[-1]["status"] == "success"
+    assert attempts[-1]["file_type"] == "pdf"
+    assert "source_code=DOGV" in captured.out
+    assert "selected_documents=1" in captured.out
+    assert "downloaded=1" in captured.out
+    assert "missing_artifact_url=0" in captured.out
+    assert (artifact_dir / "dogv" / "2026" / "05" / "20" / "DOGV_DOGV-C-2026-16062").exists()
+
+
+def test_download_source_artifacts_dogv_candidate_ids_download_only_selected_documents(
+    tmp_path, capsys
+):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    selected = _seed_dogv_document(
+        db_path,
+        external_id="DOGV:DOGV-C-2026-16062",
+        url_pdf="https://dogv.gva.es/datos/2026/05/20/pdf/2026_16062_es.pdf",
+    )
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_dogv()
+    other = repository.upsert_document(
+        source_id=source["id"],
+        external_id="DOGV:DOGV-C-2026-16067",
+        publication_date="2026-05-20",
+        title="Other DOGV scholarship document",
+        url_pdf="https://dogv.gva.es/datos/2026/05/20/pdf/2026_16067_es.pdf",
+    )
+    candidate = repository.create_source_candidate(
+        document_id=selected["id"],
+        project_key="dogv-ayudas",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["becas"]},
+    )
+    seen_urls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_urls.append(str(request.url))
+        return httpx.Response(200, content=b"%PDF-1.4 DOGV", request=request)
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-source-artifacts",
+            "--source",
+            "DOGV",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ],
+        artifact_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert seen_urls == [selected["url_pdf"]]
+    assert {item["file_type"] for item in repository.list_document_files(selected["id"])} == {"pdf"}
+    assert repository.list_document_files(other["id"]) == []
+    assert "selected_documents=1" in captured.out
+
+
+def test_download_source_artifacts_dogv_missing_pdf_url_is_skipped(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    document = _seed_dogv_document(db_path, url_pdf=None)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="dogv-ayudas",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["becas"]},
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "download-source-artifacts",
+            "--source",
+            "DOGV",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ]
+    )
+
+    attempts = repository.list_artifact_download_attempts(document_id=document["id"])
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert repository.list_document_files(document["id"]) == []
+    assert attempts[-1]["status"] == "skipped"
+    assert attempts[-1]["official_url"] is None
+    assert "skipped=1" in captured.out
+    assert "missing_artifact_url=1" in captured.out
+
+
+def test_download_source_artifacts_dogv_source_rejects_non_dogv_candidate(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    document = _seed_document(db_path)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="la-ayuda",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["ayudas"]},
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "download-source-artifacts",
+            "--source",
+            "DOGV",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "Selected documents must belong to source DOGV" in captured.err
+
+
+def test_download_source_artifacts_dogv_rejects_date_level_download(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "download-source-artifacts",
+            "--source",
+            "DOGV",
+            "--date",
+            "2026-05-20",
+            "--types",
+            "pdf",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "DOGV artifact downloads require --candidate-ids" in captured.err
+
+
+def test_download_source_artifacts_dogv_requires_explicit_pdf_type(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "download-source-artifacts",
+            "--source",
+            "DOGV",
+            "--candidate-ids",
+            "1",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "DOGV artifact downloads require --types pdf" in captured.err
 
 
 def test_download_boe_artifacts_rejects_mixed_date_and_scoped_selection(tmp_path, capsys):

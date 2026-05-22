@@ -45,6 +45,7 @@ from official_sources.sources.boja.artifacts import BOJA_ARTIFACT_FIELDS, BOJAAr
 from official_sources.sources.boja.client import validate_boja_date
 from official_sources.sources.boja.enrichment import enrich_boja_evidence_urls
 from official_sources.sources.boja.ingestion import ingest_boja_date
+from official_sources.sources.dogv.artifacts import DOGV_ARTIFACT_FIELDS, DOGVArtifactDownloader
 from official_sources.sources.dogv.client import validate_dogv_date
 from official_sources.sources.dogv.ingestion import ingest_dogv_date
 from official_sources.storage.backup import SQLiteBackupError, backup_sqlite_database
@@ -584,7 +585,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     download.add_argument(
         "--source",
-        choices=["BOE", "BOJA"],
+        choices=["BOE", "BOJA", "DOGV"],
         default="BOE",
         help="Official source for scoped artifact download. Default: BOE.",
     )
@@ -601,6 +602,31 @@ def build_parser() -> argparse.ArgumentParser:
         "--types",
         default="xml,html",
         help="Comma-separated artifact types. Default: xml,html. PDF requires explicit request.",
+    )
+
+    source_download = subparsers.add_parser(
+        "download-source-artifacts",
+        help="Download stored official source artifact URLs with explicit source scope.",
+    )
+    source_download.add_argument(
+        "--source",
+        choices=["BOE", "BOJA", "DOGV"],
+        required=True,
+        help="Official source for scoped artifact download.",
+    )
+    source_download.add_argument("--date", help="Target date in YYYY-MM-DD format or today.")
+    source_download.add_argument(
+        "--candidate-ids",
+        help="Comma-separated source_candidate IDs to download artifacts for.",
+    )
+    source_download.add_argument(
+        "--document-ids",
+        help="Comma-separated official_documents IDs to download artifacts for.",
+    )
+    source_download.add_argument(
+        "--types",
+        default="xml,html",
+        help="Comma-separated artifact types. DOGV currently requires explicit pdf.",
     )
 
     evidence_status = subparsers.add_parser(
@@ -870,14 +896,21 @@ def run(
             stderr,
         )
 
-    if args.command == "download-boe-artifacts":
+    if args.command in {"download-boe-artifacts", "download-source-artifacts"}:
+        dogv_error = _validate_dogv_download_args(args)
+        if dogv_error:
+            print(dogv_error, file=stderr)
+            return 2
         try:
             artifact_types = _parse_artifact_types(args.types, source_code=args.source)
         except BOEArtifactDownloadError as exc:
             print(str(exc), file=stderr)
             return 2
-        if args.source == "BOJA" and args.date:
-            print("BOJA artifact downloads require --candidate-ids or --document-ids", file=stderr)
+        if args.source in {"BOJA", "DOGV"} and args.date:
+            print(
+                f"{args.source} artifact downloads require --candidate-ids or --document-ids",
+                file=stderr,
+            )
             return 2
         if "pdf" in artifact_types and not (args.candidate_ids or args.document_ids):
             print("PDF downloads require --candidate-ids or --document-ids", file=stderr)
@@ -1373,13 +1406,31 @@ def _run_enrich_boja_evidence_urls(
 
 def _parse_artifact_types(value: str, *, source_code: str = "BOE") -> list[str]:
     artifact_types = [item.strip() for item in value.split(",") if item.strip()]
-    supported = BOJA_ARTIFACT_FIELDS if source_code == "BOJA" else BOE_ARTIFACT_FIELDS
+    supported = _artifact_fields_for_source(source_code)
     unsupported = sorted(set(artifact_types) - set(supported))
     if unsupported:
         raise BOEArtifactDownloadError(
             f"Unsupported {source_code} artifact types: {', '.join(unsupported)}"
         )
     return artifact_types
+
+
+def _validate_dogv_download_args(args: argparse.Namespace) -> str | None:
+    if args.source != "DOGV":
+        return None
+    if args.types != "pdf":
+        return "DOGV artifact downloads require --types pdf"
+    if not args.candidate_ids:
+        return "DOGV artifact downloads require --candidate-ids"
+    if args.document_ids:
+        return "DOGV artifact downloads require --candidate-ids; --document-ids is not supported"
+    try:
+        candidate_ids = _parse_id_list(args.candidate_ids, option_name="--candidate-ids")
+    except ValueError as exc:
+        return str(exc)
+    if len(candidate_ids) > 10:
+        return "DOGV artifact downloads are limited to 10 candidate IDs"
+    return None
 
 
 def _parse_id_list(value: str | None, *, option_name: str) -> list[int]:
@@ -1551,12 +1602,22 @@ def _artifact_downloader_for_source(
 ) -> BOEArtifactDownloader:
     if source_code == "BOJA":
         return BOJAArtifactDownloader(repository, cache_dir=artifact_dir, client=client)
+    if source_code == "DOGV":
+        return DOGVArtifactDownloader(repository, cache_dir=artifact_dir, client=client)
     return BOEArtifactDownloader(repository, cache_dir=artifact_dir, client=client)
 
 
 def _artifact_url_field(source_code: str, artifact_type: str) -> str:
-    fields = BOJA_ARTIFACT_FIELDS if source_code == "BOJA" else BOE_ARTIFACT_FIELDS
+    fields = _artifact_fields_for_source(source_code)
     return fields[artifact_type][0]
+
+
+def _artifact_fields_for_source(source_code: str) -> dict[str, tuple[str, str, str]]:
+    if source_code == "BOJA":
+        return BOJA_ARTIFACT_FIELDS
+    if source_code == "DOGV":
+        return DOGV_ARTIFACT_FIELDS
+    return BOE_ARTIFACT_FIELDS
 
 
 def _file_hashes(

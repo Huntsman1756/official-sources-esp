@@ -24,7 +24,7 @@ Implemented now:
 - Tier 1: BOE consolidated index and block retrieval.
 - Tier 2: BOJA metadata-first autonomous source pilot.
 - Tier 2: BOCM metadata-only adapter MVP.
-- Tier 2: DOGV metadata-only adapter MVP.
+- Tier 2: DOGV metadata adapter MVP with scoped PDF evidence downloads.
 - Grants registry: BDNS metadata-only adapter MVP for public grant calls.
 
 Not implemented:
@@ -218,6 +218,44 @@ PDF policy:
 - PDF is never downloaded by default.
 - PDF requires explicit `--candidate-ids` or `--document-ids`.
 - PDF must not be downloaded for all candidates automatically.
+
+## DOGV Artifact Download Policy
+
+DOGV evidence downloads are scoped candidate-evidence operations. They must use only official URLs
+already stored on `official_documents`.
+
+Initial DOGV support is intentionally limited:
+
+```text
+source=DOGV
+selection=--candidate-ids only
+types=pdf only
+url_field=url_pdf
+max_first_batch=10 candidates
+```
+
+Use the generic command:
+
+```bash
+official-sources download-source-artifacts \
+  --source DOGV \
+  --candidate-ids 101,102,103 \
+  --types pdf
+```
+
+Safety rules:
+
+- `--source DOGV` must be explicit.
+- `--candidate-ids` must be explicit.
+- `--types pdf` must be explicit.
+- DOGV date-level artifact downloads are rejected.
+- DOGV `--document-ids` downloads are rejected for now.
+- Missing `url_pdf` is recorded as a skipped artifact attempt.
+- DOGV URLs are validated as HTTPS URLs on `dogv.gva.es` using the official `/datos/` PDF path.
+- The downloader must not infer, construct, or repair DOGV PDF URLs.
+
+HTML and XML DOGV evidence downloads are not enabled yet. They require separate tests and an
+operator decision about the preferred evidence source.
 - PDF must not be downloaded for all documents in a date range automatically.
 - PDF should normally be used only for likely relevant candidates, final evidence selection,
   official PDF validation, or direct human review requests.
