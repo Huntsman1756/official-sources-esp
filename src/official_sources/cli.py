@@ -33,6 +33,8 @@ from official_sources.sources.boja.artifacts import BOJA_ARTIFACT_FIELDS, BOJAAr
 from official_sources.sources.boja.client import validate_boja_date
 from official_sources.sources.boja.enrichment import enrich_boja_evidence_urls
 from official_sources.sources.boja.ingestion import ingest_boja_date
+from official_sources.sources.dogv.client import validate_dogv_date
+from official_sources.sources.dogv.ingestion import ingest_dogv_date
 from official_sources.storage.backup import SQLiteBackupError, backup_sqlite_database
 from official_sources.storage.database import connect, initialize_database, sqlite_runtime_pragmas
 from official_sources.storage.migrations.runner import (
@@ -282,6 +284,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Ingest BOCM metadata for one date using official issue discovery.",
     )
     ingest_bocm.add_argument(
+        "--date",
+        required=True,
+        help="Target date in YYYY-MM-DD format or today.",
+    )
+    ingest_dogv = subparsers.add_parser(
+        "ingest-dogv-date",
+        help="Ingest DOGV official JSON metadata for one date.",
+    )
+    ingest_dogv.add_argument(
         "--date",
         required=True,
         help="Target date in YYYY-MM-DD format or today.",
@@ -568,6 +579,7 @@ def run(
     boja_fetcher=None,
     boja_detail_fetcher=None,
     bocm_fetcher=None,
+    dogv_fetcher=None,
     artifact_client: httpx.Client | None = None,
     consolidated_client: httpx.Client | None = None,
     stdout: TextIO | None = None,
@@ -589,6 +601,8 @@ def run(
         return _run_ingest_boja(repository, args, boja_fetcher, stdout, stderr)
     if args.command == "ingest-bocm-date":
         return _run_ingest_bocm(repository, args, bocm_fetcher, stdout, stderr)
+    if args.command == "ingest-dogv-date":
+        return _run_ingest_dogv(repository, args, dogv_fetcher, stdout, stderr)
     if args.command == "enrich-boja-evidence-urls":
         return _run_enrich_boja_evidence_urls(repository, args, boja_detail_fetcher, stdout, stderr)
     if args.command == "ingest-boe-range":
@@ -692,6 +706,12 @@ def resolve_bocm_target_date(value: str) -> str:
     if value == "today":
         return date.today().isoformat()
     return validate_bocm_date(value).isoformat()
+
+
+def resolve_dogv_target_date(value: str) -> str:
+    if value == "today":
+        return date.today().isoformat()
+    return validate_dogv_date(value).isoformat()
 
 
 def _open_repository(db_path: str) -> OfficialSourcesRepository:
@@ -916,6 +936,47 @@ def _run_ingest_bocm(
         file=stdout,
     )
     run_record = ingest_bocm_date(repository, target_date=target_date, fetcher=fetcher)
+    print(
+        " ".join(
+            [
+                f"status={run_record['status']}",
+                f"issue_identifier={run_record.get('issue_identifier') or 'none'}",
+                f"documents_fetched={run_record['documents_fetched']}",
+                f"documents_new={run_record['documents_new']}",
+                f"documents_updated={run_record['documents_updated']}",
+                f"retry_count={run_record['retry_count']}",
+                f"throttle_triggered={run_record['throttle_triggered']}",
+                f"last_http_status={_status_value(run_record['last_http_status'])}",
+                f"source_snapshot_hash={run_record.get('source_snapshot_hash') or 'none'}",
+            ]
+            + (
+                [f"error_message={_compact_token(run_record['error_message'])}"]
+                if run_record.get("error_message")
+                else []
+            )
+        ),
+        file=stdout,
+    )
+    return 0 if run_record["status"] in {"success", NO_PUBLICATION_STATUS} else 1
+
+
+def _run_ingest_dogv(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        target_date = resolve_dogv_target_date(args.date)
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        f"command_started={args.command} source_code=DOGV target_date={target_date}",
+        file=stdout,
+    )
+    run_record = ingest_dogv_date(repository, target_date=target_date, fetcher=fetcher)
     print(
         " ".join(
             [

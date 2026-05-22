@@ -1,0 +1,54 @@
+{
+  "cabecera": {
+    "numeroDogv": 10366,
+    "fecha": "Dimecres, 20 de maig de 2026",
+    "any": "XLIX"
+  },
+  "disposiciones": [
+    {
+      "id": 477348,
+      "titulo": "EXTRACTO de la Resolucion de 13 de mayo de 2026, del Rectorado, por la que se convocan las becas Red Alicante Estudios. Ayuda de matricula curso 2025-2026.",
+      "seccion": {
+        "id": 14,
+        "descripcion": "III. ACTOS ADMINISTRATIVOS"
+      },
+      "subseccion": {
+        "id": 44,
+        "descripcion": "B) SUBVENCIONES Y BECAS"
+      },
+      "paginaInicial": "3588",
+      "organismo": "Universidad de Alicante",
+      "consolidacion": false,
+      "fechaPublicacion": "20/05/2026",
+      "codigoInsercion": "2026/16061",
+      "numOrden": 0,
+      "urlPdf": "/2026/05/20/pdf/2026_16061_es.pdf",
+      "borrador": false
+    },
+    {
+      "id": 477349,
+      "titulo": "EXTRACTO de la Resolucion de 7 de mayo de 2026, del Rectorado, por la que se convocan dos becas de ayuda para estudiar el master en Ingenieria de Caminos.",
+      "seccion": {
+        "id": 14,
+        "descripcion": "III. ACTOS ADMINISTRATIVOS"
+      },
+      "subseccion": {
+        "id": 44,
+        "descripcion": "B) SUBVENCIONES Y BECAS"
+      },
+      "paginaInicial": "3588",
+      "organismo": "Universitat Politecnica de Valencia",
+      "consolidacion": false,
+      "fechaPublicacion": "20/05/2026",
+      "codigoInsercion": "2026/16062",
+      "numOrden": 0,
+      "urlPdf": "/2026/05/20/pdf/2026_16062_es.pdf",
+      "borrador": false
+    }
+  ],
+  "esBis": false,
+  "fechaSumario": "20-05-2026",
+  "codigoInsercion": null,
+  "existeUrl": true,
+  "urlPdf": "/2026/05/20/pdf/sumario_2026_10366_es.pdf"
+}

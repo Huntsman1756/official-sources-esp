@@ -366,6 +366,8 @@ Ceuta and Melilla require explicit modeling notes and must not be forced into th
 
 The 2026-05-20 source audit recommends BOJA as the first autonomous/statutory territory adapter candidate because it exposes an official OpenAPI endpoint with date search and structured document metadata. BOCM is a strong follow-up candidate because it exposes official RSS/current-issue XML, issue pages, and stable PDF paths, but it needs more custom parsing.
 
+The 2026-05-21 DOGV audit and MVP confirm DOGV as a strong autonomous metadata source because the official portal backend exposes direct JSON by date. DOGV is still not treated as OpenAPI-backed; the MVP relies on observed official backend endpoints used by the public frontend.
+
 Autonomous/statutory territory adapter MVPs must start as metadata/index ingestion only:
 
 - no candidate extraction by default;
@@ -376,7 +378,8 @@ Autonomous/statutory territory adapter MVPs must start as metadata/index ingesti
 - raw official payloads must be hashed before parsing;
 - each source needs source-specific citation and integrity rules.
 
-DOGV, BOCCE, and BOME need additional endpoint hardening before implementation.
+BOCCE and BOME need additional endpoint hardening before implementation. BOCM remains paused on a
+partial metadata backfill until its external connectivity/date failure is resolved.
 
 ## BOJA MVP Source
 
@@ -467,6 +470,67 @@ BOJA pilot closure:
 - No downstream import has been performed.
 - BOJA evidence should not be imported into EduAyudas or another downstream project until the
   downstream onboarding contract and environment-safe import path are documented.
+
+## DOGV MVP Source
+
+TASK-AUTO-DOGV-002 implements a narrow DOGV metadata adapter using the official DOGV portal backend:
+
+```text
+GET https://dogv.gva.es/dogv-portal/dogv?date=YYYY-MM-DD&lang=es
+```
+
+The adapter stores the raw JSON response hash before parsing and records one `ingestion_runs`
+entry per date.
+
+DOGV source record:
+
+```text
+code = DOGV
+name = Diari Oficial de la Generalitat Valenciana
+jurisdiction = autonomous
+region_code = ES-VC
+access_type = official_json
+reliability_level = canonical
+```
+
+Stored issue identifiers use `cabecera.numeroDogv`, for example:
+
+```text
+10366
+```
+
+Stored document identifiers use the DOGV identifier pattern:
+
+```text
+DOGV-C-2026-16061
+```
+
+External IDs are prefixed with the source code:
+
+```text
+DOGV:DOGV-C-2026-16061
+```
+
+DOGV metadata ingestion preserves:
+
+- public result URL: `https://dogv.gva.es/es/resultat-dogv?signatura=YYYY/NNNNN`;
+- dynamic XML URL: `/dogv-portal/export/disposicion/xml/dinamico/{id}?lang=es`;
+- document metadata URL: `/dogv-portal/disposicion/metadata/{id}?lang=es`;
+- direct official PDF URL under `/datos/YYYY/MM/DD/pdf/...`.
+
+These URLs are metadata only. The DOGV MVP does not download PDFs, XML, or HTML artifacts, does not
+extract text, does not create candidates, does not write downstream projects, and does not approve or
+publish anything.
+
+DOGV no-publication semantics are source-specific. A valid date response with null issue and null
+document list is recorded as `no_publication`:
+
+```json
+{"cabecera":null,"disposiciones":null,"fechaSumario":null,"urlPdf":null}
+```
+
+Do not infer no-publication by weekday alone. HTTP errors, network errors, malformed JSON, and parser
+errors remain failures.
 
 ## Downstream Onboarding Policy
 

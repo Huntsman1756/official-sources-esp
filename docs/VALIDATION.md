@@ -1,5 +1,41 @@
 # Validation
 
+## 2026-05-21 - TASK-AUTO-DOGV-002 DOGV metadata adapter MVP
+
+Local validation:
+
+```text
+git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+pytest: 285 passed
+ruff check: passed
+ruff format --check: passed
+```
+
+Controlled local live smoke with a temporary SQLite database:
+
+```text
+date=2026-05-20
+status=success
+issue_identifier=10366
+documents_fetched=49
+documents_new=49
+documents_updated=0
+last_http_status=200
+db_validate=valid
+```
+
+No DOGV PDFs, candidates, artifact downloads, downstream writes, approvals, or publications were
+performed.
+
 ## 2026-05-20 - TASK-AUTO-008 BOJA selected candidate evidence review
 
 VPS read-only validation:

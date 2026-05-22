@@ -135,9 +135,10 @@ Recommended next platform/downstream step:
 
 Recommended next autonomous-source option:
 
-- `TASK-AUTO-DOGV-002 - DOGV metadata adapter MVP`. BOCM remains paused on the incomplete
-  metadata-only backfill because `2026-05-06` still fails from the VPS; DOGV has a direct
-  official JSON date endpoint and is the cleaner next source to test.
+- `TASK-AUTO-DOGV-003 - Controlled DOGV 30-day metadata backfill`. The DOGV metadata MVP is
+  implemented and passed a one-date live smoke with no PDFs, candidates, or downstream writes.
+  BOCM remains paused on the incomplete metadata-only backfill because `2026-05-06` still fails
+  from the VPS.
 
 ## Future phase - EUR-Lex
 

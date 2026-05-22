@@ -1,0 +1,1 @@
+"""DOGV source adapter."""

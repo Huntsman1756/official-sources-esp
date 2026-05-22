@@ -85,6 +85,17 @@ class OfficialSourcesRepository:
             reliability_level="canonical",
         )
 
+    def ensure_official_source_dogv(self) -> dict[str, Any]:
+        return self.upsert_official_source(
+            code="DOGV",
+            name="Diari Oficial de la Generalitat Valenciana",
+            jurisdiction="autonomous",
+            region_code="ES-VC",
+            base_url="https://dogv.gva.es/dogv-portal",
+            access_type="official_json",
+            reliability_level="canonical",
+        )
+
     def upsert_official_source(
         self,
         *,
