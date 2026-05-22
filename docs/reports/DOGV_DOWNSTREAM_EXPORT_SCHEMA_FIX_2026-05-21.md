@@ -102,7 +102,7 @@ rtk python -m ruff format --check .: OK
 
 ## Regenerated Export Files
 
-To be completed on the VPS after deployment:
+Completed on the VPS after deployment:
 
 ```text
 /opt/official-sources/data/downstream_exports/2026-05-21/dogv/eduayudas/
@@ -113,6 +113,54 @@ Target candidates:
 
 ```text
 101,102,103,104,106,108,109,111,117,124
+```
+
+Regeneration command:
+
+```bash
+official-sources \
+  --db-path /opt/official-sources/data/official_sources.sqlite \
+  export-downstream-evidence \
+  --candidate-ids 101,102,103,104,106,108,109,111,117,124 \
+  --output-dir /opt/official-sources/data/downstream_exports/2026-05-21/dogv
+```
+
+Result:
+
+```text
+files_written=10
+eduayudas=9
+la-ayuda=1
+candidate_117=/opt/official-sources/data/downstream_exports/2026-05-21/dogv/la-ayuda/117_DOGV_DOGV-C-2026-14923.json
+version_date_null=10/10
+citation.version_date_null=10/10
+```
+
+DB safety verification:
+
+```text
+source_candidates=125 -> 125
+candidate_evidence_reviews=45 -> 45
+artifact_download_attempts=442 -> 442
+document_files=26015 -> 26015
+db_validation=current_version=8 latest_version=8 status=valid
+artifact_directory_size=30M
+```
+
+Safety scan:
+
+```text
+local_paths=0
+secrets=0
+raw_pdf_text=0
+raw_xml=0
+raw_html=0
+```
+
+VPS deployed commit:
+
+```text
+d0e9f5d
 ```
 
 ## la-ayuda Retry Readiness
