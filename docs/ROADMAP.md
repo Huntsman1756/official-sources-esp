@@ -113,6 +113,11 @@ Latest audit:
 - `docs/reports/BOCM_SOURCE_AUDIT_2026-05-21.md`
 - `docs/reports/BOCM_DATE_TO_ISSUE_DISCOVERY_2026-05-21.md`
 - `docs/reports/DOGV_SOURCE_AUDIT_2026-05-21.md`
+- `docs/reports/AUTONOMOUS_NORTH_SOURCE_AUDIT_2026-05-21.md`
+- `docs/reports/AUTONOMOUS_WEST_CENTRAL_SOURCE_AUDIT_2026-05-21.md`
+- `docs/reports/AUTONOMOUS_ISLANDS_MEDITERRANEAN_SOURCE_AUDIT_2026-05-21.md`
+- `docs/reports/PROVINCIAL_BULLETIN_STRATEGY_AUDIT_2026-05-21.md`
+- `docs/reports/AUTONOMOUS_AND_PROVINCIAL_SOURCE_AUDIT_SYNTHESIS_2026-05-21.md`
 
 Recommended first implementation:
 
@@ -166,6 +171,14 @@ Recommended next autonomous-source option:
 - DOGV candidate dry-run. The DOGV metadata MVP and controlled 30-day metadata backfill are
   validated with no PDFs, candidates, or downstream writes. BOCM remains paused on the incomplete
   metadata-only backfill because `2026-05-06` still fails from the VPS.
+
+Recommended next new autonomous-source MVP after current validated-source work:
+
+- BOCYL metadata-only MVP, preceded by endpoint fixture discovery. BOCYL has an official JCyL
+  open-data API with stable document identifiers and PDF/XML/HTML artifact links.
+- BOPV/EHAA metadata-only MVP is the strongest alternate API-led candidate.
+- Provincial BOP work should remain metadata-monitor design only until Barcelona, A Coruna, and
+  Malaga prove stable as pilot sources.
 
 ## Future phase - EUR-Lex
 
