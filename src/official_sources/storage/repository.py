@@ -118,6 +118,17 @@ class OfficialSourcesRepository:
             reliability_level="canonical",
         )
 
+    def ensure_official_source_boa(self) -> dict[str, Any]:
+        return self.upsert_official_source(
+            code="BOA",
+            name="Boletín Oficial de Aragón",
+            jurisdiction="autonomous",
+            region_code="ES-AR",
+            base_url="https://www.boa.aragon.es",
+            access_type="official_json",
+            reliability_level="canonical",
+        )
+
     def upsert_official_source(
         self,
         *,
