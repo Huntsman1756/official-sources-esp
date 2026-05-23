@@ -77,6 +77,31 @@ def _seed_dogv_document(
     )
 
 
+def _seed_bocyl_document(
+    db_path: Path,
+    *,
+    external_id: str = "BOCYL:BOCYL-D-15052026-91-8",
+    url_html: str | None = "http://bocyl.jcyl.es/html/2026/05/15/html/BOCYL-D-15052026-91-8.do",
+    url_xml: str | None = "http://bocyl.jcyl.es/xml/BOCYL-D-15052026-91-8.xml",
+    url_pdf: str | None = "http://bocyl.jcyl.es/pdf/BOCYL-D-15052026-91-8.pdf",
+) -> dict:
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_bocyl()
+    return repository.upsert_document(
+        source_id=source["id"],
+        external_id=external_id,
+        publication_date="2026-05-15",
+        title="BOCYL scholarship document",
+        department="UNIVERSIDAD DE SALAMANCA",
+        section="III. OTRAS DISPOSICIONES",
+        url_html=url_html,
+        url_xml=url_xml,
+        url_pdf=url_pdf,
+    )
+
+
 def test_cli_help_works(capsys):
     from official_sources.cli import run
 
@@ -99,6 +124,16 @@ def test_download_source_artifacts_help_lists_dogv(capsys):
     assert "DOGV" in captured.out
     assert "--candidate-ids" in captured.out
     assert "--types" in captured.out
+
+
+def test_download_source_artifacts_help_lists_bocyl(capsys):
+    from official_sources.cli import run
+
+    exit_code = run(["download-source-artifacts", "--help"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "BOCYL" in captured.out
 
 
 def test_cli_invalid_date_rejected(tmp_path, capsys):
@@ -928,6 +963,166 @@ def test_download_source_artifacts_dogv_requires_explicit_pdf_type(tmp_path, cap
     captured = capsys.readouterr()
     assert exit_code == 2
     assert "DOGV artifact downloads require --types pdf" in captured.err
+
+
+def test_download_source_artifacts_supports_scoped_bocyl_xml_html_candidate_download(
+    tmp_path, capsys
+):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    document = _seed_bocyl_document(db_path)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="generic",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["becas"]},
+    )
+    seen_urls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_urls.append(str(request.url))
+        if str(request.url).endswith(".xml"):
+            return httpx.Response(200, content=b"<document><title>BOCYL XML</title></document>")
+        return httpx.Response(200, content=b"<html><body>BOCYL HTML</body></html>")
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-source-artifacts",
+            "--source",
+            "BOCYL",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "xml,html",
+        ],
+        artifact_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    stored = repository.list_document_files(document["id"])
+    attempts = repository.list_artifact_download_attempts(document_id=document["id"])
+    candidate_count = connection.execute("SELECT COUNT(*) FROM source_candidates").fetchone()[0]
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert seen_urls == [document["url_xml"], document["url_html"]]
+    assert candidate_count == 1
+    assert {item["file_type"] for item in stored} == {"xml", "html"}
+    assert {item["official_url"] for item in stored} == {
+        document["url_xml"],
+        document["url_html"],
+    }
+    assert [item["status"] for item in attempts] == ["success", "success"]
+    assert "source_code=BOCYL" in captured.out
+    assert "selected_documents=1" in captured.out
+    assert "downloaded=2" in captured.out
+    assert "missing_artifact_url=0" in captured.out
+    assert (artifact_dir / "bocyl" / "2026" / "05" / "15" / "BOCYL_BOCYL-D-15052026-91-8").exists()
+
+
+def test_download_source_artifacts_bocyl_requires_candidate_ids(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "download-source-artifacts",
+            "--source",
+            "BOCYL",
+            "--date",
+            "2026-05-15",
+            "--types",
+            "xml,html",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "BOCYL artifact downloads require --candidate-ids" in captured.err
+
+
+def test_download_source_artifacts_bocyl_rejects_non_bocyl_candidate(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    document = _seed_document(db_path)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="la-ayuda",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["ayudas"]},
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "download-source-artifacts",
+            "--source",
+            "BOCYL",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "xml,html",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "Selected documents must belong to source BOCYL" in captured.err
+
+
+def test_download_source_artifacts_bocyl_missing_xml_url_is_skipped(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    document = _seed_bocyl_document(db_path, url_xml=None)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="generic",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["becas"]},
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "download-source-artifacts",
+            "--source",
+            "BOCYL",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "xml",
+        ]
+    )
+
+    attempts = repository.list_artifact_download_attempts(document_id=document["id"])
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert repository.list_document_files(document["id"]) == []
+    assert attempts[-1]["status"] == "skipped"
+    assert attempts[-1]["official_url"] is None
+    assert "skipped=1" in captured.out
+    assert "missing_artifact_url=1" in captured.out
 
 
 def test_download_boe_artifacts_rejects_mixed_date_and_scoped_selection(tmp_path, capsys):

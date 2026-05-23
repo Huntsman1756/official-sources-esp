@@ -28,6 +28,7 @@ from official_sources.sources.bdns.ingestion import (
 )
 from official_sources.sources.bocm.client import validate_bocm_date
 from official_sources.sources.bocm.ingestion import ingest_bocm_date
+from official_sources.sources.bocyl.artifacts import BOCYL_ARTIFACT_FIELDS, BOCYLArtifactDownloader
 from official_sources.sources.bocyl.client import validate_bocyl_date
 from official_sources.sources.bocyl.ingestion import ingest_bocyl_date
 from official_sources.sources.boe.artifacts import (
@@ -735,7 +736,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     download.add_argument(
         "--source",
-        choices=["BOE", "BOJA", "DOGV"],
+        choices=["BOE", "BOJA", "DOGV", "BOCYL"],
         default="BOE",
         help="Official source for scoped artifact download. Default: BOE.",
     )
@@ -760,7 +761,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     source_download.add_argument(
         "--source",
-        choices=["BOE", "BOJA", "DOGV"],
+        choices=["BOE", "BOJA", "DOGV", "BOCYL"],
         required=True,
         help="Official source for scoped artifact download.",
     )
@@ -1071,12 +1072,16 @@ def run(
         if dogv_error:
             print(dogv_error, file=stderr)
             return 2
+        bocyl_error = _validate_bocyl_download_args(args)
+        if bocyl_error:
+            print(bocyl_error, file=stderr)
+            return 2
         try:
             artifact_types = _parse_artifact_types(args.types, source_code=args.source)
         except BOEArtifactDownloadError as exc:
             print(str(exc), file=stderr)
             return 2
-        if args.source in {"BOJA", "DOGV"} and args.date:
+        if args.source in {"BOJA", "DOGV", "BOCYL"} and args.date:
             print(
                 f"{args.source} artifact downloads require --candidate-ids or --document-ids",
                 file=stderr,
@@ -1650,6 +1655,22 @@ def _validate_dogv_download_args(args: argparse.Namespace) -> str | None:
     return None
 
 
+def _validate_bocyl_download_args(args: argparse.Namespace) -> str | None:
+    if args.source != "BOCYL":
+        return None
+    if not args.candidate_ids:
+        return "BOCYL artifact downloads require --candidate-ids"
+    if args.document_ids:
+        return "BOCYL artifact downloads require --candidate-ids; --document-ids is not supported"
+    try:
+        candidate_ids = _parse_id_list(args.candidate_ids, option_name="--candidate-ids")
+    except ValueError as exc:
+        return str(exc)
+    if len(candidate_ids) > 10:
+        return "BOCYL artifact downloads are limited to 10 candidate IDs"
+    return None
+
+
 def _parse_id_list(value: str | None, *, option_name: str) -> list[int]:
     if not value:
         return []
@@ -1821,6 +1842,8 @@ def _artifact_downloader_for_source(
         return BOJAArtifactDownloader(repository, cache_dir=artifact_dir, client=client)
     if source_code == "DOGV":
         return DOGVArtifactDownloader(repository, cache_dir=artifact_dir, client=client)
+    if source_code == "BOCYL":
+        return BOCYLArtifactDownloader(repository, cache_dir=artifact_dir, client=client)
     return BOEArtifactDownloader(repository, cache_dir=artifact_dir, client=client)
 
 
@@ -1834,6 +1857,8 @@ def _artifact_fields_for_source(source_code: str) -> dict[str, tuple[str, str, s
         return BOJA_ARTIFACT_FIELDS
     if source_code == "DOGV":
         return DOGV_ARTIFACT_FIELDS
+    if source_code == "BOCYL":
+        return BOCYL_ARTIFACT_FIELDS
     return BOE_ARTIFACT_FIELDS
 
 
