@@ -1,5 +1,42 @@
 # Validation
 
+## 2026-05-21 - TASK-AUTO-BOCYL-003 controlled BOCYL 30-day metadata backfill
+
+VPS operational validation:
+
+```text
+deployed_commit=a46c34c
+date_range=2026-04-21 -> 2026-05-20
+dates_processed=30
+success=20
+no_publication=10
+failed=0
+documents_fetched=773
+documents_new=773
+documents_updated=0
+max_docs_in_single_day=2026-04-30:56
+page_size_limit_hits=none
+artifact_directory_size=30M -> 30M
+artifact_download_attempts=442 -> 442
+source_candidates=125 -> 125
+BOCYL_official_documents=0 -> 773
+BOCYL_ingestion_runs=0 -> 30
+db_validate_before=valid
+db_validate_after=valid
+MCP listener check=no matching listener observed
+```
+
+Verified backups:
+
+```text
+before=/opt/official-sources/data/backups/official_sources_before_bocyl_30d_backfill_20260523_092612.sqlite
+after=/opt/official-sources/data/backups/official_sources_after_bocyl_30d_backfill_20260523_092845.sqlite
+backup_status=success
+```
+
+No BOCYL PDF, XML, or HTML artifact downloads, source candidates, downstream writes, approvals, or
+publications were performed.
+
 ## 2026-05-21 - TASK-AUTO-BOCYL-002 BOCYL metadata adapter MVP
 
 Local validation:
