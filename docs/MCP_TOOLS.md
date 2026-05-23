@@ -6,6 +6,8 @@ Server name: `official-sources`
 
 Protocol target: MCP `2025-11-25` through FastMCP.
 
+Future MCP development must follow `docs/MCP_OFFICIAL_COMPLIANCE_GUIDE.md`.
+
 The MCP layer is read-only and sits on top of the internal API. It does not own storage, ingestion, normalization, citation, or integrity logic.
 
 This MCP server has no authentication. It must not be exposed to any network interface other than localhost, stdio, SSH tunnel, or a private VPN. Exposing it on a public interface without authentication is a security gap.

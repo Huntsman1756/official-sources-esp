@@ -1904,3 +1904,27 @@ tools/list returns deterministic described JSON Schema tools
 tools/call returns structured content without creating candidates
 stdio initialize writes JSON-RPC only to stdout
 ```
+
+Follow-up documentation hardening added:
+
+```text
+docs/MCP_OFFICIAL_COMPLIANCE_GUIDE.md
+docs/MCP_TOOLS.md
+docs/VALIDATION.md
+```
+
+Validation:
+
+```text
+rtk git diff --check
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+ruff check: passed
+ruff format --check: passed
+```
