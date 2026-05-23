@@ -1,0 +1,29 @@
+{
+  "documentData": {
+    "typeDocument": "Llei",
+    "dateDocument": "20/05/2026",
+    "numDocument": "005/2026",
+    "numControl": "26141001",
+    "issuingAuthority": "Departament de la Presidencia",
+    "numDOGC": "9671",
+    "dateDOGC": "22/05/2026",
+    "sectionDOGC": "Disposicions generals",
+    "numSuplement": null,
+    "dateSuplement": null,
+    "sectionSuplement": null,
+    "tipusDiari": "DOGC",
+    "CVE": "CVE-DOGC-A-26141001-2026"
+  },
+  "titleDocument": "Llei 5/2026, de 20 de maig, de mesures urgents de suport al sector agrari i forestal",
+  "textDocument": "<div><!-- omitted in metadata fixture --></div>",
+  "current": true,
+  "uriELI": {
+    "link": "eli/es-ct/l/2026/05/20/5/dof"
+  },
+  "linkDownload": {
+    "linkDownloadPDF": "https://portaldogc.gencat.cat/utilsEADOP/AppJava/PdfProviderServlet?versionId=2151744&type=01",
+    "linkDownloadRDF": "https://portaldogc.gencat.cat/utilsEADOP/AppJava/AkomaNtoso?idNumber=1044918&idVersion=2151744&format=rdf",
+    "linkDownloadTTL": "https://portaldogc.gencat.cat/utilsEADOP/AppJava/AkomaNtoso?idNumber=1044918&idVersion=2151744&format=turtle",
+    "linkDownloadXML": "https://portaldogc.gencat.cat/utilsEADOP/AppJava/AkomaNtoso?idNumber=1044918&idVersion=2151744&format=xml"
+  }
+}

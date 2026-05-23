@@ -96,6 +96,17 @@ class OfficialSourcesRepository:
             reliability_level="canonical",
         )
 
+    def ensure_official_source_dogc(self) -> dict[str, Any]:
+        return self.upsert_official_source(
+            code="DOGC",
+            name="Diari Oficial de la Generalitat de Catalunya",
+            jurisdiction="autonomous",
+            region_code="ES-CT",
+            base_url="https://portaldogc.gencat.cat/eadop-rest/api/dogc",
+            access_type="official_api",
+            reliability_level="canonical",
+        )
+
     def ensure_official_source_bocyl(self) -> dict[str, Any]:
         return self.upsert_official_source(
             code="BOCYL",

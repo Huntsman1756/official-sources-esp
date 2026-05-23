@@ -1,0 +1,34 @@
+{
+  "urlCSVDownloadSearch": "https://portaldogc.gencat.cat/utilsEADOP/AppJava/ExcelProviderServlet?language=ca_ES&portal=dogc&idSearch=21399737&typeDownload=csv",
+  "resultSearch": [
+    {
+      "traceability": null,
+      "title": "Llei 5/2026, de 20 de maig, de mesures urgents de suport al sector agrari i forestal",
+      "linkConsolidatedText": null,
+      "linkDownloadPDF": "https://portaldogc.gencat.cat/utilsEADOP/AppJava/PdfProviderServlet?versionId=2151744&type=01",
+      "validity": null,
+      "linkTitle": "?action=fitxa&documentId=1044918",
+      "current": true,
+      "officialDiary": null,
+      "tipusDiari": "DOGC",
+      "date": "22/05/2026",
+      "idDocument": "1044918"
+    },
+    {
+      "traceability": null,
+      "title": "Decret 85/2026, de 19 de maig, d'encarrec del despatx del conseller d'Empresa i Treball",
+      "linkConsolidatedText": null,
+      "linkDownloadPDF": "https://portaldogc.gencat.cat/utilsEADOP/AppJava/PdfProviderServlet?versionId=2151636&type=01",
+      "validity": null,
+      "linkTitle": "?action=fitxa&documentId=1044864",
+      "current": true,
+      "officialDiary": null,
+      "tipusDiari": "DOGC",
+      "date": "22/05/2026",
+      "idDocument": "1044864"
+    }
+  ],
+  "searchId": 21399737,
+  "urlDownloadSearch": "https://portaldogc.gencat.cat/utilsEADOP/AppJava/ExcelProviderServlet?language=ca_ES&portal=dogc&idSearch=21399737&typeDownload=xls",
+  "numResultSearch": 2
+}
