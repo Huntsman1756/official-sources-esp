@@ -1,0 +1,1 @@
+"""BORM metadata adapter."""

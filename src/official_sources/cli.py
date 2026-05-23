@@ -53,6 +53,8 @@ from official_sources.sources.boja.enrichment import enrich_boja_evidence_urls
 from official_sources.sources.boja.ingestion import ingest_boja_date
 from official_sources.sources.bopv.client import validate_bopv_date
 from official_sources.sources.bopv.ingestion import ingest_bopv_date
+from official_sources.sources.borm.client import validate_borm_date
+from official_sources.sources.borm.ingestion import ingest_borm_date
 from official_sources.sources.dogc.client import validate_dogc_date
 from official_sources.sources.dogc.ingestion import ingest_dogc_date
 from official_sources.sources.dogv.artifacts import DOGV_ARTIFACT_FIELDS, DOGVArtifactDownloader
@@ -668,6 +670,15 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Target date in YYYY-MM-DD format or today.",
     )
+    ingest_borm = subparsers.add_parser(
+        "ingest-borm-date",
+        help="Ingest BORM official XML index metadata for one date.",
+    )
+    ingest_borm.add_argument(
+        "--date",
+        required=True,
+        help="Target date in YYYY-MM-DD format or today.",
+    )
     ingest_bdns_latest = subparsers.add_parser(
         "ingest-bdns-latest",
         help="Ingest latest BDNS public grant calls with an explicit small limit.",
@@ -1036,6 +1047,7 @@ def run(
     bocyl_fetcher=None,
     bopv_fetcher=None,
     boa_fetcher=None,
+    borm_fetcher=None,
     dogv_fetcher=None,
     dogc_fetcher=None,
     dogc_document_fetcher=None,
@@ -1069,6 +1081,8 @@ def run(
         return _run_ingest_bopv(repository, args, bopv_fetcher, stdout, stderr)
     if args.command == "ingest-boa-date":
         return _run_ingest_boa(repository, args, boa_fetcher, stdout, stderr)
+    if args.command == "ingest-borm-date":
+        return _run_ingest_borm(repository, args, borm_fetcher, stdout, stderr)
     if args.command == "ingest-dogv-date":
         return _run_ingest_dogv(repository, args, dogv_fetcher, stdout, stderr)
     if args.command == "ingest-dogc-date":
@@ -1227,6 +1241,12 @@ def resolve_boa_target_date(value: str) -> str:
     if value == "today":
         return date.today().isoformat()
     return validate_boa_date(value).isoformat()
+
+
+def resolve_borm_target_date(value: str) -> str:
+    if value == "today":
+        return date.today().isoformat()
+    return validate_borm_date(value).isoformat()
 
 
 def _open_repository(db_path: str) -> OfficialSourcesRepository:
@@ -1662,6 +1682,47 @@ def _run_ingest_boa(
         file=stdout,
     )
     run_record = ingest_boa_date(repository, target_date=target_date, fetcher=fetcher)
+    print(
+        " ".join(
+            [
+                f"status={run_record['status']}",
+                f"issue_identifier={run_record.get('issue_identifier') or 'none'}",
+                f"documents_fetched={run_record['documents_fetched']}",
+                f"documents_new={run_record['documents_new']}",
+                f"documents_updated={run_record['documents_updated']}",
+                f"retry_count={run_record['retry_count']}",
+                f"throttle_triggered={run_record['throttle_triggered']}",
+                f"last_http_status={_status_value(run_record['last_http_status'])}",
+                f"source_snapshot_hash={run_record.get('source_snapshot_hash') or 'none'}",
+            ]
+            + (
+                [f"error_message={_compact_token(run_record['error_message'])}"]
+                if run_record.get("error_message")
+                else []
+            )
+        ),
+        file=stdout,
+    )
+    return 0 if run_record["status"] in {"success", NO_PUBLICATION_STATUS} else 1
+
+
+def _run_ingest_borm(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        target_date = resolve_borm_target_date(args.date)
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        f"command_started={args.command} source_code=BORM target_date={target_date}",
+        file=stdout,
+    )
+    run_record = ingest_borm_date(repository, target_date=target_date, fetcher=fetcher)
     print(
         " ".join(
             [
