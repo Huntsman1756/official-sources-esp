@@ -1,5 +1,54 @@
 # Validation
 
+## 2026-05-21 - TASK-AUTO-BOCYL-002 BOCYL metadata adapter MVP
+
+Local validation:
+
+```text
+git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+pytest: 343 passed
+ruff check: passed
+ruff format --check: passed
+```
+
+Controlled local live smoke with a temporary SQLite database:
+
+```text
+date=2026-05-20
+status=success
+issue_identifier=94/2026
+documents_fetched=42
+documents_new=42
+documents_updated=0
+last_http_status=200
+
+date=2026-05-17
+status=no_publication
+documents_fetched=0
+documents_new=0
+documents_updated=0
+last_http_status=200
+
+official_documents=42
+source_candidates=0
+artifact_download_attempts=0
+pdf_document_files=0
+xml_document_files=0
+raw_api_response_document_files=42
+```
+
+No BOCYL PDF, XML, or HTML artifact downloads, source candidates, downstream writes, approvals, or
+publications were performed.
+
 ## 2026-05-21 - TASK-AUTO-DOGV-007B scoped DOGV artifact downloader
 
 Local validation:

@@ -40,11 +40,13 @@ Scope:
 - Downstream onboarding kit for reusable project integrations.
 - BOCM metadata-only adapter MVP.
 - DOGV metadata-only adapter MVP and controlled 30-day metadata backfill.
+- BOCYL metadata-only adapter MVP.
 - BDNS metadata-only adapter MVP for public grant calls (`convocatorias`).
 
 ## Not Implemented
 
-- Tier 2: autonomous/statutory territory bulletins beyond BOJA and BOCM metadata pilots.
+- Tier 2: autonomous/statutory territory bulletins beyond BOJA, BOCM, DOGV, and BOCYL metadata
+  pilots.
 - Tier 3: provincial/local bulletins.
 - Tier 4: EUR-Lex/DOUE.
 - TED/OJ S procurement adapter.
@@ -174,9 +176,8 @@ Recommended next autonomous-source option:
 
 Recommended next new autonomous-source MVP after current validated-source work:
 
-- BOCYL metadata-only MVP. Endpoint fixture discovery is complete in
-  `docs/reports/BOCYL_ENDPOINT_FIXTURE_DISCOVERY_2026-05-21.md`; BOCYL has an official JCyL
-  open-data API with stable document identifiers and PDF/XML/HTML artifact links.
+- BOCYL controlled 30-day metadata backfill. The metadata MVP is implemented and documented in
+  `docs/reports/BOCYL_ADAPTER_MVP_2026-05-21.md`.
 - BOPV/EHAA metadata-only MVP is the strongest alternate API-led candidate.
 - Provincial BOP work should remain metadata-monitor design only until Barcelona, A Coruna, and
   Malaga prove stable as pilot sources.

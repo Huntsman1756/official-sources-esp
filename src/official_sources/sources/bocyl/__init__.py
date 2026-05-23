@@ -1,0 +1,1 @@
+"""BOCYL metadata adapter."""

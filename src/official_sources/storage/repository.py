@@ -96,6 +96,17 @@ class OfficialSourcesRepository:
             reliability_level="canonical",
         )
 
+    def ensure_official_source_bocyl(self) -> dict[str, Any]:
+        return self.upsert_official_source(
+            code="BOCYL",
+            name="Boletín Oficial de Castilla y León",
+            jurisdiction="autonomous",
+            region_code="ES-CL",
+            base_url="https://jcyl.opendatasoft.com/api/explore/v2.1/catalog/datasets/bocyl",
+            access_type="official_json",
+            reliability_level="canonical",
+        )
+
     def ensure_official_source_bdns(self) -> dict[str, Any]:
         return self.upsert_official_source(
             code="BDNS",

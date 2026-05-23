@@ -25,11 +25,12 @@ Implemented now:
 - Tier 2: BOJA metadata-first autonomous source pilot.
 - Tier 2: BOCM metadata-only adapter MVP.
 - Tier 2: DOGV metadata adapter MVP with scoped PDF evidence downloads.
+- Tier 2: BOCYL metadata-only adapter MVP.
 - Grants registry: BDNS metadata-only adapter MVP for public grant calls.
 
 Not implemented:
 
-- Tier 2: additional autonomous/statutory territory bulletins.
+- Tier 2: additional autonomous/statutory territory bulletins beyond implemented metadata pilots.
 - Tier 3: provincial/local bulletins.
 - Tier 4: EUR-Lex/DOUE.
 - TED/OJ S procurement adapter.

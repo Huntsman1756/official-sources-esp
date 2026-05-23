@@ -13,6 +13,7 @@ Latest audit:
 | BOJA | Boletin Oficial de la Junta de Andalucia | ES-AN | https://www.juntadeandalucia.es/boja | yes | not confirmed | yes | unknown | yes | yes | yes | must be reviewed | low | P1 | Recommended first adapter. Official OpenAPI is available at `https://datos.juntadeandalucia.es/api/v0/boja/openapi.json`. |
 | BOCM | Boletin Oficial de la Comunidad de Madrid | ES-MD | https://www.bocm.es | no formal API found | yes | yes | yes, summary XML | yes | yes | yes | must be reviewed | low-medium | P1/P2 | Strong second candidate. RSS, current issue XML, recent summary RSS, issue HTML, and deterministic PDF paths were observed. |
 | DOGV | Diari Oficial de la Generalitat Valenciana | ES-VC | https://dogv.gva.es | official JSON endpoint, no formal OpenAPI found | not confirmed | yes | yes, dynamic XML endpoint | yes | yes | yes | must be reviewed | low-medium | P1 | Metadata adapter MVP implemented after endpoint discovery. Date JSON endpoint returns issue and document list directly. |
+| BOCYL | Boletin Oficial de Castilla y Leon | ES-CL | https://bocyl.jcyl.es | official JCyL Opendatasoft API | yes | yes | yes | yes | yes | yes | must be reviewed | low | P1 | Metadata adapter MVP implemented. Date API query by `fecha_publicacion` returns records with stable `BOCYL-D-*` document IDs and PDF/XML/HTML links. |
 | BOME | Boletin Oficial de Melilla | ES-ML | https://bomemelilla.es | partial, undocumented site endpoints | not confirmed | yes | not found | yes | yes | yes | must be reviewed | medium-high | P3 | Official naming confirmed as BOME. Issue and article CVEs are stable, but API/calendar endpoints are undocumented. |
 | BOCCE | Boletin Oficial de la Ciudad de Ceuta | ES-CE | https://www.ceuta.es/ceuta/bocce | no | not found | yes | not found | yes | partial | partial | must be reviewed | high | defer | Defer until after one cleaner autonomous adapter. Joomla/JDownloads structure and PDF-first behavior need careful fixtures. |
 
@@ -31,6 +32,7 @@ TASK-AUTO-004B status: BOJA-specific `boja-ayudas` dry-run profile implemented.
 TASK-AUTO-010 status: BOJA pilot closed through reviewed evidence decisions.
 TASK-AUTO-BOCM-002 status: BOCM metadata adapter MVP implemented.
 TASK-AUTO-DOGV-002 status: DOGV metadata adapter MVP implemented.
+TASK-AUTO-BOCYL-002 status: BOCYL metadata adapter MVP implemented.
 
 Implemented scope:
 
@@ -82,6 +84,14 @@ DOGV MVP note:
 - The endpoint returns issue metadata, document list metadata, direct PDF URL paths, and stable document IDs.
 - The adapter stores metadata and official URLs only; it does not create candidates or download PDFs.
 - `docs/reports/DOGV_ADAPTER_MVP_2026-05-21.md` records the implementation result and live smoke.
+
+BOCYL MVP note:
+
+- BOCYL date ingestion uses the official JCyL Opendatasoft dataset `bocyl`.
+- The date query filters by `fecha_publicacion=date'YYYY-MM-DD'`.
+- The adapter stores metadata and official HTML/XML/PDF URLs only; it does not create candidates or
+  download artifacts.
+- `docs/reports/BOCYL_ADAPTER_MVP_2026-05-21.md` records the implementation result and live smoke.
 
 Candidate profile note:
 
