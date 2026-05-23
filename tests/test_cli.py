@@ -2152,6 +2152,10 @@ def test_find_source_candidates_alias_supports_all_metadata_sources_dry_run(tmp_
         "DOGV": repository.ensure_official_source_dogv(),
         "BOCM": repository.ensure_official_source_bocm(),
         "BDNS": repository.ensure_official_source_bdns(),
+        "BOPV": repository.ensure_official_source_bopv(),
+        "BOA": repository.ensure_official_source_boa(),
+        "BORM": repository.ensure_official_source_borm(),
+        "DOGC": repository.ensure_official_source_dogc(),
     }
     for source_code, source in sources.items():
         repository.upsert_document(
@@ -2186,6 +2190,99 @@ def test_find_source_candidates_alias_supports_all_metadata_sources_dry_run(tmp_
         assert f"{source_code}:candidate-1" in captured.out
         for other_source_code in sources.keys() - {source_code}:
             assert f"{other_source_code}:candidate-1" not in captured.out
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    assert candidate_count == 0
+
+
+def test_find_source_candidates_supports_new_autonomous_profiles_and_filters_noise(
+    tmp_path, capsys
+):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source_factories = {
+        "BOPV": repository.ensure_official_source_bopv,
+        "BOA": repository.ensure_official_source_boa,
+        "BORM": repository.ensure_official_source_borm,
+        "DOGC": repository.ensure_official_source_dogc,
+    }
+    profiles = {
+        "BOPV": "bopv-ayudas",
+        "BOA": "boa-ayudas",
+        "BORM": "borm-ayudas",
+        "DOGC": "dogc-ayudas",
+    }
+    for source_code, ensure_source in source_factories.items():
+        source = ensure_source()
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=f"{source_code}:weak-generic",
+            publication_date="2026-05-20",
+            title="Resolucion de convocatoria de subvenciones",
+            department="Departamento de Industria",
+            section="Otras disposiciones",
+        )
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=f"{source_code}:employment-noise",
+            publication_date="2026-05-20",
+            title="Convocatoria de bolsas de empleo, nombramientos y tribunales",
+            department="Funcion Publica",
+            section="Autoridades y personal",
+        )
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=f"{source_code}:student-aid",
+            publication_date="2026-05-20",
+            title="Convocatoria de ayudas al estudio para alumnado universitario",
+            department="Educacion",
+            section="Ayudas",
+        )
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=f"{source_code}:young-rent",
+            publication_date="2026-05-20",
+            title="Convocatoria de bono alquiler joven para familias",
+            department="Vivienda",
+            section="Ayudas",
+        )
+
+        exit_code = run(
+            [
+                "--db-path",
+                str(db_path),
+                "find-source-candidates",
+                "--source",
+                source_code,
+                "--date-from",
+                "2026-05-20",
+                "--date-to",
+                "2026-05-20",
+                "--profile",
+                profiles[source_code],
+                "--dry-run",
+                "--limit",
+                "10",
+            ]
+        )
+
+        captured = capsys.readouterr()
+        assert exit_code == 0
+        assert f"source={source_code}" in captured.out
+        assert "documents_scanned=4" in captured.out
+        assert "matches_total=4" in captured.out
+        assert "matches_after_filters=2" in captured.out
+        assert "excluded_by_keyword_rules=2" in captured.out
+        assert f"{source_code}:student-aid" in captured.out
+        assert f"{source_code}:young-rent" in captured.out
+        assert f"{source_code}:weak-generic" not in captured.out
+        assert f"{source_code}:employment-noise" not in captured.out
 
     candidate_count = connection.execute(
         "SELECT COUNT(*) AS count FROM source_candidates"

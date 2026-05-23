@@ -76,7 +76,28 @@ from official_sources.storage.repository import (
     OfficialSourcesRepository,
 )
 
-SOURCE_CANDIDATE_SOURCE_CODES = ("BOE", "BOJA", "DOGV", "BOCM", "BOCYL", "BDNS")
+SOURCE_CANDIDATE_SOURCE_CODES = (
+    "BOE",
+    "BOJA",
+    "DOGV",
+    "BOCM",
+    "BOCYL",
+    "BDNS",
+    "BOPV",
+    "BOA",
+    "BORM",
+    "DOGC",
+)
+SOURCE_CANDIDATE_PROFILES = (
+    "la-ayuda",
+    "boja-ayudas",
+    "dogv-ayudas",
+    "bocyl-ayudas",
+    "bopv-ayudas",
+    "boa-ayudas",
+    "borm-ayudas",
+    "dogc-ayudas",
+)
 
 LA_AYUDA_PROFILE_KEYWORDS = [
     "beca",
@@ -198,6 +219,59 @@ BOCYL_AYUDAS_PROFILE_KEYWORDS = [
     "empleo",
     "formacion",
     "discapacidad",
+]
+AUTONOMOUS_AYUDAS_PROFILE_KEYWORDS = [
+    "beca",
+    "becas",
+    "ayuda",
+    "ayudas",
+    "subvencion",
+    "subvenciones",
+    "bases reguladoras",
+    "convocatoria",
+    "convocatoria de ayudas",
+    "convocatoria de subvenciones",
+    "ayudas al estudio",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "ayudas directas a personas",
+    "alumnado",
+    "estudiantes",
+    "comedor escolar",
+    "transporte escolar",
+    "libros de texto",
+    "material escolar",
+    "necesidades educativas",
+    "formacion profesional",
+    "universidad",
+    "universidades",
+    "ayudas para familias",
+    "familias",
+    "joven",
+    "jovenes",
+    "alquiler joven",
+    "bono alquiler",
+    "bono alquiler joven",
+    "vivienda",
+    "alquiler",
+    "empleo",
+    "formacion",
+    "discapacidad",
+]
+DOGC_AYUDAS_PROFILE_KEYWORDS = [
+    *AUTONOMOUS_AYUDAS_PROFILE_KEYWORDS,
+    "ajut",
+    "ajuts",
+    "beca",
+    "beques",
+    "alumnat",
+    "estudiants",
+    "families",
+    "joves",
+    "lloguer jove",
+    "bo lloguer jove",
+    "transport escolar",
+    "menjador escolar",
 ]
 LA_AYUDA_DEFAULT_EXCLUDED_SECTIONS = ["V-A"]
 GENERIC_WEAK_KEYWORDS = {"convocatoria", "transporte"}
@@ -498,6 +572,123 @@ BOCYL_INSTITUTIONAL_OR_SECTOR_TERMS = {
     "turismo",
     "cultura",
     "deporte",
+}
+AUTONOMOUS_GENERIC_WEAK_KEYWORDS = {
+    "ayuda",
+    "ayudas",
+    "subvencion",
+    "subvenciones",
+    "bases reguladoras",
+    "convocatoria",
+    "convocatoria de ayudas",
+    "convocatoria de subvenciones",
+    "vivienda",
+    "empleo",
+    "formacion",
+    "alquiler",
+    "ajut",
+    "ajuts",
+}
+AUTONOMOUS_HIGH_INTENT_KEYWORDS = {
+    "beca",
+    "becas",
+    "beques",
+    "ayudas al estudio",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "ayudas directas a personas",
+    "alumnado",
+    "alumnat",
+    "estudiantes",
+    "estudiants",
+    "comedor escolar",
+    "menjador escolar",
+    "transporte escolar",
+    "transport escolar",
+    "libros de texto",
+    "material escolar",
+    "necesidades educativas",
+    "formacion profesional",
+    "universidad",
+    "universidades",
+    "ayudas para familias",
+    "familia numerosa",
+    "familias",
+    "families",
+    "joven",
+    "jovenes",
+    "joves",
+    "alquiler joven",
+    "bono alquiler joven",
+    "lloguer jove",
+    "bo lloguer jove",
+    "discapacidad",
+}
+AUTONOMOUS_DIRECT_TITLE_TERMS = {
+    "beca",
+    "becas",
+    "beques",
+    "ayudas al estudio",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "ayudas directas a personas",
+    "alumnado",
+    "alumnat",
+    "estudiantes",
+    "estudiants",
+    "comedor escolar",
+    "menjador escolar",
+    "transporte escolar",
+    "transport escolar",
+    "libros de texto",
+    "material escolar",
+    "necesidades educativas",
+    "familias",
+    "families",
+    "joven",
+    "jovenes",
+    "joves",
+    "alquiler joven",
+    "bono alquiler joven",
+    "lloguer jove",
+    "bo lloguer jove",
+    "discapacidad",
+}
+AUTONOMOUS_EMPLOYMENT_NOISE_TERMS = {
+    "oposicion",
+    "oposiciones",
+    "bolsa de empleo",
+    "bolsas de empleo",
+    "pruebas selectivas",
+    "lista provisional",
+    "listas provisionales",
+    "lista definitiva",
+    "listas definitivas",
+    "tribunal",
+    "tribunales",
+    "nombramiento",
+    "nombramientos",
+    "autoridades y personal",
+    "ofertas de empleo publico",
+}
+AUTONOMOUS_PROCEDURAL_NOISE_TERMS = {
+    "contratacion",
+    "licitacion",
+    "urbanismo",
+    "medio ambiente",
+    "industria",
+    "energia",
+    "agricultura",
+    "ganaderia",
+    "entidades locales",
+    "ayuntamientos",
+    "empresas",
+    "empresa",
+    "concesion",
+    "concesion ya resuelta",
+    "resolucion de concesion",
+    "anuncio",
+    "procedimiento",
 }
 TRANSPORT_SUPPORT_KEYWORDS = {
     "ayuda",
@@ -982,10 +1173,10 @@ def _add_find_candidates_parser(
     )
     candidates.add_argument(
         "--profile",
-        choices=["la-ayuda", "boja-ayudas", "dogv-ayudas", "bocyl-ayudas"],
+        choices=SOURCE_CANDIDATE_PROFILES,
         help=(
             "Use a documented keyword/filter profile. Currently supported: "
-            "la-ayuda, boja-ayudas, dogv-ayudas, bocyl-ayudas."
+            f"{', '.join(SOURCE_CANDIDATE_PROFILES)}."
         ),
     )
     candidates.add_argument(
@@ -2591,6 +2782,10 @@ def _candidate_keywords(args: argparse.Namespace) -> list[str]:
         keywords.extend(DOGV_AYUDAS_PROFILE_KEYWORDS)
     if args.profile == "bocyl-ayudas":
         keywords.extend(BOCYL_AYUDAS_PROFILE_KEYWORDS)
+    if args.profile in {"bopv-ayudas", "boa-ayudas", "borm-ayudas"}:
+        keywords.extend(AUTONOMOUS_AYUDAS_PROFILE_KEYWORDS)
+    if args.profile == "dogc-ayudas":
+        keywords.extend(DOGC_AYUDAS_PROFILE_KEYWORDS)
     if args.keywords:
         keywords.extend(keyword.strip() for keyword in args.keywords.split(",") if keyword.strip())
     return list(dict.fromkeys(keywords))
@@ -2690,6 +2885,18 @@ def _candidate_exclusion_reason(
         matches,
     ):
         return "keyword_rules"
+    if (
+        filters["profile"]
+        and filters["profile"][0]
+        in {
+            "bopv-ayudas",
+            "boa-ayudas",
+            "borm-ayudas",
+            "dogc-ayudas",
+        }
+        and _autonomous_profile_exclusion_reason(document, matches)
+    ):
+        return "keyword_rules"
     return None
 
 
@@ -2762,6 +2969,14 @@ def _score_candidate_match(
     if profile == "bocyl-ayudas" and _bocyl_weak_only_match(keywords):
         score -= 2
         reasons.append("bocyl_weak_only_generic_match:-2")
+    if profile in {
+        "bopv-ayudas",
+        "boa-ayudas",
+        "borm-ayudas",
+        "dogc-ayudas",
+    } and _autonomous_weak_only_match(keywords):
+        score -= 2
+        reasons.append("autonomous_weak_only_generic_match:-2")
     return score, reasons
 
 
@@ -2969,6 +3184,90 @@ def _bocyl_has_housing_context(title: str) -> bool:
             "alumnado",
             "discapacidad",
             "bono alquiler",
+        }
+    )
+    return has_housing and has_person_context
+
+
+def _autonomous_profile_exclusion_reason(
+    document: dict[str, Any],
+    matches: dict[str, Any],
+) -> str | None:
+    keywords = matches["keywords"]
+    title = _normalize_search_text(str(document.get("title") or ""))
+    department = _normalize_search_text(str(document.get("department") or ""))
+    section = _normalize_search_text(str(document.get("section") or ""))
+    document_type = _normalize_search_text(str(document.get("document_type") or ""))
+    raw_metadata = _normalize_search_text(str(document.get("raw_metadata_json") or ""))
+    combined_text = " ".join([title, department, section, document_type, raw_metadata])
+    title_has_direct_signal = _autonomous_title_has_direct_signal(title)
+
+    if _autonomous_weak_only_match(keywords):
+        return "autonomous_weak_only"
+    if any(term in combined_text for term in _normalized_set(AUTONOMOUS_EMPLOYMENT_NOISE_TERMS)):
+        return "autonomous_employment_noise"
+    if {"vivienda", "alquiler"} & {
+        _normalize_search_text(keyword) for keyword in keywords
+    } and not _autonomous_has_housing_context(title):
+        return "autonomous_housing_noise"
+    title_has_procedural_noise = any(
+        term in title for term in _normalized_set(AUTONOMOUS_PROCEDURAL_NOISE_TERMS)
+    )
+    if any(
+        term in combined_text for term in _normalized_set(AUTONOMOUS_PROCEDURAL_NOISE_TERMS)
+    ) and not (title_has_direct_signal and not title_has_procedural_noise):
+        return "autonomous_procedural_or_sector_noise"
+    if not title_has_direct_signal:
+        return "autonomous_no_direct_signal"
+    return None
+
+
+def _autonomous_weak_only_match(keywords: list[str]) -> bool:
+    normalized_keywords = {_normalize_search_text(keyword) for keyword in keywords}
+    if not normalized_keywords:
+        return True
+    high_intent = _normalized_set(AUTONOMOUS_HIGH_INTENT_KEYWORDS)
+    return not bool(normalized_keywords & high_intent)
+
+
+def _autonomous_title_has_direct_signal(title: str) -> bool:
+    if any(term in title for term in _normalized_set(AUTONOMOUS_DIRECT_TITLE_TERMS)):
+        return True
+    if "formacion profesional" in title and any(
+        term in title for term in {"beca", "becas", "ayuda", "ayudas"}
+    ):
+        return True
+    return _autonomous_has_housing_context(title)
+
+
+def _autonomous_has_housing_context(title: str) -> bool:
+    has_housing = any(
+        term in title
+        for term in {
+            "vivienda",
+            "alquiler",
+            "lloguer",
+        }
+    )
+    has_person_context = any(
+        term in title
+        for term in {
+            "joven",
+            "jovenes",
+            "jove",
+            "joves",
+            "familia",
+            "familias",
+            "families",
+            "estudiante",
+            "estudiantes",
+            "estudiant",
+            "estudiants",
+            "alumnado",
+            "alumnat",
+            "discapacidad",
+            "bono alquiler",
+            "bo lloguer",
         }
     )
     return has_housing and has_person_context
