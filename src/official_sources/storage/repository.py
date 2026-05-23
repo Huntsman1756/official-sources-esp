@@ -107,6 +107,17 @@ class OfficialSourcesRepository:
             reliability_level="canonical",
         )
 
+    def ensure_official_source_bopv(self) -> dict[str, Any]:
+        return self.upsert_official_source(
+            code="BOPV",
+            name="Boletín Oficial del País Vasco / Euskal Herriko Agintaritzaren Aldizkaria",
+            jurisdiction="autonomous",
+            region_code="ES-PV",
+            base_url="https://www.euskadi.eus/bopv2/datos",
+            access_type="official_xml",
+            reliability_level="canonical",
+        )
+
     def ensure_official_source_bdns(self) -> dict[str, Any]:
         return self.upsert_official_source(
             code="BDNS",
