@@ -6,6 +6,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from official_sources.sources.boe.artifacts import (
+    ArtifactHTTPResponse,
     BOEArtifactDownloader,
     BOEArtifactDownloadError,
 )
@@ -52,6 +53,33 @@ class BOCYLArtifactDownloader(BOEArtifactDownloader):
 
     def _artifact_fields(self) -> dict[str, tuple[str, str, str]]:
         return BOCYL_ARTIFACT_FIELDS
+
+    def _download_response(self, url: str) -> ArtifactHTTPResponse:
+        if self.client is not None:
+            response = super()._download_response(url)
+        else:
+            with httpx.Client(follow_redirects=True, timeout=self.timeout) as client:
+                result = self.request_policy.get(
+                    url,
+                    client=client,
+                    sleeper=self.sleeper,
+                )
+            if not 200 <= result.status_code < 300:
+                exc = self._artifact_error(
+                    f"{self._artifact_error_prefix()} artifact download returned HTTP "
+                    f"{result.status_code}"
+                )
+                exc.http_status = result.status_code
+                exc.retry_count = result.audit.retry_count
+                exc.throttle_triggered = result.audit.throttle_triggered
+                raise exc
+            validate_bocyl_artifact_url(str(result.request.url))
+            response = ArtifactHTTPResponse(
+                content=result.content,
+                status_code=result.status_code,
+                audit=result.audit,
+            )
+        return response
 
     def _validate_artifact_url(self, url: str) -> str:
         return validate_bocyl_artifact_url(url)

@@ -1028,6 +1028,60 @@ def test_download_source_artifacts_supports_scoped_bocyl_xml_html_candidate_down
     assert (artifact_dir / "bocyl" / "2026" / "05" / "15" / "BOCYL_BOCYL-D-15052026-91-8").exists()
 
 
+def test_download_source_artifacts_bocyl_follows_official_redirects(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    document = _seed_bocyl_document(db_path)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="generic",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["becas"]},
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if str(request.url).startswith("http://"):
+            return httpx.Response(
+                302,
+                headers={"Location": str(request.url).replace("http://", "https://", 1)},
+                request=request,
+            )
+        return httpx.Response(200, content=b"<document>BOCYL redirected XML</document>")
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-source-artifacts",
+            "--source",
+            "BOCYL",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "xml",
+        ],
+        artifact_client=httpx.Client(
+            transport=httpx.MockTransport(handler),
+            follow_redirects=True,
+        ),
+    )
+
+    attempts = repository.list_artifact_download_attempts(document_id=document["id"])
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert repository.list_document_files(document["id"])[0]["file_type"] == "xml"
+    assert attempts[-1]["http_status"] == 200
+    assert "downloaded=1" in captured.out
+
+
 def test_download_source_artifacts_bocyl_requires_candidate_ids(tmp_path, capsys):
     from official_sources.cli import run
 
