@@ -1,0 +1,7 @@
+{
+  "urlCSVDownloadSearch": "https://portaldogc.gencat.cat/utilsEADOP/AppJava/ExcelProviderServlet?language=ca_ES&portal=dogc&idSearch=21399741&typeDownload=csv",
+  "resultSearch": [],
+  "searchId": 21399741,
+  "urlDownloadSearch": "https://portaldogc.gencat.cat/utilsEADOP/AppJava/ExcelProviderServlet?language=ca_ES&portal=dogc&idSearch=21399741&typeDownload=xls",
+  "numResultSearch": 0
+}
