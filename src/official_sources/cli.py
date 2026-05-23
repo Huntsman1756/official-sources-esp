@@ -26,6 +26,8 @@ from official_sources.sources.bdns.ingestion import (
     ingest_bdns_latest,
     search_bdns_calls,
 )
+from official_sources.sources.boa.client import validate_boa_date
+from official_sources.sources.boa.ingestion import ingest_boa_date
 from official_sources.sources.bocm.client import validate_bocm_date
 from official_sources.sources.bocm.ingestion import ingest_bocm_date
 from official_sources.sources.bocyl.artifacts import BOCYL_ARTIFACT_FIELDS, BOCYLArtifactDownloader
@@ -646,6 +648,15 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Target date in YYYY-MM-DD format or today.",
     )
+    ingest_boa = subparsers.add_parser(
+        "ingest-boa-date",
+        help="Ingest BOA official JSON metadata for one date.",
+    )
+    ingest_boa.add_argument(
+        "--date",
+        required=True,
+        help="Target date in YYYY-MM-DD format or today.",
+    )
     ingest_bdns_latest = subparsers.add_parser(
         "ingest-bdns-latest",
         help="Ingest latest BDNS public grant calls with an explicit small limit.",
@@ -1013,6 +1024,7 @@ def run(
     bocm_fetcher=None,
     bocyl_fetcher=None,
     bopv_fetcher=None,
+    boa_fetcher=None,
     dogv_fetcher=None,
     bdns_latest_fetcher=None,
     bdns_call_fetcher=None,
@@ -1042,6 +1054,8 @@ def run(
         return _run_ingest_bocyl(repository, args, bocyl_fetcher, stdout, stderr)
     if args.command == "ingest-bopv-date":
         return _run_ingest_bopv(repository, args, bopv_fetcher, stdout, stderr)
+    if args.command == "ingest-boa-date":
+        return _run_ingest_boa(repository, args, boa_fetcher, stdout, stderr)
     if args.command == "ingest-dogv-date":
         return _run_ingest_dogv(repository, args, dogv_fetcher, stdout, stderr)
     if args.command == "ingest-bdns-latest":
@@ -1184,6 +1198,12 @@ def resolve_bopv_target_date(value: str) -> str:
     if value == "today":
         return date.today().isoformat()
     return validate_bopv_date(value).isoformat()
+
+
+def resolve_boa_target_date(value: str) -> str:
+    if value == "today":
+        return date.today().isoformat()
+    return validate_boa_date(value).isoformat()
 
 
 def _open_repository(db_path: str) -> OfficialSourcesRepository:
@@ -1531,6 +1551,47 @@ def _run_ingest_bopv(
         file=stdout,
     )
     run_record = ingest_bopv_date(repository, target_date=target_date, fetcher=fetcher)
+    print(
+        " ".join(
+            [
+                f"status={run_record['status']}",
+                f"issue_identifier={run_record.get('issue_identifier') or 'none'}",
+                f"documents_fetched={run_record['documents_fetched']}",
+                f"documents_new={run_record['documents_new']}",
+                f"documents_updated={run_record['documents_updated']}",
+                f"retry_count={run_record['retry_count']}",
+                f"throttle_triggered={run_record['throttle_triggered']}",
+                f"last_http_status={_status_value(run_record['last_http_status'])}",
+                f"source_snapshot_hash={run_record.get('source_snapshot_hash') or 'none'}",
+            ]
+            + (
+                [f"error_message={_compact_token(run_record['error_message'])}"]
+                if run_record.get("error_message")
+                else []
+            )
+        ),
+        file=stdout,
+    )
+    return 0 if run_record["status"] in {"success", NO_PUBLICATION_STATUS} else 1
+
+
+def _run_ingest_boa(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        target_date = resolve_boa_target_date(args.date)
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        f"command_started={args.command} source_code=BOA target_date={target_date}",
+        file=stdout,
+    )
+    run_record = ingest_boa_date(repository, target_date=target_date, fetcher=fetcher)
     print(
         " ".join(
             [

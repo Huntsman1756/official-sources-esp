@@ -1,0 +1,1 @@
+"""BOA metadata ingestion adapter."""
