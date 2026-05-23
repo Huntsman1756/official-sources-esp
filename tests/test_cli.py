@@ -2291,6 +2291,142 @@ def test_find_source_candidates_dogv_profile_dry_run_does_not_write(tmp_path, ca
     assert "DOGV:study-aid" in captured.out
 
 
+def test_find_source_candidates_supports_bocyl_profile_and_filters_noise(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    bocyl_source = repository.ensure_official_source_bocyl()
+    documents = [
+        (
+            "BOCYL:vivienda-department-only",
+            "RESOLUCION por la que se aprueba definitivamente la modificacion del plan general",
+            "CONSEJERIA DE MEDIO AMBIENTE, VIVIENDA Y ORDENACION DEL TERRITORIO",
+            "I. COMUNIDAD DE CASTILLA Y LEON",
+        ),
+        (
+            "BOCYL:environmental-noise",
+            "RESOLUCION relativa a evaluacion ambiental, montes, caza y pesca",
+            "CONSEJERIA DE MEDIO AMBIENTE, VIVIENDA Y ORDENACION DEL TERRITORIO",
+            "I. COMUNIDAD DE CASTILLA Y LEON",
+        ),
+        (
+            "BOCYL:generic-subvenciones",
+            "ORDEN por la que se establecen subvenciones para entidades locales",
+            "CONSEJERIA DE AGRICULTURA, GANADERIA Y DESARROLLO RURAL",
+            "I. COMUNIDAD DE CASTILLA Y LEON",
+        ),
+        (
+            "BOCYL:professional-families-noise",
+            "ORDEN por la que se habilita personal asesor para distintas familias profesionales",
+            "CONSEJERIA DE EDUCACION",
+            "I. COMUNIDAD DE CASTILLA Y LEON",
+        ),
+        (
+            "BOCYL:study-aid",
+            "ORDEN por la que se convocan ayudas al estudio para alumnado universitario",
+            "CONSEJERIA DE EDUCACION",
+            "I. COMUNIDAD DE CASTILLA Y LEON",
+        ),
+        (
+            "BOCYL:young-rent",
+            "ORDEN por la que se convocan ayudas para bono alquiler joven",
+            "CONSEJERIA DE MEDIO AMBIENTE, VIVIENDA Y ORDENACION DEL TERRITORIO",
+            "I. COMUNIDAD DE CASTILLA Y LEON",
+        ),
+    ]
+    for external_id, title, department, section in documents:
+        repository.upsert_document(
+            source_id=bocyl_source["id"],
+            external_id=external_id,
+            publication_date="2026-05-20",
+            title=title,
+            department=department,
+            section=section,
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "BOCYL",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--profile",
+            "bocyl-ayudas",
+            "--dry-run",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "source=BOCYL" in captured.out
+    assert "documents_scanned=6" in captured.out
+    assert "matches_total=5" in captured.out
+    assert "matches_after_filters=2" in captured.out
+    assert "excluded_by_keyword_rules=3" in captured.out
+    assert "BOCYL:study-aid" in captured.out
+    assert "BOCYL:young-rent" in captured.out
+    assert "BOCYL:vivienda-department-only" not in captured.out
+    assert "BOCYL:environmental-noise" not in captured.out
+    assert "BOCYL:generic-subvenciones" not in captured.out
+    assert "BOCYL:professional-families-noise" not in captured.out
+    assert "ayudas al estudio" in captured.out
+    assert "bono alquiler joven" in captured.out
+
+
+def test_find_source_candidates_bocyl_profile_dry_run_does_not_write(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    bocyl_source = repository.ensure_official_source_bocyl()
+    repository.upsert_document(
+        source_id=bocyl_source["id"],
+        external_id="BOCYL:student-aid",
+        publication_date="2026-05-20",
+        title="Convocatoria de becas para estudiantes universitarios",
+        department="CONSEJERIA DE EDUCACION",
+        section="I. COMUNIDAD DE CASTILLA Y LEON",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "BOCYL",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--profile",
+            "bocyl-ayudas",
+            "--dry-run",
+        ]
+    )
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert candidate_count == 0
+    assert "write_mode=dry_run" in captured.out
+    assert "BOCYL:student-aid" in captured.out
+
+
 def test_find_boe_candidates_default_source_remains_boe(tmp_path, capsys):
     from official_sources.cli import run
 

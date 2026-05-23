@@ -67,7 +67,7 @@ from official_sources.storage.repository import (
     OfficialSourcesRepository,
 )
 
-SOURCE_CANDIDATE_SOURCE_CODES = ("BOE", "BOJA", "DOGV", "BOCM", "BDNS")
+SOURCE_CANDIDATE_SOURCE_CODES = ("BOE", "BOJA", "DOGV", "BOCM", "BOCYL", "BDNS")
 
 LA_AYUDA_PROFILE_KEYWORDS = [
     "beca",
@@ -148,6 +148,44 @@ DOGV_AYUDAS_PROFILE_KEYWORDS = [
     "jovenes",
     "vivienda",
     "alquiler",
+    "empleo",
+    "formacion",
+    "discapacidad",
+]
+BOCYL_AYUDAS_PROFILE_KEYWORDS = [
+    "beca",
+    "becas",
+    "ayuda",
+    "ayudas",
+    "subvencion",
+    "subvenciones",
+    "bases reguladoras",
+    "convocatoria",
+    "convocatoria de ayudas",
+    "convocatoria de subvenciones",
+    "ayudas al estudio",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "ayudas directas a personas",
+    "alumnado",
+    "estudiantes",
+    "comedor escolar",
+    "transporte escolar",
+    "libros de texto",
+    "material escolar",
+    "necesidades educativas",
+    "formacion profesional",
+    "universidad",
+    "universidades",
+    "ayudas para familias",
+    "familia numerosa",
+    "familias numerosas",
+    "joven",
+    "jovenes",
+    "vivienda",
+    "alquiler",
+    "bono alquiler",
+    "bono alquiler joven",
     "empleo",
     "formacion",
     "discapacidad",
@@ -351,6 +389,106 @@ DOGV_SECTOR_COMPANY_TERMS = {
 DOGV_PROCUREMENT_TERMS = {
     "contratacion",
     "licitacion",
+}
+BOCYL_GENERIC_WEAK_KEYWORDS = {
+    "ayuda",
+    "ayudas",
+    "subvencion",
+    "subvenciones",
+    "bases reguladoras",
+    "convocatoria",
+    "convocatoria de ayudas",
+    "convocatoria de subvenciones",
+    "vivienda",
+    "empleo",
+    "formacion",
+    "alquiler",
+}
+BOCYL_HIGH_INTENT_KEYWORDS = {
+    "beca",
+    "becas",
+    "ayudas al estudio",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "ayudas directas a personas",
+    "alumnado",
+    "estudiantes",
+    "comedor escolar",
+    "transporte escolar",
+    "libros de texto",
+    "material escolar",
+    "necesidades educativas",
+    "formacion profesional",
+    "universidad",
+    "universidades",
+    "ayudas para familias",
+    "familia numerosa",
+    "familias numerosas",
+    "joven",
+    "jovenes",
+    "bono alquiler",
+    "bono alquiler joven",
+    "discapacidad",
+}
+BOCYL_DIRECT_TITLE_TERMS = {
+    "beca",
+    "becas",
+    "ayudas al estudio",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "ayudas directas a personas",
+    "alumnado",
+    "estudiantes",
+    "comedor escolar",
+    "transporte escolar",
+    "libros de texto",
+    "material escolar",
+    "necesidades educativas",
+    "ayudas para familias",
+    "familia numerosa",
+    "familias numerosas",
+    "joven",
+    "jovenes",
+    "bono alquiler joven",
+    "alquiler joven",
+    "discapacidad",
+}
+BOCYL_ENVIRONMENTAL_OR_PLANNING_TERMS = {
+    "medio ambiente",
+    "ordenacion del territorio",
+    "urbanismo",
+    "planeamiento",
+    "plan general",
+    "licencia ambiental",
+    "licencias",
+    "evaluacion ambiental",
+    "impacto ambiental",
+    "montes",
+    "caza",
+    "pesca",
+    "forestal",
+    "ambiental",
+}
+BOCYL_INSTITUTIONAL_OR_SECTOR_TERMS = {
+    "entidades locales",
+    "entidad local",
+    "ayuntamiento",
+    "ayuntamientos",
+    "municipio",
+    "municipios",
+    "diputacion",
+    "diputaciones",
+    "empresas",
+    "empresa",
+    "sector",
+    "agricultura",
+    "ganaderia",
+    "industria",
+    "industrial",
+    "comercio",
+    "turismo",
+    "cultura",
+    "deporte",
 }
 TRANSPORT_SUPPORT_KEYWORDS = {
     "ayuda",
@@ -799,10 +937,10 @@ def _add_find_candidates_parser(
     )
     candidates.add_argument(
         "--profile",
-        choices=["la-ayuda", "boja-ayudas", "dogv-ayudas"],
+        choices=["la-ayuda", "boja-ayudas", "dogv-ayudas", "bocyl-ayudas"],
         help=(
             "Use a documented keyword/filter profile. Currently supported: "
-            "la-ayuda, boja-ayudas, dogv-ayudas."
+            "la-ayuda, boja-ayudas, dogv-ayudas, bocyl-ayudas."
         ),
     )
     candidates.add_argument(
@@ -2173,6 +2311,8 @@ def _candidate_keywords(args: argparse.Namespace) -> list[str]:
         keywords.extend(BOJA_AYUDAS_PROFILE_KEYWORDS)
     if args.profile == "dogv-ayudas":
         keywords.extend(DOGV_AYUDAS_PROFILE_KEYWORDS)
+    if args.profile == "bocyl-ayudas":
+        keywords.extend(BOCYL_AYUDAS_PROFILE_KEYWORDS)
     if args.keywords:
         keywords.extend(keyword.strip() for keyword in args.keywords.split(",") if keyword.strip())
     return list(dict.fromkeys(keywords))
@@ -2267,6 +2407,11 @@ def _candidate_exclusion_reason(
         matches,
     ):
         return "keyword_rules"
+    if filters["profile"] == ["bocyl-ayudas"] and _bocyl_profile_exclusion_reason(
+        document,
+        matches,
+    ):
+        return "keyword_rules"
     return None
 
 
@@ -2336,6 +2481,9 @@ def _score_candidate_match(
     if profile == "dogv-ayudas" and _dogv_weak_only_match(keywords):
         score -= 2
         reasons.append("dogv_weak_only_generic_match:-2")
+    if profile == "bocyl-ayudas" and _bocyl_weak_only_match(keywords):
+        score -= 2
+        reasons.append("bocyl_weak_only_generic_match:-2")
     return score, reasons
 
 
@@ -2471,6 +2619,78 @@ def _dogv_has_housing_context(title: str) -> bool:
             "estudiante",
             "estudiantes",
             "alumnado",
+        }
+    )
+    return has_housing and has_person_context
+
+
+def _bocyl_profile_exclusion_reason(
+    document: dict[str, Any],
+    matches: dict[str, Any],
+) -> str | None:
+    keywords = matches["keywords"]
+    title = _normalize_search_text(str(document.get("title") or ""))
+    department = _normalize_search_text(str(document.get("department") or ""))
+    section = _normalize_search_text(str(document.get("section") or ""))
+    document_type = _normalize_search_text(str(document.get("document_type") or ""))
+    raw_metadata = _normalize_search_text(str(document.get("raw_metadata_json") or ""))
+    combined_text = " ".join([title, department, section, document_type, raw_metadata])
+    title_has_direct_signal = _bocyl_title_has_direct_signal(title)
+
+    if _bocyl_weak_only_match(keywords):
+        return "bocyl_weak_only"
+    if not title_has_direct_signal and any(
+        term in combined_text for term in _normalized_set(BOCYL_ENVIRONMENTAL_OR_PLANNING_TERMS)
+    ):
+        return "bocyl_environmental_or_planning_noise"
+    if {"vivienda", "alquiler"} & {
+        _normalize_search_text(keyword) for keyword in keywords
+    } and not _bocyl_has_housing_context(title):
+        return "bocyl_housing_noise"
+    title_has_institutional_noise = any(
+        term in title for term in _normalized_set(BOCYL_INSTITUTIONAL_OR_SECTOR_TERMS)
+    )
+    if any(
+        term in combined_text for term in _normalized_set(BOCYL_INSTITUTIONAL_OR_SECTOR_TERMS)
+    ) and not (title_has_direct_signal and not title_has_institutional_noise):
+        return "bocyl_institutional_or_sector_noise"
+    if not title_has_direct_signal:
+        return "bocyl_no_direct_signal"
+    return None
+
+
+def _bocyl_weak_only_match(keywords: list[str]) -> bool:
+    normalized_keywords = {_normalize_search_text(keyword) for keyword in keywords}
+    if not normalized_keywords:
+        return True
+    high_intent = _normalized_set(BOCYL_HIGH_INTENT_KEYWORDS)
+    return not bool(normalized_keywords & high_intent)
+
+
+def _bocyl_title_has_direct_signal(title: str) -> bool:
+    if any(term in title for term in _normalized_set(BOCYL_DIRECT_TITLE_TERMS)):
+        return True
+    if "formacion profesional" in title and any(
+        term in title for term in {"beca", "becas", "ayuda", "ayudas"}
+    ):
+        return True
+    return _bocyl_has_housing_context(title)
+
+
+def _bocyl_has_housing_context(title: str) -> bool:
+    has_housing = any(term in title for term in {"vivienda", "alquiler"})
+    has_person_context = any(
+        term in title
+        for term in {
+            "joven",
+            "jovenes",
+            "familia",
+            "familias",
+            "estudiante",
+            "estudiantes",
+            "alumnado",
+            "discapacidad",
+            "bono alquiler",
         }
     )
     return has_housing and has_person_context
