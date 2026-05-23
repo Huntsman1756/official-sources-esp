@@ -258,6 +258,20 @@ AUTONOMOUS_AYUDAS_PROFILE_KEYWORDS = [
     "formacion",
     "discapacidad",
 ]
+BOPV_AYUDAS_PROFILE_KEYWORDS = [
+    *AUTONOMOUS_AYUDAS_PROFILE_KEYWORDS,
+    "beka",
+    "bekak",
+    "ikasle",
+    "ikasleak",
+    "laguntza",
+    "laguntzak",
+    "dirulaguntza",
+    "dirulaguntzak",
+    "unibertsitate",
+    "gazte",
+    "gazteak",
+]
 DOGC_AYUDAS_PROFILE_KEYWORDS = [
     *AUTONOMOUS_AYUDAS_PROFILE_KEYWORDS,
     "ajut",
@@ -588,17 +602,25 @@ AUTONOMOUS_GENERIC_WEAK_KEYWORDS = {
     "alquiler",
     "ajut",
     "ajuts",
+    "laguntza",
+    "laguntzak",
+    "dirulaguntza",
+    "dirulaguntzak",
 }
 AUTONOMOUS_HIGH_INTENT_KEYWORDS = {
     "beca",
     "becas",
     "beques",
+    "beka",
+    "bekak",
     "ayudas al estudio",
     "ayudas para alumnado",
     "ayudas para estudiantes",
     "ayudas directas a personas",
     "alumnado",
     "alumnat",
+    "ikasle",
+    "ikasleak",
     "estudiantes",
     "estudiants",
     "comedor escolar",
@@ -618,6 +640,8 @@ AUTONOMOUS_HIGH_INTENT_KEYWORDS = {
     "joven",
     "jovenes",
     "joves",
+    "gazte",
+    "gazteak",
     "alquiler joven",
     "bono alquiler joven",
     "lloguer jove",
@@ -628,12 +652,16 @@ AUTONOMOUS_DIRECT_TITLE_TERMS = {
     "beca",
     "becas",
     "beques",
+    "beka",
+    "bekak",
     "ayudas al estudio",
     "ayudas para alumnado",
     "ayudas para estudiantes",
     "ayudas directas a personas",
     "alumnado",
     "alumnat",
+    "ikasle",
+    "ikasleak",
     "estudiantes",
     "estudiants",
     "comedor escolar",
@@ -648,6 +676,8 @@ AUTONOMOUS_DIRECT_TITLE_TERMS = {
     "joven",
     "jovenes",
     "joves",
+    "gazte",
+    "gazteak",
     "alquiler joven",
     "bono alquiler joven",
     "lloguer jove",
@@ -687,6 +717,10 @@ AUTONOMOUS_PROCEDURAL_NOISE_TERMS = {
     "concesion",
     "concesion ya resuelta",
     "resolucion de concesion",
+    "relacion de beneficiarios",
+    "relacion de personas beneficiarias",
+    "beneficiarios de las ayudas",
+    "beneficiarias de las ayudas",
     "anuncio",
     "procedimiento",
 }
@@ -2782,8 +2816,10 @@ def _candidate_keywords(args: argparse.Namespace) -> list[str]:
         keywords.extend(DOGV_AYUDAS_PROFILE_KEYWORDS)
     if args.profile == "bocyl-ayudas":
         keywords.extend(BOCYL_AYUDAS_PROFILE_KEYWORDS)
-    if args.profile in {"bopv-ayudas", "boa-ayudas", "borm-ayudas"}:
+    if args.profile in {"boa-ayudas", "borm-ayudas"}:
         keywords.extend(AUTONOMOUS_AYUDAS_PROFILE_KEYWORDS)
+    if args.profile == "bopv-ayudas":
+        keywords.extend(BOPV_AYUDAS_PROFILE_KEYWORDS)
     if args.profile == "dogc-ayudas":
         keywords.extend(DOGC_AYUDAS_PROFILE_KEYWORDS)
     if args.keywords:
@@ -3198,8 +3234,7 @@ def _autonomous_profile_exclusion_reason(
     department = _normalize_search_text(str(document.get("department") or ""))
     section = _normalize_search_text(str(document.get("section") or ""))
     document_type = _normalize_search_text(str(document.get("document_type") or ""))
-    raw_metadata = _normalize_search_text(str(document.get("raw_metadata_json") or ""))
-    combined_text = " ".join([title, department, section, document_type, raw_metadata])
+    combined_text = " ".join([title, department, section, document_type])
     title_has_direct_signal = _autonomous_title_has_direct_signal(title)
 
     if _autonomous_weak_only_match(keywords):
@@ -3233,8 +3268,23 @@ def _autonomous_weak_only_match(keywords: list[str]) -> bool:
 def _autonomous_title_has_direct_signal(title: str) -> bool:
     if any(term in title for term in _normalized_set(AUTONOMOUS_DIRECT_TITLE_TERMS)):
         return True
-    if "formacion profesional" in title and any(
-        term in title for term in {"beca", "becas", "ayuda", "ayudas"}
+    aid_context = {
+        "ayuda",
+        "ayudas",
+        "subvencion",
+        "subvenciones",
+        "beca",
+        "becas",
+        "beka",
+        "bekak",
+        "bases reguladoras",
+        "dirulaguntza",
+        "dirulaguntzak",
+    }
+    if "formacion profesional" in title and any(term in title for term in aid_context):
+        return True
+    if {"universidad", "universidades", "unibertsitate"} & set(title.split()) and any(
+        term in title for term in aid_context
     ):
         return True
     return _autonomous_has_housing_context(title)
