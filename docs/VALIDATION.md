@@ -1928,3 +1928,78 @@ git diff --check: passed
 ruff check: passed
 ruff format --check: passed
 ```
+
+## TASK-AUTO-BOPV-004B - BOPV Profile Calibration Review
+
+BOPV candidate profile calibration was performed after the first real CLI dry-run showed
+`matches_after_filters=1 / 489`.
+
+Files changed:
+
+```text
+src/official_sources/cli.py
+tests/test_cli.py
+docs/reports/BOPV_CANDIDATE_PROFILE_CALIBRATION_2026-05-23.md
+docs/VALIDATION.md
+```
+
+VPS state:
+
+```text
+deployed_commit=908e46f
+source_candidates=146
+artifact_download_attempts=482
+BOPV official_documents=489
+artifact_bytes=28857411
+DB validation=status=valid schema_version=8
+MCP privacy=no official/mcp/python/uvicorn/fastmcp listener output
+```
+
+Dry-run command:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite find-source-candidates --source BOPV --date-from 2026-04-21 --date-to 2026-05-20 --profile bopv-ayudas --dry-run --limit 200
+```
+
+Dry-run result:
+
+```text
+documents_scanned=489
+matches_total=177
+matches_after_filters=4
+documents_matched=4
+candidates_created=0
+candidates_skipped_existing=0
+excluded_by_keyword_rules=173
+match_rate=0.82%
+```
+
+Safety result:
+
+```text
+source_candidates unchanged
+artifact_download_attempts unchanged
+artifact size unchanged
+DB valid
+no candidates created
+no artifacts downloaded
+no downstream writes
+```
+
+Local validation:
+
+```text
+rtk git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+pytest: 418 passed, 1 warning
+ruff check: passed
+ruff format --check: passed
+```
