@@ -1,5 +1,29 @@
 # Validation
 
+## 2026-05-21 - TASK-AUTO-BOCYL-004 BOCYL candidate dry-run
+
+VPS read-only validation:
+
+```text
+deployed_commit=b4f8603
+date_range=2026-04-21 -> 2026-05-20
+BOCYL_documents_scanned=773
+matches_total=334
+matches_after_filters=265
+match_rate_after_filters=34.28%
+source_candidates=125 -> 125
+artifact_download_attempts=442 -> 442
+artifact_directory_size=30M -> 30M
+db_validate_before=valid
+db_validate_after=valid
+MCP listener check=no matching listener observed
+```
+
+The requested CLI command rejected `--source BOCYL` because BOCYL is not yet in the generic
+candidate source allowlist. The dry-run was completed with a read-only script reusing the same
+internal `la-ayuda` keyword/filter functions over stored BOCYL metadata. No candidates, artifact
+downloads, downstream writes, approvals, or publications were performed.
+
 ## 2026-05-21 - TASK-AUTO-BOCYL-003 controlled BOCYL 30-day metadata backfill
 
 VPS operational validation:
