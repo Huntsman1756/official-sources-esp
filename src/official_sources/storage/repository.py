@@ -107,6 +107,17 @@ class OfficialSourcesRepository:
             reliability_level="canonical",
         )
 
+    def ensure_official_source_borm(self) -> dict[str, Any]:
+        return self.upsert_official_source(
+            code="BORM",
+            name="Boletin Oficial de la Region de Murcia",
+            jurisdiction="autonomous",
+            region_code="ES-MC",
+            base_url="https://transparencia.carm.es/rest-services/services/restFile/BORMIndice.xml",
+            access_type="official_xml",
+            reliability_level="canonical",
+        )
+
     def ensure_official_source_bdns(self) -> dict[str, Any]:
         return self.upsert_official_source(
             code="BDNS",
