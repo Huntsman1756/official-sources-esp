@@ -47,7 +47,7 @@ def test_mcp_tool_names_use_compatible_snake_case_names():
         "boe_consolidated_law_block_get",
         "boe_consolidated_law_citation_build",
         "boe_consolidated_law_block_citation_build",
-    } == MCP_TOOL_NAMES
+    } == set(MCP_TOOL_NAMES)
     assert all("." not in name and name == name.lower() for name in MCP_TOOL_NAMES)
 
 

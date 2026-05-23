@@ -150,11 +150,22 @@ def test_dogc_ingestion_records_no_publication(repository):
 
 
 def test_dogc_ingestion_supports_citation_generation(repository):
+    second_document_payload = (
+        _fixture_bytes("dogc_document_metadata.json")
+        .decode("utf-8")
+        .replace("1044918", "1044864")
+        .replace("26141001", "26141002")
+        .replace("Llei 5/2026", "Llei 6/2026")
+        .encode("utf-8")
+    )
     run = ingest_dogc_date(
         repository,
         target_date="2026-05-22",
         date_payload=_fixture_bytes("dogc_date_with_documents.json"),
-        document_payloads={"1044918": _fixture_bytes("dogc_document_metadata.json")},
+        document_payloads={
+            "1044918": _fixture_bytes("dogc_document_metadata.json"),
+            "1044864": second_document_payload,
+        },
     )
 
     citation = build_citation(repository, "DOGC:CVE-DOGC-A-26141001-2026")

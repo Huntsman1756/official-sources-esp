@@ -1843,3 +1843,64 @@ git diff --check: passed
 ```
 
 No code changes were made, so the Python test suite was not run for this documentation-only task.
+
+## TASK-MCP-COMPLIANCE-001 - MCP Official Compliance Hardening
+
+MCP protocol hardening was performed locally before expanding source coverage further.
+
+Files changed:
+
+```text
+src/official_sources/mcp/server.py
+src/official_sources/storage/database.py
+tests/test_mcp_protocol.py
+tests/test_mcp_tools.py
+tests/test_dogc_adapter.py
+docs/MCP_TOOLS.md
+docs/reports/MCP_OFFICIAL_COMPLIANCE_HARDENING_2026-05-23.md
+docs/VALIDATION.md
+```
+
+Official MCP references used:
+
+```text
+https://modelcontextprotocol.io/specification/2025-11-25/basic
+https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle
+https://modelcontextprotocol.io/specification/draft/server/tools
+https://modelcontextprotocol.io/specification/draft/basic/transports
+https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization
+```
+
+Validation:
+
+```text
+rtk python -m pip install -e .
+rtk python -m pytest tests/test_mcp_protocol.py -q
+rtk git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+Editable install completed; FastMCP 3.3.1 installed for protocol smoke tests.
+tests/test_mcp_protocol.py: 4 passed
+git diff --check: passed
+pytest: 416 passed, 1 warning
+ruff check: passed
+ruff format --check: passed
+```
+
+Validated behaviors:
+
+```text
+MCP initialize negotiates protocolVersion=2025-11-25
+serverInfo.name=official-sources
+serverInfo.version=0.1.0
+tools capability is advertised
+tools/list returns deterministic described JSON Schema tools
+tools/call returns structured content without creating candidates
+stdio initialize writes JSON-RPC only to stdout
+```

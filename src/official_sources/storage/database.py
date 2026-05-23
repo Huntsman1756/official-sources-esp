@@ -6,8 +6,13 @@ from pathlib import Path
 from official_sources.storage.migrations.runner import migrate_database
 
 
-def connect(database_path: str, *, enable_wal: bool | None = None) -> sqlite3.Connection:
-    connection = sqlite3.connect(database_path)
+def connect(
+    database_path: str,
+    *,
+    enable_wal: bool | None = None,
+    check_same_thread: bool = True,
+) -> sqlite3.Connection:
+    connection = sqlite3.connect(database_path, check_same_thread=check_same_thread)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
     wal_enabled = enable_wal if enable_wal is not None else _should_enable_wal(database_path)
