@@ -178,7 +178,8 @@ Recommended next new autonomous-source MVP after current validated-source work:
 
 - BOCYL controlled 30-day metadata backfill. The metadata MVP is implemented and documented in
   `docs/reports/BOCYL_ADAPTER_MVP_2026-05-21.md`.
-- BOPV/EHAA metadata-only MVP is the strongest alternate API-led candidate.
+- BOPV/EHAA metadata-only MVP is ready to start from endpoint/fixture discovery
+  documented in `docs/reports/BOPV_ENDPOINT_FIXTURE_DISCOVERY_2026-05-21.md`.
 - Provincial BOP work should remain metadata-monitor design only until Barcelona, A Coruna, and
   Malaga prove stable as pilot sources.
 
