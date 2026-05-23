@@ -174,7 +174,8 @@ Recommended next autonomous-source option:
 
 Recommended next new autonomous-source MVP after current validated-source work:
 
-- BOCYL metadata-only MVP, preceded by endpoint fixture discovery. BOCYL has an official JCyL
+- BOCYL metadata-only MVP. Endpoint fixture discovery is complete in
+  `docs/reports/BOCYL_ENDPOINT_FIXTURE_DISCOVERY_2026-05-21.md`; BOCYL has an official JCyL
   open-data API with stable document identifiers and PDF/XML/HTML artifact links.
 - BOPV/EHAA metadata-only MVP is the strongest alternate API-led candidate.
 - Provincial BOP work should remain metadata-monitor design only until Barcelona, A Coruna, and
