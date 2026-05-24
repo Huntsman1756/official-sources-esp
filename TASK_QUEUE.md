@@ -16,12 +16,15 @@ for source-platform work in this repository.
 | `TASK-SOURCE-RSS-MONITOR-002` | implemented locally | BOE RSS and BOJA Atom feeds added as validated metadata-only discovery sources. |
 | `TASK-SOURCE-COVERAGE-V1-SNAPSHOT-001` | implemented locally | Canonical Coverage v1 snapshot added from the executable registry and current monitor/MCP capabilities. |
 | `TASK-SOURCE-BOPV-API-001` | implemented locally | Metadata-only BOPV REST/API discovery adapter added for the official Open Data Euskadi endpoint. |
+| `TASK-SOURCE-COVERAGE-V1.1-SNAPSHOT-001` | implemented locally | Coverage v1.1 snapshot added after BOPV API discovery; MCP API JSONL exposure remains future work. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
+| `TASK-MCP-API-DISCOVERY-OUTPUT-001` | proposed | Read existing API monitor JSONL only; do not fetch live API data from MCP. |
 | `TASK-SOURCE-RSS-MONITOR-003` | proposed | Only after selecting 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
+| `TASK-SOURCE-HTML-MONITOR-PILOT-001` | proposed | Only for sources without RSS/API, after source-specific endpoint/robots/fixture audit. |
 | `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |
 
 ## Guardrails
@@ -32,6 +35,7 @@ for source-platform work in this repository.
 - Do not run broad backfills from registry work.
 - Do not treat RSS/Atom discovery records as evidence or candidates.
 - Do not fetch live feeds through MCP source-coverage tools.
+- Do not fetch live API data through MCP source-coverage tools.
 - Do not write to downstream product repositories.
 - Do not run VPS or production DB operations unless a separate task explicitly authorizes them.
 - Do not expand candidates or evidence-grade workflows without explicit approval.
