@@ -2424,6 +2424,118 @@ def test_find_source_candidates_bopv_profile_supports_basque_student_terms(tmp_p
     assert "BOPV:generic-laguntza" not in captured.out
 
 
+def test_find_source_candidates_borm_profile_filters_noise_and_preserves_aids(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_borm()
+    examples = [
+        (
+            "BORM:school-material",
+            "Convocatoria de ayudas para la adquisicion de libros de texto y material escolar",
+            "Fortuna",
+        ),
+        (
+            "BORM:study-grant",
+            "Convocatoria para la obtencion de ayudas al estudio para estudiantes universitarios",
+            "Universidad de Murcia",
+        ),
+        (
+            "BORM:youth-mobility",
+            "Convocatoria de ayudas a la movilidad internacional para jovenes",
+            "Cartagena",
+        ),
+        (
+            "BORM:profesorado-noise",
+            "Resolucion por la que se convoca concurso publico para plazas de "
+            "Profesorado Ayudante Doctor",
+            "Universidad de Murcia",
+        ),
+        (
+            "BORM:job-pool-noise",
+            "Bolsa de trabajo de Orientadores Laborales dirigidos a personas jovenes",
+            "Alguazas",
+        ),
+        (
+            "BORM:contest-noise",
+            "Convocatoria del Certamen de Creacion Artistica Joven",
+            "Molina de Segura",
+        ),
+        (
+            "BORM:entity-project-noise",
+            "Convocatoria de subvenciones dirigidas a entidades del Tercer Sector para proyectos",
+            "Instituto Murciano de Accion Social",
+        ),
+        (
+            "BORM:convenio-noise",
+            "Autorizacion del convenio de colaboracion para la prestacion sanitaria",
+            "Consejeria de Politica Social, Familias e Igualdad",
+        ),
+        (
+            "BORM:concesion-result-noise",
+            "Decreto-Ley por el que se autoriza la concesion directa de diversas subvenciones",
+            "Consejo de Gobierno",
+        ),
+        (
+            "BORM:disability-aid",
+            "Convocatoria de subvenciones para integracion laboral de personas con discapacidad",
+            "Servicio Regional de Empleo y Formacion",
+        ),
+    ]
+    for external_id, title, department in examples:
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=external_id,
+            publication_date="2026-05-20",
+            title=title,
+            department=department,
+            section="I. Comunidad Autonoma",
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "BORM",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--profile",
+            "borm-ayudas",
+            "--dry-run",
+            "--limit",
+            "20",
+        ]
+    )
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert candidate_count == 0
+    assert "matches_total=10" in captured.out
+    assert "matches_after_filters=4" in captured.out
+    assert "excluded_by_keyword_rules=6" in captured.out
+    assert "BORM:school-material" in captured.out
+    assert "BORM:study-grant" in captured.out
+    assert "BORM:youth-mobility" in captured.out
+    assert "BORM:disability-aid" in captured.out
+    assert "BORM:profesorado-noise" not in captured.out
+    assert "BORM:job-pool-noise" not in captured.out
+    assert "BORM:contest-noise" not in captured.out
+    assert "BORM:entity-project-noise" not in captured.out
+    assert "BORM:convenio-noise" not in captured.out
+    assert "BORM:concesion-result-noise" not in captured.out
+
+
 def test_find_boe_candidates_boja_profile_excludes_generic_ayudas_only(tmp_path, capsys):
     from official_sources.cli import run
 

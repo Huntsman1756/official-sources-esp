@@ -724,6 +724,74 @@ AUTONOMOUS_PROCEDURAL_NOISE_TERMS = {
     "anuncio",
     "procedimiento",
 }
+BORM_DIRECT_TITLE_TERMS = {
+    "beca",
+    "becas",
+    "ayudas al estudio",
+    "ayudas para alumnado",
+    "ayudas para estudiantes",
+    "ayudas economicas",
+    "ayudas directas",
+    "alumnado",
+    "estudiantes",
+    "comedor escolar",
+    "transporte escolar",
+    "libros de texto",
+    "material escolar",
+    "necesidades educativas",
+    "movilidad internacional",
+    "ayudas a la movilidad",
+    "familias",
+    "discapacidad",
+}
+BORM_PERSON_CONTEXT_TERMS = {
+    "alumnado",
+    "estudiante",
+    "estudiantes",
+    "familia",
+    "familias",
+    "joven",
+    "jovenes",
+    "personas con discapacidad",
+    "discapacidad",
+    "movilidad internacional",
+}
+BORM_PUBLIC_EMPLOYMENT_OR_CONTEST_TERMS = {
+    "profesorado ayudante doctor",
+    "concurso publico",
+    "concursos de profesorado",
+    "bolsa de trabajo",
+    "bolsas de trabajo",
+    "bolsa de empleo",
+    "bolsas de empleo",
+    "procesos selectivos",
+    "pruebas selectivas",
+    "certamen",
+    "certamenes",
+    "premio",
+    "premios",
+    "lista provisional",
+    "lista definitiva",
+    "nombramiento",
+    "tribunal",
+}
+BORM_ENTITY_PROJECT_NOISE_TERMS = {
+    "entidades del tercer sector",
+    "entidades",
+    "proyectos",
+    "asociaciones",
+    "ayuntamientos",
+    "empresas",
+}
+BORM_PROCEDURAL_NOISE_TERMS = {
+    "autorizacion del convenio",
+    "convenio de colaboracion",
+    "concesion directa",
+    "concesion complementaria",
+    "orden de concesion",
+    "autoriza la concesion",
+    "modifica la orden",
+}
 TRANSPORT_SUPPORT_KEYWORDS = {
     "ayuda",
     "ayudas",
@@ -2921,13 +2989,17 @@ def _candidate_exclusion_reason(
         matches,
     ):
         return "keyword_rules"
+    if filters["profile"] == ["borm-ayudas"] and _borm_profile_exclusion_reason(
+        document,
+        matches,
+    ):
+        return "keyword_rules"
     if (
         filters["profile"]
         and filters["profile"][0]
         in {
             "bopv-ayudas",
             "boa-ayudas",
-            "borm-ayudas",
             "dogc-ayudas",
         }
         and _autonomous_profile_exclusion_reason(document, matches)
@@ -3255,6 +3327,54 @@ def _autonomous_profile_exclusion_reason(
     if not title_has_direct_signal:
         return "autonomous_no_direct_signal"
     return None
+
+
+def _borm_profile_exclusion_reason(
+    document: dict[str, Any],
+    matches: dict[str, Any],
+) -> str | None:
+    keywords = matches["keywords"]
+    title = _normalize_search_text(str(document.get("title") or ""))
+    department = _normalize_search_text(str(document.get("department") or ""))
+    section = _normalize_search_text(str(document.get("section") or ""))
+    document_type = _normalize_search_text(str(document.get("document_type") or ""))
+    combined_text = " ".join([title, department, section, document_type])
+    title_has_direct_signal = _borm_title_has_direct_signal(title)
+
+    if _autonomous_weak_only_match(keywords):
+        return "borm_weak_only"
+    if any(
+        term in combined_text for term in _normalized_set(BORM_PUBLIC_EMPLOYMENT_OR_CONTEST_TERMS)
+    ):
+        return "borm_employment_or_contest_noise"
+    if any(term in title for term in _normalized_set(BORM_PROCEDURAL_NOISE_TERMS)):
+        return "borm_procedural_noise"
+    if (
+        any(term in title for term in _normalized_set(BORM_ENTITY_PROJECT_NOISE_TERMS))
+        and not title_has_direct_signal
+    ):
+        return "borm_entity_project_noise"
+    if not title_has_direct_signal:
+        return "borm_no_direct_signal"
+    return None
+
+
+def _borm_title_has_direct_signal(title: str) -> bool:
+    if any(term in title for term in _normalized_set(BORM_DIRECT_TITLE_TERMS)):
+        return True
+    aid_context = {
+        "ayuda",
+        "ayudas",
+        "subvencion",
+        "subvenciones",
+        "beca",
+        "becas",
+        "convocatoria de ayudas",
+        "convocatoria de subvenciones",
+    }
+    if not any(term in title for term in aid_context):
+        return False
+    return any(term in title for term in _normalized_set(BORM_PERSON_CONTEXT_TERMS))
 
 
 def _autonomous_weak_only_match(keywords: list[str]) -> bool:
