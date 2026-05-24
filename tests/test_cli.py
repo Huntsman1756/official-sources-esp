@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import httpx
@@ -2512,6 +2513,132 @@ def test_find_boe_candidates_source_filter_supports_boja_dry_run(tmp_path, capsy
     assert "matches_after_filters=1" in captured.out
     assert "BOJA:disposition.2026.94.5" in captured.out
     assert "BOE-A-2024-11111" not in captured.out
+
+
+def test_dry_run_opposition_alerts_outputs_json_without_writes(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    boe = repository.ensure_official_source_boe()
+    borm = repository.ensure_official_source_borm()
+    repository.upsert_document(
+        source_id=boe["id"],
+        external_id="BOE-A-2026-00001",
+        publication_date="2026-05-20",
+        title="Resolucion por la que se convoca proceso selectivo para personal funcionario",
+        department="Ministerio de Hacienda",
+        url_html="https://www.boe.es/buscar/doc.php?id=BOE-A-2026-00001",
+    )
+    repository.upsert_document(
+        source_id=borm["id"],
+        external_id="BORM:2026:001",
+        publication_date="2026-05-20",
+        title="Convocatoria para la constitucion de una bolsa de trabajo de auxiliares",
+        department="Ayuntamiento de Murcia",
+        url_html="https://www.borm.es/#/home/anuncio/20-05-2026/1",
+    )
+    repository.upsert_document(
+        source_id=borm["id"],
+        external_id="BORM:2026:002",
+        publication_date="2026-05-20",
+        title="Anuncio de licitacion del contrato de limpieza de edificios municipales",
+        department="Ayuntamiento de Murcia",
+        url_html="https://www.borm.es/#/home/anuncio/20-05-2026/2",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "dry-run-opposition-alerts",
+            "--source",
+            "BOE,BORM",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--format",
+            "json",
+            "--limit",
+            "10",
+        ]
+    )
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert exit_code == 0
+    assert candidate_count == 0
+    assert payload["summary"]["documents_scanned"] == 3
+    assert payload["summary"]["alerts_found"] == 2
+    assert payload["summary"]["writes"]["source_candidates"] is False
+    assert payload["summary"]["alerts_by_type"] == {"bolsa": 1, "convocatoria": 1}
+    assert {alert["alert_type"] for alert in payload["alerts"]} == {"bolsa", "convocatoria"}
+    assert {alert["review_status"] for alert in payload["alerts"]} == {"new"}
+    assert {alert["evidence_grade_status"] for alert in payload["alerts"]} == {"none"}
+    assert all(alert["source_candidate_id"] is None for alert in payload["alerts"])
+
+
+def test_dry_run_opposition_alerts_jsonl_and_contextual_exclusions(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2026-00002",
+        publication_date="2026-05-20",
+        title="Real Decreto por el que se nombra Directora General de Coordinacion",
+        department="Ministerio de Politica Territorial",
+        url_html="https://www.boe.es/buscar/doc.php?id=BOE-A-2026-00002",
+    )
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOE-A-2026-00003",
+        publication_date="2026-05-20",
+        title="Nombramiento de personal funcionario tras superar el proceso selectivo",
+        department="Ministerio de Justicia",
+        url_html="https://www.boe.es/buscar/doc.php?id=BOE-A-2026-00003",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "dry-run-opposition-alerts",
+            "--source",
+            "BOE",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--format",
+            "jsonl",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    rows = [json.loads(line) for line in captured.out.splitlines()]
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    assert exit_code == 0
+    assert candidate_count == 0
+    assert rows[0]["record_type"] == "summary"
+    assert rows[0]["alerts_found"] == 1
+    assert rows[1]["record_type"] == "alert"
+    assert rows[1]["alert_type"] == "nombramiento"
+    assert rows[1]["confidence"] == "medium"
 
 
 def test_find_source_candidates_alias_supports_boja_dry_run(tmp_path, capsys):

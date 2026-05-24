@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -98,6 +99,31 @@ SOURCE_CANDIDATE_PROFILES = (
     "boa-ayudas",
     "borm-ayudas",
     "dogc-ayudas",
+)
+OPPOSITION_ALERT_SOURCE_CODES = (
+    "BOE",
+    "BOJA",
+    "DOGV",
+    "BOCYL",
+    "BOPV",
+    "BORM",
+    "BOA",
+    "DOGC",
+)
+OPPOSITION_ALERT_TYPES = (
+    "convocatoria",
+    "bolsa",
+    "bases",
+    "lista_provisional",
+    "lista_definitiva",
+    "tribunal",
+    "fecha_examen",
+    "plazo",
+    "subsanacion",
+    "correccion",
+    "nombramiento",
+    "adjudicacion",
+    "other",
 )
 
 LA_AYUDA_PROFILE_KEYWORDS = [
@@ -1248,6 +1274,37 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         help=("Legacy BOE-default source-aware candidate finder. Prefer find-source-candidates."),
     )
+    opposition_alerts = subparsers.add_parser(
+        "dry-run-opposition-alerts",
+        description=(
+            "Read-only alert-grade dry-run for oposiciones/public employment notices. "
+            "It scans locally stored official_documents metadata only and never writes "
+            "source_candidates, artifacts, or external product output."
+        ),
+        help="Preview alert-grade oposiciones notices from stored metadata without DB writes.",
+    )
+    opposition_alerts.add_argument("--date-from", required=True, help="Start date in YYYY-MM-DD.")
+    opposition_alerts.add_argument("--date-to", required=True, help="End date in YYYY-MM-DD.")
+    opposition_alerts.add_argument(
+        "--source",
+        required=True,
+        help=(
+            "Comma-separated source codes to scan. Supported: "
+            f"{', '.join(OPPOSITION_ALERT_SOURCE_CODES)}."
+        ),
+    )
+    opposition_alerts.add_argument(
+        "--limit",
+        type=int,
+        default=200,
+        help="Maximum alert records to emit. Default: 200.",
+    )
+    opposition_alerts.add_argument(
+        "--format",
+        choices=["json", "jsonl"],
+        default="json",
+        help="Output format. Default: json.",
+    )
     return parser
 
 
@@ -1395,6 +1452,8 @@ def run(
         return _run_ingest_range(repository, args, stdout, stderr)
     if args.command in {"find-source-candidates", "find-boe-candidates"}:
         return _run_find_candidates(repository, args, stdout, stderr)
+    if args.command == "dry-run-opposition-alerts":
+        return _run_dry_run_opposition_alerts(repository, args, stdout, stderr)
     if args.command == "candidate-evidence-status":
         return _run_candidate_evidence_status(repository, args, stdout, stderr)
     if args.command == "mark-candidate-evidence":
@@ -2874,6 +2933,387 @@ def _run_find_candidates(
             file=stdout,
         )
     return 0
+
+
+def _run_dry_run_opposition_alerts(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        date_from = validate_boe_date(args.date_from).isoformat()
+        date_to = validate_boe_date(args.date_to).isoformat()
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    if date_from > date_to:
+        print("--date-from must be earlier than or equal to --date-to", file=stderr)
+        return 2
+    if args.limit <= 0:
+        print("--limit must be greater than zero", file=stderr)
+        return 2
+    try:
+        source_codes = _parse_opposition_alert_sources(args.source)
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+
+    documents: list[dict[str, Any]] = []
+    source_names: dict[str, str] = {}
+    for source_code in source_codes:
+        source = repository.get_source_by_code(source_code)
+        source_names[source_code] = source["name"]
+        documents.extend(
+            repository.search_documents(
+                date_from=date_from,
+                date_to=date_to,
+                source_code=source_code,
+                limit=100000,
+            )
+        )
+
+    alerts: list[dict[str, Any]] = []
+    excluded_by_rule = Counter()
+    for document in documents:
+        classification = _classify_opposition_alert(document)
+        if not classification["matched"]:
+            if classification["matched_rules"]:
+                excluded_by_rule.update(classification["matched_rules"])
+            continue
+        alerts.append(
+            _opposition_alert_record(
+                document,
+                source_name=source_names[document["source_code"]],
+                classification=classification,
+            )
+        )
+        if len(alerts) >= args.limit:
+            break
+
+    alerts_by_source = Counter(alert["source_code"] for alert in alerts)
+    alerts_by_type = Counter(alert["alert_type"] for alert in alerts)
+    alerts_by_confidence = Counter(alert["confidence"] for alert in alerts)
+    summary = {
+        "mode": "dry_run",
+        "grade": "alert-grade",
+        "documents_scanned": len(documents),
+        "alerts_found": len(alerts),
+        "limit": args.limit,
+        "date_from": date_from,
+        "date_to": date_to,
+        "sources": source_codes,
+        "alerts_by_source": dict(sorted(alerts_by_source.items())),
+        "alerts_by_type": dict(sorted(alerts_by_type.items())),
+        "alerts_by_confidence": dict(sorted(alerts_by_confidence.items())),
+        "excluded_by_rule": dict(sorted(excluded_by_rule.items())),
+        "writes": {
+            "db": False,
+            "source_candidates": False,
+            "artifacts": False,
+            "external_output": False,
+        },
+    }
+    if args.format == "jsonl":
+        print(json.dumps({"record_type": "summary", **summary}, sort_keys=True), file=stdout)
+        for alert in alerts:
+            print(json.dumps({"record_type": "alert", **alert}, sort_keys=True), file=stdout)
+        return 0
+    print(json.dumps({"summary": summary, "alerts": alerts}, indent=2, sort_keys=True), file=stdout)
+    return 0
+
+
+def _parse_opposition_alert_sources(value: str) -> list[str]:
+    source_codes = [item.strip().upper() for item in value.split(",") if item.strip()]
+    if not source_codes:
+        raise ValueError("--source must include at least one source code")
+    unsupported = [
+        source_code
+        for source_code in source_codes
+        if source_code not in OPPOSITION_ALERT_SOURCE_CODES
+    ]
+    if unsupported:
+        supported = ", ".join(OPPOSITION_ALERT_SOURCE_CODES)
+        raise ValueError(
+            f"Unsupported --source value(s): {', '.join(unsupported)}. Supported: {supported}"
+        )
+    return list(dict.fromkeys(source_codes))
+
+
+OPPOSITION_ALERT_RULES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
+    (
+        "lista_definitiva",
+        "lista_definitiva",
+        ("lista definitiva", "relacion definitiva", "definitiva de aspirantes"),
+    ),
+    (
+        "lista_provisional",
+        "lista_provisional",
+        ("lista provisional", "relacion provisional", "provisional de aspirantes"),
+    ),
+    (
+        "fecha_examen",
+        "fecha_examen",
+        ("fecha de examen", "fecha del examen", "primer ejercicio", "lugar de celebracion"),
+    ),
+    (
+        "subsanacion",
+        "subsanacion",
+        ("subsanacion", "subsanar", "plazo de subsanacion"),
+    ),
+    (
+        "correccion",
+        "correccion",
+        ("correccion de errores", "correccion", "error material"),
+    ),
+    (
+        "tribunal",
+        "tribunal",
+        ("tribunal calificador", "miembros del tribunal", "designacion del tribunal"),
+    ),
+    (
+        "bolsa",
+        "bolsa",
+        ("bolsa de trabajo", "bolsa de empleo", "bolsa de empleo temporal"),
+    ),
+    (
+        "nombramiento",
+        "nombramiento",
+        ("nombramiento", "nombramientos"),
+    ),
+    (
+        "convocatoria",
+        "convocatoria",
+        ("convocatoria", "se convoca", "proceso selectivo", "pruebas selectivas"),
+    ),
+    (
+        "bases",
+        "bases",
+        ("bases reguladoras", "bases de la convocatoria", "bases especificas"),
+    ),
+    (
+        "plazo",
+        "plazo",
+        ("plazo de presentacion", "plazo de solicitudes", "plazo para presentar"),
+    ),
+    (
+        "adjudicacion",
+        "adjudicacion",
+        ("adjudicacion de destinos", "adjudicacion de puestos", "adjudican destinos"),
+    ),
+)
+OPPOSITION_ALERT_PROCESS_CONTEXT = (
+    "proceso selectivo",
+    "oposicion",
+    "oposiciones",
+    "concurso-oposicion",
+    "concurso oposicion",
+    "pruebas selectivas",
+    "personal funcionario",
+    "personal laboral",
+    "aspirantes",
+    "empleo publico",
+    "bolsa de trabajo",
+    "bolsa de empleo",
+)
+OPPOSITION_ALERT_NOISE_TERMS = (
+    "contratacion publica",
+    "licitacion",
+    "contrato de servicios",
+    "subvencion",
+    "subvenciones",
+    "premios",
+    "convenio",
+    "convenios",
+    "urbanismo",
+    "medio ambiente",
+)
+OPPOSITION_ALERT_STRONG_TYPES = {
+    "convocatoria",
+    "bolsa",
+    "lista_provisional",
+    "lista_definitiva",
+    "tribunal",
+    "fecha_examen",
+    "subsanacion",
+}
+OPPOSITION_ALERT_CONTEXT_REQUIRED_TYPES = {
+    "correccion",
+    "plazo",
+    "nombramiento",
+    "adjudicacion",
+}
+
+
+def _classify_opposition_alert(document: dict[str, Any]) -> dict[str, Any]:
+    title = _normalize_search_text(str(document.get("title") or ""))
+    combined_text = _normalize_search_text(
+        " ".join(
+            [
+                str(document.get("title") or ""),
+                str(document.get("department") or ""),
+                str(document.get("section") or ""),
+                str(document.get("document_type") or ""),
+            ]
+        )
+    )
+    matched_terms: list[str] = []
+    matched_rules: list[str] = []
+    alert_type = "other"
+    for candidate_type, rule_name, terms in OPPOSITION_ALERT_RULES:
+        found_terms = [term for term in terms if _keyword_matches(combined_text, term)]
+        if found_terms:
+            alert_type = candidate_type
+            matched_terms.extend(found_terms)
+            matched_rules.append(f"strong_{rule_name}")
+            break
+    has_process_context = any(
+        _keyword_matches(combined_text, term) for term in OPPOSITION_ALERT_PROCESS_CONTEXT
+    )
+    noise_terms = [
+        term for term in OPPOSITION_ALERT_NOISE_TERMS if _keyword_matches(combined_text, term)
+    ]
+    if noise_terms and not has_process_context:
+        return {
+            "matched": False,
+            "alert_type": "other",
+            "confidence": "low",
+            "matched_terms": noise_terms,
+            "matched_rules": [f"excluded_noise:{_compact_token(term)}" for term in noise_terms],
+        }
+    if alert_type in OPPOSITION_ALERT_CONTEXT_REQUIRED_TYPES and not has_process_context:
+        return {
+            "matched": False,
+            "alert_type": "other",
+            "confidence": "low",
+            "matched_terms": matched_terms,
+            "matched_rules": [*matched_rules, "excluded_missing_process_context"],
+        }
+    if alert_type == "other":
+        context_terms = [
+            term
+            for term in OPPOSITION_ALERT_PROCESS_CONTEXT
+            if _keyword_matches(combined_text, term)
+        ]
+        if not context_terms:
+            return {
+                "matched": False,
+                "alert_type": "other",
+                "confidence": "low",
+                "matched_terms": [],
+                "matched_rules": [],
+            }
+        matched_terms.extend(context_terms)
+        matched_rules.append("medium_process_context")
+        confidence = "medium"
+    elif alert_type in OPPOSITION_ALERT_STRONG_TYPES:
+        confidence = "high"
+    else:
+        confidence = "medium"
+    if noise_terms:
+        matched_terms.extend(noise_terms)
+        matched_rules.extend(f"noise_present:{_compact_token(term)}" for term in noise_terms)
+        if confidence == "high":
+            confidence = "medium"
+    return {
+        "matched": True,
+        "alert_type": alert_type,
+        "confidence": confidence,
+        "matched_terms": list(dict.fromkeys(matched_terms)),
+        "matched_rules": list(dict.fromkeys(matched_rules)),
+        "normalized_title": title,
+    }
+
+
+def _opposition_alert_record(
+    document: dict[str, Any],
+    *,
+    source_name: str,
+    classification: dict[str, Any],
+) -> dict[str, Any]:
+    official_url = _candidate_official_url(document)
+    alert_type = classification["alert_type"]
+    normalized_title = classification.get("normalized_title") or _normalize_search_text(
+        str(document.get("title") or "")
+    )
+    dedupe_key = _opposition_alert_dedupe_key(document, official_url, alert_type, normalized_title)
+    return {
+        "source_document_id": document["id"],
+        "source_candidate_id": None,
+        "source_code": document["source_code"],
+        "source_name": source_name,
+        "territory_code": _opposition_alert_territory_code(document["source_code"]),
+        "territory_name": _opposition_alert_territory_name(document["source_code"]),
+        "publication_date": document["publication_date"],
+        "title": document.get("title") or "",
+        "normalized_title": normalized_title,
+        "official_url": official_url,
+        "bulletin_identifier": None,
+        "document_identifier": document.get("external_id"),
+        "issuing_body": document.get("department"),
+        "section": document.get("section"),
+        "alert_type": alert_type,
+        "confidence": classification["confidence"],
+        "matched_terms": classification["matched_terms"],
+        "matched_rules": classification["matched_rules"],
+        "dedupe_key": dedupe_key,
+        "related_group_key": _opposition_alert_related_group_key(document, alert_type),
+        "review_status": "new",
+        "evidence_grade_status": "none",
+        "metadata_json": {},
+    }
+
+
+def _opposition_alert_dedupe_key(
+    document: dict[str, Any],
+    official_url: str,
+    alert_type: str,
+    normalized_title: str,
+) -> str:
+    source_code = document["source_code"]
+    external_id = document.get("external_id")
+    if external_id:
+        return f"{source_code}:{_compact_token(str(external_id))}:{alert_type}"
+    if official_url:
+        return f"{source_code}:{_compact_token(official_url)}:{alert_type}"
+    department = _compact_token(document.get("department") or "none")
+    return (
+        f"{source_code}:{document['publication_date']}:{_compact_token(normalized_title)}:"
+        f"{department}:{alert_type}"
+    )
+
+
+def _opposition_alert_related_group_key(document: dict[str, Any], alert_type: str) -> str:
+    title = _compact_token(_normalize_search_text(str(document.get("title") or "")))
+    department = _compact_token(document.get("department") or "none")
+    territory = _opposition_alert_territory_code(document["source_code"])
+    return f"{territory}:{department}:{title}:{alert_type}"
+
+
+def _opposition_alert_territory_code(source_code: str) -> str:
+    return {
+        "BOE": "ES",
+        "BOJA": "ES-AN",
+        "DOGV": "ES-VC",
+        "BOCYL": "ES-CL",
+        "BOPV": "ES-PV",
+        "BORM": "ES-MC",
+        "BOA": "ES-AR",
+        "DOGC": "ES-CT",
+    }.get(source_code, "unknown")
+
+
+def _opposition_alert_territory_name(source_code: str) -> str:
+    return {
+        "BOE": "Espana",
+        "BOJA": "Andalucia",
+        "DOGV": "Comunitat Valenciana",
+        "BOCYL": "Castilla y Leon",
+        "BOPV": "Pais Vasco",
+        "BORM": "Region de Murcia",
+        "BOA": "Aragon",
+        "DOGC": "Catalunya",
+    }.get(source_code, "Unknown")
 
 
 class _SharedBOEFetcher:
