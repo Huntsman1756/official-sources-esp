@@ -25,6 +25,16 @@ official-sources sources list
 official-sources sources status --source BOCYL
 ```
 
+Metadata-only RSS/Atom discovery command:
+
+```bash
+official-sources rss monitor --source BOCYL --date YYYY-MM-DD
+```
+
+RSS/Atom discovery records are not candidates and are not evidence. The command defaults to
+preview mode; JSONL output under `data/rss_monitor/<source_code>/<YYYY-MM-DD>/rss_discovery.jsonl`
+requires explicit `--write`.
+
 Registry validation rejects ambiguous operational states and keeps `candidate_creation_allowed`
 and `evidence_grade_allowed` explicit. Both are `false` by default in the current source data.
 

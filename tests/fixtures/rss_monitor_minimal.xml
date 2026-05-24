@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>BOCYL</title>
+    <link>https://bocyl.jcyl.es/</link>
+    <description>Boletin Oficial de Castilla y Leon</description>
+    <item>
+      <title>Boletin del dia 22/05/2026 edicion 96</title>
+      <link>https://bocyl.jcyl.es/boletin.do?fechaBoletin=22/05/2026&amp;edicion=96</link>
+      <description>Resumen metadata-only del boletin.</description>
+      <pubDate>Fri, 22 May 2026 18:05:45 GMT</pubDate>
+      <guid>https://bocyl.jcyl.es/boletin.do?fechaBoletin=22/05/2026&amp;edicion=96</guid>
+    </item>
+  </channel>
+</rss>

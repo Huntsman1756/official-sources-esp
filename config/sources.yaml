@@ -228,6 +228,10 @@ sources:
         url: https://jcyl.opendatasoft.com/api/explore/v2.1/catalog/datasets/bocyl/records
         status: validated
         notes: Official OpenDataSoft dataset endpoint used by the BOCYL metadata adapter.
+      - type: rss
+        url: https://bocyl.jcyl.es/rss.do
+        status: validated
+        notes: Official BOCYL RSS 2.0 feed linked from https://bocyl.jcyl.es/indiceRss.do.
     operational_status: metadata_adapter_validated
     mcp_support: false
     monitor_support: available

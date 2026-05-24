@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>BOCYL Atom</title>
+  <updated>2026-05-22T18:05:45Z</updated>
+  <entry>
+    <id>tag:bocyl.jcyl.es,2026:96</id>
+    <title>Boletin Atom 96</title>
+    <link href="https://bocyl.jcyl.es/boletin.do?fechaBoletin=22/05/2026&amp;edicion=96" />
+    <summary>Resumen Atom metadata-only.</summary>
+    <published>2026-05-22T18:05:45Z</published>
+    <updated>2026-05-22T18:05:46Z</updated>
+  </entry>
+</feed>

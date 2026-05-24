@@ -15,6 +15,12 @@ import httpx
 
 from official_sources.downstream_export import export_downstream_evidence_files
 from official_sources.integrity.hashing import sha256_bytes
+from official_sources.rss_monitor import (
+    RSSMonitorError,
+    build_rss_monitor_output_path,
+    monitor_source_code,
+    write_jsonl,
+)
 from official_sources.source_registry import SourceRegistryError, get_source, list_sources
 from official_sources.sources.bdns.client import (
     BDNS_DEFAULT_PAGE_SIZE,
@@ -928,6 +934,35 @@ def build_parser() -> argparse.ArgumentParser:
     source_status = sources_subparsers.add_parser("status", help="Show one registered source.")
     source_status.add_argument("--source", required=True, help="Source code, for example BOCYL.")
 
+    rss = subparsers.add_parser("rss", help="RSS/Atom discovery monitor commands.")
+    rss_subparsers = rss.add_subparsers(dest="rss_command", required=True)
+    rss_monitor = rss_subparsers.add_parser(
+        "monitor",
+        help="Preview or write metadata-only RSS/Atom discovery records for one source.",
+    )
+    rss_monitor.add_argument(
+        "--source",
+        required=True,
+        help="Single source code, for example BOCYL.",
+    )
+    rss_monitor.add_argument("--date", required=True, help="Monitor date in YYYY-MM-DD format.")
+    rss_monitor.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Maximum discovery records to emit. Default: 50.",
+    )
+    rss_monitor.add_argument(
+        "--write",
+        action="store_true",
+        help="Write metadata-only JSONL output. Default is preview only.",
+    )
+    rss_monitor.add_argument(
+        "--output-root",
+        default="data/rss_monitor",
+        help="Root directory for explicit --write JSONL output.",
+    )
+
     ingest = subparsers.add_parser("ingest-boe-summary", help="Ingest one BOE daily summary.")
     ingest.add_argument(
         "--date",
@@ -1412,6 +1447,7 @@ def run(
     bdns_latest_fetcher=None,
     bdns_call_fetcher=None,
     bdns_search_fetcher=None,
+    rss_fetcher=None,
     artifact_client: httpx.Client | None = None,
     consolidated_client: httpx.Client | None = None,
     stdout: TextIO | None = None,
@@ -1429,6 +1465,8 @@ def run(
         return _run_db_command(args, stdout, stderr)
     if args.command == "sources":
         return _run_sources_command(args, stdout, stderr)
+    if args.command == "rss":
+        return _run_rss_command(args, rss_fetcher, stdout, stderr)
 
     repository = _open_repository(args.db_path)
     if args.command == "ingest-boja-date":
@@ -1651,6 +1689,51 @@ def _run_sources_command(
         return 2
     print(f"Unknown sources command: {args.sources_command}", file=stderr)
     return 2
+
+
+def _run_rss_command(
+    args: argparse.Namespace,
+    rss_fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    if args.rss_command != "monitor":
+        print(f"Unknown rss command: {args.rss_command}", file=stderr)
+        return 2
+
+    source_code = args.source.strip().upper()
+    if source_code in {"ALL", "*"} or "," in args.source:
+        print("rss monitor accepts one source at a time; broad runs are not allowed", file=stderr)
+        return 2
+
+    try:
+        result = monitor_source_code(
+            source_code,
+            fetcher=rss_fetcher,
+            target_date=args.date,
+            limit=args.limit,
+        )
+    except RSSMonitorError as exc:
+        print(str(exc), file=stderr)
+        return 2
+
+    mode = "write" if args.write else "preview"
+    print(
+        (
+            f"command_started=rss monitor source_code={source_code} "
+            f"date={args.date} mode={mode} records={len(result.records)} "
+            f"feed_format={result.feed_format}"
+        ),
+        file=stdout,
+    )
+    if args.write:
+        output_path = build_rss_monitor_output_path(Path(args.output_root), source_code, args.date)
+        write_jsonl(result.records, output_path)
+        print(f"output_path={output_path}", file=stdout)
+    else:
+        for record in result.records:
+            print(json.dumps(record, ensure_ascii=False, sort_keys=True), file=stdout)
+    return 0
 
 
 def _open_repository(db_path: str) -> OfficialSourcesRepository:
