@@ -2105,3 +2105,58 @@ Result:
 ```text
 git diff --check: passed
 ```
+
+## 2026-05-24 - BOPV 30-day candidate triage
+
+Report:
+
+```text
+docs/reports/BOPV_30_DAY_CANDIDATE_TRIAGE_2026-05-23.md
+```
+
+Scope:
+
+```text
+metadata-only triage of BOPV candidates 147,148,149,150
+```
+
+VPS DB validation:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+database_path=/opt/official-sources/data/official_sources.sqlite current_version=8 latest_version=8 status=valid
+```
+
+Post-review safety counters:
+
+```text
+source_candidates_total=150
+BOPV source_candidates=4
+BOPV review_status_distribution=human_review_required:4
+artifact_download_attempts=482
+artifact_bytes=28857411
+MCP privacy=no matching official/mcp/python/uvicorn/fastmcp listeners
+```
+
+Triage result:
+
+```text
+reviewed=4
+likely_relevant=1
+unclear=2
+out_of_scope=1
+false_positive=0
+selected_for_future_evidence=147,149,150
+```
+
+Docs-only validation:
+
+```text
+rtk git diff --check
+```
+
+Result:
+
+```text
+git diff --check: passed
+```
