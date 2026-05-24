@@ -1,5 +1,66 @@
 # Validation
 
+## 2026-05-24 - BORM 30-day candidate triage
+
+Report:
+
+```text
+docs/reports/BORM_30_DAY_CANDIDATE_TRIAGE_2026-05-24.md
+```
+
+Scope:
+
+```text
+TASK-AUTO-BORM-007
+metadata-only triage
+candidate_ids=151,152,153,154,155,156,157,158,159,160,161,162,163
+no artifact downloads
+no review_status changes
+no downstream writes
+```
+
+VPS DB validation:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+database_path=/opt/official-sources/data/official_sources.sqlite current_version=8 latest_version=8 status=valid
+```
+
+Safety counters:
+
+```text
+source_candidates_total=163
+selected_candidates=13
+review_status_distribution=human_review_required:13
+artifact_download_attempts=482
+artifact_bytes=28857411
+artifact_size=30M
+MCP privacy=no matching official/mcp/python/uvicorn/fastmcp listeners
+```
+
+Triage result:
+
+```text
+candidates_reviewed=13
+likely_relevant=9
+unclear=3
+out_of_scope=1
+false_positive=0
+selected_for_future_evidence=151,152,153,154,155,156,157,158,159,161,162,163
+```
+
+Docs-only validation:
+
+```text
+rtk git diff --check
+```
+
+Result:
+
+```text
+git diff --check: passed
+```
+
 ## 2026-05-24 - BORM 30-day candidate batch
 
 Report:
