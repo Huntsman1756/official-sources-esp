@@ -1,5 +1,63 @@
 # Validation
 
+## 2026-05-24 - BORM PDF access blocker diagnosis
+
+Report:
+
+```text
+docs/reports/BORM_PDF_ACCESS_BLOCKER_DIAGNOSIS_2026-05-24.md
+```
+
+Scope:
+
+```text
+TASK-AUTO-BORM-008C
+diagnose BORM PDF/HTML access from VPS
+no anti-bot bypass
+no artifact downloads
+no DB writes
+```
+
+VPS DB validation:
+
+```text
+database_path=/opt/official-sources/data/official_sources.sqlite current_version=8 latest_version=8 status=valid
+```
+
+Probe result:
+
+```text
+pdf_probe_count=2
+html_probe_count=2
+final_host=validate.perfdrive.com
+content_type=text/html; charset=UTF-8
+body_title=Radware Captcha Page
+```
+
+Safety counters after diagnosis:
+
+```text
+artifact_download_attempts=518
+BORM_pdf_document_files=1
+BORM_html_document_files=0
+artifact_bytes=29154791
+source_candidates_total=163
+selected_review_status=human_review_required:12
+```
+
+Chosen strategy:
+
+```text
+pause_borm_evidence_flow
+```
+
+MCP privacy:
+
+```text
+ss -tulpn | grep -E 'official|mcp|python|uvicorn|fastmcp' || true
+no matching listener
+```
+
 ## 2026-05-24 - BORM selected candidate evidence download
 
 Report:
