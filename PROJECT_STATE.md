@@ -4,7 +4,35 @@ Last updated: 2026-05-24
 
 ## Current Decision
 
-`TASK-SOURCE-RSS-MONITOR-002` is implemented locally.
+`TASK-SOURCE-COVERAGE-V1-SNAPSHOT-001` is implemented locally.
+
+The project now has a canonical Coverage v1 snapshot:
+
+```text
+docs/reports/source-coverage-v1-snapshot-2026-05-24.md
+```
+
+Coverage v1 summarizes the executable registry and current monitor/MCP capabilities:
+
+```text
+total sources: 22
+metadata_adapter_validated: 9
+inventory_only: 12
+paused: 1
+validated RSS/Atom discovery sources: BOCYL, BOE, BOJA
+candidate_creation_allowed=false: 22
+evidence_grade_allowed=false: 22
+```
+
+This snapshot is reporting/control-plane only. It did not add sources, ingestion behavior, RSS
+writes, candidates, evidence-grade records, PDFs, artifacts, downstream writes, backfills, VPS
+operations, production DB operations, or LLM classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-RSS-MONITOR-002
+```
 
 The RSS/Atom discovery monitor now has three validated feed-backed sources:
 
@@ -23,7 +51,7 @@ production DB operations, backfills, publication, or LLM classification were add
 DOGC was not added because no stable official RSS/Atom feed was verified for this task. BOPV remains
 out of RSS expansion and should stay a separate REST/API task.
 
-Previous completed source-platform task:
+Earlier completed source-platform task:
 
 ```text
 TASK-MCP-SOURCE-COVERAGE-001
@@ -157,16 +185,18 @@ Hard guardrails:
 | `TASK-SOURCE-RSS-MONITOR-001` | Implemented locally | `src/official_sources/rss_monitor.py`, `docs/reports/rss-monitor-pilot-2026-05-24.md` | Adds metadata-only RSS/Atom discovery with BOCYL as the pilot source. |
 | `TASK-MCP-SOURCE-COVERAGE-001` | Implemented locally | `src/official_sources/source_coverage.py`, `docs/reports/mcp-source-coverage-2026-05-24.md` | Exposes source coverage and existing RSS discovery output through read-only MCP tools. |
 | `TASK-SOURCE-RSS-MONITOR-002` | Implemented locally | `config/sources.yaml`, `docs/reports/rss-monitor-expansion-2026-05-24.md` | Adds BOE and BOJA as validated metadata-only RSS/Atom discovery sources. |
+| `TASK-SOURCE-COVERAGE-V1-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-snapshot-2026-05-24.md` | Captures the v1 source coverage baseline from the executable registry and read-only MCP/monitor capabilities. |
 
 ## Next Allowed Work
 
 Allowed next work:
 
 1. `TASK-SOURCE-BOPV-API-001` as a separate BOPV REST/API discovery adapter task if BOPV source expansion is needed.
-2. Additional RSS/Atom source expansion only after feed discovery is verified source by source.
-3. Product-local design/preview for draft process creation in `oposiciones2.0`.
-4. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
-5. A source-needs audit for `renta-verificable` before any integration.
+2. `TASK-SOURCE-RSS-MONITOR-003` only after selecting 2-3 verified official RSS/Atom feeds.
+3. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
+4. Product-local design/preview for draft process creation in `oposiciones2.0`.
+5. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
+6. A source-needs audit for `renta-verificable` before any integration.
 
 Not allowed from this repo:
 

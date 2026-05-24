@@ -14,13 +14,15 @@ for source-platform work in this repository.
 | `TASK-SOURCE-RSS-MONITOR-001` | implemented locally | Metadata-only RSS/Atom discovery monitor added with BOCYL as pilot. Default mode is preview; JSONL writes require explicit `--write`. |
 | `TASK-MCP-SOURCE-COVERAGE-001` | implemented locally | Read-only MCP tools expose registry coverage and existing RSS discovery JSONL without live fetches or writes. |
 | `TASK-SOURCE-RSS-MONITOR-002` | implemented locally | BOE RSS and BOJA Atom feeds added as validated metadata-only discovery sources. |
+| `TASK-SOURCE-COVERAGE-V1-SNAPSHOT-001` | implemented locally | Canonical Coverage v1 snapshot added from the executable registry and current monitor/MCP capabilities. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
 | `TASK-SOURCE-BOPV-API-001` | proposed | Separate task only; do not implement BOPV REST/API discovery from RSS monitor work. |
-| Additional RSS/Atom expansion | proposed | Verify one source at a time before adding feed access methods. |
+| `TASK-SOURCE-RSS-MONITOR-003` | proposed | Only after selecting 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
+| `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |
 
 ## Guardrails
 
@@ -32,3 +34,4 @@ for source-platform work in this repository.
 - Do not fetch live feeds through MCP source-coverage tools.
 - Do not write to downstream product repositories.
 - Do not run VPS or production DB operations unless a separate task explicitly authorizes them.
+- Do not expand candidates or evidence-grade workflows without explicit approval.
