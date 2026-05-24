@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -18,6 +19,48 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 def _fixture_bytes(name: str) -> bytes:
     return (FIXTURES / name).read_bytes()
+
+
+def _borm_record_xml(
+    *,
+    publication_type: str = "BOLETIN",
+    announcement_id: str,
+    issue_number: str,
+    publication_date: str = "2026-05-11",
+    title: str = "Resolucion de prueba.",
+) -> str:
+    return f"""
+  <resultado>
+    <Publicacion>{publication_type}</Publicacion>
+    <ID_Anuncio>{announcement_id}</ID_Anuncio>
+    <ID_Objeto_Digital_Anuncio>84{announcement_id}</ID_Objeto_Digital_Anuncio>
+    <Num_Publicacion>{issue_number}</Num_Publicacion>
+    <Fec_Publicacion>{publication_date} 00:00:00</Fec_Publicacion>
+    <Sumario>{title}</Sumario>
+    <Administracion>Comunidad Autonoma</Administracion>
+    <Seccion>I. Comunidad Autonoma</Seccion>
+    <Apartado>2. Autoridades y Personal</Apartado>
+    <Anunciante>Consejeria de Prueba</Anunciante>
+    <Num_Disposicion>0</Num_Disposicion>
+    <Ejercicio_Publicacion>2026</Ejercicio_Publicacion>
+    <Rango>RESOLUCION</Rango>
+    <Fec_Disposicion>2026-05-10 00:00:00</Fec_Disposicion>
+    <Ejercicio_Disposicion>2026</Ejercicio_Disposicion>
+    <Categoria />
+    <NPE>A-110526-{announcement_id}</NPE>
+    <URL_HTML>https://www.borm.es/#/home/anuncio/11-05-2026/{announcement_id}</URL_HTML>
+    <URL_PDF>https://www.borm.es/services/anuncio/84{announcement_id}/pdf</URL_PDF>
+    <NUM_PAGINAS>1</NUM_PAGINAS>
+  </resultado>
+"""
+
+
+def _borm_payload(*records: str) -> bytes:
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n<resultados>\n'
+        + "\n".join(records)
+        + "\n</resultados>"
+    ).encode()
 
 
 @pytest.mark.parametrize("value", ["2026-05-20", "1980-01-01"])
@@ -76,6 +119,56 @@ def test_date_response_records_no_publication():
     assert issue.raw_payload_sha256 == sha256_bytes(payload)
 
 
+def test_date_response_accepts_same_date_supplement_issue():
+    payload = _borm_payload(
+        _borm_record_xml(announcement_id="2052", issue_number="106"),
+        _borm_record_xml(
+            publication_type="SUPLEMENTO",
+            announcement_id="2076",
+            issue_number="2",
+            title="Decreto por el que se declara un dia de luto oficial.",
+        ),
+    )
+
+    issue = parse_borm_date_response(payload, target_date="2026-05-11")
+
+    assert issue.status == "success"
+    assert issue.issue_identifier == "106/2026,2/2026"
+    assert issue.issue_identifiers == ["106/2026", "2/2026"]
+    assert len(issue.documents) == 2
+    assert issue.documents[0].raw_metadata["publication_type"] == "BOLETIN"
+    assert issue.documents[0].raw_metadata["issue_identifier"] == "106/2026"
+    assert issue.documents[1].raw_metadata["publication_type"] == "SUPLEMENTO"
+    assert issue.documents[1].raw_metadata["issue_identifier"] == "2/2026"
+
+
+def test_date_response_rejects_mixed_boletin_issue_identifiers():
+    payload = _borm_payload(
+        _borm_record_xml(announcement_id="2052", issue_number="106"),
+        _borm_record_xml(announcement_id="2076", issue_number="2"),
+    )
+
+    with pytest.raises(ValueError, match="mixed issue identifiers"):
+        parse_borm_date_response(payload, target_date="2026-05-11")
+
+
+def test_date_response_filters_wrong_date_current_index_records():
+    payload = _borm_payload(
+        _borm_record_xml(announcement_id="2052", issue_number="106"),
+        _borm_record_xml(
+            announcement_id="9999",
+            issue_number="999",
+            publication_date="2026-05-12",
+        ),
+    )
+
+    issue = parse_borm_date_response(payload, target_date="2026-05-11")
+
+    assert issue.status == "success"
+    assert issue.issue_identifier == "106/2026"
+    assert [document.official_identifier for document in issue.documents] == ["A-110526-2052"]
+
+
 def test_document_metadata_normalizes_identifier_and_citation_fields():
     payload = _fixture_bytes("borm_document_metadata.xml")
 
@@ -131,6 +224,43 @@ def test_borm_ingestion_stores_documents_without_artifacts_or_candidates(reposit
     assert candidate_count == 0
     assert attempt_count == 0
     assert run["source_snapshot_hash"] == sha256_bytes(payload)
+
+
+def test_borm_ingestion_stores_same_date_supplement_without_artifacts_or_candidates(repository):
+    payload = _borm_payload(
+        _borm_record_xml(announcement_id="2052", issue_number="106"),
+        _borm_record_xml(
+            publication_type="SUPLEMENTO",
+            announcement_id="2076",
+            issue_number="2",
+            title="Decreto por el que se declara un dia de luto oficial.",
+        ),
+    )
+
+    run = ingest_borm_date(repository, target_date="2026-05-11", date_payload=payload)
+
+    supplement = repository.get_document_by_external_id("BORM:A-110526-2076")
+    candidate_count = repository.connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    attempt_count = repository.connection.execute(
+        "SELECT COUNT(*) AS count FROM artifact_download_attempts"
+    ).fetchone()["count"]
+    pdf_file_count = repository.connection.execute(
+        "SELECT COUNT(*) AS count FROM document_files WHERE file_type = 'pdf'"
+    ).fetchone()["count"]
+
+    assert run["status"] == "success"
+    assert run["issue_identifier"] == "106/2026,2/2026"
+    assert run["issue_identifiers"] == ["106/2026", "2/2026"]
+    assert run["documents_fetched"] == 2
+    assert run["documents_new"] == 2
+    raw_metadata = json.loads(supplement["raw_metadata_json"])
+    assert raw_metadata["publication_type"] == "SUPLEMENTO"
+    assert raw_metadata["issue_identifier"] == "2/2026"
+    assert candidate_count == 0
+    assert attempt_count == 0
+    assert pdf_file_count == 0
 
 
 def test_borm_ingestion_records_no_publication(repository):

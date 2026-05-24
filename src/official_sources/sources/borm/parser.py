@@ -31,6 +31,7 @@ class BORMIssue:
     raw_payload_sha256: str
     status: str
     issue_identifier: str | None
+    issue_identifiers: list[str]
     documents: list[BORMDocumentMetadata]
 
 
@@ -49,16 +50,18 @@ def parse_borm_date_response(payload: bytes, *, target_date: str) -> BORMIssue:
             raw_payload_sha256=raw_payload_sha256,
             status=NO_PUBLICATION_STATUS,
             issue_identifier=None,
+            issue_identifiers=[],
             documents=[],
         )
-    issue_identifiers = {_issue_identifier(record) for record in records}
-    if len(issue_identifiers) != 1:
+    issue_identifiers = _issue_identifiers_in_order(records)
+    if len(issue_identifiers) != 1 and not _is_boletin_with_supplement(records):
         raise ValueError(f"BORM response for {target_date} has mixed issue identifiers")
     return BORMIssue(
         target_date=target_date,
         raw_payload_sha256=raw_payload_sha256,
         status="success",
-        issue_identifier=issue_identifiers.pop(),
+        issue_identifier=",".join(issue_identifiers),
+        issue_identifiers=issue_identifiers,
         documents=[_metadata_from_record(record) for record in records],
     )
 
@@ -136,6 +139,38 @@ def _issue_identifier(record: dict[str, str | None]) -> str:
     issue_number = _required_text(record.get("Num_Publicacion"), "BORM record")
     issue_year = _required_text(record.get("Ejercicio_Publicacion"), "BORM record")
     return f"{issue_number}/{issue_year}"
+
+
+def _issue_identifiers_in_order(records: list[dict[str, str | None]]) -> list[str]:
+    identifiers: list[str] = []
+    for record in records:
+        identifier = _issue_identifier(record)
+        if identifier not in identifiers:
+            identifiers.append(identifier)
+    return identifiers
+
+
+def _is_boletin_with_supplement(records: list[dict[str, str | None]]) -> bool:
+    publication_types_by_issue: dict[str, set[str]] = {}
+    for record in records:
+        publication_type = (_clean_optional_text(record.get("Publicacion")) or "").upper()
+        if publication_type not in {"BOLETIN", "SUPLEMENTO"}:
+            return False
+        publication_types_by_issue.setdefault(_issue_identifier(record), set()).add(
+            publication_type
+        )
+
+    boletin_issue_count = sum(
+        1
+        for publication_types in publication_types_by_issue.values()
+        if "BOLETIN" in publication_types
+    )
+    supplement_issue_count = sum(
+        1
+        for publication_types in publication_types_by_issue.values()
+        if publication_types == {"SUPLEMENTO"}
+    )
+    return boletin_issue_count == 1 and supplement_issue_count >= 1
 
 
 def _build_issue_pdf_url(*, issue_year: str, issue_number: str) -> str:

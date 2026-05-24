@@ -91,6 +91,7 @@ def ingest_borm_date(
             run_record,
             issue_identifier=issue.issue_identifier,
             source_snapshot_hash=issue.raw_payload_sha256,
+            issue_identifiers=issue.issue_identifiers,
         )
     except Exception as exc:
         run_record = repository.finish_ingestion_run(
@@ -118,9 +119,12 @@ def _with_borm_metadata(
     *,
     issue_identifier: str | None,
     source_snapshot_hash: str | None,
+    issue_identifiers: list[str] | None = None,
 ) -> dict:
     return {
         **run_record,
         "issue_identifier": issue_identifier,
+        "issue_identifiers": issue_identifiers
+        or ([] if issue_identifier is None else [issue_identifier]),
         "source_snapshot_hash": source_snapshot_hash,
     }
