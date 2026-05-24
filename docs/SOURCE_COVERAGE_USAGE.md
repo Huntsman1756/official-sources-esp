@@ -18,7 +18,7 @@ Current source counts:
 
 ```text
 registered sources: 22
-RSS/Atom discovery sources: BOE, BOJA, BOCYL
+RSS/Atom discovery sources: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
 API discovery sources: BOPV
 candidate_creation_allowed=true: 0
 evidence_grade_allowed=true: 0
@@ -76,6 +76,9 @@ Preview one source without writing JSONL:
 official-sources rss monitor --source BOE --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOJA --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOCYL --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOIB --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOC_CANTABRIA --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source DOE --date YYYY-MM-DD --limit 1
 ```
 
 Write JSONL only when explicitly requested:
@@ -178,6 +181,9 @@ Current expected monitored/discovery sources:
 BOE: RSS/API/XML/HTML access methods declared
 BOJA: Atom/API access methods declared
 BOCYL: RSS access method declared
+BOIB: RSS access method declared
+BOC_CANTABRIA: RSS access method declared; category-scoped feed
+DOE: RSS access method declared
 BOPV: API/XML/HTML access methods declared
 ```
 
@@ -242,6 +248,9 @@ official-sources sources status --source BOPV
 official-sources rss monitor --source BOE --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOJA --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOCYL --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOIB --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOC_CANTABRIA --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source DOE --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 ```
 

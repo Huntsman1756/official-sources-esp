@@ -11,7 +11,7 @@ The source coverage platform now has:
 
 ```text
 config/sources.yaml
-RSS/Atom discovery: BOE, BOJA, BOCYL
+RSS/Atom discovery: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
 API discovery: BOPV
 MCP read-only coverage and discovery readers
 ```
@@ -46,6 +46,9 @@ Allowed preview examples:
 official-sources rss monitor --source BOE --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOJA --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOCYL --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOIB --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOC_CANTABRIA --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source DOE --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 ```
 

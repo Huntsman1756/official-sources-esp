@@ -116,6 +116,9 @@ def test_bocyl_pilot_access_method_exists_in_registry():
     [
         ("BOE", "rss", "https://www.boe.es/rss/boe.php"),
         ("BOJA", "atom", "https://www.juntadeandalucia.es/boja/distribucion/boja.xml"),
+        ("BOIB", "rss", "https://www.caib.es/eboibfront/es/rss"),
+        ("BOC_CANTABRIA", "rss", "https://www.cantabria.es/o/BOC/feed/6802081"),
+        ("DOE", "rss", "https://doe.juntaex.es/rss/rss.php?seccion=6"),
     ],
 )
 def test_expanded_feed_access_methods_exist_in_registry(
@@ -136,6 +139,9 @@ def test_expanded_feed_access_methods_exist_in_registry(
     [
         ("BOE", "rss_monitor_minimal.xml"),
         ("BOJA", "atom_monitor_minimal.xml"),
+        ("BOIB", "rss_monitor_minimal.xml"),
+        ("BOC_CANTABRIA", "rss_monitor_minimal.xml"),
+        ("DOE", "rss_monitor_minimal.xml"),
     ],
 )
 def test_monitor_accepts_expanded_sources_as_discovery_only(source_code, fixture_name):

@@ -247,6 +247,9 @@ def test_mcp_list_monitorable_sources_includes_expanded_feed_sources():
 
     assert "rss" in boe_method_types
     assert "atom" in boja_method_types
+    for source_code in {"BOIB", "BOC_CANTABRIA", "DOE"}:
+        method_types = {method["type"] for method in sources[source_code]["access_methods"]}
+        assert "rss" in method_types
 
 
 def test_mcp_latest_discovery_entries_reads_existing_jsonl_only(tmp_path):

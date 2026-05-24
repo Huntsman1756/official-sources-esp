@@ -21,12 +21,13 @@ for source-platform work in this repository.
 | `TASK-SOURCE-COVERAGE-INTEGRATION-CHECK-001` | implemented locally | Integration check validates registry, RSS monitor, API monitor, and MCP coverage/discovery together. |
 | `TASK-MCP-COVERAGE-USAGE-DOCS-001` | implemented locally | Usage guide documents registry CLI, RSS/API discovery previews, MCP coverage tools, and safety boundaries. |
 | `TASK-SOURCE-COVERAGE-SCHEDULE-001` | implemented locally | Controlled discovery run plan added; one source at a time, preview by default, explicit write only, report template included. |
+| `TASK-SOURCE-RSS-MONITOR-003` | implemented locally | BOIB, BOC_CANTABRIA, and DOE RSS feeds added as validated metadata-only discovery sources; DOGC and BON were checked but not added. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
-| `TASK-SOURCE-RSS-MONITOR-003` | proposed | Only after selecting 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
+| `TASK-SOURCE-RSS-MONITOR-004` | proposed | Only after selecting another 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
 | `TASK-SOURCE-HTML-MONITOR-PILOT-001` | proposed | Only for sources without RSS/API, after source-specific endpoint/robots/fixture audit. |
 | `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |
 

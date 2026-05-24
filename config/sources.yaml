@@ -159,18 +159,22 @@ sources:
     jurisdiction: ES-IB
     jurisdiction_level: autonómica
     official_landing_url: http://www.caib.es/eboibfront/?lang=es
-    access_methods: []
-    operational_status: inventory_only
+    access_methods:
+      - type: rss
+        url: https://www.caib.es/eboibfront/es/rss
+        status: validated
+        notes: Official BOIB RSS feed linked from the BOIB landing page and service RSS section.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-22"
+    last_verified_at: "2026-05-24"
     limitations:
-      - Access method not validated yet.
-    notes: Registry entry only.
+      - RSS discovery is metadata-only and does not imply a metadata adapter or evidence support.
+    notes: Official RSS feed is validated for controlled discovery monitoring.
 
   - source_code: BOC_CANARIAS
     name: Boletin Oficial de Canarias
@@ -195,18 +199,23 @@ sources:
     jurisdiction: ES-CB
     jurisdiction_level: autonómica
     official_landing_url: https://boc.cantabria.es/boces/
-    access_methods: []
-    operational_status: inventory_only
+    access_methods:
+      - type: rss
+        url: https://www.cantabria.es/o/BOC/feed/6802081
+        status: validated
+        notes: Official BOC RSS category feed for "1 Disposiciones Generales" linked from the Cantabria RSS directory.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-22"
+    last_verified_at: "2026-05-24"
     limitations:
-      - Access method not validated yet.
-    notes: Registry entry only.
+      - Validated RSS is category-scoped, not complete bulletin coverage.
+      - RSS discovery is metadata-only and does not imply a metadata adapter or evidence support.
+    notes: Official category feed is validated for controlled discovery monitoring.
 
   - source_code: DOCM
     name: Diario Oficial de Castilla-La Mancha
@@ -283,18 +292,22 @@ sources:
     jurisdiction: ES-EX
     jurisdiction_level: autonómica
     official_landing_url: http://doe.juntaex.es/
-    access_methods: []
-    operational_status: inventory_only
+    access_methods:
+      - type: rss
+        url: https://doe.juntaex.es/rss/rss.php?seccion=6
+        status: validated
+        notes: Official DOE "SUMARIO COMPLETO" RSS endpoint linked from https://doe.juntaex.es/rss/index.php.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-22"
+    last_verified_at: "2026-05-24"
     limitations:
-      - Access method not validated yet.
-    notes: Registry entry only.
+      - RSS discovery is metadata-only and does not imply a metadata adapter or evidence support.
+    notes: Official RSS feed is validated for controlled discovery monitoring.
 
   - source_code: DOG
     name: Diario Oficial de Galicia
