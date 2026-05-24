@@ -47,6 +47,7 @@ document_identifier: string | null
 issuing_body: string | null
 section: string | null
 alert_type: enum
+alert_scope: enum
 confidence: enum
 matched_terms: string[]
 matched_rules: string[]
@@ -123,6 +124,10 @@ Source section, category, or official index block if available.
 
 Classification for the kind of public employment notice.
 
+`alert_scope`
+
+Product-facing scope tier. This separates strict oposiciones alerts from broader public-employment notices and review-only matches.
+
 `confidence`
 
 First-pass confidence label. This is product confidence, not evidence-grade verification.
@@ -186,6 +191,11 @@ subsanacion
 correccion
 nombramiento
 adjudicacion
+ope
+provision_puestos
+libre_designacion
+concurso_meritos
+universidad_profesorado
 other
 ```
 
@@ -204,7 +214,30 @@ subsanacion = correction period for documentation or defects
 correccion = correction of an earlier notice
 nombramiento = appointment related to a selection process
 adjudicacion = award of posts, destinations, or placements
+ope = oferta publica de empleo notice
+provision_puestos = provision of posts or positions
+libre_designacion = free-designation provision notice
+concurso_meritos = merits-only competition or provision process
+universidad_profesorado = university teaching or professor access/appointment notice
 other = relevant but not classifiable yet
+```
+
+### alert_scope
+
+Allowed values:
+
+```text
+strict
+broad
+review_only
+```
+
+Definitions:
+
+```text
+strict = direct oposiciones/process alert suitable for default user-facing review
+broad = public employment content that may be useful but is not strict by default
+review_only = weak or ambiguous match that should not be user-facing by default
 ```
 
 ### confidence
@@ -277,6 +310,7 @@ publication_date
 title
 official_url
 alert_type
+alert_scope
 confidence
 dedupe_key
 detected_at
@@ -315,6 +349,7 @@ Rules:
 ```text
 official_url is required.
 confidence is required.
+alert_scope is required.
 source_candidate_id must be null unless explicit promotion has happened.
 evidence_grade_status must default to none.
 review_status must default to new.
@@ -522,11 +557,13 @@ If implemented in a relational store, suggested indexes:
 ```text
 source_code + publication_date
 alert_type + publication_date
+alert_scope + publication_date
 dedupe_key unique or near-unique
 related_group_key
 review_status
 territory_code
 confidence
+alert_scope
 evidence_grade_status
 source_document_id
 source_candidate_id

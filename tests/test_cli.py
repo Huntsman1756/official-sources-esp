@@ -2579,6 +2579,7 @@ def test_dry_run_opposition_alerts_outputs_json_without_writes(tmp_path, capsys)
     assert payload["summary"]["writes"]["source_candidates"] is False
     assert payload["summary"]["alerts_by_type"] == {"bolsa": 1, "convocatoria": 1}
     assert {alert["alert_type"] for alert in payload["alerts"]} == {"bolsa", "convocatoria"}
+    assert {alert["alert_scope"] for alert in payload["alerts"]} == {"strict"}
     assert {alert["review_status"] for alert in payload["alerts"]} == {"new"}
     assert {alert["evidence_grade_status"] for alert in payload["alerts"]} == {"none"}
     assert all(alert["source_candidate_id"] is None for alert in payload["alerts"])
@@ -2635,10 +2636,14 @@ def test_dry_run_opposition_alerts_jsonl_and_contextual_exclusions(tmp_path, cap
     assert exit_code == 0
     assert candidate_count == 0
     assert rows[0]["record_type"] == "summary"
-    assert rows[0]["alerts_found"] == 1
-    assert rows[1]["record_type"] == "alert"
-    assert rows[1]["alert_type"] == "nombramiento"
-    assert rows[1]["confidence"] == "medium"
+    assert rows[0]["alerts_found"] == 2
+    alerts = [row for row in rows[1:] if row["record_type"] == "alert"]
+    alerts_by_id = {alert["document_identifier"]: alert for alert in alerts}
+    assert alerts_by_id["BOE-A-2026-00002"]["alert_type"] == "nombramiento"
+    assert alerts_by_id["BOE-A-2026-00002"]["alert_scope"] == "review_only"
+    assert alerts_by_id["BOE-A-2026-00003"]["alert_type"] == "nombramiento"
+    assert alerts_by_id["BOE-A-2026-00003"]["alert_scope"] == "broad"
+    assert {alert["confidence"] for alert in alerts} == {"medium"}
 
 
 def test_dry_run_opposition_alerts_excludes_generic_convocatoria_noise(tmp_path, capsys):
@@ -2782,8 +2787,83 @@ def test_dry_run_opposition_alerts_detects_process_events_with_priority(tmp_path
     assert payload["summary"]["alerts_found"] == len(examples)
     for external_id, _title, expected_type in examples:
         assert alerts_by_id[external_id]["alert_type"] == expected_type
+        assert alerts_by_id[external_id]["alert_scope"] == "strict"
     assert alerts_by_id["BORM:2026:203"]["alert_type"] != "convocatoria"
     assert all(alert["confidence"] in {"high", "medium"} for alert in payload["alerts"])
+
+
+def test_dry_run_opposition_alerts_assigns_broad_and_review_scopes(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_bopv()
+    examples = [
+        (
+            "BOPV:2026:301",
+            "Anuncio relativo a la Oferta de Empleo Publico para el año 2026",
+            "ope",
+            "broad",
+        ),
+        (
+            "BOPV:2026:302",
+            "Orden por la que se anuncia la convocatoria publica para la provision "
+            "por el sistema de libre designacion de un puesto de trabajo",
+            "libre_designacion",
+            "broad",
+        ),
+        (
+            "BOPV:2026:303",
+            "Resolucion por la que se nombra profesora agregada de Universidad "
+            "cuyo concurso de acceso a plazas fue convocado anteriormente",
+            "universidad_profesorado",
+            "broad",
+        ),
+        (
+            "BOPV:2026:304",
+            "Real Decreto por el que se nombra Directora General de Coordinacion",
+            "nombramiento",
+            "review_only",
+        ),
+    ]
+    for external_id, title, _expected_type, _expected_scope in examples:
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=external_id,
+            publication_date="2026-05-20",
+            title=title,
+            department="Gobierno Vasco",
+            url_html=f"https://www.euskadi.eus/bopv2/datos/2026/05/{external_id[-3:]}.shtml",
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "dry-run-opposition-alerts",
+            "--source",
+            "BOPV",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--format",
+            "json",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    alerts_by_id = {alert["document_identifier"]: alert for alert in payload["alerts"]}
+    assert exit_code == 0
+    assert payload["summary"]["alerts_found"] == len(examples)
+    for external_id, _title, expected_type, expected_scope in examples:
+        assert alerts_by_id[external_id]["alert_type"] == expected_type
+        assert alerts_by_id[external_id]["alert_scope"] == expected_scope
 
 
 def test_find_source_candidates_alias_supports_boja_dry_run(tmp_path, capsys):

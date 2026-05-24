@@ -2993,6 +2993,7 @@ def _run_dry_run_opposition_alerts(
 
     alerts_by_source = Counter(alert["source_code"] for alert in alerts)
     alerts_by_type = Counter(alert["alert_type"] for alert in alerts)
+    alerts_by_scope = Counter(alert["alert_scope"] for alert in alerts)
     alerts_by_confidence = Counter(alert["confidence"] for alert in alerts)
     summary = {
         "mode": "dry_run",
@@ -3005,6 +3006,7 @@ def _run_dry_run_opposition_alerts(
         "sources": source_codes,
         "alerts_by_source": dict(sorted(alerts_by_source.items())),
         "alerts_by_type": dict(sorted(alerts_by_type.items())),
+        "alerts_by_scope": dict(sorted(alerts_by_scope.items())),
         "alerts_by_confidence": dict(sorted(alerts_by_confidence.items())),
         "excluded_by_rule": dict(sorted(excluded_by_rule.items())),
         "writes": {
@@ -3079,7 +3081,7 @@ OPPOSITION_ALERT_RULES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     (
         "nombramiento",
         "nombramiento",
-        ("nombramiento", "nombramientos"),
+        ("nombramiento", "nombramientos", "nombra"),
     ),
     (
         "convocatoria",
@@ -3100,6 +3102,40 @@ OPPOSITION_ALERT_RULES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
         "adjudicacion",
         "adjudicacion",
         ("adjudicacion de destinos", "adjudicacion de puestos", "adjudican destinos"),
+    ),
+)
+OPPOSITION_ALERT_BROAD_RULES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
+    (
+        "universidad_profesorado",
+        "universidad_profesorado",
+        (
+            "profesorado permanente",
+            "profesor ayudante doctor",
+            "profesora agregada",
+            "profesor titular",
+            "cuerpos docentes universitarios",
+            "profesor permanente laboral",
+        ),
+    ),
+    (
+        "libre_designacion",
+        "libre_designacion",
+        ("libre designacion",),
+    ),
+    (
+        "provision_puestos",
+        "provision_puestos",
+        ("provision de puestos", "provision de puesto", "provision de un puesto"),
+    ),
+    (
+        "concurso_meritos",
+        "concurso_meritos",
+        ("concurso de meritos",),
+    ),
+    (
+        "ope",
+        "ope",
+        ("oferta publica de empleo", "ofertas publicas de empleo", "oferta de empleo publico"),
     ),
 )
 OPPOSITION_ALERT_PROCESS_CONTEXT = (
@@ -3193,8 +3229,28 @@ OPPOSITION_ALERT_STRONG_TYPES = {
 OPPOSITION_ALERT_CONTEXT_REQUIRED_TYPES = {
     "correccion",
     "plazo",
+    "adjudicacion",
+}
+OPPOSITION_ALERT_STRICT_TYPES = {
+    "convocatoria",
+    "bolsa",
+    "bases",
+    "lista_provisional",
+    "lista_definitiva",
+    "tribunal",
+    "fecha_examen",
+    "plazo",
+    "subsanacion",
+    "correccion",
+}
+OPPOSITION_ALERT_BROAD_TYPES = {
+    "ope",
+    "provision_puestos",
+    "libre_designacion",
+    "concurso_meritos",
     "nombramiento",
     "adjudicacion",
+    "universidad_profesorado",
 }
 
 
@@ -3220,6 +3276,20 @@ def _classify_opposition_alert(document: dict[str, Any]) -> dict[str, Any]:
             matched_terms.extend(found_terms)
             matched_rules.append(f"strong_{rule_name}")
             break
+    broad_alert_type = ""
+    broad_terms: list[str] = []
+    broad_rule = ""
+    for candidate_type, rule_name, terms in OPPOSITION_ALERT_BROAD_RULES:
+        found_terms = [term for term in terms if _keyword_matches(combined_text, term)]
+        if found_terms:
+            broad_alert_type = candidate_type
+            broad_terms = found_terms
+            broad_rule = f"broad_{rule_name}"
+            break
+    if alert_type in {"other", "convocatoria", "nombramiento"} and broad_alert_type:
+        alert_type = broad_alert_type
+        matched_terms.extend(broad_terms)
+        matched_rules.append(broad_rule)
     has_process_context = any(
         _keyword_matches(combined_text, term) for term in OPPOSITION_ALERT_PROCESS_CONTEXT
     )
@@ -3291,6 +3361,14 @@ def _classify_opposition_alert(document: dict[str, Any]) -> dict[str, Any]:
         confidence = "high"
     else:
         confidence = "medium"
+    alert_scope = _opposition_alert_scope(
+        source_code=str(document.get("source_code") or ""),
+        alert_type=alert_type,
+        combined_text=combined_text,
+        has_process_context=has_process_context,
+    )
+    if alert_scope == "review_only" and confidence == "high":
+        confidence = "medium"
     if noise_terms:
         matched_terms.extend(noise_terms)
         matched_rules.extend(f"noise_present:{_compact_token(term)}" for term in noise_terms)
@@ -3303,7 +3381,56 @@ def _classify_opposition_alert(document: dict[str, Any]) -> dict[str, Any]:
         "matched_terms": list(dict.fromkeys(matched_terms)),
         "matched_rules": list(dict.fromkeys(matched_rules)),
         "normalized_title": title,
+        "alert_scope": alert_scope,
     }
+
+
+def _opposition_alert_scope(
+    *,
+    source_code: str,
+    alert_type: str,
+    combined_text: str,
+    has_process_context: bool,
+) -> str:
+    strict_terms = (
+        "proceso selectivo",
+        "pruebas selectivas",
+        "oposicion",
+        "oposiciones",
+        "concurso-oposicion",
+        "concurso oposicion",
+        "bolsa de trabajo",
+        "bolsa de empleo",
+        "lista provisional",
+        "lista definitiva",
+        "admitidos",
+        "excluidos",
+        "tribunal calificador",
+        "fecha de examen",
+        "turno libre",
+        "promocion interna",
+    )
+    if alert_type in OPPOSITION_ALERT_STRICT_TYPES and any(
+        _keyword_matches(combined_text, term) for term in strict_terms
+    ):
+        return "strict"
+    if alert_type in {"bolsa", "lista_provisional", "lista_definitiva", "tribunal", "fecha_examen"}:
+        return "strict"
+    if alert_type in OPPOSITION_ALERT_BROAD_TYPES:
+        if alert_type == "nombramiento" and not has_process_context:
+            return "review_only"
+        return "broad"
+    if alert_type == "convocatoria" and has_process_context:
+        if source_code in {"BOE", "BOPV"} and not any(
+            _keyword_matches(combined_text, term) for term in strict_terms
+        ):
+            return "review_only"
+        return "strict"
+    if alert_type == "other" and has_process_context:
+        if source_code in {"BOE", "BOPV"}:
+            return "review_only"
+        return "broad"
+    return "review_only"
 
 
 def _opposition_alert_record(
@@ -3334,6 +3461,7 @@ def _opposition_alert_record(
         "issuing_body": document.get("department"),
         "section": document.get("section"),
         "alert_type": alert_type,
+        "alert_scope": classification["alert_scope"],
         "confidence": classification["confidence"],
         "matched_terms": classification["matched_terms"],
         "matched_rules": classification["matched_rules"],

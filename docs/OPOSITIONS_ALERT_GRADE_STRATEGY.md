@@ -79,7 +79,8 @@ official_url: string
 bulletin_identifier: string | null
 document_identifier: string | null
 issuing_body: string | null
-alert_type: convocatoria | bolsa | bases | lista_provisional | lista_definitiva | tribunal | fecha_examen | plazo | subsanacion | correccion | nombramiento | adjudicacion | other
+alert_type: convocatoria | bolsa | bases | lista_provisional | lista_definitiva | tribunal | fecha_examen | plazo | subsanacion | correccion | ope | provision_puestos | libre_designacion | concurso_meritos | nombramiento | adjudicacion | universidad_profesorado | other
+alert_scope: strict | broad | review_only
 confidence: high | medium | low
 matched_terms: string[]
 dedupe_key: string
@@ -96,12 +97,13 @@ publication_date
 title
 official_url
 alert_type
+alert_scope
 confidence
 dedupe_key
 detected_at
 ```
 
-No alert-grade item should be user-facing unless it has an official URL and a clear confidence level.
+No alert-grade item should be user-facing unless it has an official URL, a clear confidence level, and a user-facing scope. By default, only `strict` alerts should be considered for product-facing notifications. `broad` is useful for review or optional filters, and `review_only` should not be user-facing by default.
 
 ## Alert Types
 
@@ -152,6 +154,70 @@ Appointment related to a public employment process. This must not include unrela
 `adjudicacion`
 
 Awarding of positions, destinations, posts, or placements after a process.
+
+`ope`
+
+Publication or management of an oferta publica de empleo.
+
+`provision_puestos`
+
+Provision of posts or positions that is relevant to public employment but not necessarily a new selection process.
+
+`libre_designacion`
+
+Free-designation provision notice.
+
+`concurso_meritos`
+
+Merit competition or merits-only provision process.
+
+`universidad_profesorado`
+
+University teaching or professor appointment/access notice.
+
+## Alert Scope
+
+`alert_scope` separates direct oposiciones notices from broader public-employment material.
+
+```text
+strict = likely direct oposiciones/process alert
+broad = public employment content, useful but not strict by default
+review_only = weak or ambiguous match, not user-facing by default
+```
+
+Strict examples:
+
+```text
+proceso selectivo
+oposicion / oposiciones
+concurso-oposicion
+bolsa de trabajo
+lista provisional / definitiva
+admitidos / excluidos
+tribunal calificador
+fecha de examen
+subsanacion tied to a process
+```
+
+Broad examples:
+
+```text
+oferta publica de empleo
+provision de puestos
+libre designacion
+concurso de meritos
+universidad/profesorado
+nombramientos post-proceso
+adjudicacion de destinos
+```
+
+Review-only examples:
+
+```text
+generic appointment
+weak employment wording
+ambiguous university or administrative notices
+```
 
 ## Classification Strategy
 
