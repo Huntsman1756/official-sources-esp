@@ -1,5 +1,112 @@
 # Validation
 
+## 2026-05-24 - BORM 30-day candidate batch
+
+Report:
+
+```text
+docs/reports/BORM_30_DAY_CANDIDATE_BATCH_2026-05-23.md
+```
+
+Scope:
+
+```text
+TASK-AUTO-BORM-006
+source=BORM
+profile=borm-ayudas
+range=2026-04-21 -> 2026-05-20
+limit=13
+write=true
+```
+
+Deployed commit:
+
+```text
+5d76754
+```
+
+Pre-run DB validation:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+database_path=/opt/official-sources/data/official_sources.sqlite current_version=8 latest_version=8 status=valid
+```
+
+Pre-run counts:
+
+```text
+source_candidates_total=150
+BORM source_candidates=0
+artifact_download_attempts=482
+artifact_bytes=28857411
+artifact_size=30M
+```
+
+Pre-run backup:
+
+```text
+/opt/official-sources/data/backups/official_sources_before_borm_candidate_batch_20260524_074330.sqlite
+```
+
+Command:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite find-source-candidates --source BORM --date-from 2026-04-21 --date-to 2026-05-20 --profile borm-ayudas --limit 13 --write
+```
+
+Result:
+
+```text
+documents_scanned=549
+matches_total=255
+matches_after_filters=13
+documents_matched=13
+candidates_created=13
+```
+
+Post-run counts:
+
+```text
+source_candidates_total=163
+BORM source_candidates=13
+BORM review_status_distribution=human_review_required:13
+artifact_download_attempts=482
+artifact_bytes=28857411
+artifact_size=30M
+```
+
+Post-run DB validation:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+database_path=/opt/official-sources/data/official_sources.sqlite current_version=8 latest_version=8 status=valid
+```
+
+MCP privacy:
+
+```text
+ss -tulpn | grep -E 'official|mcp|python|uvicorn|fastmcp' || true
+no matching listeners
+```
+
+Post-run backup:
+
+```text
+/opt/official-sources/data/backups/official_sources_after_borm_candidate_batch_20260524_074420.sqlite
+```
+
+Docs-only validation:
+
+```text
+rtk git diff --check
+```
+
+Result:
+
+```text
+git diff --check: passed
+```
+
 ## 2026-05-21 - TASK-AUTO-BOCYL-004 BOCYL candidate dry-run
 
 VPS read-only validation:
