@@ -31,6 +31,12 @@ data/rss_monitor/<source_code>/<YYYY-MM-DD>/rss_discovery.jsonl
 data/api_monitor/<source_code>/<YYYY-MM-DD>/api_discovery.jsonl
 ```
 
+Controlled execution is documented in:
+
+```text
+docs/SOURCE_COVERAGE_RUN_PLAN.md
+```
+
 ## Registry CLI
 
 List registered sources:
@@ -240,6 +246,12 @@ official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 ```
 
 Run the previews without `--write` unless the task explicitly requires JSONL output.
+
+For operational run sequencing, write authorization, post-run checks, and report templates, follow:
+
+```text
+docs/SOURCE_COVERAGE_RUN_PLAN.md
+```
 
 For code validation:
 

@@ -4,6 +4,42 @@ Last updated: 2026-05-24
 
 ## Current Decision
 
+`TASK-SOURCE-COVERAGE-SCHEDULE-001` is implemented locally.
+
+The controlled discovery run plan is documented at:
+
+```text
+docs/SOURCE_COVERAGE_RUN_PLAN.md
+```
+
+Report:
+
+```text
+docs/reports/source-coverage-schedule-2026-05-24.md
+```
+
+This task defines safe operation for source discovery monitors:
+
+```text
+one source per command
+preview by default
+--write only when explicitly approved
+cache-first JSONL output
+run report required for non-trivial executions
+no all-source runs
+```
+
+It is documentation/control-plane only. It did not add scheduler code, cron, systemd, GitHub
+Actions, VPS jobs, new sources, monitor behavior changes, candidates, evidence-grade records, PDFs,
+artifacts, downstream writes, backfills, production DB operations, publication, or LLM
+classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-MCP-COVERAGE-USAGE-DOCS-001
+```
+
 `TASK-MCP-COVERAGE-USAGE-DOCS-001` is implemented locally.
 
 The coverage platform usage guide is now documented at:
@@ -359,6 +395,7 @@ Hard guardrails:
 | `TASK-MCP-API-DISCOVERY-OUTPUT-001` | Implemented locally | `src/official_sources/source_coverage.py`, `docs/reports/mcp-api-discovery-output-2026-05-24.md` | Extends the read-only MCP discovery reader to existing RSS and API discovery JSONL. |
 | `TASK-SOURCE-COVERAGE-INTEGRATION-CHECK-001` | Implemented locally | `docs/reports/source-coverage-integration-check-2026-05-24.md` | Validates the integrated registry, RSS monitor, API monitor, and MCP coverage/discovery line. |
 | `TASK-MCP-COVERAGE-USAGE-DOCS-001` | Implemented locally | `docs/SOURCE_COVERAGE_USAGE.md`, `docs/MCP_TOOLS.md`, `README.md` | Documents CLI and MCP source coverage usage with safety boundaries. |
+| `TASK-SOURCE-COVERAGE-SCHEDULE-001` | Implemented locally | `docs/SOURCE_COVERAGE_RUN_PLAN.md`, `docs/reports/source-coverage-schedule-2026-05-24.md` | Defines controlled one-source-at-a-time discovery run plan and report template. |
 
 ## Next Allowed Work
 
