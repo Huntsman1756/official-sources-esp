@@ -2641,6 +2641,151 @@ def test_dry_run_opposition_alerts_jsonl_and_contextual_exclusions(tmp_path, cap
     assert rows[1]["confidence"] == "medium"
 
 
+def test_dry_run_opposition_alerts_excludes_generic_convocatoria_noise(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boe()
+    noisy_titles = [
+        (
+            "BOE-B-2026-10001",
+            "Extracto por el que se aprueba la convocatoria de becas universitarias",
+        ),
+        (
+            "BOE-B-2026-10002",
+            "Resolucion por la que se convoca el levantamiento de actas previas "
+            "en expediente de expropiacion forzosa",
+        ),
+        (
+            "BOE-B-2026-10003",
+            "Anuncio de licitacion del contrato de servicios para personal laboral",
+        ),
+        (
+            "BOE-B-2026-10004",
+            "Resolucion por la que se inicia el procedimiento nacional de oposicion "
+            "de la DOP Ribera del Guadiana",
+        ),
+        (
+            "BOE-B-2026-10005",
+            "Convocatoria de subvenciones para entidades locales",
+        ),
+    ]
+    for external_id, title in noisy_titles:
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=external_id,
+            publication_date="2026-05-20",
+            title=title,
+            department="Ministerio de Politica Territorial",
+            url_html=f"https://www.boe.es/diario_boe/txt.php?id={external_id}",
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "dry-run-opposition-alerts",
+            "--source",
+            "BOE",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--format",
+            "json",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert exit_code == 0
+    assert payload["summary"]["documents_scanned"] == len(noisy_titles)
+    assert payload["summary"]["alerts_found"] == 0
+    assert payload["alerts"] == []
+
+
+def test_dry_run_opposition_alerts_detects_process_events_with_priority(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_borm()
+    examples = [
+        (
+            "BORM:2026:201",
+            "Resolucion por la que se convoca proceso selectivo para cubrir plazas "
+            "del Cuerpo Superior de Administradores por turno libre",
+            "convocatoria",
+        ),
+        (
+            "BORM:2026:202",
+            "Convocatoria para constituir una bolsa de trabajo de auxiliares administrativos",
+            "bolsa",
+        ),
+        (
+            "BORM:2026:203",
+            "Orden por la que se aprueba la lista provisional de aspirantes admitidos "
+            "y excluidos de las pruebas selectivas",
+            "lista_provisional",
+        ),
+        (
+            "BORM:2026:204",
+            "Resolucion por la que se nombra a las personas miembros del tribunal "
+            "calificador del proceso selectivo",
+            "tribunal",
+        ),
+        (
+            "BORM:2026:205",
+            "Anuncio de fecha de examen del concurso-oposicion para personal funcionario",
+            "fecha_examen",
+        ),
+    ]
+    for external_id, title, _expected_type in examples:
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=external_id,
+            publication_date="2026-05-20",
+            title=title,
+            department="Consejeria de Hacienda",
+            url_html=f"https://www.borm.es/#/home/anuncio/20-05-2026/{external_id[-3:]}",
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "dry-run-opposition-alerts",
+            "--source",
+            "BORM",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--format",
+            "json",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    alerts_by_id = {alert["document_identifier"]: alert for alert in payload["alerts"]}
+    assert exit_code == 0
+    assert payload["summary"]["alerts_found"] == len(examples)
+    for external_id, _title, expected_type in examples:
+        assert alerts_by_id[external_id]["alert_type"] == expected_type
+    assert alerts_by_id["BORM:2026:203"]["alert_type"] != "convocatoria"
+    assert all(alert["confidence"] in {"high", "medium"} for alert in payload["alerts"])
+
+
 def test_find_source_candidates_alias_supports_boja_dry_run(tmp_path, capsys):
     from official_sources.cli import run
 

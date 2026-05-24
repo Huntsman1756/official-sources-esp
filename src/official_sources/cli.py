@@ -3112,14 +3112,36 @@ OPPOSITION_ALERT_PROCESS_CONTEXT = (
     "personal funcionario",
     "personal laboral",
     "aspirantes",
+    "admitidos",
+    "excluidos",
     "empleo publico",
     "bolsa de trabajo",
     "bolsa de empleo",
+    "plazas",
+    "cuerpo",
+    "escala",
+    "subescala",
+    "turno libre",
+    "promocion interna",
+    "tribunal calificador",
+    "fecha de examen",
 )
 OPPOSITION_ALERT_NOISE_TERMS = (
+    "beca",
+    "becas",
+    "ayuda",
+    "ayudas",
     "contratacion publica",
+    "contratacion",
     "licitacion",
+    "contrato",
     "contrato de servicios",
+    "expropiacion",
+    "expropiaciones",
+    "levantamiento de actas",
+    "actas previas",
+    "ocupacion",
+    "informacion publica",
     "subvencion",
     "subvenciones",
     "premios",
@@ -3127,7 +3149,38 @@ OPPOSITION_ALERT_NOISE_TERMS = (
     "convenios",
     "urbanismo",
     "medio ambiente",
+    "autorizacion ambiental",
+    "procedimiento nacional de oposicion",
 )
+OPPOSITION_ALERT_EXCLUDING_NOISE_TERMS = (
+    "beca",
+    "becas",
+    "ayuda",
+    "ayudas",
+    "contratacion publica",
+    "contratacion",
+    "licitacion",
+    "contrato",
+    "contrato de servicios",
+    "expropiacion",
+    "expropiaciones",
+    "levantamiento de actas",
+    "actas previas",
+    "ocupacion",
+    "informacion publica",
+    "subvencion",
+    "subvenciones",
+    "premios",
+    "convenio",
+    "convenios",
+    "urbanismo",
+    "autorizacion ambiental",
+    "procedimiento nacional de oposicion",
+)
+OPPOSITION_ALERT_GENERIC_CALL_TERMS = {
+    "convocatoria",
+    "se convoca",
+}
 OPPOSITION_ALERT_STRONG_TYPES = {
     "convocatoria",
     "bolsa",
@@ -3173,6 +3226,21 @@ def _classify_opposition_alert(document: dict[str, Any]) -> dict[str, Any]:
     noise_terms = [
         term for term in OPPOSITION_ALERT_NOISE_TERMS if _keyword_matches(combined_text, term)
     ]
+    excluding_noise_terms = [
+        term
+        for term in OPPOSITION_ALERT_EXCLUDING_NOISE_TERMS
+        if _keyword_matches(combined_text, term)
+    ]
+    if excluding_noise_terms:
+        return {
+            "matched": False,
+            "alert_type": "other",
+            "confidence": "low",
+            "matched_terms": excluding_noise_terms,
+            "matched_rules": [
+                f"excluded_noise:{_compact_token(term)}" for term in excluding_noise_terms
+            ],
+        }
     if noise_terms and not has_process_context:
         return {
             "matched": False,
@@ -3180,6 +3248,19 @@ def _classify_opposition_alert(document: dict[str, Any]) -> dict[str, Any]:
             "confidence": "low",
             "matched_terms": noise_terms,
             "matched_rules": [f"excluded_noise:{_compact_token(term)}" for term in noise_terms],
+        }
+    generic_call_only = (
+        alert_type == "convocatoria"
+        and bool(matched_terms)
+        and all(term in OPPOSITION_ALERT_GENERIC_CALL_TERMS for term in matched_terms)
+    )
+    if generic_call_only and not has_process_context:
+        return {
+            "matched": False,
+            "alert_type": "other",
+            "confidence": "low",
+            "matched_terms": matched_terms,
+            "matched_rules": [*matched_rules, "excluded_missing_process_context"],
         }
     if alert_type in OPPOSITION_ALERT_CONTEXT_REQUIRED_TYPES and not has_process_context:
         return {
