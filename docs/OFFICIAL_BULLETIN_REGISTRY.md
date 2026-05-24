@@ -2,6 +2,32 @@
 
 This registry is a static coverage inventory for `official-sources`.
 
+Executable registry:
+
+```text
+config/sources.yaml
+```
+
+`config/sources.yaml` is now the canonical machine-readable source registry. This Markdown file
+remains the narrative coverage inventory seeded from the BOE index.
+
+The executable registry separates:
+
+```text
+official_landing_url = public canonical landing page
+access_methods[].url = technical endpoint/feed/page for adapters or monitors
+```
+
+Validated registry commands:
+
+```bash
+official-sources sources list
+official-sources sources status --source BOCYL
+```
+
+Registry validation rejects ambiguous operational states and keeps `candidate_creation_allowed`
+and `evidence_grade_allowed` explicit. Both are `false` by default in the current source data.
+
 It uses the BOE "Otros diarios oficiales" page as the initial official index for European,
 autonomous/statutory territory, and provincial bulletin coverage. It is not an ingestion API and
 does not imply that a source has a validated adapter.

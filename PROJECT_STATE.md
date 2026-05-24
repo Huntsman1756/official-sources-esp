@@ -4,7 +4,35 @@ Last updated: 2026-05-24
 
 ## Current Decision
 
-`TASK-SOURCE-PLATFORM-001` is accepted.
+`TASK-SOURCE-REGISTRY-001` is implemented locally.
+
+The project now has an executable canonical source registry:
+
+```text
+config/sources.yaml
+```
+
+The registry is validated by:
+
+```text
+tests/test_source_registry.py
+```
+
+It is exposed read-only through:
+
+```text
+official-sources sources list
+official-sources sources status --source BOCYL
+```
+
+No RSS monitor, backfill, PDF download, source candidate, evidence-grade record, downstream write,
+VPS operation, or production DB operation was added by this task.
+
+Previous accepted decision:
+
+```text
+TASK-SOURCE-PLATFORM-001
+```
 
 Accepted boundary:
 
@@ -49,12 +77,13 @@ Hard guardrails:
 | Task | Status | Decision artifact | Notes |
 | --- | --- | --- | --- |
 | `TASK-SOURCE-PLATFORM-001` | Accepted | `docs/CROSS_PROJECT_INTEGRATION_MAP.md` | Locks `official-sources` as an upstream official-source ingestion/evidence platform and keeps downstream product decisions out of the platform. |
+| `TASK-SOURCE-REGISTRY-001` | Implemented locally | `config/sources.yaml`, `docs/reports/source-registry-2026-05-24.md` | Adds the canonical executable registry for source coverage and status reporting. |
 
 ## Next Allowed Work
 
 Allowed next work:
 
-1. One explicit source operation at a time in `official-sources`.
+1. `TASK-SOURCE-RSS-MONITOR-001` as a separate source-monitor task, with BOCYL as the first real autonomous pilot and BOE as a secondary positive control.
 2. Product-local design/preview for draft process creation in `oposiciones2.0`.
 3. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
 4. A source-needs audit for `renta-verificable` before any integration.

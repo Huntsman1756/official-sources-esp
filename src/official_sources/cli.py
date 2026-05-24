@@ -15,6 +15,7 @@ import httpx
 
 from official_sources.downstream_export import export_downstream_evidence_files
 from official_sources.integrity.hashing import sha256_bytes
+from official_sources.source_registry import SourceRegistryError, get_source, list_sources
 from official_sources.sources.bdns.client import (
     BDNS_DEFAULT_PAGE_SIZE,
     parse_bdns_date_filter,
@@ -921,6 +922,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Minimum acceptable backup size in bytes.",
     )
 
+    sources = subparsers.add_parser("sources", help="Read the executable source registry.")
+    sources_subparsers = sources.add_subparsers(dest="sources_command", required=True)
+    sources_subparsers.add_parser("list", help="List registered official sources.")
+    source_status = sources_subparsers.add_parser("status", help="Show one registered source.")
+    source_status.add_argument("--source", required=True, help="Source code, for example BOCYL.")
+
     ingest = subparsers.add_parser("ingest-boe-summary", help="Ingest one BOE daily summary.")
     ingest.add_argument(
         "--date",
@@ -1420,6 +1427,8 @@ def run(
 
     if args.command == "db":
         return _run_db_command(args, stdout, stderr)
+    if args.command == "sources":
+        return _run_sources_command(args, stdout, stderr)
 
     repository = _open_repository(args.db_path)
     if args.command == "ingest-boja-date":
@@ -1604,6 +1613,44 @@ def resolve_borm_target_date(value: str) -> str:
     if value == "today":
         return date.today().isoformat()
     return validate_borm_date(value).isoformat()
+
+
+def _run_sources_command(
+    args: argparse.Namespace,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        if args.sources_command == "list":
+            print("source_code operational_status monitor_support backfill_support", file=stdout)
+            for source in list_sources():
+                print(
+                    (
+                        f"{source['source_code']} {source['operational_status']} "
+                        f"{source['monitor_support']} {source['backfill_support']}"
+                    ),
+                    file=stdout,
+                )
+            return 0
+        if args.sources_command == "status":
+            source = get_source(args.source)
+            print(f"source_code={source['source_code']}", file=stdout)
+            print(f"name={source['name']}", file=stdout)
+            print(f"jurisdiction={source['jurisdiction']}", file=stdout)
+            print(f"jurisdiction_level={source['jurisdiction_level']}", file=stdout)
+            print(f"official_landing_url={source['official_landing_url']}", file=stdout)
+            print(f"operational_status={source['operational_status']}", file=stdout)
+            print(f"monitor_support={source['monitor_support']}", file=stdout)
+            print(f"backfill_support={source['backfill_support']}", file=stdout)
+            print(f"mcp_support={source['mcp_support']}", file=stdout)
+            print(f"candidate_creation_allowed={source['candidate_creation_allowed']}", file=stdout)
+            print(f"evidence_grade_allowed={source['evidence_grade_allowed']}", file=stdout)
+            return 0
+    except SourceRegistryError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(f"Unknown sources command: {args.sources_command}", file=stderr)
+    return 2
 
 
 def _open_repository(db_path: str) -> OfficialSourcesRepository:

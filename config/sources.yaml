@@ -1,0 +1,477 @@
+sources:
+  - source_code: BOE
+    name: Boletin Oficial del Estado
+    jurisdiction: ES
+    jurisdiction_level: estatal
+    official_landing_url: https://www.boe.es/diario_boe/
+    access_methods:
+      - type: api
+        url: https://www.boe.es/datosabiertos/api/boe/sumario/{date}
+        status: validated
+        notes: Daily summary OpenData endpoint used by the BOE adapter.
+      - type: xml
+        url: https://www.boe.es/datosabiertos/api/boe/sumario/{date}
+        status: validated
+        notes: Stored document XML URLs are fetched only through scoped artifact commands.
+      - type: html
+        url: https://www.boe.es/diario_boe/
+        status: validated
+        notes: Public landing and stored official document HTML URLs.
+      - type: pdf
+        url: https://www.boe.es/diario_boe/
+        status: validated
+        notes: PDF artifacts require explicit candidate or document scope.
+    operational_status: metadata_adapter_validated
+    mcp_support: true
+    monitor_support: available
+    backfill_support: validated
+    evidence_adapter: true
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-24"
+    limitations:
+      - Evidence-grade exports remain controlled by existing review and export commands.
+      - This registry does not grant permission to create candidates or download PDFs.
+    notes: Tier 1 source with mature metadata, artifact, citation, and consolidated-law support.
+
+  - source_code: BDNS
+    name: Base de Datos Nacional de Subvenciones
+    jurisdiction: ES
+    jurisdiction_level: estatal
+    official_landing_url: https://www.infosubvenciones.es/bdnstrans/GE/es/index
+    access_methods:
+      - type: api
+        url: https://www.infosubvenciones.es/bdnstrans/api/convocatorias
+        status: validated
+        notes: Metadata-only convocatoria endpoints used by the BDNS adapter.
+      - type: html
+        url: https://www.infosubvenciones.es/bdnstrans/GE/es/convocatoria/{numConv}
+        status: validated
+        notes: Public convocatoria detail page pattern for already known identifiers.
+    operational_status: metadata_adapter_validated
+    mcp_support: false
+    monitor_support: available
+    backfill_support: available
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-24"
+    limitations:
+      - Convocatorias MVP only; concesiones remain deferred.
+      - Metadata-only support does not imply downstream publication readiness.
+    notes: Official grants registry, tracked as a source family but not as a bulletin.
+
+  - source_code: DOUE
+    name: Diario Oficial de la Union Europea
+    jurisdiction: EU
+    jurisdiction_level: european
+    official_landing_url: http://eur-lex.europa.eu/JOIndex.do?ihmlang=es
+    access_methods: []
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-22"
+    limitations:
+      - Access method not validated yet.
+    notes: Listed by BOE under Union Europea; registry coverage only.
+
+  - source_code: BOJA
+    name: Boletin Oficial de la Junta de Andalucia
+    jurisdiction: ES-AN
+    jurisdiction_level: autonómica
+    official_landing_url: https://www.juntadeandalucia.es/eboja
+    access_methods:
+      - type: api
+        url: https://datos.juntadeandalucia.es/api/v0/boja/get/search_pagination
+        status: validated
+        notes: Official open-data search endpoint used by the BOJA metadata adapter.
+      - type: api
+        url: https://datos.juntadeandalucia.es/api/v0/boja/{official_id}
+        status: validated
+        notes: Official detail endpoint used for scoped evidence URL enrichment.
+    operational_status: metadata_adapter_validated
+    mcp_support: false
+    monitor_support: available
+    backfill_support: validated
+    evidence_adapter: true
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-24"
+    limitations:
+      - Candidate creation remains disabled by this registry.
+      - Evidence work remains scoped and human-review controlled.
+    notes: Metadata adapter and controlled pilot have been validated.
+
+  - source_code: BOA
+    name: Boletin Oficial de Aragon
+    jurisdiction: ES-AR
+    jurisdiction_level: autonómica
+    official_landing_url: https://www.boa.aragon.es/
+    access_methods:
+      - type: json
+        url: https://www.boa.aragon.es/cgi-bin/EBOA/BRSCGI
+        status: validated
+        notes: BOA JSON search endpoint used by the local metadata adapter.
+    operational_status: metadata_adapter_validated
+    mcp_support: false
+    monitor_support: available
+    backfill_support: planned
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-24"
+    limitations:
+      - Backfill and candidate operations require separate explicit tasks.
+    notes: Local metadata adapter exists; this registry does not start a monitor or backfill.
+
+  - source_code: BOPA
+    name: Boletin Oficial del Principado de Asturias
+    jurisdiction: ES-AS
+    jurisdiction_level: autonómica
+    official_landing_url: https://sede.asturias.es/servicios-del-bopa
+    access_methods: []
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-22"
+    limitations:
+      - Access method not validated yet.
+    notes: Registry entry only.
+
+  - source_code: BOIB
+    name: Boletin Oficial de las Illes Balears
+    jurisdiction: ES-IB
+    jurisdiction_level: autonómica
+    official_landing_url: http://www.caib.es/eboibfront/?lang=es
+    access_methods: []
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-22"
+    limitations:
+      - Access method not validated yet.
+    notes: Registry entry only.
+
+  - source_code: BOC_CANARIAS
+    name: Boletin Oficial de Canarias
+    jurisdiction: ES-CN
+    jurisdiction_level: autonómica
+    official_landing_url: http://www.gobiernodecanarias.org/boc/
+    access_methods: []
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-22"
+    limitations:
+      - Access method not validated yet.
+    notes: Registry entry only.
+
+  - source_code: BOC_CANTABRIA
+    name: Boletin Oficial de Cantabria
+    jurisdiction: ES-CB
+    jurisdiction_level: autonómica
+    official_landing_url: https://boc.cantabria.es/boces/
+    access_methods: []
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-22"
+    limitations:
+      - Access method not validated yet.
+    notes: Registry entry only.
+
+  - source_code: DOCM
+    name: Diario Oficial de Castilla-La Mancha
+    jurisdiction: ES-CM
+    jurisdiction_level: autonómica
+    official_landing_url: http://docm.castillalamancha.es/portaldocm/sumario.do
+    access_methods: []
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-22"
+    limitations:
+      - Access method not validated yet.
+    notes: Registry entry only.
+
+  - source_code: BOCYL
+    name: Boletin Oficial de Castilla y Leon
+    jurisdiction: ES-CL
+    jurisdiction_level: autonómica
+    official_landing_url: https://bocyl.jcyl.es/portada.do
+    access_methods:
+      - type: json
+        url: https://jcyl.opendatasoft.com/api/explore/v2.1/catalog/datasets/bocyl/records
+        status: validated
+        notes: Official OpenDataSoft dataset endpoint used by the BOCYL metadata adapter.
+    operational_status: metadata_adapter_validated
+    mcp_support: false
+    monitor_support: available
+    backfill_support: validated
+    evidence_adapter: true
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-24"
+    limitations:
+      - Evidence downloads remain scoped by explicit candidate or document IDs.
+    notes: Metadata adapter, controlled backfill, and selected evidence paths have been validated.
+
+  - source_code: DOGC
+    name: Diari Oficial de la Generalitat de Catalunya
+    jurisdiction: ES-CT
+    jurisdiction_level: autonómica
+    official_landing_url: https://dogc.gencat.cat/es/index.html?newLang=es_ES&language=es_ES
+    access_methods:
+      - type: api
+        url: https://portaldogc.gencat.cat/eadop-rest/api/dogc/searchDOGC
+        status: validated
+        notes: Official REST search endpoint used by the DOGC metadata adapter.
+      - type: api
+        url: https://portaldogc.gencat.cat/eadop-rest/api/dogc/documentDOGC
+        status: validated
+        notes: Official document metadata endpoint used by the DOGC adapter.
+    operational_status: metadata_adapter_validated
+    mcp_support: false
+    monitor_support: available
+    backfill_support: planned
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-24"
+    limitations:
+      - VPS smoke and broader source operations remain separate tasks.
+    notes: Local metadata adapter exists.
+
+  - source_code: DOE
+    name: Diario Oficial de Extremadura
+    jurisdiction: ES-EX
+    jurisdiction_level: autonómica
+    official_landing_url: http://doe.juntaex.es/
+    access_methods: []
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-22"
+    limitations:
+      - Access method not validated yet.
+    notes: Registry entry only.
+
+  - source_code: DOG
+    name: Diario Oficial de Galicia
+    jurisdiction: ES-GA
+    jurisdiction_level: autonómica
+    official_landing_url: https://www.xunta.gal/diario-oficial-galicia/portalPublicoHome.do?lang=es
+    access_methods: []
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-22"
+    limitations:
+      - Access method not validated yet.
+    notes: Registry entry only.
+
+  - source_code: BOR
+    name: Boletin Oficial de La Rioja
+    jurisdiction: ES-RI
+    jurisdiction_level: autonómica
+    official_landing_url: http://www.larioja.org/bor/es
+    access_methods: []
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-22"
+    limitations:
+      - Access method not validated yet.
+    notes: Registry entry only.
+
+  - source_code: BOCM
+    name: Boletin Oficial de la Comunidad de Madrid
+    jurisdiction: ES-MD
+    jurisdiction_level: autonómica
+    official_landing_url: http://www.bocm.es/
+    access_methods:
+      - type: html
+        url: https://www.bocm.es/search-day-month
+        status: paused
+        notes: Date-to-issue discovery exists, but broader operation is paused on endpoint instability.
+      - type: xml
+        url: https://www.bocm.es/boletin/CM_Boletin_BOCM/{yyyy}/{mm}/{dd}/BOCM-{yyyymmdd}{issue}.xml
+        status: paused
+        notes: Issue XML pattern exists but is not promoted to validated monitor support.
+    operational_status: paused
+    mcp_support: false
+    monitor_support: planned
+    backfill_support: planned
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-24"
+    limitations:
+      - Endpoint/connectivity instability must be resolved before further source work.
+    notes: Metadata MVP exists, but operational status remains paused.
+
+  - source_code: BORM
+    name: Boletin Oficial de la Region de Murcia
+    jurisdiction: ES-MC
+    jurisdiction_level: autonómica
+    official_landing_url: https://www.borm.es/#/home/
+    access_methods:
+      - type: xml
+        url: https://transparencia.carm.es/rest-services/services/restFile/BORMIndice.xml
+        status: validated
+        notes: Official XML index used by the BORM metadata adapter.
+    operational_status: metadata_adapter_validated
+    mcp_support: false
+    monitor_support: available
+    backfill_support: validated
+    evidence_adapter: true
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-24"
+    limitations:
+      - Artifact and selected evidence paths remain scoped by separate commands.
+    notes: Local metadata adapter and controlled source operations exist.
+
+  - source_code: BON
+    name: Boletin Oficial de Navarra
+    jurisdiction: ES-NC
+    jurisdiction_level: autonómica
+    official_landing_url: http://www.navarra.es/home_es/Actualidad/BON/
+    access_methods: []
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-22"
+    limitations:
+      - Access method not validated yet.
+    notes: Registry entry only.
+
+  - source_code: BOPV
+    name: Boletin Oficial del Pais Vasco
+    jurisdiction: ES-PV
+    jurisdiction_level: autonómica
+    official_landing_url: https://www.euskadi.eus/y22-bopv/es/bopv2/datos/Ultimo.shtml
+    access_methods:
+      - type: html
+        url: https://www.euskadi.eus/bopv2/datos/{mmyyyy}.shtml
+        status: validated
+        notes: Calendar page used to discover issue stems.
+      - type: xml
+        url: https://www.euskadi.eus/bopv2/datos/{yyyy}/{mm}/{issue_stem}.xml
+        status: validated
+        notes: Issue XML endpoint used by the BOPV metadata adapter.
+    operational_status: metadata_adapter_validated
+    mcp_support: false
+    monitor_support: available
+    backfill_support: validated
+    evidence_adapter: true
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-24"
+    limitations:
+      - Evidence downloads remain separate scoped operations.
+    notes: Local metadata adapter and controlled backfill/candidate paths exist.
+
+  - source_code: DOGV
+    name: Diari Oficial de la Generalitat Valenciana
+    jurisdiction: ES-VC
+    jurisdiction_level: autonómica
+    official_landing_url: https://dogv.gva.es/es/inici
+    access_methods:
+      - type: json
+        url: https://dogv.gva.es/dogv-portal/dogv?date={date}&lang=es
+        status: validated
+        notes: Official JSON date endpoint used by the DOGV metadata adapter.
+      - type: xml
+        url: https://dogv.gva.es/dogv-portal/export/disposicion/xml/dinamico/{document_id}?lang=es
+        status: validated
+        notes: Official dynamic XML export endpoint used for document metadata/artifacts.
+    operational_status: metadata_adapter_validated
+    mcp_support: false
+    monitor_support: available
+    backfill_support: validated
+    evidence_adapter: true
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-24"
+    limitations:
+      - Candidate and downstream evidence actions remain controlled by explicit review tasks.
+    notes: Metadata MVP and controlled 30-day metadata backfill are validated.
+
+  - source_code: BOCCE
+    name: Boletin Oficial de la Ciudad Autonoma de Ceuta
+    jurisdiction: ES-CE
+    jurisdiction_level: autonómica
+    official_landing_url: http://www.ceuta.es/ceuta/documentos/
+    access_methods: []
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-22"
+    limitations:
+      - Access method not validated yet.
+      - Prior audit notes suggest deferring implementation.
+    notes: Registry entry only.
+
+  - source_code: BOME
+    name: Boletin Oficial de la Ciudad Autonoma de Melilla
+    jurisdiction: ES-ML
+    jurisdiction_level: autonómica
+    official_landing_url: https://bomemelilla.es/
+    access_methods: []
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-22"
+    limitations:
+      - Access method not validated yet.
+      - Prior audit notes suggest deferring implementation.
+    notes: Registry entry only.
