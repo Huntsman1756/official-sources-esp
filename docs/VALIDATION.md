@@ -2106,6 +2106,102 @@ Result:
 git diff --check: passed
 ```
 
+## 2026-05-24 - BORM 2026-05-11 mixed issue diagnosis
+
+Report:
+
+```text
+docs/reports/BORM_2026_05_11_MIXED_ISSUE_DIAGNOSIS_2026-05-23.md
+```
+
+Root cause:
+
+```text
+supplement_issue
+```
+
+Observed official BORM response:
+
+```text
+target_date=2026-05-11
+target_records=25
+issue_counts=106/2026:24,2/2026:1
+publication_type_counts=BOLETIN:24,SUPLEMENTO:1
+```
+
+Local validation:
+
+```text
+rtk git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+pytest: 422 passed, 1 warning
+ruff check: passed
+ruff format --check: passed
+```
+
+Local temp DB smoke:
+
+```text
+target_date=2026-05-11
+status=success
+issue_identifier=106/2026,2/2026
+documents_fetched=25
+documents_new=25
+documents_updated=0
+DB validation=status=valid schema_version=8
+```
+
+VPS deployed commit:
+
+```text
+d6a7e5c
+```
+
+VPS single-date smoke:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite ingest-borm-date --date 2026-05-11
+status=success
+issue_identifier=106/2026,2/2026
+documents_fetched=25
+documents_new=25
+documents_updated=0
+last_http_status=200
+```
+
+VPS safety checks:
+
+```text
+source_candidates=150
+artifact_download_attempts=482
+artifact_bytes=28857411
+BORM docs for 2026-05-11=25
+BORM document_files_by_type=raw_api_response:336
+DB validation=status=valid schema_version=8
+MCP privacy=no matching official/mcp/python/uvicorn/fastmcp listeners
+```
+
+Post-smoke backup:
+
+```text
+/opt/official-sources/data/backups/official_sources_after_borm_20260511_smoke_20260524_051124.sqlite
+```
+
+Resume decision:
+
+```text
+2026-05-11 is ingested successfully.
+Next BORM resume range should start at 2026-05-12.
+```
+
 ## 2026-05-24 - BORM 30-day metadata backfill partial run
 
 Report:
