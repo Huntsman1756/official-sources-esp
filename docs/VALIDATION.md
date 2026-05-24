@@ -2106,6 +2106,82 @@ Result:
 git diff --check: passed
 ```
 
+## 2026-05-24 - BORM 30-day candidate dry-run
+
+Report:
+
+```text
+docs/reports/BORM_30_DAY_CANDIDATE_DRY_RUN_2026-05-23.md
+```
+
+Scope:
+
+```text
+source=BORM
+range=2026-04-21 -> 2026-05-20
+profile=borm-ayudas
+dry_run=true
+write=false
+```
+
+VPS deployed commit:
+
+```text
+e793563
+```
+
+Dry-run command:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite find-source-candidates --source BORM --date-from 2026-04-21 --date-to 2026-05-20 --profile borm-ayudas --dry-run --limit 200
+```
+
+Dry-run result:
+
+```text
+documents_scanned=549
+matches_total=255
+matches_after_filters=16
+documents_matched=16
+match_rate=2.91%
+candidates_created=0
+```
+
+Safety counters:
+
+```text
+source_candidates=150 -> 150
+artifact_download_attempts=482 -> 482
+artifact_bytes=28857411 -> 28857411
+artifacts=30M -> 30M
+```
+
+DB validation:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+database_path=/opt/official-sources/data/official_sources.sqlite current_version=8 latest_version=8 status=valid
+```
+
+MCP privacy:
+
+```text
+ss -tulpn | grep -E 'official|mcp|python|uvicorn|fastmcp' || true
+no matching listeners
+```
+
+Docs-only validation:
+
+```text
+rtk git diff --check
+```
+
+Result:
+
+```text
+git diff --check: passed
+```
+
 ## 2026-05-24 - BORM 30-day metadata backfill resume
 
 Report:
