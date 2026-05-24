@@ -2106,6 +2106,92 @@ Result:
 git diff --check: passed
 ```
 
+## 2026-05-24 - BORM 30-day metadata backfill partial run
+
+Report:
+
+```text
+docs/reports/BORM_30_DAY_METADATA_BACKFILL_2026-05-23.md
+```
+
+Scope:
+
+```text
+TASK-AUTO-BORM-004
+target_range=2026-04-21 -> 2026-05-20
+metadata_only=true
+```
+
+VPS deployed commit:
+
+```text
+dfe6e65
+```
+
+Pre-run backup:
+
+```text
+/opt/official-sources/data/backups/official_sources_before_borm_30d_backfill_20260524_045531.sqlite
+```
+
+Post-run backup:
+
+```text
+/opt/official-sources/data/backups/official_sources_after_borm_30d_backfill_partial_20260524_045758.sqlite
+```
+
+Result:
+
+```text
+dates_attempted=21
+success=16
+no_publication=4
+failed=1
+not_attempted_after_stop=9
+documents_fetched=311
+documents_new=311
+documents_updated=0
+stop_date=2026-05-11
+stop_reason=BORM response for 2026-05-11 has mixed issue identifiers
+```
+
+Safety counters:
+
+```text
+source_candidates=150 -> 150
+artifact_download_attempts=482 -> 482
+artifact_bytes=28857411 -> 28857411
+BORM document_files_by_type=raw_api_response:311
+PDF/XML/HTML artifact downloads=0
+downstream writes=0
+```
+
+DB validation:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+database_path=/opt/official-sources/data/official_sources.sqlite current_version=8 latest_version=8 status=valid
+```
+
+MCP privacy:
+
+```text
+ss -tulpn | grep -E 'official|mcp|python|uvicorn|fastmcp' || true
+no matching listeners
+```
+
+Docs-only validation:
+
+```text
+rtk git diff --check
+```
+
+Result:
+
+```text
+git diff --check: passed
+```
+
 ## 2026-05-24 - BOPV 30-day candidate triage
 
 Report:
