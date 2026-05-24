@@ -2003,3 +2003,105 @@ pytest: 418 passed, 1 warning
 ruff check: passed
 ruff format --check: passed
 ```
+
+## TASK-AUTO-BOPV-005 - Limited BOPV Candidate Batch
+
+Created a limited BOPV/EHAA candidate batch on the VPS.
+
+Files changed:
+
+```text
+docs/reports/BOPV_30_DAY_CANDIDATE_BATCH_2026-05-23.md
+docs/VALIDATION.md
+```
+
+VPS preparation:
+
+```text
+cd /opt/official-sources/app
+git checkout main
+git pull --ff-only origin main
+python -m pip install -e .
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+```
+
+Deployed commit:
+
+```text
+9557832
+```
+
+Pre-run state:
+
+```text
+source_candidates_total=146
+BOPV source_candidates=0
+artifact_download_attempts=482
+artifact_bytes=28857411
+DB validation=status=valid schema_version=8
+```
+
+Pre-run backup:
+
+```text
+/opt/official-sources/data/backups/official_sources_before_bopv_candidate_batch_20260524_043711.sqlite
+```
+
+Candidate command:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite find-source-candidates --source BOPV --date-from 2026-04-21 --date-to 2026-05-20 --profile bopv-ayudas --limit 4 --write
+```
+
+Result:
+
+```text
+documents_scanned=489
+matches_total=177
+matches_after_filters=4
+documents_matched=4
+candidates_created=4
+candidates_skipped_existing=0
+review_status=human_review_required
+```
+
+Post-run state:
+
+```text
+source_candidates_total=150
+BOPV source_candidates=4
+BOPV review_status_distribution=human_review_required:4
+artifact_download_attempts=482
+artifact_bytes=28857411
+DB validation=status=valid schema_version=8
+MCP privacy=no matching official/mcp/python/uvicorn/fastmcp listeners
+```
+
+Post-run backup:
+
+```text
+/opt/official-sources/data/backups/official_sources_after_bopv_candidate_batch_20260524_043817.sqlite
+```
+
+Safety result:
+
+```text
+new BOPV candidates=4
+new artifacts=0
+artifact_download_attempts unchanged
+downstream writes=0
+approvals=0
+publications=0
+```
+
+Docs-only validation:
+
+```text
+rtk git diff --check
+```
+
+Result:
+
+```text
+git diff --check: passed
+```
