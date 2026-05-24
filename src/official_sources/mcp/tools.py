@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from official_sources import source_coverage
 from official_sources.api import queries
 from official_sources.citation.builder import build_consolidated_law_citation
 from official_sources.sources.boe.consolidated import (
@@ -108,6 +109,33 @@ def source_trace(repository: OfficialSourcesRepository, *, external_id: str) -> 
 
 def integrity_status_get(repository: OfficialSourcesRepository, *, external_id: str) -> dict:
     return queries.get_integrity(repository, external_id)
+
+
+def list_sources() -> dict:
+    return source_coverage.list_source_coverage()
+
+
+def get_source_status(*, source_code: str) -> dict:
+    return source_coverage.get_source_status(source_code=source_code)
+
+
+def list_monitorable_sources() -> dict:
+    return source_coverage.list_monitorable_sources()
+
+
+def list_latest_discovery_entries(
+    *,
+    source_code: str,
+    date: str | None = None,
+    limit: int | None = 20,
+    output_root=None,
+) -> dict:
+    return source_coverage.list_latest_discovery_entries(
+        source_code=source_code,
+        date=date,
+        limit=limit,
+        output_root=output_root,
+    )
 
 
 def boe_consolidated_law_get(

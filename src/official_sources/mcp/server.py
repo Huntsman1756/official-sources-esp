@@ -21,6 +21,10 @@ MCP_TOOL_NAMES = (
     "boe_citation_build",
     "source_trace",
     "integrity_status_get",
+    "list_sources",
+    "get_source_status",
+    "list_monitorable_sources",
+    "list_latest_discovery_entries",
     "boe_consolidated_law_get",
     "boe_consolidated_law_text_get",
     "boe_consolidated_law_citation_build",
@@ -96,6 +100,34 @@ def create_server(repository: OfficialSourcesRepository | None = None):
     def integrity_status_get(external_id: str) -> dict:
         """Return stored integrity status without mutating integrity records."""
         return tools.integrity_status_get(repository, external_id=external_id)
+
+    @mcp.tool
+    def list_sources() -> dict:
+        """List registered official sources and their operational coverage status."""
+        return tools.list_sources()
+
+    @mcp.tool
+    def get_source_status(source_code: str) -> dict:
+        """Return one registered source, including safety flags, without live fetching."""
+        return tools.get_source_status(source_code=source_code)
+
+    @mcp.tool
+    def list_monitorable_sources() -> dict:
+        """List sources with registry-declared monitor-capable access methods."""
+        return tools.list_monitorable_sources()
+
+    @mcp.tool
+    def list_latest_discovery_entries(
+        source_code: str,
+        date: str | None = None,
+        limit: int | None = 20,
+    ) -> dict:
+        """Read existing metadata-only RSS discovery JSONL output without fetching feeds."""
+        return tools.list_latest_discovery_entries(
+            source_code=source_code,
+            date=date,
+            limit=limit,
+        )
 
     @mcp.tool
     def boe_consolidated_law_get(official_identifier: str) -> dict:

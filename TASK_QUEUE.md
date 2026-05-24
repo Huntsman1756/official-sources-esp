@@ -12,11 +12,13 @@ for source-platform work in this repository.
 | `TASK-SOURCE-PLATFORM-001` | accepted | Cross-project boundary accepted in `PROJECT_STATE.md` and `docs/CROSS_PROJECT_INTEGRATION_MAP.md`. |
 | `TASK-SOURCE-REGISTRY-001` | implemented locally | Canonical executable registry added at `config/sources.yaml`, with validation tests and read-only CLI coverage reporting. |
 | `TASK-SOURCE-RSS-MONITOR-001` | implemented locally | Metadata-only RSS/Atom discovery monitor added with BOCYL as pilot. Default mode is preview; JSONL writes require explicit `--write`. |
+| `TASK-MCP-SOURCE-COVERAGE-001` | implemented locally | Read-only MCP tools expose registry coverage and existing RSS discovery JSONL without live fetches or writes. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
+| `TASK-SOURCE-RSS-MONITOR-002` | proposed | Add 2-3 more RSS/Atom monitored sources as metadata-only discovery; do not create candidates/evidence/artifacts. |
 | `TASK-SOURCE-BOPV-API-001` | proposed | Separate task only; do not implement BOPV REST/API discovery from RSS monitor work. |
 
 ## Guardrails
@@ -26,5 +28,6 @@ for source-platform work in this repository.
 - Do not download PDFs without explicit scoped artifact commands.
 - Do not run broad backfills from registry work.
 - Do not treat RSS/Atom discovery records as evidence or candidates.
+- Do not fetch live feeds through MCP source-coverage tools.
 - Do not write to downstream product repositories.
 - Do not run VPS or production DB operations unless a separate task explicitly authorizes them.
