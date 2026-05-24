@@ -4,6 +4,35 @@ Last updated: 2026-05-24
 
 ## Current Decision
 
+`TASK-MCP-COVERAGE-USAGE-DOCS-001` is implemented locally.
+
+The coverage platform usage guide is now documented at:
+
+```text
+docs/SOURCE_COVERAGE_USAGE.md
+```
+
+It documents:
+
+```text
+official-sources sources list
+official-sources sources status --source BOCYL
+official-sources rss monitor --source BOE/BOJA/BOCYL --date YYYY-MM-DD --limit 1
+official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
+MCP: list_sources, get_source_status, list_monitorable_sources, list_latest_discovery_entries
+```
+
+The documentation restates the coverage safety boundary: RSS/API discovery is metadata-only, MCP is
+read-only, monitor writes require explicit `--write`, and coverage commands do not create
+candidates, evidence-grade records, PDFs, artifacts, downstream writes, backfills, VPS operations,
+production DB operations, or LLM classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-COVERAGE-INTEGRATION-CHECK-001
+```
+
 `TASK-SOURCE-COVERAGE-INTEGRATION-CHECK-001` is implemented locally.
 
 The coverage platform line was validated on the integration branch:
@@ -329,6 +358,7 @@ Hard guardrails:
 | `TASK-SOURCE-COVERAGE-V1.1-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-1-snapshot-2026-05-24.md` | Captures the v1.1 coverage baseline after adding BOPV API discovery. |
 | `TASK-MCP-API-DISCOVERY-OUTPUT-001` | Implemented locally | `src/official_sources/source_coverage.py`, `docs/reports/mcp-api-discovery-output-2026-05-24.md` | Extends the read-only MCP discovery reader to existing RSS and API discovery JSONL. |
 | `TASK-SOURCE-COVERAGE-INTEGRATION-CHECK-001` | Implemented locally | `docs/reports/source-coverage-integration-check-2026-05-24.md` | Validates the integrated registry, RSS monitor, API monitor, and MCP coverage/discovery line. |
+| `TASK-MCP-COVERAGE-USAGE-DOCS-001` | Implemented locally | `docs/SOURCE_COVERAGE_USAGE.md`, `docs/MCP_TOOLS.md`, `README.md` | Documents CLI and MCP source coverage usage with safety boundaries. |
 
 ## Next Allowed Work
 

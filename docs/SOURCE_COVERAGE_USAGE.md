@@ -1,0 +1,250 @@
+# Source Coverage Usage
+
+This guide documents the source coverage surface added by the coverage platform line.
+
+The coverage layer is an executable registry plus metadata-only discovery monitors and read-only
+MCP reporting. It is not candidate creation, evidence-grade ingestion, artifact download, backfill,
+or downstream publication.
+
+## Current Coverage
+
+Executable registry:
+
+```text
+config/sources.yaml
+```
+
+Current source counts:
+
+```text
+registered sources: 22
+RSS/Atom discovery sources: BOE, BOJA, BOCYL
+API discovery sources: BOPV
+candidate_creation_allowed=true: 0
+evidence_grade_allowed=true: 0
+```
+
+Discovery output paths, when writes are explicitly requested:
+
+```text
+data/rss_monitor/<source_code>/<YYYY-MM-DD>/rss_discovery.jsonl
+data/api_monitor/<source_code>/<YYYY-MM-DD>/api_discovery.jsonl
+```
+
+## Registry CLI
+
+List registered sources:
+
+```bash
+official-sources sources list
+```
+
+Inspect one source:
+
+```bash
+official-sources sources status --source BOCYL
+official-sources sources status --source BOPV
+```
+
+Use the registry to answer coverage questions such as:
+
+- which sources exist;
+- which jurisdiction level each source belongs to;
+- which access methods are declared;
+- whether a source is inventory-only, monitorable, metadata-adapter validated, paused, or deprecated;
+- whether candidate creation or evidence-grade promotion is allowed.
+
+## RSS/Atom Discovery CLI
+
+RSS/Atom discovery is metadata-only. It emits discovery records with:
+
+```text
+classification_status=unclassified
+candidate_status=not_candidate
+evidence_status=not_evidence
+```
+
+Preview one source without writing JSONL:
+
+```bash
+official-sources rss monitor --source BOE --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOJA --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOCYL --date YYYY-MM-DD --limit 1
+```
+
+Write JSONL only when explicitly requested:
+
+```bash
+official-sources rss monitor --source BOCYL --date YYYY-MM-DD --limit 10 --write
+```
+
+RSS/Atom monitor rules:
+
+- one source per command;
+- broad runs such as `--source ALL`, `--source *`, or comma-separated sources are refused;
+- default mode is preview;
+- `--write` writes metadata-only JSONL under `data/rss_monitor/`;
+- records are not candidates;
+- records are not evidence-grade.
+
+## API Discovery CLI
+
+API discovery is metadata-only. BOPV uses the official API access method declared in the registry.
+
+Preview BOPV without writing JSONL:
+
+```bash
+official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
+```
+
+Write JSONL only when explicitly requested:
+
+```bash
+official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 10 --write
+```
+
+API monitor rules:
+
+- one source per command;
+- broad runs such as `--source ALL`, `--source *`, or comma-separated sources are refused;
+- non-API sources are refused by the API monitor;
+- default mode is preview;
+- `--write` writes metadata-only JSONL under `data/api_monitor/`;
+- records are not candidates;
+- records are not evidence-grade.
+
+## MCP Coverage Tools
+
+Run the MCP server privately:
+
+```bash
+OFFICIAL_SOURCES_DB_PATH=official-sources.sqlite python -m official_sources.mcp.server
+```
+
+The coverage tools are read-only:
+
+```text
+list_sources
+get_source_status
+list_monitorable_sources
+list_latest_discovery_entries
+```
+
+### list_sources
+
+Returns registered sources with coverage status fields such as:
+
+```text
+source_code
+name
+jurisdiction_level
+operational_status
+monitor_support
+evidence_adapter
+```
+
+### get_source_status
+
+Input:
+
+```json
+{
+  "source_code": "BOCYL"
+}
+```
+
+Returns the full registry entry and safety flags, including:
+
+```text
+candidate_creation_allowed
+evidence_grade_allowed
+access_methods
+operational_status
+```
+
+### list_monitorable_sources
+
+Returns sources with monitor-capable access methods declared in the registry.
+
+Current expected monitored/discovery sources:
+
+```text
+BOE: RSS/API/XML/HTML access methods declared
+BOJA: Atom/API access methods declared
+BOCYL: RSS access method declared
+BOPV: API/XML/HTML access methods declared
+```
+
+### list_latest_discovery_entries
+
+Input:
+
+```json
+{
+  "source_code": "BOPV",
+  "date": "YYYY-MM-DD",
+  "limit": 20
+}
+```
+
+Reads existing JSONL only:
+
+```text
+data/rss_monitor/<source_code>/<YYYY-MM-DD>/rss_discovery.jsonl
+data/api_monitor/<source_code>/<YYYY-MM-DD>/api_discovery.jsonl
+```
+
+If the date is omitted, the reader resolves the latest existing dated output directory for the
+source. If no JSONL output exists, it returns an empty structured result. It does not fetch live RSS
+or API data and it does not create files.
+
+Entries include a discovery marker:
+
+```text
+discovery_type=rss
+discovery_type=api
+```
+
+## Safety Boundaries
+
+The coverage surface must preserve these boundaries:
+
+- RSS/API discovery is metadata-only.
+- MCP coverage is read-only.
+- MCP does not fetch live RSS/API data.
+- MCP does not write JSONL.
+- `--write` is explicit for CLI monitor output.
+- No automatic `source_candidates`.
+- No automatic evidence-grade promotion.
+- No PDF or artifact download.
+- No downstream product writes.
+- No backfills from coverage commands.
+- No VPS or production DB operation from coverage commands.
+- No LLM classification.
+
+Use candidates, evidence-grade records, artifact downloads, backfills, downstream writes, or
+production operations only through separate explicit tasks.
+
+## Validation Commands
+
+For a local coverage sanity check:
+
+```bash
+official-sources sources list
+official-sources sources status --source BOCYL
+official-sources sources status --source BOPV
+official-sources rss monitor --source BOE --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOJA --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOCYL --date YYYY-MM-DD --limit 1
+official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
+```
+
+Run the previews without `--write` unless the task explicitly requires JSONL output.
+
+For code validation:
+
+```bash
+python -m ruff check src tests
+python -m pytest -q
+git diff --check
+```

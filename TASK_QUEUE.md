@@ -19,11 +19,13 @@ for source-platform work in this repository.
 | `TASK-SOURCE-COVERAGE-V1.1-SNAPSHOT-001` | implemented locally | Coverage v1.1 snapshot added after BOPV API discovery; MCP API JSONL exposure remains future work. |
 | `TASK-MCP-API-DISCOVERY-OUTPUT-001` | implemented locally | Read-only MCP latest discovery reader now supports existing RSS and API monitor JSONL output. |
 | `TASK-SOURCE-COVERAGE-INTEGRATION-CHECK-001` | implemented locally | Integration check validates registry, RSS monitor, API monitor, and MCP coverage/discovery together. |
+| `TASK-MCP-COVERAGE-USAGE-DOCS-001` | implemented locally | Usage guide documents registry CLI, RSS/API discovery previews, MCP coverage tools, and safety boundaries. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
+| `TASK-SOURCE-COVERAGE-SCHEDULE-001` | proposed | Define controlled monitor execution one source at a time; no broad runs, no candidates, no evidence-grade. |
 | `TASK-SOURCE-RSS-MONITOR-003` | proposed | Only after selecting 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
 | `TASK-SOURCE-HTML-MONITOR-PILOT-001` | proposed | Only for sources without RSS/API, after source-specific endpoint/robots/fixture audit. |
 | `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |

@@ -115,6 +115,50 @@ Inputs:
 
 Output: integrity status and hashes. The tool does not mutate integrity records.
 
+### list_sources
+
+Inputs: none.
+
+Output: registered official sources from `config/sources.yaml`, including source code, name,
+jurisdiction level, operational status, monitor support, and evidence adapter status. This tool is
+read-only and does not fetch live source data.
+
+### get_source_status
+
+Inputs:
+
+- `source_code`: source code such as `BOCYL` or `BOPV`.
+
+Output: the full registry entry and safety flags for one source, including access methods,
+`candidate_creation_allowed`, and `evidence_grade_allowed`. Unknown source codes return a safe
+structured error.
+
+### list_monitorable_sources
+
+Inputs: none.
+
+Output: sources with registry-declared monitor-capable access methods such as RSS, Atom, API, XML,
+or HTML. Inventory-only sources remain inventory-only and are not treated as monitored.
+
+### list_latest_discovery_entries
+
+Inputs:
+
+- `source_code`: source code such as `BOCYL` or `BOPV`.
+- `date`: optional `YYYY-MM-DD`.
+- `limit`: optional integer, default `20`.
+
+Output: existing metadata-only discovery JSONL entries from:
+
+```text
+data/rss_monitor/<source_code>/<YYYY-MM-DD>/rss_discovery.jsonl
+data/api_monitor/<source_code>/<YYYY-MM-DD>/api_discovery.jsonl
+```
+
+Each entry is marked with `discovery_type=rss` or `discovery_type=api` where applicable. The reader
+does not fetch live RSS/API data, does not create files, does not create candidates, and does not
+promote entries to evidence-grade.
+
 ### boe_consolidated_law_get
 
 Inputs:

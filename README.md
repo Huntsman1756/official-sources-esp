@@ -1,8 +1,12 @@
 # official-sources
 
-`official-sources` is reusable infrastructure for ingesting, normalizing, tracing, and auditing official public-source documents.
+`official-sources` is reusable infrastructure for ingesting, normalizing, tracing, auditing, and
+reporting coverage for official public-source documents.
 
-The first implemented tier covers only Spanish BOE state-level sources. It is not a public product and does not approve, publish, summarize with LLMs, or integrate with downstream projects automatically.
+The first ingestion tier covers Spanish BOE state-level sources. The source-coverage tier also
+maintains an executable registry of official sources and metadata-only RSS/API discovery monitors.
+This is not a public product and does not approve, publish, summarize with LLMs, or integrate with
+downstream projects automatically.
 
 ## Why This Exists
 
@@ -18,6 +22,9 @@ This repository provides the source and audit layer. Human review remains mandat
 
 - Tier 1 BOE state-level official source support only.
 - BOE daily summary ingestion from the official BOE open-data API.
+- Executable source registry at `config/sources.yaml`.
+- Metadata-only source discovery monitors for selected official RSS/Atom/API access methods.
+- Read-only MCP source coverage tools.
 - SQLite storage for sources, documents, files, texts, candidates, ingestion runs, and integrity checks.
 - Raw-source traceability through official URLs and source snapshot hashes.
 - Controlled download of stored official BOE XML, HTML, and PDF artifact URLs.
@@ -106,6 +113,29 @@ Restore is a manual operational process. See `docs/BACKUP_AND_RESTORE.md`.
 Before VPS deployment or update, follow `docs/PRE_DEPLOY_VPS_CHECKLIST.md`.
 
 The official publication hierarchy is documented in `docs/decisions/ADR-001-official-publication-hierarchy.md`. BOE is a state-level source, not a generic synonym for official bulletins.
+
+## Source Coverage Usage
+
+The coverage platform is documented in `docs/SOURCE_COVERAGE_USAGE.md`.
+
+Quick registry commands:
+
+```bash
+official-sources sources list
+official-sources sources status --source BOCYL
+```
+
+Metadata-only monitor previews:
+
+```bash
+official-sources rss monitor --source BOE --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOJA --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOCYL --date YYYY-MM-DD --limit 1
+official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
+```
+
+Monitor output writes require explicit `--write`. RSS/API discovery records are not candidates and
+are not evidence-grade records.
 
 ## Ingest A BOE Summary
 
