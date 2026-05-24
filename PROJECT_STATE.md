@@ -4,6 +4,34 @@ Last updated: 2026-05-24
 
 ## Current Decision
 
+`TASK-MCP-API-DISCOVERY-OUTPUT-001` is implemented locally.
+
+The MCP/read-only discovery reader now reads existing metadata-only RSS and API discovery JSONL:
+
+```text
+data/rss_monitor/<source_code>/<YYYY-MM-DD>/rss_discovery.jsonl
+data/api_monitor/<source_code>/<YYYY-MM-DD>/api_discovery.jsonl
+```
+
+The existing MCP tool remains:
+
+```text
+list_latest_discovery_entries
+```
+
+It now returns `resource_type=discovery_entries`, a `discovery_types` list, `output_paths`, and a
+per-entry `discovery_type` marker such as `rss` or `api`.
+
+This task is read-only. It did not add live RSS/API fetching through MCP, JSONL writes, source
+candidates, evidence-grade records, PDFs, artifacts, downstream writes, backfills, VPS operations,
+production DB operations, or LLM classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-COVERAGE-V1.1-SNAPSHOT-001
+```
+
 `TASK-SOURCE-COVERAGE-V1.1-SNAPSHOT-001` is implemented locally.
 
 The project now has a Coverage v1.1 snapshot after the BOPV API discovery adapter:
@@ -25,8 +53,8 @@ candidate_creation_allowed=false: 22
 evidence_grade_allowed=false: 22
 ```
 
-It also records that MCP source coverage still reads latest discovery entries from RSS JSONL only;
-API monitor JSONL exposure remains a separate read-only task.
+It also recorded that MCP source coverage still read latest discovery entries from RSS JSONL only;
+that gap is now closed by `TASK-MCP-API-DISCOVERY-OUTPUT-001`.
 
 This snapshot is reporting/control-plane only. It did not add sources, ingestion behavior,
 RSS/API writes, candidates, evidence-grade records, PDFs, artifacts, downstream writes, backfills,
@@ -254,18 +282,18 @@ Hard guardrails:
 | `TASK-SOURCE-COVERAGE-V1-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-snapshot-2026-05-24.md` | Captures the v1 source coverage baseline from the executable registry and read-only MCP/monitor capabilities. |
 | `TASK-SOURCE-BOPV-API-001` | Implemented locally | `src/official_sources/api_monitor.py`, `docs/reports/bopv-api-discovery-adapter-2026-05-24.md` | Adds metadata-only BOPV REST/API discovery from the official Open Data Euskadi endpoint. |
 | `TASK-SOURCE-COVERAGE-V1.1-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-1-snapshot-2026-05-24.md` | Captures the v1.1 coverage baseline after adding BOPV API discovery. |
+| `TASK-MCP-API-DISCOVERY-OUTPUT-001` | Implemented locally | `src/official_sources/source_coverage.py`, `docs/reports/mcp-api-discovery-output-2026-05-24.md` | Extends the read-only MCP discovery reader to existing RSS and API discovery JSONL. |
 
 ## Next Allowed Work
 
 Allowed next work:
 
-1. `TASK-MCP-API-DISCOVERY-OUTPUT-001` if MCP needs read-only access to existing API monitor JSONL.
-2. `TASK-SOURCE-RSS-MONITOR-003` only after selecting 2-3 verified official RSS/Atom feeds.
-3. `TASK-SOURCE-HTML-MONITOR-PILOT-001` only for sources without RSS/API after source-specific audit.
-4. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
-5. Product-local design/preview for draft process creation in `oposiciones2.0`.
-6. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
-7. A source-needs audit for `renta-verificable` before any integration.
+1. `TASK-SOURCE-RSS-MONITOR-003` only after selecting 2-3 verified official RSS/Atom feeds.
+2. `TASK-SOURCE-HTML-MONITOR-PILOT-001` only for sources without RSS/API after source-specific audit.
+3. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
+4. Product-local design/preview for draft process creation in `oposiciones2.0`.
+5. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
+6. A source-needs audit for `renta-verificable` before any integration.
 
 Not allowed from this repo:
 

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from official_sources.api_monitor import build_api_monitor_output_path
 from official_sources.rss_monitor import (
     RSSMonitorError,
     build_rss_monitor_output_path,
@@ -21,6 +22,7 @@ from official_sources.source_registry import (
 )
 
 DEFAULT_RSS_DISCOVERY_ROOT = Path(__file__).resolve().parents[2] / "data" / "rss_monitor"
+DEFAULT_API_DISCOVERY_ROOT = Path(__file__).resolve().parents[2] / "data" / "api_monitor"
 
 
 def list_source_coverage() -> dict:
@@ -103,49 +105,69 @@ def list_latest_discovery_entries(
             "message": "limit must be greater than zero",
         }
 
-    root = output_root or DEFAULT_RSS_DISCOVERY_ROOT
-    target_date = _resolve_discovery_date(root, normalized_source_code, date)
+    rss_root = output_root or DEFAULT_RSS_DISCOVERY_ROOT
+    api_root = output_root or DEFAULT_API_DISCOVERY_ROOT
+    target_date = _resolve_discovery_date(rss_root, api_root, normalized_source_code, date)
     if target_date is None:
         return {
             "status": "empty",
             "source_code": normalized_source_code,
             "date": None,
-            "output_path": str(root / normalized_source_code),
+            "output_paths": {
+                "rss": str(rss_root / normalized_source_code),
+                "api": str(api_root / normalized_source_code),
+            },
             "entries": [],
             "count": 0,
-            "message": "No RSS discovery output exists for this source.",
+            "message": "No discovery output exists for this source.",
         }
 
-    output_path = build_rss_monitor_output_path(root, normalized_source_code, target_date)
-    if not output_path.exists():
+    output_paths = {
+        "rss": build_rss_monitor_output_path(rss_root, normalized_source_code, target_date),
+        "api": build_api_monitor_output_path(api_root, normalized_source_code, target_date),
+    }
+    existing_output_paths = {
+        discovery_type: path for discovery_type, path in output_paths.items() if path.exists()
+    }
+    if not existing_output_paths:
         return {
             "status": "empty",
             "source_code": normalized_source_code,
             "date": target_date,
-            "output_path": str(output_path),
+            "output_paths": {key: str(path) for key, path in output_paths.items()},
             "entries": [],
             "count": 0,
-            "message": "No RSS discovery output exists for this source/date.",
+            "message": "No discovery output exists for this source/date.",
         }
 
     try:
-        entries = _read_discovery_jsonl(output_path, limit)
+        entries: list[dict[str, Any]] = []
+        for discovery_type, output_path in existing_output_paths.items():
+            entries.extend(
+                _with_discovery_type(
+                    _read_discovery_jsonl(output_path, _remaining_limit(limit, len(entries))),
+                    discovery_type,
+                )
+            )
+            if limit is not None and len(entries) >= limit:
+                break
     except json.JSONDecodeError as exc:
         return {
             "status": "invalid_output",
             "source_code": normalized_source_code,
             "date": target_date,
-            "output_path": str(output_path),
+            "output_paths": {key: str(path) for key, path in existing_output_paths.items()},
             "entries": [],
             "count": 0,
-            "message": f"RSS discovery output is not valid JSONL: {exc}",
+            "message": f"Discovery output is not valid JSONL: {exc}",
         }
     return {
         "status": "ok",
-        "resource_type": "rss_discovery_entries",
+        "resource_type": "discovery_entries",
         "source_code": normalized_source_code,
         "date": target_date,
-        "output_path": str(output_path),
+        "discovery_types": list(existing_output_paths),
+        "output_paths": {key: str(path) for key, path in existing_output_paths.items()},
         "entries": entries,
         "count": len(entries),
         "discovery_only": True,
@@ -159,6 +181,8 @@ def _source_safety(source: dict[str, Any]) -> dict:
         "evidence_grade_allowed": source["evidence_grade_allowed"],
         "rss_discovery_is_evidence": False,
         "rss_discovery_is_candidate": False,
+        "api_discovery_is_evidence": False,
+        "api_discovery_is_candidate": False,
     }
 
 
@@ -179,21 +203,46 @@ def _unknown_source(source_code: str, exc: SourceRegistryError) -> dict:
     }
 
 
-def _resolve_discovery_date(root: Path, source_code: str, value: str | None) -> str | None:
+def _resolve_discovery_date(
+    rss_root: Path,
+    api_root: Path,
+    source_code: str,
+    value: str | None,
+) -> str | None:
     if value is not None:
         try:
             return validate_monitor_date(value)
         except RSSMonitorError:
             return value
+    candidates = _dated_output_candidates(rss_root, source_code, "rss") + _dated_output_candidates(
+        api_root, source_code, "api"
+    )
+    return sorted(candidates, reverse=True)[0] if candidates else None
+
+
+def _dated_output_candidates(root: Path, source_code: str, discovery_type: str) -> list[str]:
     source_root = root / source_code
     if not source_root.exists():
-        return None
-    candidates = [
+        return []
+    return [
         path.name
         for path in source_root.iterdir()
-        if path.is_dir() and build_rss_monitor_output_path(root, source_code, path.name).exists()
+        if path.is_dir()
+        and _discovery_output_path(root, source_code, path.name, discovery_type).exists()
     ]
-    return sorted(candidates, reverse=True)[0] if candidates else None
+
+
+def _discovery_output_path(
+    root: Path,
+    source_code: str,
+    target_date: str,
+    discovery_type: str,
+) -> Path:
+    if discovery_type == "rss":
+        return build_rss_monitor_output_path(root, source_code, target_date)
+    if discovery_type == "api":
+        return build_api_monitor_output_path(root, source_code, target_date)
+    raise ValueError(f"Unknown discovery_type: {discovery_type}")
 
 
 def _read_discovery_jsonl(output_path: Path, limit: int | None) -> list[dict[str, Any]]:
@@ -205,3 +254,16 @@ def _read_discovery_jsonl(output_path: Path, limit: int | None) -> list[dict[str
         if limit is not None and len(entries) >= limit:
             break
     return entries
+
+
+def _with_discovery_type(
+    entries: list[dict[str, Any]],
+    discovery_type: str,
+) -> list[dict[str, Any]]:
+    return [entry | {"discovery_type": discovery_type} for entry in entries]
+
+
+def _remaining_limit(limit: int | None, current_count: int) -> int | None:
+    if limit is None:
+        return None
+    return max(limit - current_count, 0)

@@ -122,7 +122,7 @@ def create_server(repository: OfficialSourcesRepository | None = None):
         date: str | None = None,
         limit: int | None = 20,
     ) -> dict:
-        """Read existing metadata-only RSS discovery JSONL output without fetching feeds."""
+        """Read existing metadata-only RSS/API discovery JSONL output without live fetching."""
         return tools.list_latest_discovery_entries(
             source_code=source_code,
             date=date,

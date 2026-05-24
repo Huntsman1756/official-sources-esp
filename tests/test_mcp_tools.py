@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import json
 
+from official_sources import source_coverage
 from official_sources.mcp import tools
 from official_sources.mcp.server import MCP_TOOL_NAMES, create_repository_from_env
 
@@ -201,6 +202,8 @@ def test_mcp_source_status_returns_bocyl_and_safety_flags():
         "evidence_grade_allowed": False,
         "rss_discovery_is_evidence": False,
         "rss_discovery_is_candidate": False,
+        "api_discovery_is_evidence": False,
+        "api_discovery_is_candidate": False,
     }
 
 
@@ -276,10 +279,120 @@ def test_mcp_latest_discovery_entries_reads_existing_jsonl_only(tmp_path):
     )
 
     assert result["status"] == "ok"
+    assert result["resource_type"] == "discovery_entries"
+    assert result["discovery_types"] == ["rss"]
     assert result["source_code"] == "BOCYL"
     assert result["date"] == "2026-05-24"
+    assert result["output_paths"] == {
+        "rss": str(output_path),
+    }
     assert result["count"] == 1
-    assert result["entries"] == [record]
+    assert result["entries"] == [record | {"discovery_type": "rss"}]
+
+
+def test_mcp_latest_discovery_entries_reads_existing_api_jsonl_for_bopv(tmp_path):
+    output_path = tmp_path / "BOPV" / "2026-05-24" / "api_discovery.jsonl"
+    output_path.parent.mkdir(parents=True)
+    record = {
+        "source_code": "BOPV",
+        "api_url": "https://api.euskadi.eus/bopv/administrative-acts/2026/5",
+        "api_endpoint": "/bopv/administrative-acts/{year}/{month}",
+        "title": "BOPV API entry",
+        "published_at": "2026-05-24T00:00:00Z",
+        "official_url": "https://api.euskadi.eus/bopv/administrative-acts/2026/5/2104",
+        "document_id": "2026/05/2104",
+        "api_id": "2026/05/2104",
+        "summary": "metadata-only",
+        "raw_response_hash": "raw",
+        "entry_hash": "entry",
+        "discovered_at": "2026-05-24T00:00:00Z",
+        "monitor_run_id": "run-1",
+        "classification_status": "unclassified",
+        "evidence_status": "not_evidence",
+        "candidate_status": "not_candidate",
+    }
+    output_path.write_text(json.dumps(record, sort_keys=True) + "\n", encoding="utf-8")
+
+    result = tools.list_latest_discovery_entries(
+        source_code="BOPV",
+        date="2026-05-24",
+        output_root=tmp_path,
+    )
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "discovery_entries"
+    assert result["discovery_types"] == ["api"]
+    assert result["source_code"] == "BOPV"
+    assert result["date"] == "2026-05-24"
+    assert result["output_paths"] == {
+        "api": str(output_path),
+    }
+    assert result["count"] == 1
+    assert result["entries"] == [record | {"discovery_type": "api"}]
+    assert result["entries"][0]["candidate_status"] == "not_candidate"
+    assert result["entries"][0]["evidence_status"] == "not_evidence"
+    assert result["entries"][0]["classification_status"] == "unclassified"
+
+
+def test_mcp_latest_discovery_entries_reads_rss_and_api_when_both_exist(tmp_path):
+    rss_path = tmp_path / "BOE" / "2026-05-24" / "rss_discovery.jsonl"
+    api_path = tmp_path / "BOE" / "2026-05-24" / "api_discovery.jsonl"
+    rss_path.parent.mkdir(parents=True)
+    rss_record = {
+        "source_code": "BOE",
+        "feed_url": "https://www.boe.es/rss/boe.php",
+        "feed_format": "rss",
+        "entry_id": "rss-entry",
+        "title": "RSS entry",
+        "published_at": "2026-05-24T00:00:00Z",
+        "updated_at": None,
+        "official_url": "https://www.boe.es/rss-entry",
+        "summary": "rss",
+        "raw_feed_hash": "raw-rss",
+        "entry_hash": "entry-rss",
+        "discovered_at": "2026-05-24T00:00:00Z",
+        "monitor_run_id": "rss-run",
+        "classification_status": "unclassified",
+        "evidence_status": "not_evidence",
+        "candidate_status": "not_candidate",
+    }
+    api_record = {
+        "source_code": "BOE",
+        "api_url": "https://www.boe.es/datosabiertos/api/boe/sumario/20260524",
+        "api_endpoint": "/datosabiertos/api/boe/sumario/{date}",
+        "title": "API entry",
+        "published_at": "2026-05-24T00:00:00Z",
+        "official_url": "https://www.boe.es/api-entry",
+        "document_id": "BOE-A-2026-1",
+        "api_id": "BOE-A-2026-1",
+        "summary": "api",
+        "raw_response_hash": "raw-api",
+        "entry_hash": "entry-api",
+        "discovered_at": "2026-05-24T00:00:00Z",
+        "monitor_run_id": "api-run",
+        "classification_status": "unclassified",
+        "evidence_status": "not_evidence",
+        "candidate_status": "not_candidate",
+    }
+    rss_path.write_text(json.dumps(rss_record, sort_keys=True) + "\n", encoding="utf-8")
+    api_path.write_text(json.dumps(api_record, sort_keys=True) + "\n", encoding="utf-8")
+
+    result = tools.list_latest_discovery_entries(
+        source_code="BOE",
+        date="2026-05-24",
+        output_root=tmp_path,
+    )
+
+    assert result["status"] == "ok"
+    assert result["discovery_types"] == ["rss", "api"]
+    assert result["output_paths"] == {
+        "rss": str(rss_path),
+        "api": str(api_path),
+    }
+    assert result["entries"] == [
+        rss_record | {"discovery_type": "rss"},
+        api_record | {"discovery_type": "api"},
+    ]
 
 
 def test_mcp_latest_discovery_entries_missing_output_returns_empty_safe_result(tmp_path):
@@ -293,10 +406,40 @@ def test_mcp_latest_discovery_entries_missing_output_returns_empty_safe_result(t
         "status": "empty",
         "source_code": "BOCYL",
         "date": "2026-05-24",
-        "output_path": str(tmp_path / "BOCYL" / "2026-05-24" / "rss_discovery.jsonl"),
+        "output_paths": {
+            "rss": str(tmp_path / "BOCYL" / "2026-05-24" / "rss_discovery.jsonl"),
+            "api": str(tmp_path / "BOCYL" / "2026-05-24" / "api_discovery.jsonl"),
+        },
         "entries": [],
         "count": 0,
-        "message": "No RSS discovery output exists for this source/date.",
+        "message": "No discovery output exists for this source/date.",
+    }
+
+
+def test_mcp_latest_discovery_entries_missing_api_output_returns_empty_without_fetch(
+    tmp_path,
+    monkeypatch,
+):
+    from official_sources import api_monitor
+
+    def fail_fetch_api(_url: str):
+        raise AssertionError("MCP discovery reader must not fetch live API data")
+
+    monkeypatch.setattr(api_monitor, "fetch_api", fail_fetch_api)
+
+    result = tools.list_latest_discovery_entries(
+        source_code="BOPV",
+        date="2026-05-24",
+        output_root=tmp_path,
+    )
+
+    assert result["status"] == "empty"
+    assert result["source_code"] == "BOPV"
+    assert result["entries"] == []
+    assert result["count"] == 0
+    assert result["output_paths"] == {
+        "rss": str(tmp_path / "BOPV" / "2026-05-24" / "rss_discovery.jsonl"),
+        "api": str(tmp_path / "BOPV" / "2026-05-24" / "api_discovery.jsonl"),
     }
 
 
@@ -311,9 +454,11 @@ def test_mcp_latest_discovery_entries_unknown_source_returns_safe_error(tmp_path
 
 
 def test_mcp_source_coverage_tools_do_not_import_write_path_modules():
-    source = inspect.getsource(tools)
+    source = inspect.getsource(tools) + inspect.getsource(source_coverage)
 
     assert "create_source_candidate" not in source
     assert "write_jsonl" not in source
+    assert "write_api_jsonl" not in source
     assert "fetch_feed" not in source
+    assert "fetch_api" not in source
     assert "artifacts" not in source
