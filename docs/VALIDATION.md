@@ -1,5 +1,43 @@
 # Validation
 
+## 2026-05-24 - External repository code review
+
+Report:
+
+```text
+docs/reports/EXTERNAL_REPOSITORY_CODE_REVIEW_2026-05-24.md
+```
+
+Scope:
+
+```text
+review public GitHub repositories for possible official-sources reuse
+report-only
+no code imported
+no VPS
+no DB
+no artifact download
+```
+
+Repositories reviewed:
+
+```text
+carm-es/BORM
+zaragoza-sedeelectronica/ext.contratacion
+AxierSangroniz/bop_valladolid_IA
+AxierSangroniz/bop-valladolid-pipeline
+xavimf87/mcp-govern
+AlbertoUAH/datos-gob-es-mcp
+girdeux31/oposGV
+erral/kontrata-react
+```
+
+Validation:
+
+```text
+git diff --check: passed
+```
+
 ## 2026-05-24 - BORM PDF access blocker diagnosis
 
 Report:
