@@ -1,5 +1,67 @@
 # Validation
 
+## 2026-05-24 - BORM selected candidate evidence download
+
+Report:
+
+```text
+docs/reports/BORM_SELECTED_CANDIDATE_EVIDENCE_DOWNLOAD_2026-05-24.md
+```
+
+Scope:
+
+```text
+TASK-AUTO-BORM-008B
+scoped BORM PDF evidence download
+candidate_ids=151,152,153,154,155,156,157,158,159,161,162,163
+types=pdf
+```
+
+Deployed commit:
+
+```text
+843a3d0 feat: add scoped BORM artifact download
+```
+
+VPS result:
+
+```text
+selected_documents=12
+stored_pdf_files=1
+download_blocker=BORM redirects VPS requests to validate.perfdrive.com
+official_host_validation=rejected non-BORM final URL
+```
+
+Safety counters:
+
+```text
+artifact_download_attempts=482 -> 518
+BORM_pdf_document_files=0 -> 1
+artifact_bytes=28857411 -> 29154791
+source_candidates_total=163
+selected_review_status=human_review_required:12
+```
+
+VPS DB validation:
+
+```text
+database_path=/opt/official-sources/data/official_sources.sqlite current_version=8 latest_version=8 status=valid
+```
+
+MCP privacy:
+
+```text
+ss -tulpn | grep -E 'official|mcp|python|uvicorn|fastmcp' || true
+no matching listener
+```
+
+Backups:
+
+```text
+pre=/opt/official-sources/data/backups/official_sources_before_borm_selected_evidence_download_20260524_112807.sqlite
+post=/opt/official-sources/data/backups/official_sources_after_borm_selected_evidence_download_20260524_113844.sqlite
+```
+
 ## 2026-05-24 - BORM scoped artifact downloader
 
 Report:
