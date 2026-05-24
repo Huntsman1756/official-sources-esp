@@ -102,6 +102,28 @@ def _seed_bocyl_document(
     )
 
 
+def _seed_borm_document(
+    db_path: Path,
+    *,
+    external_id: str = "BORM:A-140526-2138",
+    url_pdf: str | None = "https://www.borm.es/services/anuncio/842820/pdf",
+) -> dict:
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_borm()
+    return repository.upsert_document(
+        source_id=source["id"],
+        external_id=external_id,
+        publication_date="2026-05-14",
+        title="BORM youth mobility aid document",
+        department="Consejeria de Turismo, Cultura, Juventud y Deportes",
+        section="I. Comunidad Autonoma",
+        url_html="https://www.borm.es/#/home/anuncio/14-05-2026/2138",
+        url_pdf=url_pdf,
+    )
+
+
 def test_cli_help_works(capsys):
     from official_sources.cli import run
 
@@ -134,6 +156,16 @@ def test_download_source_artifacts_help_lists_bocyl(capsys):
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "BOCYL" in captured.out
+
+
+def test_download_source_artifacts_help_lists_borm(capsys):
+    from official_sources.cli import run
+
+    exit_code = run(["download-source-artifacts", "--help"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "BORM" in captured.out
 
 
 def test_cli_invalid_date_rejected(tmp_path, capsys):
@@ -1177,6 +1209,401 @@ def test_download_source_artifacts_bocyl_missing_xml_url_is_skipped(tmp_path, ca
     assert attempts[-1]["official_url"] is None
     assert "skipped=1" in captured.out
     assert "missing_artifact_url=1" in captured.out
+
+
+def test_download_source_artifacts_supports_scoped_borm_pdf_candidate_download(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    pdf_url = "https://www.borm.es/services/anuncio/842820/pdf"
+    document = _seed_borm_document(db_path, url_pdf=pdf_url)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="borm-ayudas",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["ayudas"]},
+    )
+    seen_urls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_urls.append(str(request.url))
+        return httpx.Response(200, content=b"%PDF-1.4 BORM", request=request)
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-source-artifacts",
+            "--source",
+            "BORM",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ],
+        artifact_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    stored = repository.list_document_files(document["id"])
+    attempts = repository.list_artifact_download_attempts(document_id=document["id"])
+    candidate_count = connection.execute("SELECT COUNT(*) FROM source_candidates").fetchone()[0]
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert seen_urls == [pdf_url]
+    assert candidate_count == 1
+    assert stored[0]["file_type"] == "pdf"
+    assert stored[0]["official_url"] == pdf_url
+    assert stored[0]["sha256"] == sha256_bytes(b"%PDF-1.4 BORM")
+    assert attempts[-1]["status"] == "success"
+    assert attempts[-1]["file_type"] == "pdf"
+    assert "source_code=BORM" in captured.out
+    assert "selected_documents=1" in captured.out
+    assert "downloaded=1" in captured.out
+    assert "missing_artifact_url=0" in captured.out
+    assert (artifact_dir / "borm" / "2026" / "05" / "14" / "BORM_A-140526-2138").exists()
+
+
+def test_download_source_artifacts_borm_candidate_ids_download_only_selected_documents(
+    tmp_path, capsys
+):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    selected = _seed_borm_document(
+        db_path,
+        external_id="BORM:A-140526-2138",
+        url_pdf="https://www.borm.es/services/anuncio/842820/pdf",
+    )
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_borm()
+    other = repository.upsert_document(
+        source_id=source["id"],
+        external_id="BORM:A-130526-2111",
+        publication_date="2026-05-13",
+        title="Other BORM school-material aid document",
+        url_pdf="https://www.borm.es/services/anuncio/842793/pdf",
+    )
+    candidate = repository.create_source_candidate(
+        document_id=selected["id"],
+        project_key="borm-ayudas",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["ayudas"]},
+    )
+    seen_urls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_urls.append(str(request.url))
+        return httpx.Response(200, content=b"%PDF-1.4 BORM", request=request)
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-source-artifacts",
+            "--source",
+            "BORM",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ],
+        artifact_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert seen_urls == [selected["url_pdf"]]
+    assert {item["file_type"] for item in repository.list_document_files(selected["id"])} == {"pdf"}
+    assert repository.list_document_files(other["id"]) == []
+    assert "selected_documents=1" in captured.out
+
+
+def test_download_source_artifacts_borm_follows_official_redirects(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    document = _seed_borm_document(db_path)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="borm-ayudas",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["ayudas"]},
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["Accept"] == "application/pdf"
+        assert request.headers["User-Agent"] == "official-sources/1.0"
+        if str(request.url).endswith("/pdf"):
+            return httpx.Response(
+                302,
+                headers={"Location": "https://www.borm.es/services/anuncio/842820/pdf?download=1"},
+                request=request,
+            )
+        return httpx.Response(200, content=b"%PDF-1.4 BORM redirected", request=request)
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-source-artifacts",
+            "--source",
+            "BORM",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ],
+        artifact_client=httpx.Client(
+            transport=httpx.MockTransport(handler),
+            follow_redirects=True,
+        ),
+    )
+
+    attempts = repository.list_artifact_download_attempts(document_id=document["id"])
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert repository.list_document_files(document["id"])[0]["file_type"] == "pdf"
+    assert attempts[-1]["http_status"] == 200
+    assert "downloaded=1" in captured.out
+
+
+def test_download_source_artifacts_borm_missing_pdf_url_is_skipped(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    document = _seed_borm_document(db_path, url_pdf=None)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="borm-ayudas",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["ayudas"]},
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "download-source-artifacts",
+            "--source",
+            "BORM",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ]
+    )
+
+    attempts = repository.list_artifact_download_attempts(document_id=document["id"])
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert repository.list_document_files(document["id"]) == []
+    assert attempts[-1]["status"] == "skipped"
+    assert attempts[-1]["official_url"] is None
+    assert "skipped=1" in captured.out
+    assert "missing_artifact_url=1" in captured.out
+
+
+def test_download_source_artifacts_borm_source_rejects_non_borm_candidate(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    document = _seed_document(db_path)
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="la-ayuda",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["ayudas"]},
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "download-source-artifacts",
+            "--source",
+            "BORM",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "Selected documents must belong to source BORM" in captured.err
+
+
+def test_download_source_artifacts_borm_rejects_date_level_download(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "download-source-artifacts",
+            "--source",
+            "BORM",
+            "--date",
+            "2026-05-14",
+            "--types",
+            "pdf",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "BORM artifact downloads require --candidate-ids" in captured.err
+
+
+def test_download_source_artifacts_borm_rejects_document_ids(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "download-source-artifacts",
+            "--source",
+            "BORM",
+            "--document-ids",
+            "1",
+            "--types",
+            "pdf",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert (
+        "BORM artifact downloads require --candidate-ids; --document-ids is not supported"
+        in captured.err
+    )
+
+
+def test_download_source_artifacts_borm_requires_explicit_pdf_type(tmp_path, capsys):
+    from official_sources.cli import run
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(tmp_path / "db.sqlite"),
+            "download-source-artifacts",
+            "--source",
+            "BORM",
+            "--candidate-ids",
+            "1",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "BORM artifact downloads require --types pdf" in captured.err
+
+
+def test_download_source_artifacts_borm_rejects_invalid_pdf_host(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    document = _seed_borm_document(
+        db_path, url_pdf="https://example.com/services/anuncio/842820/pdf"
+    )
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="borm-ayudas",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["ayudas"]},
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-source-artifacts",
+            "--source",
+            "BORM",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ]
+    )
+
+    attempts = repository.list_artifact_download_attempts(document_id=document["id"])
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert attempts[-1]["status"] == "failed"
+    assert "official BORM host" in captured.err
+
+
+def test_download_source_artifacts_borm_rejects_invalid_pdf_path(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    document = _seed_borm_document(db_path, url_pdf="https://www.borm.es/not-official/842820.pdf")
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    candidate = repository.create_source_candidate(
+        document_id=document["id"],
+        project_key="borm-ayudas",
+        candidate_type="keyword_match",
+        extraction_status="raw_detected",
+        evidence_level="metadata_keyword_match",
+        matched_fields={"keywords": ["ayudas"]},
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "download-source-artifacts",
+            "--source",
+            "BORM",
+            "--candidate-ids",
+            str(candidate["id"]),
+            "--types",
+            "pdf",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "official BORM PDF service path" in captured.err
 
 
 def test_download_boe_artifacts_rejects_mixed_date_and_scoped_selection(tmp_path, capsys):

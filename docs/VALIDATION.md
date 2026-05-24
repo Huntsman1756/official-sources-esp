@@ -1,5 +1,49 @@
 # Validation
 
+## 2026-05-24 - BORM scoped artifact downloader
+
+Report:
+
+```text
+docs/reports/BORM_SCOPED_ARTIFACT_DOWNLOADER_2026-05-24.md
+```
+
+Scope:
+
+```text
+TASK-AUTO-BORM-008B
+add scoped BORM PDF artifact download support
+candidate-ids required
+types=pdf required
+no VPS evidence download in implementation commit
+```
+
+Local validation:
+
+```text
+rtk git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+pytest: 434 passed, 1 warning
+ruff check: passed
+ruff format --check: passed
+```
+
+Focused red/green:
+
+```text
+rtk python -m pytest tests/test_cli.py -q -k "borm and download_source_artifacts"
+red: failed because --source BORM was not accepted
+green: 11 passed
+```
+
 ## 2026-05-24 - BORM 30-day candidate triage
 
 Report:
