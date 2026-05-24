@@ -15,12 +15,12 @@ for source-platform work in this repository.
 | `TASK-MCP-SOURCE-COVERAGE-001` | implemented locally | Read-only MCP tools expose registry coverage and existing RSS discovery JSONL without live fetches or writes. |
 | `TASK-SOURCE-RSS-MONITOR-002` | implemented locally | BOE RSS and BOJA Atom feeds added as validated metadata-only discovery sources. |
 | `TASK-SOURCE-COVERAGE-V1-SNAPSHOT-001` | implemented locally | Canonical Coverage v1 snapshot added from the executable registry and current monitor/MCP capabilities. |
+| `TASK-SOURCE-BOPV-API-001` | implemented locally | Metadata-only BOPV REST/API discovery adapter added for the official Open Data Euskadi endpoint. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
-| `TASK-SOURCE-BOPV-API-001` | proposed | Separate task only; do not implement BOPV REST/API discovery from RSS monitor work. |
 | `TASK-SOURCE-RSS-MONITOR-003` | proposed | Only after selecting 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
 | `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |
 

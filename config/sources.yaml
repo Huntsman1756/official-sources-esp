@@ -412,6 +412,10 @@ sources:
         url: https://www.euskadi.eus/bopv2/datos/{yyyy}/{mm}/{issue_stem}.xml
         status: validated
         notes: Issue XML endpoint used by the BOPV metadata adapter.
+      - type: api
+        url: https://api.euskadi.eus/bopv/administrative-acts/{year}/{month}
+        status: validated
+        notes: Official Open Data Euskadi BOPV REST administrative acts endpoint.
     operational_status: metadata_adapter_validated
     mcp_support: false
     monitor_support: available

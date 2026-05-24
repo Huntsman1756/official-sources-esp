@@ -4,7 +4,39 @@ Last updated: 2026-05-24
 
 ## Current Decision
 
-`TASK-SOURCE-COVERAGE-V1-SNAPSHOT-001` is implemented locally.
+`TASK-SOURCE-BOPV-API-001` is implemented locally.
+
+BOPV now has a metadata-only REST/API discovery adapter:
+
+```text
+src/official_sources/api_monitor.py
+official-sources api monitor --source BOPV --date YYYY-MM-DD --limit N
+```
+
+The registry declares the official Open Data Euskadi BOPV administrative acts endpoint:
+
+```text
+https://api.euskadi.eus/bopv/administrative-acts/{year}/{month}
+```
+
+Default behavior is preview-only. JSONL output is written only with explicit `--write`:
+
+```text
+data/api_monitor/BOPV/<YYYY-MM-DD>/api_discovery.jsonl
+```
+
+A live bounded preview was run one source at a time with `--limit 1` and without `--write`; it
+returned `records=1`, `candidate_status=not_candidate`, and `evidence_status=not_evidence`.
+
+This task did not create source candidates, evidence-grade records, PDFs, artifacts, downstream
+writes, backfills, broad historical imports, VPS operations, production DB operations, publication,
+or LLM classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-COVERAGE-V1-SNAPSHOT-001
+```
 
 The project now has a canonical Coverage v1 snapshot:
 
@@ -186,17 +218,17 @@ Hard guardrails:
 | `TASK-MCP-SOURCE-COVERAGE-001` | Implemented locally | `src/official_sources/source_coverage.py`, `docs/reports/mcp-source-coverage-2026-05-24.md` | Exposes source coverage and existing RSS discovery output through read-only MCP tools. |
 | `TASK-SOURCE-RSS-MONITOR-002` | Implemented locally | `config/sources.yaml`, `docs/reports/rss-monitor-expansion-2026-05-24.md` | Adds BOE and BOJA as validated metadata-only RSS/Atom discovery sources. |
 | `TASK-SOURCE-COVERAGE-V1-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-snapshot-2026-05-24.md` | Captures the v1 source coverage baseline from the executable registry and read-only MCP/monitor capabilities. |
+| `TASK-SOURCE-BOPV-API-001` | Implemented locally | `src/official_sources/api_monitor.py`, `docs/reports/bopv-api-discovery-adapter-2026-05-24.md` | Adds metadata-only BOPV REST/API discovery from the official Open Data Euskadi endpoint. |
 
 ## Next Allowed Work
 
 Allowed next work:
 
-1. `TASK-SOURCE-BOPV-API-001` as a separate BOPV REST/API discovery adapter task if BOPV source expansion is needed.
-2. `TASK-SOURCE-RSS-MONITOR-003` only after selecting 2-3 verified official RSS/Atom feeds.
-3. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
-4. Product-local design/preview for draft process creation in `oposiciones2.0`.
-5. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
-6. A source-needs audit for `renta-verificable` before any integration.
+1. `TASK-SOURCE-RSS-MONITOR-003` only after selecting 2-3 verified official RSS/Atom feeds.
+2. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
+3. Product-local design/preview for draft process creation in `oposiciones2.0`.
+4. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
+5. A source-needs audit for `renta-verificable` before any integration.
 
 Not allowed from this repo:
 
