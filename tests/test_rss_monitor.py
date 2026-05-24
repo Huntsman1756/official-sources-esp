@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 from pathlib import Path
 
 import pytest
 
+import official_sources.rss_monitor as rss_monitor
 from official_sources.rss_monitor import (
     RSSMonitorError,
     build_entry_hash,
@@ -109,6 +111,49 @@ def test_bocyl_pilot_access_method_exists_in_registry():
     assert access_method["url"] == "https://bocyl.jcyl.es/rss.do"
 
 
+@pytest.mark.parametrize(
+    ("source_code", "expected_type", "expected_url"),
+    [
+        ("BOE", "rss", "https://www.boe.es/rss/boe.php"),
+        ("BOJA", "atom", "https://www.juntadeandalucia.es/boja/distribucion/boja.xml"),
+    ],
+)
+def test_expanded_feed_access_methods_exist_in_registry(
+    source_code,
+    expected_type,
+    expected_url,
+):
+    source = get_source(source_code)
+    access_method = select_feed_access_method(source)
+
+    assert access_method["type"] == expected_type
+    assert access_method["status"] == "validated"
+    assert access_method["url"] == expected_url
+
+
+@pytest.mark.parametrize(
+    ("source_code", "fixture_name"),
+    [
+        ("BOE", "rss_monitor_minimal.xml"),
+        ("BOJA", "atom_monitor_minimal.xml"),
+    ],
+)
+def test_monitor_accepts_expanded_sources_as_discovery_only(source_code, fixture_name):
+    result = monitor_source_feed(
+        get_source(source_code),
+        fetcher=lambda _url: _fixture_bytes(fixture_name),
+        target_date="2026-05-24",
+        limit=1,
+    )
+
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == source_code
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
+    assert "candidate_id" not in result.records[0]
+    assert "document_id" not in result.records[0]
+
+
 def test_monitor_source_feed_refuses_source_without_rss_or_atom_method():
     source = {
         "source_code": "TEST",
@@ -140,6 +185,16 @@ def test_monitor_source_feed_limits_records_and_does_not_create_candidates_or_ev
     assert result.records[0]["evidence_status"] == "not_evidence"
     assert "candidate_id" not in result.records[0]
     assert "document_id" not in result.records[0]
+
+
+def test_rss_monitor_has_no_candidate_evidence_or_artifact_code_paths():
+    source = inspect.getsource(rss_monitor)
+
+    assert "create_source_candidate" not in source
+    assert "evidence_grade" not in source
+    assert "ArtifactDownloader" not in source
+    assert "download" not in source.lower()
+    assert ".pdf" not in source.lower()
 
 
 def test_jsonl_output_path_is_source_and_date_scoped(tmp_path):

@@ -235,6 +235,17 @@ def test_mcp_list_monitorable_sources_exposes_access_methods_without_live_fetch(
     assert all(source["operational_status"] != "inventory_only" for source in result["sources"])
 
 
+def test_mcp_list_monitorable_sources_includes_expanded_feed_sources():
+    result = tools.list_monitorable_sources()
+
+    sources = {source["source_code"]: source for source in result["sources"]}
+    boe_method_types = {method["type"] for method in sources["BOE"]["access_methods"]}
+    boja_method_types = {method["type"] for method in sources["BOJA"]["access_methods"]}
+
+    assert "rss" in boe_method_types
+    assert "atom" in boja_method_types
+
+
 def test_mcp_latest_discovery_entries_reads_existing_jsonl_only(tmp_path):
     output_path = tmp_path / "BOCYL" / "2026-05-24" / "rss_discovery.jsonl"
     output_path.parent.mkdir(parents=True)

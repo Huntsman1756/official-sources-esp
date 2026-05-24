@@ -13,13 +13,14 @@ for source-platform work in this repository.
 | `TASK-SOURCE-REGISTRY-001` | implemented locally | Canonical executable registry added at `config/sources.yaml`, with validation tests and read-only CLI coverage reporting. |
 | `TASK-SOURCE-RSS-MONITOR-001` | implemented locally | Metadata-only RSS/Atom discovery monitor added with BOCYL as pilot. Default mode is preview; JSONL writes require explicit `--write`. |
 | `TASK-MCP-SOURCE-COVERAGE-001` | implemented locally | Read-only MCP tools expose registry coverage and existing RSS discovery JSONL without live fetches or writes. |
+| `TASK-SOURCE-RSS-MONITOR-002` | implemented locally | BOE RSS and BOJA Atom feeds added as validated metadata-only discovery sources. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
-| `TASK-SOURCE-RSS-MONITOR-002` | proposed | Add 2-3 more RSS/Atom monitored sources as metadata-only discovery; do not create candidates/evidence/artifacts. |
 | `TASK-SOURCE-BOPV-API-001` | proposed | Separate task only; do not implement BOPV REST/API discovery from RSS monitor work. |
+| Additional RSS/Atom expansion | proposed | Verify one source at a time before adding feed access methods. |
 
 ## Guardrails
 

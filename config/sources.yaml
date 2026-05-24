@@ -17,6 +17,10 @@ sources:
         url: https://www.boe.es/diario_boe/
         status: validated
         notes: Public landing and stored official document HTML URLs.
+      - type: rss
+        url: https://www.boe.es/rss/boe.php
+        status: validated
+        notes: Official complete BOE daily summary RSS feed linked from https://www.boe.es/rss/.
       - type: pdf
         url: https://www.boe.es/diario_boe/
         status: validated
@@ -93,6 +97,10 @@ sources:
         url: https://datos.juntadeandalucia.es/api/v0/boja/{official_id}
         status: validated
         notes: Official detail endpoint used for scoped evidence URL enrichment.
+      - type: atom
+        url: https://www.juntadeandalucia.es/boja/distribucion/boja.xml
+        status: validated
+        notes: Official complete BOJA web feed linked from the Junta de Andalucia feed directory.
     operational_status: metadata_adapter_validated
     mcp_support: false
     monitor_support: available
