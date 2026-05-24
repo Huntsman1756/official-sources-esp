@@ -2106,6 +2106,104 @@ Result:
 git diff --check: passed
 ```
 
+## 2026-05-24 - BORM 30-day metadata backfill resume
+
+Report:
+
+```text
+docs/reports/BORM_30_DAY_METADATA_BACKFILL_RESUME_2026-05-23.md
+```
+
+Scope:
+
+```text
+TASK-AUTO-BORM-004C
+resume_range=2026-05-12 -> 2026-05-20
+metadata_only=true
+```
+
+VPS deployed commit:
+
+```text
+1c9381a
+```
+
+Pre-run backup:
+
+```text
+/opt/official-sources/data/backups/official_sources_before_borm_resume_20260524_051624.sqlite
+```
+
+Post-run backup:
+
+```text
+/opt/official-sources/data/backups/official_sources_after_borm_resume_20260524_051756.sqlite
+```
+
+Resume result:
+
+```text
+dates_processed=9
+success=8
+no_publication=1
+failed=0
+documents_fetched=213
+documents_new=213
+documents_updated=0
+supplement_issue_dates=2026-05-15
+```
+
+Final BORM 30-day window:
+
+```text
+range=2026-04-21 -> 2026-05-20
+dates_total=30
+success=25
+no_publication=5
+failed=0
+documents_fetched=549
+documents_new=549
+documents_updated=0
+supplement_issue_dates=2026-05-11,2026-05-15
+```
+
+Safety counters:
+
+```text
+source_candidates=150 -> 150
+artifact_download_attempts=482 -> 482
+artifact_bytes=28857411 -> 28857411
+BORM document_files_by_type=raw_api_response:549
+PDF/XML/HTML artifact downloads=0
+downstream writes=0
+```
+
+DB validation:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite db validate
+database_path=/opt/official-sources/data/official_sources.sqlite current_version=8 latest_version=8 status=valid
+```
+
+MCP privacy:
+
+```text
+ss -tulpn | grep -E 'official|mcp|python|uvicorn|fastmcp' || true
+no matching listeners
+```
+
+Docs-only validation:
+
+```text
+rtk git diff --check
+```
+
+Result:
+
+```text
+git diff --check: passed
+```
+
 ## 2026-05-24 - BORM 2026-05-11 mixed issue diagnosis
 
 Report:
