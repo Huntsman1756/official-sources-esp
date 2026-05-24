@@ -2106,6 +2106,77 @@ Result:
 git diff --check: passed
 ```
 
+## 2026-05-24 - BORM candidate profile calibration
+
+Report:
+
+```text
+docs/reports/BORM_CANDIDATE_PROFILE_CALIBRATION_2026-05-23.md
+```
+
+Scope:
+
+```text
+TASK-AUTO-BORM-005B
+metadata-only profile calibration for borm-ayudas
+no candidates
+no artifacts
+no downstream
+```
+
+Code validation:
+
+```text
+rtk git diff --check
+rtk python -m pytest -q
+rtk python -m ruff check .
+rtk python -m ruff format --check .
+```
+
+Result:
+
+```text
+git diff --check: passed
+pytest: 423 passed, 1 warning
+ruff check: passed
+ruff format --check: passed
+```
+
+VPS deploy:
+
+```text
+deployed_commit=43bb43b
+DB validation=status=valid current_version=8 latest_version=8
+```
+
+Dry-run command:
+
+```text
+/opt/official-sources/app/.venv/bin/official-sources --db-path /opt/official-sources/data/official_sources.sqlite find-source-candidates --source BORM --date-from 2026-04-21 --date-to 2026-05-20 --profile borm-ayudas --dry-run --limit 200
+```
+
+Calibrated dry-run result:
+
+```text
+documents_scanned=549
+matches_total=255
+matches_after_filters=13
+documents_matched=13
+candidates_created=0
+match_rate=2.37%
+```
+
+Safety counters:
+
+```text
+source_candidates=150 -> 150
+artifact_download_attempts=482 -> 482
+artifact_bytes=28857411 -> 28857411
+BORM official_documents in window=549
+BORM raw_api_response document_files=549
+MCP privacy=no matching official/mcp/python/uvicorn/fastmcp listeners
+```
+
 ## 2026-05-24 - BORM 30-day candidate dry-run
 
 Report:
