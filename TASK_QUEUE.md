@@ -18,6 +18,7 @@ for source-platform work in this repository.
 | `TASK-SOURCE-BOPV-API-001` | implemented locally | Metadata-only BOPV REST/API discovery adapter added for the official Open Data Euskadi endpoint. |
 | `TASK-SOURCE-COVERAGE-V1.1-SNAPSHOT-001` | implemented locally | Coverage v1.1 snapshot added after BOPV API discovery; MCP API JSONL exposure remains future work. |
 | `TASK-MCP-API-DISCOVERY-OUTPUT-001` | implemented locally | Read-only MCP latest discovery reader now supports existing RSS and API monitor JSONL output. |
+| `TASK-SOURCE-COVERAGE-INTEGRATION-CHECK-001` | implemented locally | Integration check validates registry, RSS monitor, API monitor, and MCP coverage/discovery together. |
 
 ## Next
 

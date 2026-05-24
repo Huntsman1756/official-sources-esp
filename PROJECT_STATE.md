@@ -4,6 +4,51 @@ Last updated: 2026-05-24
 
 ## Current Decision
 
+`TASK-SOURCE-COVERAGE-INTEGRATION-CHECK-001` is implemented locally.
+
+The coverage platform line was validated on the integration branch:
+
+```text
+codex/task-source-coverage-integration-check-001
+```
+
+Report:
+
+```text
+docs/reports/source-coverage-integration-check-2026-05-24.md
+```
+
+Validated together:
+
+```text
+config/sources.yaml
+RSS/Atom discovery: BOE, BOJA, BOCYL
+API discovery: BOPV
+MCP read-only coverage/discovery tools
+```
+
+Validation results:
+
+```text
+sources.yaml total sources: 22
+candidate_creation_allowed=false: 22
+evidence_grade_allowed=false: 22
+RSS previews: BOE, BOJA, BOCYL ok with --limit 1 and no --write
+API preview: BOPV ok with --limit 1 and no --write
+MCP fixture reads: empty, RSS JSONL, API JSONL, unknown source all ok
+python -m pytest -q: 488 passed, 1 warning
+```
+
+This task is reporting/control-plane only. It did not create sources, ingestion behavior,
+RSS/API writes, candidates, evidence-grade records, PDFs, artifacts, downstream writes, backfills,
+VPS operations, production DB operations, or LLM classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-MCP-API-DISCOVERY-OUTPUT-001
+```
+
 `TASK-MCP-API-DISCOVERY-OUTPUT-001` is implemented locally.
 
 The MCP/read-only discovery reader now reads existing metadata-only RSS and API discovery JSONL:
@@ -283,6 +328,7 @@ Hard guardrails:
 | `TASK-SOURCE-BOPV-API-001` | Implemented locally | `src/official_sources/api_monitor.py`, `docs/reports/bopv-api-discovery-adapter-2026-05-24.md` | Adds metadata-only BOPV REST/API discovery from the official Open Data Euskadi endpoint. |
 | `TASK-SOURCE-COVERAGE-V1.1-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-1-snapshot-2026-05-24.md` | Captures the v1.1 coverage baseline after adding BOPV API discovery. |
 | `TASK-MCP-API-DISCOVERY-OUTPUT-001` | Implemented locally | `src/official_sources/source_coverage.py`, `docs/reports/mcp-api-discovery-output-2026-05-24.md` | Extends the read-only MCP discovery reader to existing RSS and API discovery JSONL. |
+| `TASK-SOURCE-COVERAGE-INTEGRATION-CHECK-001` | Implemented locally | `docs/reports/source-coverage-integration-check-2026-05-24.md` | Validates the integrated registry, RSS monitor, API monitor, and MCP coverage/discovery line. |
 
 ## Next Allowed Work
 
