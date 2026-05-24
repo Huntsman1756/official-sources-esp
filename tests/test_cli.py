@@ -2290,6 +2290,140 @@ def test_find_source_candidates_supports_new_autonomous_profiles_and_filters_noi
     assert candidate_count == 0
 
 
+def test_find_source_candidates_bopv_profile_keeps_direct_aid_despite_raw_noise(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_bopv()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOPV:fp-aid",
+        publication_date="2026-05-20",
+        title=(
+            "ORDEN de la consejera de Educacion por la que se aprueban las bases "
+            "reguladoras de la convocatoria de subvenciones para formacion profesional"
+        ),
+        department="Departamento de Educacion",
+        section="Otras disposiciones",
+        raw_metadata={"neighbor_section": "oposiciones y concursos"},
+    )
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOPV:university-aid",
+        publication_date="2026-05-20",
+        title=(
+            "ORDEN del consejero de Ciencia, Universidades e Innovacion por la que se "
+            "aprueban las bases reguladoras de ayudas para universidad"
+        ),
+        department="Departamento de Ciencia, Universidades e Innovacion",
+        section="Otras disposiciones",
+        raw_metadata={"neighbor_notice": "contratacion de empresas"},
+    )
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOPV:student-notification",
+        publication_date="2026-05-20",
+        title=("ANUNCIO de notificaciones relativas a resoluciones de subvenciones para alumnado"),
+        department="Departamento de Educacion",
+        section="Anuncios",
+    )
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOPV:beneficiary-result",
+        publication_date="2026-05-20",
+        title=(
+            "RESOLUCION del consejero de Ciencia, Universidades e Innovacion "
+            "por la que se hace publica la relacion de beneficiarios "
+            "de las ayudas para estancias universitarias"
+        ),
+        department="Departamento de Ciencia, Universidades e Innovacion",
+        section="Otras disposiciones",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "BOPV",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--profile",
+            "bopv-ayudas",
+            "--dry-run",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "matches_after_filters=2" in captured.out
+    assert "excluded_by_keyword_rules=2" in captured.out
+    assert "BOPV:fp-aid" in captured.out
+    assert "BOPV:university-aid" in captured.out
+    assert "BOPV:student-notification" not in captured.out
+    assert "BOPV:beneficiary-result" not in captured.out
+
+
+def test_find_source_candidates_bopv_profile_supports_basque_student_terms(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_bopv()
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOPV:generic-laguntza",
+        publication_date="2026-05-20",
+        title="EBAZPENA laguntza bati buruzkoa",
+        department="Saila",
+        section="Bestelako xedapenak",
+    )
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOPV:ikasle-aid",
+        publication_date="2026-05-20",
+        title="AGINDUA ikasleak laguntzeko dirulaguntzak deitzen dituena",
+        department="Hezkuntza Saila",
+        section="Bestelako xedapenak",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "BOPV",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--profile",
+            "bopv-ayudas",
+            "--dry-run",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "matches_total=2" in captured.out
+    assert "matches_after_filters=1" in captured.out
+    assert "BOPV:ikasle-aid" in captured.out
+    assert "BOPV:generic-laguntza" not in captured.out
+
+
 def test_find_boe_candidates_boja_profile_excludes_generic_ayudas_only(tmp_path, capsys):
     from official_sources.cli import run
 

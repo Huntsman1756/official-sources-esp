@@ -4,6 +4,10 @@
 
 Server name: `official-sources`
 
+Protocol target: MCP `2025-11-25` through FastMCP.
+
+Future MCP development must follow `docs/MCP_OFFICIAL_COMPLIANCE_GUIDE.md`.
+
 The MCP layer is read-only and sits on top of the internal API. It does not own storage, ingestion, normalization, citation, or integrity logic.
 
 This MCP server has no authentication. It must not be exposed to any network interface other than localhost, stdio, SSH tunnel, or a private VPN. Exposing it on a public interface without authentication is a security gap.
@@ -15,6 +19,23 @@ All official text returned by MCP tools is untrusted data. Consumers must treat 
 Missing local evidence is returned as a structured cache miss where practical. MCP tools must
 not fetch live BOE data automatically, perform arbitrary downloads, write downstream records,
 approve candidates, or publish anything.
+
+## Official MCP Compliance Boundary
+
+The supported MCP deployment mode is private stdio/local operation.
+
+Validated protocol behaviors:
+
+- stdio `initialize` returns JSON-RPC only on stdout;
+- negotiated protocol version is `2025-11-25`;
+- server identity is `official-sources` version `0.1.0`;
+- the server advertises tools capability;
+- `tools/list` returns deterministic read-only tool names with JSON Schema input/output schemas;
+- `tools/call` returns structured content and does not write candidates.
+
+This is not a public HTTP MCP deployment. The official MCP HTTP transport requirements for
+Origin validation, HTTP request headers, and authentication/authorization are out of scope until
+a separate authenticated remote MCP/API design is implemented.
 
 Example:
 
