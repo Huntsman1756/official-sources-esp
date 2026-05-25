@@ -29,6 +29,7 @@ for source-platform work in this repository.
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-PILOT-001` | implemented locally | BOP_A_CORUNA HTML discovery pilot added as metadata-only, one-source monitoring; no candidates/evidence/PDFs/artifacts/downstream writes. |
 | `TASK-SOURCE-COVERAGE-V1.4-SNAPSHOT-001` | implemented locally | Coverage v1.4 snapshot added after the BOP_A_CORUNA provincial HTML pilot; current coverage is 6 RSS/Atom, 1 API, and 1 HTML provincial discovery source. |
 | `TASK-MCP-HTML-DISCOVERY-OUTPUT-001` | implemented locally | Read-only MCP latest discovery reader now supports existing HTML monitor JSONL output alongside RSS/API output. |
+| `TASK-MCP-DISCOVERY-PREVIEW-001` | implemented locally | MCP now exposes controlled one-source metadata-only discovery previews for RSS/API/HTML, with no writes, candidates, evidence-grade records, PDFs/artifacts, backfills, or downstream writes. |
 
 ## Next
 
@@ -40,6 +41,7 @@ for source-platform work in this repository.
 | `TASK-SOURCE-HTML-MONITOR-PILOT-001` | proposed | Only for sources without RSS/API, after source-specific endpoint/robots/fixture audit. |
 | `TASK-SOURCE-COVERAGE-RUN-REPORT-001` | proposed | Only if actual metadata-only JSONL writes are run; document source, date, output path, row count, and guardrails. |
 | `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |
+| `TASK-MCP-COVERAGE-RECOMMENDATIONS-001` | proposed | Use registry state, cache presence, and preview results to recommend next sources without writing candidates/evidence or running broad monitors. |
 
 ## Guardrails
 

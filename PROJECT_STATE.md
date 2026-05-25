@@ -4,6 +4,51 @@ Last updated: 2026-05-25
 
 ## Current Decision
 
+`TASK-MCP-DISCOVERY-PREVIEW-001` is implemented locally.
+
+The MCP now exposes a controlled one-source discovery preview tool:
+
+```text
+preview_discovery(source_code, date, limit=1, discovery_type=None)
+```
+
+Supported preview families:
+
+```text
+rss: validated RSS/Atom discovery sources
+api: BOPV API discovery
+html: BOP_A_CORUNA HTML discovery
+```
+
+The tool runs preview mode only. It refuses broad/all-source requests, unknown sources,
+inventory-only sources without implemented validated monitor support, and `limit > 10`.
+
+Preview results are metadata-only:
+
+```text
+mode=preview
+output_written=false
+candidate_status=not_candidate
+evidence_status=not_evidence
+classification_status=unclassified
+```
+
+The tool does not write RSS/API/HTML JSONL, create files, create candidates, create evidence-grade
+records, download PDFs/artifacts, mutate `config/sources.yaml`, touch downstream repos, run
+backfills, run VPS/prod DB operations, or add LLM classification.
+
+Report:
+
+```text
+docs/reports/mcp-discovery-preview-tools-2026-05-24.md
+```
+
+Previous completed source-platform task:
+
+```text
+TASK-MCP-HTML-DISCOVERY-OUTPUT-001
+```
+
 `TASK-MCP-HTML-DISCOVERY-OUTPUT-001` is implemented locally.
 
 The MCP latest discovery reader now supports existing HTML monitor JSONL output in addition to RSS

@@ -2,10 +2,17 @@ from __future__ import annotations
 
 import inspect
 import json
+from pathlib import Path
 
 from official_sources import source_coverage
 from official_sources.mcp import tools
 from official_sources.mcp.server import MCP_TOOL_NAMES, create_repository_from_env
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def _fixture_bytes(name: str) -> bytes:
+    return (FIXTURES / name).read_bytes()
 
 
 def _seed_document_with_text(repository, instruction_like_text):
@@ -47,6 +54,7 @@ def test_mcp_tool_names_use_compatible_snake_case_names():
         "get_source_status",
         "list_monitorable_sources",
         "list_latest_discovery_entries",
+        "preview_discovery",
         "boe_consolidated_law_get",
         "boe_consolidated_law_text_get",
         "boe_consolidated_law_index_get",
@@ -552,6 +560,150 @@ def test_mcp_source_status_exposes_bop_a_coruna_as_monitor_validated():
     assert result["source"]["monitor_support"] == "available"
     assert result["source"]["candidate_creation_allowed"] is False
     assert result["source"]["evidence_grade_allowed"] is False
+
+
+def test_mcp_preview_discovery_runs_rss_preview_without_writing(tmp_path):
+    result = tools.preview_discovery(
+        source_code="BOCYL",
+        date="2026-05-24",
+        limit=1,
+        rss_fetcher=lambda _url: _fixture_bytes("rss_monitor_minimal.xml"),
+    )
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "discovery_preview"
+    assert result["source_code"] == "BOCYL"
+    assert result["discovery_type"] == "rss"
+    assert result["mode"] == "preview"
+    assert result["output_written"] is False
+    assert result["count"] == 1
+    assert result["records"][0]["source_code"] == "BOCYL"
+    assert result["records"][0]["candidate_status"] == "not_candidate"
+    assert result["records"][0]["evidence_status"] == "not_evidence"
+    assert result["records"][0]["classification_status"] == "unclassified"
+    assert not list(tmp_path.rglob("*.jsonl"))
+
+
+def test_mcp_preview_discovery_runs_api_preview_without_writing(tmp_path):
+    result = tools.preview_discovery(
+        source_code="BOPV",
+        date="2026-05-24",
+        limit=1,
+        api_fetcher=lambda _url: _fixture_bytes("bopv_api_month_page.json"),
+    )
+
+    assert result["status"] == "ok"
+    assert result["source_code"] == "BOPV"
+    assert result["discovery_type"] == "api"
+    assert result["mode"] == "preview"
+    assert result["output_written"] is False
+    assert result["count"] == 1
+    assert result["records"][0]["candidate_status"] == "not_candidate"
+    assert result["records"][0]["evidence_status"] == "not_evidence"
+    assert result["records"][0]["classification_status"] == "unclassified"
+    assert not list(tmp_path.rglob("*.jsonl"))
+
+
+def test_mcp_preview_discovery_runs_html_preview_without_writing(tmp_path):
+    result = tools.preview_discovery(
+        source_code="BOP_A_CORUNA",
+        date="2026-05-25",
+        limit=1,
+        html_fetcher=lambda _url: _fixture_bytes("bop_a_coruna_latest.html"),
+    )
+
+    assert result["status"] == "ok"
+    assert result["source_code"] == "BOP_A_CORUNA"
+    assert result["discovery_type"] == "html"
+    assert result["mode"] == "preview"
+    assert result["output_written"] is False
+    assert result["count"] == 1
+    assert result["records"][0]["candidate_status"] == "not_candidate"
+    assert result["records"][0]["evidence_status"] == "not_evidence"
+    assert result["records"][0]["classification_status"] == "unclassified"
+    assert not list(tmp_path.rglob("*.jsonl"))
+
+
+def test_mcp_preview_discovery_refuses_unknown_source():
+    result = tools.preview_discovery(source_code="NOPE", date="2026-05-24")
+
+    assert result == {
+        "status": "unknown_source",
+        "source_code": "NOPE",
+        "message": "Unknown source_code: NOPE",
+    }
+
+
+def test_mcp_preview_discovery_refuses_inventory_only_unmonitored_source():
+    result = tools.preview_discovery(source_code="BOP_ZARAGOZA", date="2026-05-24")
+
+    assert result["status"] == "not_monitorable"
+    assert result["source_code"] == "BOP_ZARAGOZA"
+    assert "validated monitor support" in result["message"]
+
+
+def test_mcp_preview_discovery_refuses_limit_above_ten():
+    result = tools.preview_discovery(source_code="BOCYL", date="2026-05-24", limit=11)
+
+    assert result == {
+        "status": "invalid_request",
+        "source_code": "BOCYL",
+        "message": "limit must be between 1 and 10",
+    }
+
+
+def test_mcp_preview_discovery_refuses_broad_all_source_request():
+    result = tools.preview_discovery(source_code="ALL", date="2026-05-24")
+
+    assert result == {
+        "status": "invalid_request",
+        "source_code": "ALL",
+        "message": "preview_discovery requires one explicit source_code",
+    }
+
+
+def test_mcp_preview_discovery_refuses_comma_separated_source_request():
+    result = tools.preview_discovery(source_code="BOCYL,BOPV", date="2026-05-24")
+
+    assert result == {
+        "status": "invalid_request",
+        "source_code": "BOCYL,BOPV",
+        "message": "preview_discovery requires one explicit source_code",
+    }
+
+
+def test_mcp_preview_discovery_refuses_wrong_discovery_type():
+    result = tools.preview_discovery(
+        source_code="BOPV",
+        date="2026-05-24",
+        discovery_type="rss",
+    )
+
+    assert result["status"] == "not_monitorable"
+    assert result["source_code"] == "BOPV"
+    assert result["discovery_type"] == "rss"
+    assert "validated rss monitor" in result["message"]
+
+
+def test_mcp_preview_discovery_never_calls_write_paths(monkeypatch):
+    from official_sources import api_monitor, html_monitor, rss_monitor
+
+    def fail_write(*_args, **_kwargs):
+        raise AssertionError("MCP preview must not write discovery JSONL")
+
+    monkeypatch.setattr(rss_monitor, "write_jsonl", fail_write)
+    monkeypatch.setattr(api_monitor, "write_api_jsonl", fail_write)
+    monkeypatch.setattr(html_monitor, "write_html_jsonl", fail_write)
+
+    result = tools.preview_discovery(
+        source_code="BOCYL",
+        date="2026-05-24",
+        limit=1,
+        rss_fetcher=lambda _url: _fixture_bytes("rss_monitor_minimal.xml"),
+    )
+
+    assert result["status"] == "ok"
+    assert result["output_written"] is False
 
 
 def test_mcp_latest_discovery_entries_unknown_source_returns_safe_error(tmp_path):

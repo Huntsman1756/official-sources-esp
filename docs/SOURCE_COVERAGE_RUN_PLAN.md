@@ -15,6 +15,7 @@ RSS/Atom discovery: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
 API discovery: BOPV
 HTML discovery: BOP_A_CORUNA
 MCP read-only coverage and discovery readers
+MCP controlled one-source discovery preview
 ```
 
 The operating rule is simple: discovery runs must remain bounded, cache-first, and metadata-only.
@@ -282,11 +283,44 @@ list_latest_discovery_entries
 
 MCP must not:
 
-- fetch live RSS/API data;
-- run monitor commands;
+- fetch live RSS/API/HTML data from cache readback tools;
 - write JSONL;
 - create candidates;
 - create evidence-grade records.
+
+## MCP Preview
+
+The MCP may run a controlled discovery preview through:
+
+```text
+preview_discovery
+```
+
+Allowed preview examples:
+
+```json
+{"source_code": "BOCYL", "date": "YYYY-MM-DD", "limit": 1}
+{"source_code": "BOPV", "date": "YYYY-MM-DD", "limit": 1}
+{"source_code": "BOP_A_CORUNA", "date": "YYYY-MM-DD", "limit": 1}
+```
+
+MCP preview rules:
+
+- one explicit source only;
+- one date only;
+- default limit is 1;
+- maximum limit is 10;
+- no JSONL writes;
+- no file creation;
+- no candidates;
+- no evidence-grade records;
+- no PDFs or artifacts;
+- no registry mutation;
+- no backfills;
+- no downstream writes.
+
+The MCP preview tool may fetch one declared source endpoint to produce metadata-only records. It is
+not a scheduler, not an all-source runner, and not a write path.
 
 ## Failure Handling
 

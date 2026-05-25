@@ -188,13 +188,15 @@ Run the MCP server privately:
 OFFICIAL_SOURCES_DB_PATH=official-sources.sqlite python -m official_sources.mcp.server
 ```
 
-The coverage tools are read-only:
+The coverage and cache-readback tools are read-only. `preview_discovery` is preview-only and may
+fetch one explicit source endpoint, but it does not write files or mutate state:
 
 ```text
 list_sources
 get_source_status
 list_monitorable_sources
 list_latest_discovery_entries
+preview_discovery
 ```
 
 ### list_sources
@@ -281,14 +283,54 @@ discovery_type=html
 If several output files exist for the same source/date, entries are returned in deterministic order:
 RSS, API, HTML.
 
+### preview_discovery
+
+Input:
+
+```json
+{
+  "source_code": "BOCYL",
+  "date": "YYYY-MM-DD",
+  "limit": 1,
+  "discovery_type": "rss"
+}
+```
+
+Runs a one-source metadata-only discovery preview through the MCP layer. The tool supports:
+
+```text
+rss: validated RSS/Atom discovery sources
+api: BOPV
+html: BOP_A_CORUNA
+```
+
+The default `limit` is `1`; the maximum allowed limit is `10`. If `discovery_type` is omitted, the
+tool infers it when exactly one implemented preview type is available for the source.
+
+Preview output includes:
+
+```text
+mode=preview
+output_written=false
+candidate_status=not_candidate
+evidence_status=not_evidence
+classification_status=unclassified
+```
+
+The tool refuses unknown sources, broad/all-source requests, inventory-only sources without an
+implemented validated monitor, and `limit > 10`. It may fetch one declared endpoint for preview, but
+it does not write JSONL, create files, create candidates, create evidence-grade records, download
+PDFs/artifacts, mutate registry state, run backfills, or touch downstream repositories.
+
 ## Safety Boundaries
 
 The coverage surface must preserve these boundaries:
 
 - RSS/API/HTML discovery is metadata-only.
-- MCP coverage is read-only.
-- MCP does not fetch live RSS/API/HTML data.
+- MCP cache readback is read-only.
+- MCP `preview_discovery` may fetch one explicit source in preview mode only.
 - MCP does not write JSONL.
+- MCP does not create files.
 - `--write` is explicit for CLI monitor output.
 - No automatic `source_candidates`.
 - No automatic evidence-grade promotion.
@@ -316,6 +358,7 @@ official-sources rss monitor --source BOIB --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOC_CANTABRIA --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source DOE --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
 ```
 
 If `official-sources` does not reflect the current source tree, use the module entrypoint shown in

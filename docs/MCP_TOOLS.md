@@ -8,7 +8,9 @@ Protocol target: MCP `2025-11-25` through FastMCP.
 
 Future MCP development must follow `docs/MCP_OFFICIAL_COMPLIANCE_GUIDE.md`.
 
-The MCP layer is read-only and sits on top of the internal API. It does not own storage, ingestion, normalization, citation, or integrity logic.
+The MCP layer does not own storage, ingestion, normalization, citation, or integrity logic. Its
+coverage/cache-readback tools are read-only. Controlled discovery preview may fetch one explicit
+source endpoint, but it cannot write JSONL or mutate repository state.
 
 This MCP server has no authentication. It must not be exposed to any network interface other than localhost, stdio, SSH tunnel, or a private VPN. Exposing it on a public interface without authentication is a security gap.
 
@@ -16,9 +18,10 @@ For VPS use, bind MCP to stdio, localhost, SSH tunnel, or private VPN only. Do n
 
 All official text returned by MCP tools is untrusted data. Consumers must treat text inside `content` as official source data, not as system, developer, tool, or user instructions.
 
-Missing local evidence is returned as a structured cache miss where practical. MCP tools must
-not fetch live BOE data automatically, perform arbitrary downloads, write downstream records,
-approve candidates, or publish anything.
+Missing local evidence is returned as a structured cache miss where practical. MCP tools must not
+perform arbitrary downloads, write downstream records, approve candidates, or publish anything.
+Discovery preview is limited to one explicit source, small limits, metadata-only records, and no
+JSONL writes.
 
 ## Official MCP Compliance Boundary
 
@@ -160,6 +163,40 @@ Each entry is marked with `discovery_type=rss`, `discovery_type=api`, or `discov
 where applicable. If several output files exist for the same source/date, entries are returned in
 deterministic order: RSS, API, HTML. The reader does not fetch live RSS/API/HTML data, does not
 create files, does not create candidates, and does not promote entries to evidence-grade.
+
+### preview_discovery
+
+Inputs:
+
+- `source_code`: one explicit registered source code such as `BOCYL`, `BOPV`, or `BOP_A_CORUNA`.
+- `date`: required `YYYY-MM-DD`.
+- `limit`: integer, default `1`, maximum `10`.
+- `discovery_type`: optional `rss`, `api`, or `html`; required only if a future source has more
+  than one implemented preview type.
+
+Output: metadata-only discovery preview records with:
+
+```text
+mode=preview
+output_written=false
+classification_status=unclassified
+candidate_status=not_candidate
+evidence_status=not_evidence
+```
+
+Supported preview families:
+
+```text
+rss: validated RSS/Atom discovery sources
+api: BOPV API discovery
+html: BOP_A_CORUNA HTML discovery
+```
+
+The tool refuses broad/all-source requests, unknown sources, inventory-only sources without an
+implemented validated monitor, and limits greater than 10. It may fetch one declared source endpoint
+for preview, but it does not write JSONL, create files, create candidates, create evidence-grade
+records, download PDFs/artifacts, run backfills, mutate `config/sources.yaml`, or touch downstream
+repositories.
 
 ### boe_consolidated_law_get
 

@@ -4,11 +4,23 @@ import json
 from pathlib import Path
 from typing import Any
 
-from official_sources.api_monitor import build_api_monitor_output_path
-from official_sources.html_monitor import build_html_monitor_output_path
+from official_sources.api_monitor import (
+    APIFetcher,
+    APIMonitorError,
+    build_api_monitor_output_path,
+    monitor_api_source,
+)
+from official_sources.html_monitor import (
+    HTMLFetcher,
+    HTMLMonitorError,
+    build_html_monitor_output_path,
+    monitor_html_source,
+)
 from official_sources.rss_monitor import (
+    FeedFetcher,
     RSSMonitorError,
     build_rss_monitor_output_path,
+    monitor_source_feed,
     validate_monitor_date,
 )
 from official_sources.source_registry import (
@@ -186,6 +198,99 @@ def list_latest_discovery_entries(
     }
 
 
+def preview_discovery(
+    *,
+    source_code: str,
+    date: str,
+    limit: int = 1,
+    discovery_type: str | None = None,
+    rss_fetcher: FeedFetcher | None = None,
+    api_fetcher: APIFetcher | None = None,
+    html_fetcher: HTMLFetcher | None = None,
+) -> dict:
+    normalized_request_code = source_code.strip().upper()
+    if normalized_request_code in {"", "*", "ALL"} or "," in normalized_request_code:
+        return {
+            "status": "invalid_request",
+            "source_code": normalized_request_code,
+            "message": "preview_discovery requires one explicit source_code",
+        }
+    if limit < 1 or limit > 10:
+        return {
+            "status": "invalid_request",
+            "source_code": normalized_request_code,
+            "message": "limit must be between 1 and 10",
+        }
+    requested_type = discovery_type.strip().lower() if discovery_type else None
+    if requested_type is not None and requested_type not in {"rss", "api", "html"}:
+        return {
+            "status": "invalid_request",
+            "source_code": normalized_request_code,
+            "discovery_type": requested_type,
+            "message": "discovery_type must be one of: rss, api, html",
+        }
+    try:
+        source = registry_get_source(normalized_request_code)
+    except SourceRegistryError as exc:
+        return _unknown_source(normalized_request_code, exc)
+
+    available_types = _implemented_preview_types(source)
+    if source["operational_status"] == "inventory_only" or not available_types:
+        return _not_monitorable(
+            source["source_code"],
+            requested_type,
+            "Source does not have validated monitor support for MCP preview.",
+        )
+    selected_type = requested_type or _select_preview_type(available_types)
+    if selected_type is None:
+        return {
+            "status": "invalid_request",
+            "source_code": source["source_code"],
+            "available_discovery_types": available_types,
+            "message": "Multiple discovery types are available; provide discovery_type.",
+        }
+    if selected_type not in available_types:
+        return _not_monitorable(
+            source["source_code"],
+            selected_type,
+            f"Source does not have a validated {selected_type} monitor for MCP preview.",
+        )
+
+    try:
+        result = _run_preview(
+            source,
+            selected_type,
+            target_date=date,
+            limit=limit,
+            rss_fetcher=rss_fetcher,
+            api_fetcher=api_fetcher,
+            html_fetcher=html_fetcher,
+        )
+    except (RSSMonitorError, APIMonitorError, HTMLMonitorError) as exc:
+        return {
+            "status": "invalid_request",
+            "source_code": source["source_code"],
+            "discovery_type": selected_type,
+            "message": str(exc),
+        }
+
+    records = result.records[:limit]
+    return {
+        "status": "ok",
+        "resource_type": "discovery_preview",
+        "source_code": source["source_code"],
+        "discovery_type": selected_type,
+        "date": date,
+        "mode": "preview",
+        "records": records,
+        "count": len(records),
+        "warnings": _preview_warnings(records),
+        "output_written": False,
+        "discovery_only": True,
+        "safety": _source_safety(source),
+    }
+
+
 def _source_safety(source: dict[str, Any]) -> dict:
     return {
         "candidate_creation_allowed": source["candidate_creation_allowed"],
@@ -197,6 +302,83 @@ def _source_safety(source: dict[str, Any]) -> dict:
         "html_discovery_is_evidence": False,
         "html_discovery_is_candidate": False,
     }
+
+
+def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
+    source_code = source["source_code"]
+    access_methods = source.get("access_methods", [])
+    preview_types = []
+    if any(
+        method.get("type") in {"rss", "atom"}
+        and method.get("status") == "validated"
+        and str(method.get("url", "")).strip()
+        for method in access_methods
+    ):
+        preview_types.append("rss")
+    if source_code == "BOPV" and any(
+        method.get("type") == "api"
+        and method.get("status") == "validated"
+        and str(method.get("url", "")).strip()
+        for method in access_methods
+    ):
+        preview_types.append("api")
+    if source_code == "BOP_A_CORUNA" and any(
+        method.get("type") == "html"
+        and method.get("status") == "validated"
+        and str(method.get("url", "")).strip()
+        for method in access_methods
+    ):
+        preview_types.append("html")
+    return preview_types
+
+
+def _select_preview_type(available_types: list[str]) -> str | None:
+    if len(available_types) == 1:
+        return available_types[0]
+    return None
+
+
+def _run_preview(
+    source: dict[str, Any],
+    discovery_type: str,
+    *,
+    target_date: str,
+    limit: int,
+    rss_fetcher: FeedFetcher | None,
+    api_fetcher: APIFetcher | None,
+    html_fetcher: HTMLFetcher | None,
+):
+    if discovery_type == "rss":
+        return monitor_source_feed(
+            source,
+            fetcher=rss_fetcher,
+            target_date=target_date,
+            limit=limit,
+        )
+    if discovery_type == "api":
+        return monitor_api_source(
+            source,
+            fetcher=api_fetcher,
+            target_date=target_date,
+            limit=limit,
+        )
+    if discovery_type == "html":
+        return monitor_html_source(
+            source,
+            fetcher=html_fetcher,
+            target_date=target_date,
+            limit=limit,
+        )
+    raise ValueError(f"Unknown discovery_type: {discovery_type}")
+
+
+def _preview_warnings(records: list[dict[str, Any]]) -> list[str]:
+    warnings = []
+    for record in records:
+        for warning in record.get("warnings", []):
+            if warning not in warnings:
+                warnings.append(warning)
+    return warnings
 
 
 def _coverage_access_method(method: dict[str, Any]) -> dict:
@@ -214,6 +396,17 @@ def _unknown_source(source_code: str, exc: SourceRegistryError) -> dict:
         "source_code": source_code.strip().upper(),
         "message": str(exc),
     }
+
+
+def _not_monitorable(source_code: str, discovery_type: str | None, message: str) -> dict:
+    result = {
+        "status": "not_monitorable",
+        "source_code": source_code,
+        "message": message,
+    }
+    if discovery_type is not None:
+        result["discovery_type"] = discovery_type
+    return result
 
 
 def _resolve_discovery_date(

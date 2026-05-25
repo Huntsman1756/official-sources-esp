@@ -138,6 +138,27 @@ def list_latest_discovery_entries(
     )
 
 
+def preview_discovery(
+    *,
+    source_code: str,
+    date: str,
+    limit: int = 1,
+    discovery_type: str | None = None,
+    rss_fetcher=None,
+    api_fetcher=None,
+    html_fetcher=None,
+) -> dict:
+    return source_coverage.preview_discovery(
+        source_code=source_code,
+        date=date,
+        limit=limit,
+        discovery_type=discovery_type,
+        rss_fetcher=rss_fetcher,
+        api_fetcher=api_fetcher,
+        html_fetcher=html_fetcher,
+    )
+
+
 def boe_consolidated_law_get(
     repository: OfficialSourcesRepository,
     *,

@@ -25,6 +25,7 @@ MCP_TOOL_NAMES = (
     "get_source_status",
     "list_monitorable_sources",
     "list_latest_discovery_entries",
+    "preview_discovery",
     "boe_consolidated_law_get",
     "boe_consolidated_law_text_get",
     "boe_consolidated_law_citation_build",
@@ -127,6 +128,21 @@ def create_server(repository: OfficialSourcesRepository | None = None):
             source_code=source_code,
             date=date,
             limit=limit,
+        )
+
+    @mcp.tool
+    def preview_discovery(
+        source_code: str,
+        date: str,
+        limit: int = 1,
+        discovery_type: str | None = None,
+    ) -> dict:
+        """Run one-source metadata-only discovery preview without writing output."""
+        return tools.preview_discovery(
+            source_code=source_code,
+            date=date,
+            limit=limit,
+            discovery_type=discovery_type,
         )
 
     @mcp.tool
