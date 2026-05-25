@@ -148,10 +148,11 @@ official-sources rss monitor --source BOIB --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOC_CANTABRIA --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source DOE --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
 ```
 
-Monitor output writes require explicit `--write`. RSS/API discovery records are not candidates and
-are not evidence-grade records.
+Monitor output writes require explicit `--write`. RSS/API/HTML discovery records are not
+candidates and are not evidence-grade records.
 
 ## Ingest A BOE Summary
 

@@ -18,9 +18,10 @@ Current source counts:
 
 ```text
 registered sources: 65
-provincial inventory-only sources: 43
+provincial inventory-only sources: 42
 RSS/Atom discovery sources: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
 API discovery sources: BOPV
+HTML discovery sources: BOP_A_CORUNA
 candidate_creation_allowed=true: 0
 evidence_grade_allowed=true: 0
 ```
@@ -30,6 +31,7 @@ Discovery output paths, when writes are explicitly requested:
 ```text
 data/rss_monitor/<source_code>/<YYYY-MM-DD>/rss_discovery.jsonl
 data/api_monitor/<source_code>/<YYYY-MM-DD>/api_discovery.jsonl
+data/html_monitor/<source_code>/<YYYY-MM-DD>/html_discovery.jsonl
 ```
 
 Controlled execution is documented in:
@@ -149,6 +151,34 @@ API monitor rules:
 - `--write` writes metadata-only JSONL under `data/api_monitor/`;
 - records are not candidates;
 - records are not evidence-grade.
+
+## HTML Discovery CLI
+
+HTML discovery is metadata-only. The current provincial pilot supports only `BOP_A_CORUNA` and
+uses the official date-scoped BOP A Coruna summary HTML page.
+
+Preview BOP_A_CORUNA without writing JSONL:
+
+```bash
+official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
+```
+
+Write JSONL only when explicitly requested:
+
+```bash
+official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 10 --write
+```
+
+HTML monitor rules:
+
+- one source per command;
+- broad runs such as `--source ALL`, `--source *`, or comma-separated sources are refused;
+- non-validated HTML sources are refused by the HTML monitor;
+- default mode is preview;
+- `--write` writes metadata-only JSONL under `data/html_monitor/`;
+- records are not candidates;
+- records are not evidence-grade;
+- PDFs are not downloaded.
 
 ## MCP Coverage Tools
 

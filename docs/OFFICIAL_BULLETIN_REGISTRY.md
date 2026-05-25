@@ -16,6 +16,9 @@ from BOE/PAG into `config/sources.yaml` as `inventory_only` records. These entri
 directory inventory only: they are not RSS/API monitors, candidates, evidence, or validated HTML
 monitors.
 
+`BOP_A_CORUNA` was later promoted from provincial inventory to a single-source metadata-only HTML
+discovery pilot. This does not change the rest of the provincial inventory entries.
+
 The executable registry separates:
 
 ```text
@@ -39,6 +42,12 @@ official-sources rss monitor --source BOJA --date YYYY-MM-DD
 official-sources rss monitor --source BOIB --date YYYY-MM-DD
 official-sources rss monitor --source BOC_CANTABRIA --date YYYY-MM-DD
 official-sources rss monitor --source DOE --date YYYY-MM-DD
+```
+
+Metadata-only HTML discovery command:
+
+```bash
+official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD
 ```
 
 RSS/Atom discovery records are not candidates and are not evidence. The command defaults to

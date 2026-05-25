@@ -4,6 +4,53 @@ Last updated: 2026-05-25
 
 ## Current Decision
 
+`TASK-SOURCE-PROVINCIAL-DISCOVERY-PILOT-001` is implemented locally.
+
+The first provincial metadata-only discovery pilot uses `BOP_A_CORUNA`:
+
+```text
+source: BOP_A_CORUNA
+access: date-scoped official HTML summary page
+command: official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
+output path when explicitly written: data/html_monitor/BOP_A_CORUNA/<YYYY-MM-DD>/html_discovery.jsonl
+```
+
+The pilot validates that one provincial bulletin can be observed as metadata-only discovery without
+creating candidates, evidence-grade records, PDFs, artifacts, backfills, downstream writes, broad
+runs, VPS operations, production DB operations, or LLM classification. The other provincial sources
+remain inventory-only.
+
+Current executable registry counts after the pilot:
+
+```text
+total sources: 65
+estatal: 2
+european: 1
+autonómica: 19
+provincial: 43
+metadata_adapter_validated: 9
+monitor_validated: 4
+inventory_only: 51
+paused: 1
+RSS/Atom discovery sources: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
+API discovery sources: BOPV
+HTML discovery sources: BOP_A_CORUNA
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
+```
+
+Report:
+
+```text
+docs/reports/provincial-discovery-pilot-bop-a-coruna-2026-05-25.md
+```
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-COVERAGE-V1.3-SNAPSHOT-001
+```
+
 `TASK-SOURCE-COVERAGE-V1.3-SNAPSHOT-001` is implemented locally.
 
 The project now has a Coverage v1.3 snapshot after official directory reconciliation:

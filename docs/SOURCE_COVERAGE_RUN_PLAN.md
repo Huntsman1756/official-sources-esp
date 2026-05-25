@@ -13,6 +13,7 @@ The source coverage platform now has:
 config/sources.yaml
 RSS/Atom discovery: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
 API discovery: BOPV
+HTML discovery: BOP_A_CORUNA
 MCP read-only coverage and discovery readers
 ```
 
@@ -50,6 +51,7 @@ official-sources rss monitor --source BOIB --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOC_CANTABRIA --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source DOE --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
 ```
 
 Preview rules:
@@ -70,6 +72,7 @@ Allowed write examples:
 ```bash
 official-sources rss monitor --source BOCYL --date YYYY-MM-DD --limit 10 --write
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 10 --write
 ```
 
 Write output paths:
@@ -77,6 +80,7 @@ Write output paths:
 ```text
 data/rss_monitor/<source_code>/<YYYY-MM-DD>/rss_discovery.jsonl
 data/api_monitor/<source_code>/<YYYY-MM-DD>/api_discovery.jsonl
+data/html_monitor/<source_code>/<YYYY-MM-DD>/html_discovery.jsonl
 ```
 
 Write rules:
@@ -101,9 +105,14 @@ official-sources rss monitor --source BOE,BOJA --date YYYY-MM-DD --limit 1
 official-sources api monitor --source ALL --date YYYY-MM-DD --limit 1
 official-sources api monitor --source "*" --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV,BOE --date YYYY-MM-DD --limit 1
+
+official-sources html monitor --source ALL --date YYYY-MM-DD --limit 1
+official-sources html monitor --source "*" --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_A_CORUNA,BOP_ZARAGOZA --date YYYY-MM-DD --limit 1
 ```
 
 The API monitor must also refuse non-API sources.
+The HTML monitor must also refuse sources without a validated HTML access method.
 
 ## Pre-Run Checklist
 
@@ -120,6 +129,7 @@ Before any discovery run:
 
    - RSS/Atom monitor requires `rss` or `atom`.
    - API monitor requires `api`.
+   - HTML monitor requires `html`.
 
 4. Confirm safety flags remain false unless a separate explicit task changed them:
 
@@ -153,6 +163,13 @@ or:
 ```bash
 official-sources sources status --source <SOURCE_CODE>
 official-sources api monitor --source <SOURCE_CODE> --date YYYY-MM-DD --limit 1
+```
+
+or:
+
+```bash
+official-sources sources status --source <SOURCE_CODE>
+official-sources html monitor --source <SOURCE_CODE> --date YYYY-MM-DD --limit 1
 ```
 
 For an explicitly approved write:

@@ -512,21 +512,21 @@ sources:
     official_landing_url: https://bop.dacoruna.gal/bopportal/
     access_methods:
       - type: html
-        url: https://bop.dacoruna.gal/bopportal/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bop.dacoruna.gal/bopportal/cambioBoletin.do?fechaInput={date_ddmmyyyy}
+        status: validated
+        notes: Date-scoped official BOP A Coruna summary HTML used by the provincial discovery pilot.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
     last_verified_at: "2026-05-25"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for A Coruna.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - HTML monitor currently supports BOP_A_CORUNA only.
+    notes: Official provincial bulletin HTML discovery pilot.
 
   - source_code: BOP_ALBACETE
     name: Boletin Oficial de la Provincia de Albacete
