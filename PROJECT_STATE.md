@@ -4,6 +4,46 @@ Last updated: 2026-05-24
 
 ## Current Decision
 
+`TASK-SOURCE-COVERAGE-V1.2-SNAPSHOT-001` is implemented locally.
+
+The project now has a Coverage v1.2 snapshot after RSS monitor expansion 003:
+
+```text
+docs/reports/source-coverage-v1-2-snapshot-2026-05-24.md
+```
+
+Coverage v1.2 summarizes the executable registry and current RSS/API monitor/MCP capabilities:
+
+```text
+total sources: 22
+metadata_adapter_validated: 9
+monitor_validated: 3
+inventory_only: 9
+paused: 1
+RSS/Atom discovery sources: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
+API discovery sources: BOPV
+candidate_creation_allowed=false: 22
+evidence_grade_allowed=false: 22
+```
+
+Snapshot caveats:
+
+```text
+BOC_CANTABRIA is category-scoped, not complete bulletin coverage.
+DOE feed is valid, but RSS-003 live preview returned records=0.
+DOGC and BON were not added because tested feed candidates returned 404.
+```
+
+This snapshot is reporting/control-plane only. It did not add sources, ingestion behavior,
+RSS/API writes, candidates, evidence-grade records, PDFs, artifacts, downstream writes, backfills,
+all-source runs, VPS operations, production DB operations, or LLM classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-RSS-MONITOR-003
+```
+
 `TASK-SOURCE-RSS-MONITOR-003` is implemented locally.
 
 The RSS/Atom discovery monitor now has six validated feed-backed sources:
@@ -443,6 +483,7 @@ Hard guardrails:
 | `TASK-MCP-COVERAGE-USAGE-DOCS-001` | Implemented locally | `docs/SOURCE_COVERAGE_USAGE.md`, `docs/MCP_TOOLS.md`, `README.md` | Documents CLI and MCP source coverage usage with safety boundaries. |
 | `TASK-SOURCE-COVERAGE-SCHEDULE-001` | Implemented locally | `docs/SOURCE_COVERAGE_RUN_PLAN.md`, `docs/reports/source-coverage-schedule-2026-05-24.md` | Defines controlled one-source-at-a-time discovery run plan and report template. |
 | `TASK-SOURCE-RSS-MONITOR-003` | Implemented locally | `config/sources.yaml`, `docs/reports/rss-monitor-003-verified-feeds-2026-05-24.md` | Adds BOIB, BOC_CANTABRIA, and DOE as validated metadata-only RSS discovery sources; DOGC and BON were not added. |
+| `TASK-SOURCE-COVERAGE-V1.2-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-2-snapshot-2026-05-24.md` | Captures the v1.2 coverage baseline after RSS-003, including six RSS/Atom sources and one API discovery source. |
 
 ## Next Allowed Work
 
@@ -450,10 +491,11 @@ Allowed next work:
 
 1. `TASK-SOURCE-RSS-MONITOR-004` only after selecting another 2-3 verified official RSS/Atom feeds.
 2. `TASK-SOURCE-HTML-MONITOR-PILOT-001` only for sources without RSS/API after source-specific audit.
-3. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
-4. Product-local design/preview for draft process creation in `oposiciones2.0`.
-5. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
-6. A source-needs audit for `renta-verificable` before any integration.
+3. `TASK-SOURCE-COVERAGE-RUN-REPORT-001` if actual metadata-only JSONL writes are run.
+4. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
+5. Product-local design/preview for draft process creation in `oposiciones2.0`.
+6. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
+7. A source-needs audit for `renta-verificable` before any integration.
 
 Not allowed from this repo:
 

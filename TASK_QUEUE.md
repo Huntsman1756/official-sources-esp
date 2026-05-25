@@ -22,6 +22,7 @@ for source-platform work in this repository.
 | `TASK-MCP-COVERAGE-USAGE-DOCS-001` | implemented locally | Usage guide documents registry CLI, RSS/API discovery previews, MCP coverage tools, and safety boundaries. |
 | `TASK-SOURCE-COVERAGE-SCHEDULE-001` | implemented locally | Controlled discovery run plan added; one source at a time, preview by default, explicit write only, report template included. |
 | `TASK-SOURCE-RSS-MONITOR-003` | implemented locally | BOIB, BOC_CANTABRIA, and DOE RSS feeds added as validated metadata-only discovery sources; DOGC and BON were checked but not added. |
+| `TASK-SOURCE-COVERAGE-V1.2-SNAPSHOT-001` | implemented locally | Coverage v1.2 snapshot added after RSS-003; current coverage is six RSS/Atom sources, one API discovery source, and no candidate/evidence expansion. |
 
 ## Next
 
@@ -29,6 +30,7 @@ for source-platform work in this repository.
 | --- | --- | --- |
 | `TASK-SOURCE-RSS-MONITOR-004` | proposed | Only after selecting another 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
 | `TASK-SOURCE-HTML-MONITOR-PILOT-001` | proposed | Only for sources without RSS/API, after source-specific endpoint/robots/fixture audit. |
+| `TASK-SOURCE-COVERAGE-RUN-REPORT-001` | proposed | Only if actual metadata-only JSONL writes are run; document source, date, output path, row count, and guardrails. |
 | `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |
 
 ## Guardrails
