@@ -11,6 +11,11 @@ config/sources.yaml
 `config/sources.yaml` is now the canonical machine-readable source registry. This Markdown file
 remains the narrative coverage inventory seeded from the BOE index.
 
+The 2026-05-25 official-directory reconciliation mirrored provincial bulletin directory entries
+from BOE/PAG into `config/sources.yaml` as `inventory_only` records. These entries are official
+directory inventory only: they are not RSS/API monitors, candidates, evidence, or validated HTML
+monitors.
+
 The executable registry separates:
 
 ```text
@@ -51,7 +56,7 @@ Source index:
 
 - <https://www.boe.es/legislacion/otros_diarios_oficiales.php>
 
-Last checked: 2026-05-22.
+Last checked: 2026-05-25.
 
 ## Status Values
 

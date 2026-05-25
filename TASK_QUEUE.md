@@ -1,6 +1,6 @@
 # Task Queue
 
-Last updated: 2026-05-24
+Last updated: 2026-05-25
 
 This file was absent at the start of `TASK-SOURCE-REGISTRY-001`. It is now the local task queue
 for source-platform work in this repository.
@@ -24,11 +24,13 @@ for source-platform work in this repository.
 | `TASK-SOURCE-RSS-MONITOR-003` | implemented locally | BOIB, BOC_CANTABRIA, and DOE RSS feeds added as validated metadata-only discovery sources; DOGC and BON were checked but not added. |
 | `TASK-SOURCE-COVERAGE-V1.2-SNAPSHOT-001` | implemented locally | Coverage v1.2 snapshot added after RSS-003; current coverage is six RSS/Atom sources, one API discovery source, and no candidate/evidence expansion. |
 | `TASK-DEV-CLI-ENTRYPOINT-CONSISTENCY-001` | implemented locally | Source-tree CLI validation now works through `python -m official_sources.cli`; docs explain stale console script handling and editable reinstall. |
+| `TASK-SOURCE-OFFICIAL-DIRECTORY-001` | implemented locally | Reconciled `config/sources.yaml` against BOE/PAG official bulletin directories and added 43 provincial bulletin entries as `inventory_only` only. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
+| `TASK-SOURCE-PROVINCIAL-URL-DIFF-AUDIT-001` | proposed | Compare BOE and PAG provincial URLs source by source; documentation-only unless a URL correction is verified. |
 | `TASK-SOURCE-RSS-MONITOR-004` | proposed | Only after selecting another 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
 | `TASK-SOURCE-HTML-MONITOR-PILOT-001` | proposed | Only for sources without RSS/API, after source-specific endpoint/robots/fixture audit. |
 | `TASK-SOURCE-COVERAGE-RUN-REPORT-001` | proposed | Only if actual metadata-only JSONL writes are run; document source, date, output path, row count, and guardrails. |

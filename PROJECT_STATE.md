@@ -1,8 +1,44 @@
 # Project State
 
-Last updated: 2026-05-24
+Last updated: 2026-05-25
 
 ## Current Decision
+
+`TASK-SOURCE-OFFICIAL-DIRECTORY-001` is implemented locally.
+
+The executable registry has been reconciled against the official BOE/PAG bulletin directory pages.
+The task added provincial bulletin entries as inventory/control-plane records only:
+
+```text
+docs/reports/official-directory-registry-reconciliation-2026-05-24.md
+```
+
+Current executable registry counts:
+
+```text
+total sources: 65
+estatal: 2
+european: 1
+autonómica: 19
+provincial: 43
+metadata_adapter_validated: 9
+monitor_validated: 3
+inventory_only: 52
+paused: 1
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
+```
+
+Provincial bulletin entries are official directory inventory only. They are not RSS/API monitors,
+not candidates, not evidence, and not validated HTML monitors. The task did not create
+source_candidates, evidence-grade records, PDFs, artifacts, downstream writes, backfills,
+RSS/API writes, broad monitor runs, VPS operations, production DB operations, or LLM classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-DEV-CLI-ENTRYPOINT-CONSISTENCY-001
+```
 
 `TASK-DEV-CLI-ENTRYPOINT-CONSISTENCY-001` is implemented locally.
 

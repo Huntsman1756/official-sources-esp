@@ -176,9 +176,9 @@ def test_mcp_source_coverage_list_returns_registered_sources():
     result = tools.list_sources()
 
     assert result["resource_type"] == "source_coverage"
-    assert result["count"] == 22
+    assert result["count"] == 65
     source_codes = {source["source_code"] for source in result["sources"]}
-    assert {"BOE", "BOCYL", "DOUE"}.issubset(source_codes)
+    assert {"BOE", "BOCYL", "DOUE", "BOP_A_CORUNA", "BOP_ZARAGOZA"}.issubset(source_codes)
     bocyl = next(source for source in result["sources"] if source["source_code"] == "BOCYL")
     assert bocyl == {
         "source_code": "BOCYL",

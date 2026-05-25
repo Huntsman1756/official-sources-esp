@@ -26,6 +26,7 @@ def test_load_source_registry_validates_required_initial_coverage():
         "BOA",
     } <= source_codes
     assert {"BOPA", "BOIB", "BOCCE", "BOME"} <= source_codes
+    assert {"BOP_A_CORUNA", "BOP_ZARAGOZA"} <= source_codes
     assert len(source_codes) == len(registry["sources"])
 
 

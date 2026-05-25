@@ -504,3 +504,992 @@ sources:
       - Access method not validated yet.
       - Prior audit notes suggest deferring implementation.
     notes: Registry entry only.
+
+  - source_code: BOP_A_CORUNA
+    name: Boletin Oficial de la Provincia de A Coruna
+    jurisdiction: ES-C
+    jurisdiction_level: provincial
+    official_landing_url: https://bop.dacoruna.gal/bopportal/
+    access_methods:
+      - type: html
+        url: https://bop.dacoruna.gal/bopportal/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for A Coruna.
+
+  - source_code: BOP_ALBACETE
+    name: Boletin Oficial de la Provincia de Albacete
+    jurisdiction: ES-AB
+    jurisdiction_level: provincial
+    official_landing_url: http://www.dipualba.es/WebBop/
+    access_methods:
+      - type: html
+        url: http://www.dipualba.es/WebBop/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Albacete.
+
+  - source_code: BOP_ALICANTE
+    name: Boletin Oficial de la Provincia de Alicante
+    jurisdiction: ES-A
+    jurisdiction_level: provincial
+    official_landing_url: http://sede.diputacionalicante.es/consultas-bop/
+    access_methods:
+      - type: html
+        url: http://sede.diputacionalicante.es/consultas-bop/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Alicante.
+
+  - source_code: BOP_ALMERIA
+    name: Boletin Oficial de la Provincia de Almeria
+    jurisdiction: ES-AL
+    jurisdiction_level: provincial
+    official_landing_url: http://www.dipalme.org/Servicios/cmsdipro/index.nsf/bop_view.xsp?p=dipalme
+    access_methods:
+      - type: html
+        url: http://www.dipalme.org/Servicios/cmsdipro/index.nsf/bop_view.xsp?p=dipalme
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Almeria.
+
+  - source_code: BOP_ARABA_ALAVA
+    name: Boletin Oficial del Territorio Historico de Araba/Alava
+    jurisdiction: ES-VI
+    jurisdiction_level: provincial
+    official_landing_url: http://www.araba.eus/botha/Inicio/SGBO5001.aspx
+    access_methods:
+      - type: html
+        url: http://www.araba.eus/botha/Inicio/SGBO5001.aspx
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Araba/Alava.
+
+  - source_code: BOP_AVILA
+    name: Boletin Oficial de la Provincia de Avila
+    jurisdiction: ES-AV
+    jurisdiction_level: provincial
+    official_landing_url: https://www.diputacionavila.es/boletin-oficial/
+    access_methods:
+      - type: html
+        url: https://www.diputacionavila.es/boletin-oficial/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Avila.
+
+  - source_code: BOP_BADAJOZ
+    name: Boletin Oficial de la Provincia de Badajoz
+    jurisdiction: ES-BA
+    jurisdiction_level: provincial
+    official_landing_url: http://www.dip-badajoz.es/bop/
+    access_methods:
+      - type: html
+        url: http://www.dip-badajoz.es/bop/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Badajoz.
+
+  - source_code: BOP_BARCELONA
+    name: Boletin Oficial de la Provincia de Barcelona
+    jurisdiction: ES-B
+    jurisdiction_level: provincial
+    official_landing_url: http://bop.diba.cat
+    access_methods:
+      - type: html
+        url: http://bop.diba.cat
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Barcelona.
+
+  - source_code: BOP_BIZKAIA
+    name: Boletin Oficial de Bizkaia
+    jurisdiction: ES-BI
+    jurisdiction_level: provincial
+    official_landing_url: http://apps.bizkaia.eus/BT00/
+    access_methods:
+      - type: html
+        url: http://apps.bizkaia.eus/BT00/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Bizkaia.
+
+  - source_code: BOP_BURGOS
+    name: Boletin Oficial de la Provincia de Burgos
+    jurisdiction: ES-BU
+    jurisdiction_level: provincial
+    official_landing_url: http://bopbur.diputaciondeburgos.es/
+    access_methods:
+      - type: html
+        url: http://bopbur.diputaciondeburgos.es/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Burgos.
+
+  - source_code: BOP_CACERES
+    name: Boletin Oficial de la Provincia de Caceres
+    jurisdiction: ES-CC
+    jurisdiction_level: provincial
+    official_landing_url: https://bop.dip-caceres.es/bop/index.html
+    access_methods:
+      - type: html
+        url: https://bop.dip-caceres.es/bop/index.html
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Caceres.
+
+  - source_code: BOP_CADIZ
+    name: Boletin Oficial de la Provincia de Cadiz
+    jurisdiction: ES-CA
+    jurisdiction_level: provincial
+    official_landing_url: http://www.bopcadiz.org
+    access_methods:
+      - type: html
+        url: http://www.bopcadiz.org
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Cadiz.
+
+  - source_code: BOP_CASTELLON
+    name: Boletin Oficial de la Provincia de Castellon
+    jurisdiction: ES-CS
+    jurisdiction_level: provincial
+    official_landing_url: http://bop.dipcas.es/PortalBOP/boletin.do
+    access_methods:
+      - type: html
+        url: http://bop.dipcas.es/PortalBOP/boletin.do
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Castellon.
+
+  - source_code: BOP_CIUDAD_REAL
+    name: Boletin Oficial de la Provincia de Ciudad Real
+    jurisdiction: ES-CR
+    jurisdiction_level: provincial
+    official_landing_url: https://bop.dipucr.es/
+    access_methods:
+      - type: html
+        url: https://bop.dipucr.es/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Ciudad Real.
+
+  - source_code: BOP_CORDOBA
+    name: Boletin Oficial de la Provincia de Cordoba
+    jurisdiction: ES-CO
+    jurisdiction_level: provincial
+    official_landing_url: https://bop.dipucordoba.es/
+    access_methods:
+      - type: html
+        url: https://bop.dipucordoba.es/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Cordoba.
+
+  - source_code: BOP_CUENCA
+    name: Boletin Oficial de la Provincia de Cuenca
+    jurisdiction: ES-CU
+    jurisdiction_level: provincial
+    official_landing_url: https://www.dipucuenca.es/boletin-oficial-de-la-provincia
+    access_methods:
+      - type: html
+        url: https://www.dipucuenca.es/boletin-oficial-de-la-provincia
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Cuenca.
+
+  - source_code: BOP_GIPUZKOA
+    name: Boletin Oficial de Gipuzkoa
+    jurisdiction: ES-SS
+    jurisdiction_level: provincial
+    official_landing_url: https://egoitza.gipuzkoa.eus/es/bog
+    access_methods:
+      - type: html
+        url: https://egoitza.gipuzkoa.eus/es/bog
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Gipuzkoa.
+
+  - source_code: BOP_GIRONA
+    name: Boletin Oficial de la Provincia de Girona
+    jurisdiction: ES-GI
+    jurisdiction_level: provincial
+    official_landing_url: http://www.ddgi.cat/
+    access_methods:
+      - type: html
+        url: http://www.ddgi.cat/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Girona.
+
+  - source_code: BOP_GRANADA
+    name: Boletin Oficial de la Provincia de Granada
+    jurisdiction: ES-GR
+    jurisdiction_level: provincial
+    official_landing_url: https://www.dipgra.es/bop/
+    access_methods:
+      - type: html
+        url: https://www.dipgra.es/bop/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Granada.
+
+  - source_code: BOP_GUADALAJARA
+    name: Boletin Oficial de la Provincia de Guadalajara
+    jurisdiction: ES-GU
+    jurisdiction_level: provincial
+    official_landing_url: http://boletin.dguadalajara.es/
+    access_methods:
+      - type: html
+        url: http://boletin.dguadalajara.es/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Guadalajara.
+
+  - source_code: BOP_HUELVA
+    name: Boletin Oficial de la Provincia de Huelva
+    jurisdiction: ES-H
+    jurisdiction_level: provincial
+    official_landing_url: https://sede.diphuelva.es/servicios/bop
+    access_methods:
+      - type: html
+        url: https://sede.diphuelva.es/servicios/bop
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Huelva.
+
+  - source_code: BOP_HUESCA
+    name: Boletin Oficial de la Provincia de Huesca
+    jurisdiction: ES-HU
+    jurisdiction_level: provincial
+    official_landing_url: http://bop.dphuesca.es/
+    access_methods:
+      - type: html
+        url: http://bop.dphuesca.es/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Huesca.
+
+  - source_code: BOP_JAEN
+    name: Boletin Oficial de la Provincia de Jaen
+    jurisdiction: ES-J
+    jurisdiction_level: provincial
+    official_landing_url: http://bop.dipujaen.es/
+    access_methods:
+      - type: html
+        url: http://bop.dipujaen.es/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Jaen.
+
+  - source_code: BOP_LAS_PALMAS
+    name: Boletin Oficial de la Provincia de Las Palmas
+    jurisdiction: ES-GC
+    jurisdiction_level: provincial
+    official_landing_url: http://www.boplaspalmas.com
+    access_methods:
+      - type: html
+        url: http://www.boplaspalmas.com
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Las Palmas.
+
+  - source_code: BOP_LEON
+    name: Boletin Oficial de la Provincia de Leon
+    jurisdiction: ES-LE
+    jurisdiction_level: provincial
+    official_landing_url: https://bop.dipuleon.es/
+    access_methods:
+      - type: html
+        url: https://bop.dipuleon.es/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Leon.
+
+  - source_code: BOP_LLEIDA
+    name: Boletin Oficial de la Provincia de Lleida
+    jurisdiction: ES-L
+    jurisdiction_level: provincial
+    official_landing_url: https://ebop.diputaciolleida.cat/bop/
+    access_methods:
+      - type: html
+        url: https://ebop.diputaciolleida.cat/bop/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Lleida.
+
+  - source_code: BOP_LUGO
+    name: Boletin Oficial da Provincia de Lugo
+    jurisdiction: ES-LU
+    jurisdiction_level: provincial
+    official_landing_url: http://www.deputacionlugo.gal/boletin-oficial-da-provincia-de-lugo
+    access_methods:
+      - type: html
+        url: http://www.deputacionlugo.gal/boletin-oficial-da-provincia-de-lugo
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Lugo.
+
+  - source_code: BOP_MALAGA
+    name: Boletin Oficial de la Provincia de Malaga
+    jurisdiction: ES-MA
+    jurisdiction_level: provincial
+    official_landing_url: http://www.bopmalaga.es/
+    access_methods:
+      - type: html
+        url: http://www.bopmalaga.es/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Malaga.
+
+  - source_code: BOP_OURENSE
+    name: Boletin Oficial da Provincia de Ourense
+    jurisdiction: ES-OR
+    jurisdiction_level: provincial
+    official_landing_url: https://bop.depourense.es/portal/
+    access_methods:
+      - type: html
+        url: https://bop.depourense.es/portal/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Ourense.
+
+  - source_code: BOP_PALENCIA
+    name: Boletin Oficial de la Provincia de Palencia
+    jurisdiction: ES-P
+    jurisdiction_level: provincial
+    official_landing_url: https://www.diputaciondepalencia.es/servicios/boletin-oficial-provincia
+    access_methods:
+      - type: html
+        url: https://www.diputaciondepalencia.es/servicios/boletin-oficial-provincia
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Palencia.
+
+  - source_code: BOP_PONTEVEDRA
+    name: Boletin Oficial de la Provincia de Pontevedra
+    jurisdiction: ES-PO
+    jurisdiction_level: provincial
+    official_landing_url: https://boppo.depo.gal/es
+    access_methods:
+      - type: html
+        url: https://boppo.depo.gal/es
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Pontevedra.
+
+  - source_code: BOP_SALAMANCA
+    name: Boletin Oficial de la Provincia de Salamanca
+    jurisdiction: ES-SA
+    jurisdiction_level: provincial
+    official_landing_url: https://sede.diputaciondesalamanca.gob.es/BOP/
+    access_methods:
+      - type: html
+        url: https://sede.diputaciondesalamanca.gob.es/BOP/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Salamanca.
+
+  - source_code: BOP_SANTA_CRUZ_TENERIFE
+    name: Boletin Oficial de la Provincia de Santa Cruz de Tenerife
+    jurisdiction: ES-TF
+    jurisdiction_level: provincial
+    official_landing_url: http://www.bopsantacruzdetenerife.es/
+    access_methods:
+      - type: html
+        url: http://www.bopsantacruzdetenerife.es/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Santa Cruz de Tenerife.
+
+  - source_code: BOP_SEGOVIA
+    name: Boletin Oficial de la Provincia de Segovia
+    jurisdiction: ES-SG
+    jurisdiction_level: provincial
+    official_landing_url: http://www.dipsegovia.es/bop
+    access_methods:
+      - type: html
+        url: http://www.dipsegovia.es/bop
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Segovia.
+
+  - source_code: BOP_SEVILLA
+    name: Boletin Oficial de la Provincia de Sevilla
+    jurisdiction: ES-SE
+    jurisdiction_level: provincial
+    official_landing_url: http://www.dipusevilla.es/bop/
+    access_methods:
+      - type: html
+        url: http://www.dipusevilla.es/bop/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Sevilla.
+
+  - source_code: BOP_SORIA
+    name: Boletin Oficial de la Provincia de Soria
+    jurisdiction: ES-SO
+    jurisdiction_level: provincial
+    official_landing_url: http://bop.dipsoria.es/
+    access_methods:
+      - type: html
+        url: http://bop.dipsoria.es/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Soria.
+
+  - source_code: BOP_TARRAGONA
+    name: Butlleti Oficial de la Provincia de Tarragona
+    jurisdiction: ES-T
+    jurisdiction_level: provincial
+    official_landing_url: http://www.diputaciodetarragona.cat/ebop/
+    access_methods:
+      - type: html
+        url: http://www.diputaciodetarragona.cat/ebop/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Tarragona.
+
+  - source_code: BOP_TERUEL
+    name: Boletin Oficial de la Provincia de Teruel
+    jurisdiction: ES-TE
+    jurisdiction_level: provincial
+    official_landing_url: http://www.dpteruel.es/boletines.htm
+    access_methods:
+      - type: html
+        url: http://www.dpteruel.es/boletines.htm
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Teruel.
+
+  - source_code: BOP_TOLEDO
+    name: Boletin Oficial de la Provincia de Toledo
+    jurisdiction: ES-TO
+    jurisdiction_level: provincial
+    official_landing_url: http://bop.diputoledo.es/webEbop/inicio.jsp
+    access_methods:
+      - type: html
+        url: http://bop.diputoledo.es/webEbop/inicio.jsp
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Toledo.
+
+  - source_code: BOP_VALENCIA
+    name: Boletin Oficial de la Provincia de Valencia
+    jurisdiction: ES-V
+    jurisdiction_level: provincial
+    official_landing_url: https://bop.dival.es/bop/drvisapi.dll
+    access_methods:
+      - type: html
+        url: https://bop.dival.es/bop/drvisapi.dll
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Valencia.
+
+  - source_code: BOP_VALLADOLID
+    name: Boletin Oficial de la Provincia de Valladolid
+    jurisdiction: ES-VA
+    jurisdiction_level: provincial
+    official_landing_url: https://bop.sede.diputaciondevalladolid.es/
+    access_methods:
+      - type: html
+        url: https://bop.sede.diputaciondevalladolid.es/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Valladolid.
+
+  - source_code: BOP_ZAMORA
+    name: Boletin Oficial de la Provincia de Zamora
+    jurisdiction: ES-ZA
+    jurisdiction_level: provincial
+    official_landing_url: https://www.diputaciondezamora.es/opencms/servicios/BOP/bop/index.html
+    access_methods:
+      - type: html
+        url: https://www.diputaciondezamora.es/opencms/servicios/BOP/bop/index.html
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Zamora.
+
+  - source_code: BOP_ZARAGOZA
+    name: Boletin Oficial de la Provincia de Zaragoza
+    jurisdiction: ES-Z
+    jurisdiction_level: provincial
+    official_landing_url: http://bop.dpz.es/BOPZ/
+    access_methods:
+      - type: html
+        url: http://bop.dpz.es/BOPZ/
+        status: inventory
+        notes: Official directory landing URL; not validated for monitoring.
+    operational_status: inventory_only
+    mcp_support: false
+    monitor_support: none
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-05-25"
+    limitations:
+      - Provincial bulletin inventory only; access method not validated for monitoring.
+      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+    notes: Official provincial bulletin inventory entry for Zaragoza.

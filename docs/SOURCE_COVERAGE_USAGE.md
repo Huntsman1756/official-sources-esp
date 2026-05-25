@@ -17,7 +17,8 @@ config/sources.yaml
 Current source counts:
 
 ```text
-registered sources: 22
+registered sources: 65
+provincial inventory-only sources: 43
 RSS/Atom discovery sources: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
 API discovery sources: BOPV
 candidate_creation_allowed=true: 0
