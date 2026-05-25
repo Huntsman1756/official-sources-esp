@@ -159,6 +159,13 @@ def preview_discovery(
     )
 
 
+def recommend_next_sources(*, limit: int = 5, output_root=None) -> dict:
+    return source_coverage.recommend_next_sources(
+        limit=limit,
+        output_root=output_root,
+    )
+
+
 def boe_consolidated_law_get(
     repository: OfficialSourcesRepository,
     *,

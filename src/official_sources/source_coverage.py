@@ -291,6 +291,56 @@ def preview_discovery(
     }
 
 
+def recommend_next_sources(
+    *,
+    limit: int = 5,
+    output_root: Path | None = None,
+) -> dict:
+    if limit < 1 or limit > 20:
+        return {
+            "status": "invalid_request",
+            "message": "limit must be between 1 and 20",
+        }
+
+    rss_root = output_root or DEFAULT_RSS_DISCOVERY_ROOT
+    api_root = output_root or DEFAULT_API_DISCOVERY_ROOT
+    html_root = output_root or DEFAULT_HTML_DISCOVERY_ROOT
+    candidates = [
+        _build_provincial_html_recommendation(
+            source,
+            rss_root=rss_root,
+            api_root=api_root,
+            html_root=html_root,
+        )
+        for source in registry_list_sources()
+        if _is_provincial_html_pilot_candidate(source)
+    ]
+    recommendations = sorted(candidates, key=lambda item: item["source_code"])[:limit]
+    return {
+        "status": "ok",
+        "resource_type": "source_recommendations",
+        "strategy": "provincial_html_discovery_pilot",
+        "count": len(recommendations),
+        "recommendations": recommendations,
+        "rules": [
+            "deterministic registry scan",
+            "provincial inventory_only sources only",
+            "no monitor execution",
+            "no writes",
+            "no candidates",
+            "no evidence-grade records",
+        ],
+        "safety": {
+            "creates_candidates": False,
+            "creates_evidence_grade": False,
+            "writes_jsonl": False,
+            "runs_previews": False,
+            "downloads_files": False,
+            "touches_downstream": False,
+        },
+    }
+
+
 def _source_safety(source: dict[str, Any]) -> dict:
     return {
         "candidate_creation_allowed": source["candidate_creation_allowed"],
@@ -301,6 +351,59 @@ def _source_safety(source: dict[str, Any]) -> dict:
         "api_discovery_is_candidate": False,
         "html_discovery_is_evidence": False,
         "html_discovery_is_candidate": False,
+    }
+
+
+def _is_provincial_html_pilot_candidate(source: dict[str, Any]) -> bool:
+    return (
+        source["jurisdiction_level"] == "provincial"
+        and source["operational_status"] == "inventory_only"
+        and source["monitor_support"] == "none"
+        and source["candidate_creation_allowed"] is False
+        and source["evidence_grade_allowed"] is False
+        and bool(str(source.get("official_landing_url", "")).strip())
+    )
+
+
+def _build_provincial_html_recommendation(
+    source: dict[str, Any],
+    *,
+    rss_root: Path,
+    api_root: Path,
+    html_root: Path,
+) -> dict:
+    source_code = source["source_code"]
+    latest_cache_date = _resolve_discovery_date(rss_root, api_root, html_root, source_code, None)
+    return {
+        "source_code": source_code,
+        "name": source["name"],
+        "jurisdiction_level": source["jurisdiction_level"],
+        "operational_status": source["operational_status"],
+        "monitor_support": source["monitor_support"],
+        "official_landing_url": source["official_landing_url"],
+        "recommended_task": "provincial_html_discovery_pilot",
+        "confidence": "medium",
+        "reason": (
+            "Provincial inventory_only source with official landing URL and no validated "
+            "monitor; suitable for one-source HTML discovery verification."
+        ),
+        "constraints": [
+            "metadata-only",
+            "preview first",
+            "no PDFs",
+            "no candidates",
+            "no evidence-grade",
+            "no downstream writes",
+            "one source only",
+        ],
+        "limitations": source.get("limitations", []),
+        "discovery_cache_status": (
+            "has_discovery_cache" if latest_cache_date is not None else "no_discovery_cache"
+        ),
+        "latest_cache_date": latest_cache_date,
+        "implemented_preview_available": bool(_implemented_preview_types(source)),
+        "candidate_creation_allowed": source["candidate_creation_allowed"],
+        "evidence_grade_allowed": source["evidence_grade_allowed"],
     }
 
 

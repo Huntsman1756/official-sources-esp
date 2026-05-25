@@ -55,6 +55,7 @@ def test_mcp_tool_names_use_compatible_snake_case_names():
         "list_monitorable_sources",
         "list_latest_discovery_entries",
         "preview_discovery",
+        "recommend_next_sources",
         "boe_consolidated_law_get",
         "boe_consolidated_law_text_get",
         "boe_consolidated_law_index_get",
@@ -704,6 +705,90 @@ def test_mcp_preview_discovery_never_calls_write_paths(monkeypatch):
 
     assert result["status"] == "ok"
     assert result["output_written"] is False
+
+
+def test_mcp_recommend_next_sources_returns_deterministic_provincial_inventory_sources(tmp_path):
+    result = tools.recommend_next_sources(limit=3, output_root=tmp_path)
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "source_recommendations"
+    assert result["strategy"] == "provincial_html_discovery_pilot"
+    assert result["count"] == 3
+    assert [item["source_code"] for item in result["recommendations"]] == [
+        "BOP_ALBACETE",
+        "BOP_ALICANTE",
+        "BOP_ALMERIA",
+    ]
+    first = result["recommendations"][0]
+    assert first["recommended_task"] == "provincial_html_discovery_pilot"
+    assert first["confidence"] == "medium"
+    assert first["operational_status"] == "inventory_only"
+    assert first["monitor_support"] == "none"
+    assert first["discovery_cache_status"] == "no_discovery_cache"
+    assert first["latest_cache_date"] is None
+    assert first["implemented_preview_available"] is False
+    assert first["candidate_creation_allowed"] is False
+    assert first["evidence_grade_allowed"] is False
+    assert "metadata-only" in first["constraints"]
+    assert "no candidates" in first["constraints"]
+
+
+def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_path):
+    result = tools.recommend_next_sources(limit=20, output_root=tmp_path)
+
+    source_codes = {item["source_code"] for item in result["recommendations"]}
+    assert "BOP_A_CORUNA" not in source_codes
+    assert all(
+        item["operational_status"] == "inventory_only" for item in result["recommendations"]
+    )
+
+
+def test_mcp_recommend_next_sources_surfaces_existing_cache_without_reading_live(tmp_path):
+    output_path = tmp_path / "BOP_ALBACETE" / "2026-05-24" / "html_discovery.jsonl"
+    output_path.parent.mkdir(parents=True)
+    output_path.write_text(
+        json.dumps(
+            {
+                "source_code": "BOP_ALBACETE",
+                "candidate_status": "not_candidate",
+                "evidence_status": "not_evidence",
+                "classification_status": "unclassified",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = tools.recommend_next_sources(limit=1, output_root=tmp_path)
+
+    assert result["recommendations"][0]["source_code"] == "BOP_ALBACETE"
+    assert result["recommendations"][0]["discovery_cache_status"] == "has_discovery_cache"
+    assert result["recommendations"][0]["latest_cache_date"] == "2026-05-24"
+
+
+def test_mcp_recommend_next_sources_refuses_invalid_limit():
+    result = tools.recommend_next_sources(limit=0)
+
+    assert result == {
+        "status": "invalid_request",
+        "message": "limit must be between 1 and 20",
+    }
+
+
+def test_mcp_recommend_next_sources_does_not_execute_previews_or_write(tmp_path, monkeypatch):
+    def fail_preview(*_args, **_kwargs):
+        raise AssertionError("recommend_next_sources must not run discovery previews")
+
+    monkeypatch.setattr(source_coverage, "monitor_source_feed", fail_preview)
+    monkeypatch.setattr(source_coverage, "monitor_api_source", fail_preview)
+    monkeypatch.setattr(source_coverage, "monitor_html_source", fail_preview)
+
+    result = tools.recommend_next_sources(limit=2, output_root=tmp_path)
+
+    assert result["status"] == "ok"
+    assert result["count"] == 2
+    assert not list(tmp_path.rglob("*.jsonl"))
 
 
 def test_mcp_latest_discovery_entries_unknown_source_returns_safe_error(tmp_path):

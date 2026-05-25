@@ -26,6 +26,7 @@ MCP_TOOL_NAMES = (
     "list_monitorable_sources",
     "list_latest_discovery_entries",
     "preview_discovery",
+    "recommend_next_sources",
     "boe_consolidated_law_get",
     "boe_consolidated_law_text_get",
     "boe_consolidated_law_citation_build",
@@ -144,6 +145,11 @@ def create_server(repository: OfficialSourcesRepository | None = None):
             limit=limit,
             discovery_type=discovery_type,
         )
+
+    @mcp.tool
+    def recommend_next_sources(limit: int = 5) -> dict:
+        """Recommend next source work deterministically without running monitors or writes."""
+        return tools.recommend_next_sources(limit=limit)
 
     @mcp.tool
     def boe_consolidated_law_get(official_identifier: str) -> dict:

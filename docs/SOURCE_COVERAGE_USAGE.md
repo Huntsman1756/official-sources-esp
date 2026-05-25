@@ -197,6 +197,7 @@ get_source_status
 list_monitorable_sources
 list_latest_discovery_entries
 preview_discovery
+recommend_next_sources
 ```
 
 ### list_sources
@@ -322,6 +323,43 @@ implemented validated monitor, and `limit > 10`. It may fetch one declared endpo
 it does not write JSONL, create files, create candidates, create evidence-grade records, download
 PDFs/artifacts, mutate registry state, run backfills, or touch downstream repositories.
 
+### recommend_next_sources
+
+Input:
+
+```json
+{
+  "limit": 5
+}
+```
+
+Returns deterministic recommendations for the next source work. The current strategy is:
+
+```text
+provincial_html_discovery_pilot
+```
+
+The tool scans the registry and recommends provincial `inventory_only` sources with official landing
+URLs and no validated monitor yet. It excludes already monitored sources such as `BOP_A_CORUNA`.
+
+Each recommendation includes:
+
+```text
+source_code
+recommended_task
+confidence
+reason
+constraints
+discovery_cache_status
+latest_cache_date
+candidate_creation_allowed
+evidence_grade_allowed
+```
+
+This tool is deterministic and does not use LLM classification. It does not execute previews, fetch
+live sources, write JSONL, create files, create candidates, create evidence-grade records, download
+PDFs/artifacts, run backfills, mutate registry state, or touch downstream repositories.
+
 ## Safety Boundaries
 
 The coverage surface must preserve these boundaries:
@@ -329,6 +367,7 @@ The coverage surface must preserve these boundaries:
 - RSS/API/HTML discovery is metadata-only.
 - MCP cache readback is read-only.
 - MCP `preview_discovery` may fetch one explicit source in preview mode only.
+- MCP `recommend_next_sources` is deterministic and does not execute previews or live fetches.
 - MCP does not write JSONL.
 - MCP does not create files.
 - `--write` is explicit for CLI monitor output.

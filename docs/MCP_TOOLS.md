@@ -198,6 +198,46 @@ for preview, but it does not write JSONL, create files, create candidates, creat
 records, download PDFs/artifacts, run backfills, mutate `config/sources.yaml`, or touch downstream
 repositories.
 
+### recommend_next_sources
+
+Inputs:
+
+- `limit`: integer, default `5`, maximum `20`.
+
+Output: deterministic source-work recommendations based on the executable registry and existing
+discovery cache directories. The current strategy is:
+
+```text
+provincial_html_discovery_pilot
+```
+
+The tool recommends provincial `inventory_only` sources with official landing URLs and no validated
+monitor yet. Already monitored sources such as `BOP_A_CORUNA` are excluded. Each recommendation
+includes:
+
+```text
+source_code
+name
+jurisdiction_level
+operational_status
+monitor_support
+official_landing_url
+recommended_task
+confidence
+reason
+constraints
+limitations
+discovery_cache_status
+latest_cache_date
+implemented_preview_available
+candidate_creation_allowed
+evidence_grade_allowed
+```
+
+This is not an LLM tool. It does not execute previews, fetch live sources, write JSONL, create
+files, create candidates, create evidence-grade records, download PDFs/artifacts, run backfills,
+mutate the registry, or touch downstream repositories.
+
 ### boe_consolidated_law_get
 
 Inputs:

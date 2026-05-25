@@ -4,6 +4,41 @@ Last updated: 2026-05-25
 
 ## Current Decision
 
+`TASK-MCP-COVERAGE-RECOMMENDATIONS-001` is implemented locally.
+
+The MCP now exposes a deterministic next-source recommendation tool:
+
+```text
+recommend_next_sources(limit=5)
+```
+
+Current strategy:
+
+```text
+provincial_html_discovery_pilot
+```
+
+The tool recommends provincial `inventory_only` sources with official landing URLs and no validated
+monitor yet. It excludes already monitored sources such as `BOP_A_CORUNA`, reads existing discovery
+cache directory state when present, and returns constraints for metadata-only follow-up work.
+
+This is not an LLM tool and it does not execute previews, fetch live sources, write JSONL, create
+files, create candidates, create evidence-grade records, download PDFs/artifacts, mutate
+`config/sources.yaml`, touch downstream repos, run backfills, run VPS/prod DB operations, or add LLM
+classification.
+
+Report:
+
+```text
+docs/reports/mcp-coverage-recommendations-2026-05-24.md
+```
+
+Previous completed source-platform task:
+
+```text
+TASK-MCP-DISCOVERY-PREVIEW-001
+```
+
 `TASK-MCP-DISCOVERY-PREVIEW-001` is implemented locally.
 
 The MCP now exposes a controlled one-source discovery preview tool:

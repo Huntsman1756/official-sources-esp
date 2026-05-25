@@ -16,6 +16,7 @@ API discovery: BOPV
 HTML discovery: BOP_A_CORUNA
 MCP read-only coverage and discovery readers
 MCP controlled one-source discovery preview
+MCP deterministic next-source recommendations
 ```
 
 The operating rule is simple: discovery runs must remain bounded, cache-first, and metadata-only.
@@ -321,6 +322,32 @@ MCP preview rules:
 
 The MCP preview tool may fetch one declared source endpoint to produce metadata-only records. It is
 not a scheduler, not an all-source runner, and not a write path.
+
+## MCP Recommendations
+
+The MCP may recommend next source work through:
+
+```text
+recommend_next_sources
+```
+
+Recommendation rules:
+
+- deterministic registry scan only;
+- current strategy is `provincial_html_discovery_pilot`;
+- recommends provincial `inventory_only` sources with official landing URLs;
+- excludes already monitored sources;
+- reads existing discovery cache directory names if present;
+- does not execute previews;
+- does not fetch live sources;
+- does not write JSONL;
+- does not create candidates or evidence-grade records;
+- does not download PDFs or artifacts;
+- does not mutate registry state;
+- does not touch downstream repositories.
+
+Recommendations are planning signals only. A human-reviewed implementation task is still required
+before adding or validating a new monitor.
 
 ## Failure Handling
 
