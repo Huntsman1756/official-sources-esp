@@ -23,6 +23,7 @@ for source-platform work in this repository.
 | `TASK-SOURCE-COVERAGE-SCHEDULE-001` | implemented locally | Controlled discovery run plan added; one source at a time, preview by default, explicit write only, report template included. |
 | `TASK-SOURCE-RSS-MONITOR-003` | implemented locally | BOIB, BOC_CANTABRIA, and DOE RSS feeds added as validated metadata-only discovery sources; DOGC and BON were checked but not added. |
 | `TASK-SOURCE-COVERAGE-V1.2-SNAPSHOT-001` | implemented locally | Coverage v1.2 snapshot added after RSS-003; current coverage is six RSS/Atom sources, one API discovery source, and no candidate/evidence expansion. |
+| `TASK-DEV-CLI-ENTRYPOINT-CONSISTENCY-001` | implemented locally | Source-tree CLI validation now works through `python -m official_sources.cli`; docs explain stale console script handling and editable reinstall. |
 
 ## Next
 

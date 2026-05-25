@@ -76,6 +76,19 @@ The package exposes an operational CLI:
 official-sources --db-path official-sources.sqlite --artifact-dir data/artifacts <command>
 ```
 
+For development validation against the current source tree, especially if an installed
+`official-sources` console script may be stale, use:
+
+```powershell
+$env:PYTHONPATH='src'; python -m official_sources.cli sources status --source BOIB
+```
+
+Refresh the local console script with an editable install from the repository root:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
 Command-line options override environment variables:
 
 - `OFFICIAL_SOURCES_DB`

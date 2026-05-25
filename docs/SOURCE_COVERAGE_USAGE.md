@@ -60,6 +60,33 @@ Use the registry to answer coverage questions such as:
 - whether a source is inventory-only, monitorable, metadata-adapter validated, paused, or deprecated;
 - whether candidate creation or evidence-grade promotion is allowed.
 
+### Source-Tree Validation Entrypoint
+
+If the installed `official-sources` console script is stale, validate coverage against the current
+source tree instead:
+
+```powershell
+$env:PYTHONPATH='src'; python -m official_sources.cli sources list
+$env:PYTHONPATH='src'; python -m official_sources.cli sources status --source BOIB
+$env:PYTHONPATH='src'; python -m official_sources.cli sources status --source BOC_CANTABRIA
+$env:PYTHONPATH='src'; python -m official_sources.cli sources status --source DOE
+```
+
+Expected current source-tree status for the RSS-003 sources:
+
+```text
+BOIB: operational_status=monitor_validated monitor_support=available
+BOC_CANTABRIA: operational_status=monitor_validated monitor_support=available
+DOE: operational_status=monitor_validated monitor_support=available
+```
+
+To refresh the local console script for development, reinstall the project in editable mode from
+the repository root:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
 ## RSS/Atom Discovery CLI
 
 RSS/Atom discovery is metadata-only. It emits discovery records with:
@@ -253,6 +280,9 @@ official-sources rss monitor --source BOC_CANTABRIA --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source DOE --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 ```
+
+If `official-sources` does not reflect the current source tree, use the module entrypoint shown in
+the registry section or refresh the editable install before trusting CLI sanity output.
 
 Run the previews without `--write` unless the task explicitly requires JSONL output.
 

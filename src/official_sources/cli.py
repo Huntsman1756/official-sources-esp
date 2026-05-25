@@ -4549,3 +4549,7 @@ def _compact_token(value: object) -> str:
 def _quote_value(value: object) -> str:
     text = str(value).replace('"', "'")
     return f'"{text}"'
+
+
+if __name__ == "__main__":
+    main()

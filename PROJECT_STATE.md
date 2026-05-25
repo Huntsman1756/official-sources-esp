@@ -4,6 +4,37 @@ Last updated: 2026-05-24
 
 ## Current Decision
 
+`TASK-DEV-CLI-ENTRYPOINT-CONSISTENCY-001` is implemented locally.
+
+The CLI module entrypoint now works for source-tree validation:
+
+```powershell
+$env:PYTHONPATH='src'; python -m official_sources.cli sources status --source BOIB
+```
+
+This is the recommended validation path when the installed global `official-sources` console script
+is stale. To refresh the local console script, run an editable install from the repository root:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+Report:
+
+```text
+docs/reports/cli-entrypoint-consistency-2026-05-24.md
+```
+
+This task did not change monitor behavior, registry values, sources, candidates, evidence-grade
+records, PDFs, artifacts, downstream writes, backfills, RSS/API writes, VPS operations, production
+DB operations, or LLM classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-COVERAGE-V1.2-SNAPSHOT-001
+```
+
 `TASK-SOURCE-COVERAGE-V1.2-SNAPSHOT-001` is implemented locally.
 
 The project now has a Coverage v1.2 snapshot after RSS monitor expansion 003:
@@ -484,6 +515,7 @@ Hard guardrails:
 | `TASK-SOURCE-COVERAGE-SCHEDULE-001` | Implemented locally | `docs/SOURCE_COVERAGE_RUN_PLAN.md`, `docs/reports/source-coverage-schedule-2026-05-24.md` | Defines controlled one-source-at-a-time discovery run plan and report template. |
 | `TASK-SOURCE-RSS-MONITOR-003` | Implemented locally | `config/sources.yaml`, `docs/reports/rss-monitor-003-verified-feeds-2026-05-24.md` | Adds BOIB, BOC_CANTABRIA, and DOE as validated metadata-only RSS discovery sources; DOGC and BON were not added. |
 | `TASK-SOURCE-COVERAGE-V1.2-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-2-snapshot-2026-05-24.md` | Captures the v1.2 coverage baseline after RSS-003, including six RSS/Atom sources and one API discovery source. |
+| `TASK-DEV-CLI-ENTRYPOINT-CONSISTENCY-001` | Implemented locally | `src/official_sources/cli.py`, `docs/reports/cli-entrypoint-consistency-2026-05-24.md` | Makes `python -m official_sources.cli` usable for source-tree validation and documents stale console script handling. |
 
 ## Next Allowed Work
 
