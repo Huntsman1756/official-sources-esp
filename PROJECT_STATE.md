@@ -4,6 +4,42 @@ Last updated: 2026-05-25
 
 ## Current Decision
 
+`TASK-SOURCE-COVERAGE-V1.3-SNAPSHOT-001` is implemented locally.
+
+The project now has a Coverage v1.3 snapshot after official directory reconciliation:
+
+```text
+docs/reports/source-coverage-v1-3-snapshot-2026-05-24.md
+```
+
+Coverage v1.3 summarizes the executable registry after provincial inventory expansion:
+
+```text
+total sources: 65
+estatal: 2
+european: 1
+autonómica: 19
+provincial: 43
+metadata_adapter_validated: 9
+monitor_validated: 3
+inventory_only: 52
+paused: 1
+RSS/Atom discovery sources: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
+API discovery sources: BOPV
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
+```
+
+This snapshot is reporting/control-plane only. It did not add sources, ingestion behavior,
+RSS/API writes, candidates, evidence-grade records, PDFs, artifacts, downstream writes, backfills,
+all-source runs, VPS operations, production DB operations, or LLM classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-OFFICIAL-DIRECTORY-001
+```
+
 `TASK-SOURCE-OFFICIAL-DIRECTORY-001` is implemented locally.
 
 The executable registry has been reconciled against the official BOE/PAG bulletin directory pages.
