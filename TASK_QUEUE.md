@@ -27,6 +27,7 @@ for source-platform work in this repository.
 | `TASK-SOURCE-OFFICIAL-DIRECTORY-001` | implemented locally | Reconciled `config/sources.yaml` against BOE/PAG official bulletin directories and added 43 provincial bulletin entries as `inventory_only` only. |
 | `TASK-SOURCE-COVERAGE-V1.3-SNAPSHOT-001` | implemented locally | Coverage v1.3 snapshot added after official directory reconciliation; current registry has 65 sources, including 43 provincial inventory-only entries. |
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-PILOT-001` | implemented locally | BOP_A_CORUNA HTML discovery pilot added as metadata-only, one-source monitoring; no candidates/evidence/PDFs/artifacts/downstream writes. |
+| `TASK-SOURCE-COVERAGE-V1.4-SNAPSHOT-001` | implemented locally | Coverage v1.4 snapshot added after the BOP_A_CORUNA provincial HTML pilot; current coverage is 6 RSS/Atom, 1 API, and 1 HTML provincial discovery source. |
 
 ## Next
 
