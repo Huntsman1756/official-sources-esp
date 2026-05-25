@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from official_sources.api_monitor import build_api_monitor_output_path
+from official_sources.html_monitor import build_html_monitor_output_path
 from official_sources.rss_monitor import (
     RSSMonitorError,
     build_rss_monitor_output_path,
@@ -23,6 +24,7 @@ from official_sources.source_registry import (
 
 DEFAULT_RSS_DISCOVERY_ROOT = Path(__file__).resolve().parents[2] / "data" / "rss_monitor"
 DEFAULT_API_DISCOVERY_ROOT = Path(__file__).resolve().parents[2] / "data" / "api_monitor"
+DEFAULT_HTML_DISCOVERY_ROOT = Path(__file__).resolve().parents[2] / "data" / "html_monitor"
 
 
 def list_source_coverage() -> dict:
@@ -107,7 +109,14 @@ def list_latest_discovery_entries(
 
     rss_root = output_root or DEFAULT_RSS_DISCOVERY_ROOT
     api_root = output_root or DEFAULT_API_DISCOVERY_ROOT
-    target_date = _resolve_discovery_date(rss_root, api_root, normalized_source_code, date)
+    html_root = output_root or DEFAULT_HTML_DISCOVERY_ROOT
+    target_date = _resolve_discovery_date(
+        rss_root,
+        api_root,
+        html_root,
+        normalized_source_code,
+        date,
+    )
     if target_date is None:
         return {
             "status": "empty",
@@ -116,6 +125,7 @@ def list_latest_discovery_entries(
             "output_paths": {
                 "rss": str(rss_root / normalized_source_code),
                 "api": str(api_root / normalized_source_code),
+                "html": str(html_root / normalized_source_code),
             },
             "entries": [],
             "count": 0,
@@ -125,6 +135,7 @@ def list_latest_discovery_entries(
     output_paths = {
         "rss": build_rss_monitor_output_path(rss_root, normalized_source_code, target_date),
         "api": build_api_monitor_output_path(api_root, normalized_source_code, target_date),
+        "html": build_html_monitor_output_path(html_root, normalized_source_code, target_date),
     }
     existing_output_paths = {
         discovery_type: path for discovery_type, path in output_paths.items() if path.exists()
@@ -183,6 +194,8 @@ def _source_safety(source: dict[str, Any]) -> dict:
         "rss_discovery_is_candidate": False,
         "api_discovery_is_evidence": False,
         "api_discovery_is_candidate": False,
+        "html_discovery_is_evidence": False,
+        "html_discovery_is_candidate": False,
     }
 
 
@@ -206,6 +219,7 @@ def _unknown_source(source_code: str, exc: SourceRegistryError) -> dict:
 def _resolve_discovery_date(
     rss_root: Path,
     api_root: Path,
+    html_root: Path,
     source_code: str,
     value: str | None,
 ) -> str | None:
@@ -216,6 +230,8 @@ def _resolve_discovery_date(
             return value
     candidates = _dated_output_candidates(rss_root, source_code, "rss") + _dated_output_candidates(
         api_root, source_code, "api"
+    ) + _dated_output_candidates(
+        html_root, source_code, "html"
     )
     return sorted(candidates, reverse=True)[0] if candidates else None
 
@@ -242,6 +258,8 @@ def _discovery_output_path(
         return build_rss_monitor_output_path(root, source_code, target_date)
     if discovery_type == "api":
         return build_api_monitor_output_path(root, source_code, target_date)
+    if discovery_type == "html":
+        return build_html_monitor_output_path(root, source_code, target_date)
     raise ValueError(f"Unknown discovery_type: {discovery_type}")
 
 

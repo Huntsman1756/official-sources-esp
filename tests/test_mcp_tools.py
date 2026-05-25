@@ -204,6 +204,8 @@ def test_mcp_source_status_returns_bocyl_and_safety_flags():
         "rss_discovery_is_candidate": False,
         "api_discovery_is_evidence": False,
         "api_discovery_is_candidate": False,
+        "html_discovery_is_evidence": False,
+        "html_discovery_is_candidate": False,
     }
 
 
@@ -337,9 +339,54 @@ def test_mcp_latest_discovery_entries_reads_existing_api_jsonl_for_bopv(tmp_path
     assert result["entries"][0]["classification_status"] == "unclassified"
 
 
-def test_mcp_latest_discovery_entries_reads_rss_and_api_when_both_exist(tmp_path):
+def test_mcp_latest_discovery_entries_reads_existing_html_jsonl_for_bop_a_coruna(tmp_path):
+    output_path = tmp_path / "BOP_A_CORUNA" / "2026-05-25" / "html_discovery.jsonl"
+    output_path.parent.mkdir(parents=True)
+    record = {
+        "source_code": "BOP_A_CORUNA",
+        "page_url": "https://bop.dacoruna.gal/bopportal/cambioBoletin.do?fechaInput=25%2F05%2F2026",
+        "page_format": "html",
+        "entry_id": "717669",
+        "document_id": "2026/3193",
+        "title": "BOP A Coruna HTML entry",
+        "published_at": "2026-05-25",
+        "official_url": "https://bop.dacoruna.gal/bopportal/2026_0000003193.html",
+        "summary": None,
+        "raw_page_hash": "raw-html",
+        "entry_hash": "entry-html",
+        "discovered_at": "2026-05-25T00:00:00Z",
+        "monitor_run_id": "html-run",
+        "classification_status": "unclassified",
+        "evidence_status": "not_evidence",
+        "candidate_status": "not_candidate",
+    }
+    output_path.write_text(json.dumps(record, sort_keys=True) + "\n", encoding="utf-8")
+
+    result = tools.list_latest_discovery_entries(
+        source_code="BOP_A_CORUNA",
+        date="2026-05-25",
+        output_root=tmp_path,
+    )
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "discovery_entries"
+    assert result["discovery_types"] == ["html"]
+    assert result["source_code"] == "BOP_A_CORUNA"
+    assert result["date"] == "2026-05-25"
+    assert result["output_paths"] == {
+        "html": str(output_path),
+    }
+    assert result["count"] == 1
+    assert result["entries"] == [record | {"discovery_type": "html"}]
+    assert result["entries"][0]["candidate_status"] == "not_candidate"
+    assert result["entries"][0]["evidence_status"] == "not_evidence"
+    assert result["entries"][0]["classification_status"] == "unclassified"
+
+
+def test_mcp_latest_discovery_entries_reads_rss_api_and_html_in_deterministic_order(tmp_path):
     rss_path = tmp_path / "BOE" / "2026-05-24" / "rss_discovery.jsonl"
     api_path = tmp_path / "BOE" / "2026-05-24" / "api_discovery.jsonl"
+    html_path = tmp_path / "BOE" / "2026-05-24" / "html_discovery.jsonl"
     rss_path.parent.mkdir(parents=True)
     rss_record = {
         "source_code": "BOE",
@@ -377,8 +424,27 @@ def test_mcp_latest_discovery_entries_reads_rss_and_api_when_both_exist(tmp_path
         "evidence_status": "not_evidence",
         "candidate_status": "not_candidate",
     }
+    html_record = {
+        "source_code": "BOE",
+        "page_url": "https://www.boe.es/html",
+        "page_format": "html",
+        "entry_id": "html-entry",
+        "document_id": "BOE-A-2026-HTML",
+        "title": "HTML entry",
+        "published_at": "2026-05-24T00:00:00Z",
+        "official_url": "https://www.boe.es/html-entry",
+        "summary": "html",
+        "raw_page_hash": "raw-html",
+        "entry_hash": "entry-html",
+        "discovered_at": "2026-05-24T00:00:00Z",
+        "monitor_run_id": "html-run",
+        "classification_status": "unclassified",
+        "evidence_status": "not_evidence",
+        "candidate_status": "not_candidate",
+    }
     rss_path.write_text(json.dumps(rss_record, sort_keys=True) + "\n", encoding="utf-8")
     api_path.write_text(json.dumps(api_record, sort_keys=True) + "\n", encoding="utf-8")
+    html_path.write_text(json.dumps(html_record, sort_keys=True) + "\n", encoding="utf-8")
 
     result = tools.list_latest_discovery_entries(
         source_code="BOE",
@@ -387,14 +453,16 @@ def test_mcp_latest_discovery_entries_reads_rss_and_api_when_both_exist(tmp_path
     )
 
     assert result["status"] == "ok"
-    assert result["discovery_types"] == ["rss", "api"]
+    assert result["discovery_types"] == ["rss", "api", "html"]
     assert result["output_paths"] == {
         "rss": str(rss_path),
         "api": str(api_path),
+        "html": str(html_path),
     }
     assert result["entries"] == [
         rss_record | {"discovery_type": "rss"},
         api_record | {"discovery_type": "api"},
+        html_record | {"discovery_type": "html"},
     ]
 
 
@@ -412,6 +480,7 @@ def test_mcp_latest_discovery_entries_missing_output_returns_empty_safe_result(t
         "output_paths": {
             "rss": str(tmp_path / "BOCYL" / "2026-05-24" / "rss_discovery.jsonl"),
             "api": str(tmp_path / "BOCYL" / "2026-05-24" / "api_discovery.jsonl"),
+            "html": str(tmp_path / "BOCYL" / "2026-05-24" / "html_discovery.jsonl"),
         },
         "entries": [],
         "count": 0,
@@ -443,7 +512,46 @@ def test_mcp_latest_discovery_entries_missing_api_output_returns_empty_without_f
     assert result["output_paths"] == {
         "rss": str(tmp_path / "BOPV" / "2026-05-24" / "rss_discovery.jsonl"),
         "api": str(tmp_path / "BOPV" / "2026-05-24" / "api_discovery.jsonl"),
+        "html": str(tmp_path / "BOPV" / "2026-05-24" / "html_discovery.jsonl"),
     }
+
+
+def test_mcp_latest_discovery_entries_missing_html_output_returns_empty_without_fetch(
+    tmp_path,
+    monkeypatch,
+):
+    from official_sources import html_monitor
+
+    def fail_fetch_html(_url: str):
+        raise AssertionError("MCP discovery reader must not fetch live HTML")
+
+    monkeypatch.setattr(html_monitor, "fetch_html", fail_fetch_html)
+
+    result = tools.list_latest_discovery_entries(
+        source_code="BOP_A_CORUNA",
+        date="2026-05-25",
+        output_root=tmp_path,
+    )
+
+    assert result["status"] == "empty"
+    assert result["source_code"] == "BOP_A_CORUNA"
+    assert result["entries"] == []
+    assert result["count"] == 0
+    assert result["output_paths"] == {
+        "rss": str(tmp_path / "BOP_A_CORUNA" / "2026-05-25" / "rss_discovery.jsonl"),
+        "api": str(tmp_path / "BOP_A_CORUNA" / "2026-05-25" / "api_discovery.jsonl"),
+        "html": str(tmp_path / "BOP_A_CORUNA" / "2026-05-25" / "html_discovery.jsonl"),
+    }
+
+
+def test_mcp_source_status_exposes_bop_a_coruna_as_monitor_validated():
+    result = tools.get_source_status(source_code="BOP_A_CORUNA")
+
+    assert result["status"] == "ok"
+    assert result["source"]["operational_status"] == "monitor_validated"
+    assert result["source"]["monitor_support"] == "available"
+    assert result["source"]["candidate_creation_allowed"] is False
+    assert result["source"]["evidence_grade_allowed"] is False
 
 
 def test_mcp_latest_discovery_entries_unknown_source_returns_safe_error(tmp_path):
@@ -462,6 +570,8 @@ def test_mcp_source_coverage_tools_do_not_import_write_path_modules():
     assert "create_source_candidate" not in source
     assert "write_jsonl" not in source
     assert "write_api_jsonl" not in source
+    assert "write_html_jsonl" not in source
     assert "fetch_feed" not in source
     assert "fetch_api" not in source
+    assert "fetch_html" not in source
     assert "artifacts" not in source

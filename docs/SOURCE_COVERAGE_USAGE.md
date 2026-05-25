@@ -243,6 +243,7 @@ BOIB: RSS access method declared
 BOC_CANTABRIA: RSS access method declared; category-scoped feed
 DOE: RSS access method declared
 BOPV: API/XML/HTML access methods declared
+BOP_A_CORUNA: HTML access method declared
 ```
 
 ### list_latest_discovery_entries
@@ -262,26 +263,31 @@ Reads existing JSONL only:
 ```text
 data/rss_monitor/<source_code>/<YYYY-MM-DD>/rss_discovery.jsonl
 data/api_monitor/<source_code>/<YYYY-MM-DD>/api_discovery.jsonl
+data/html_monitor/<source_code>/<YYYY-MM-DD>/html_discovery.jsonl
 ```
 
 If the date is omitted, the reader resolves the latest existing dated output directory for the
-source. If no JSONL output exists, it returns an empty structured result. It does not fetch live RSS
-or API data and it does not create files.
+source. If no JSONL output exists, it returns an empty structured result. It does not fetch live
+RSS/API/HTML data and it does not create files.
 
 Entries include a discovery marker:
 
 ```text
 discovery_type=rss
 discovery_type=api
+discovery_type=html
 ```
+
+If several output files exist for the same source/date, entries are returned in deterministic order:
+RSS, API, HTML.
 
 ## Safety Boundaries
 
 The coverage surface must preserve these boundaries:
 
-- RSS/API discovery is metadata-only.
+- RSS/API/HTML discovery is metadata-only.
 - MCP coverage is read-only.
-- MCP does not fetch live RSS/API data.
+- MCP does not fetch live RSS/API/HTML data.
 - MCP does not write JSONL.
 - `--write` is explicit for CLI monitor output.
 - No automatic `source_candidates`.

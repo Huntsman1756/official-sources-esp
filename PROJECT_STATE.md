@@ -4,6 +4,40 @@ Last updated: 2026-05-25
 
 ## Current Decision
 
+`TASK-MCP-HTML-DISCOVERY-OUTPUT-001` is implemented locally.
+
+The MCP latest discovery reader now supports existing HTML monitor JSONL output in addition to RSS
+and API output:
+
+```text
+data/rss_monitor/<source_code>/<YYYY-MM-DD>/rss_discovery.jsonl
+data/api_monitor/<source_code>/<YYYY-MM-DD>/api_discovery.jsonl
+data/html_monitor/<source_code>/<YYYY-MM-DD>/html_discovery.jsonl
+```
+
+Discovery entries are returned in deterministic order when multiple files exist for the same
+source/date:
+
+```text
+rss -> api -> html
+```
+
+The MCP reader remains read-only. It does not fetch live RSS/API/HTML, write JSONL, create
+candidates, create evidence-grade records, download PDFs/artifacts, touch downstream repos, run
+backfills, run VPS/prod DB operations, or add LLM classification.
+
+Report:
+
+```text
+docs/reports/mcp-html-discovery-output-2026-05-24.md
+```
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-COVERAGE-V1.4-SNAPSHOT-001
+```
+
 `TASK-SOURCE-COVERAGE-V1.4-SNAPSHOT-001` is implemented locally.
 
 The project now has a Coverage v1.4 snapshot after the first provincial HTML discovery pilot:

@@ -153,11 +153,13 @@ Output: existing metadata-only discovery JSONL entries from:
 ```text
 data/rss_monitor/<source_code>/<YYYY-MM-DD>/rss_discovery.jsonl
 data/api_monitor/<source_code>/<YYYY-MM-DD>/api_discovery.jsonl
+data/html_monitor/<source_code>/<YYYY-MM-DD>/html_discovery.jsonl
 ```
 
-Each entry is marked with `discovery_type=rss` or `discovery_type=api` where applicable. The reader
-does not fetch live RSS/API data, does not create files, does not create candidates, and does not
-promote entries to evidence-grade.
+Each entry is marked with `discovery_type=rss`, `discovery_type=api`, or `discovery_type=html`
+where applicable. If several output files exist for the same source/date, entries are returned in
+deterministic order: RSS, API, HTML. The reader does not fetch live RSS/API/HTML data, does not
+create files, does not create candidates, and does not promote entries to evidence-grade.
 
 ### boe_consolidated_law_get
 

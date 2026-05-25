@@ -28,12 +28,12 @@ for source-platform work in this repository.
 | `TASK-SOURCE-COVERAGE-V1.3-SNAPSHOT-001` | implemented locally | Coverage v1.3 snapshot added after official directory reconciliation; current registry has 65 sources, including 43 provincial inventory-only entries. |
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-PILOT-001` | implemented locally | BOP_A_CORUNA HTML discovery pilot added as metadata-only, one-source monitoring; no candidates/evidence/PDFs/artifacts/downstream writes. |
 | `TASK-SOURCE-COVERAGE-V1.4-SNAPSHOT-001` | implemented locally | Coverage v1.4 snapshot added after the BOP_A_CORUNA provincial HTML pilot; current coverage is 6 RSS/Atom, 1 API, and 1 HTML provincial discovery source. |
+| `TASK-MCP-HTML-DISCOVERY-OUTPUT-001` | implemented locally | Read-only MCP latest discovery reader now supports existing HTML monitor JSONL output alongside RSS/API output. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
-| `TASK-MCP-HTML-DISCOVERY-OUTPUT-001` | proposed | Extend MCP latest discovery reader to existing HTML monitor JSONL only; no live fetches and no writes. |
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-PILOT-002` | proposed | Choose at most 1-2 additional provincial sources after access-path verification; no bulk provincial monitoring. |
 | `TASK-SOURCE-PROVINCIAL-URL-DIFF-AUDIT-001` | proposed | Compare BOE and PAG provincial URLs source by source; documentation-only unless a URL correction is verified. |
 | `TASK-SOURCE-RSS-MONITOR-004` | proposed | Only after selecting another 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
