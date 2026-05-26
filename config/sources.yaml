@@ -525,54 +525,54 @@ sources:
     last_verified_at: "2026-05-25"
     limitations:
       - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
-      - HTML monitor currently supports BOP_A_CORUNA only.
+      - HTML monitor support is source-specific; do not generalize to all provincial bulletins.
     notes: Official provincial bulletin HTML discovery pilot.
 
   - source_code: BOP_ALBACETE
     name: Boletin Oficial de la Provincia de Albacete
     jurisdiction: ES-AB
     jurisdiction_level: provincial
-    official_landing_url: http://www.dipualba.es/WebBop/
+    official_landing_url: https://bop.dipualba.es
     access_methods:
       - type: html
-        url: http://www.dipualba.es/WebBop/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bop.dipualba.es
+        status: validated
+        notes: Official current-bulletin HTML page used by provincial metadata-only discovery; PDF page links are recorded as official_url but never downloaded.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-26"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Albacete.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Current-bulletin page is not a historical backfill interface; use preview only and keep date-scoped assumptions explicit.
+    notes: Official provincial bulletin HTML discovery monitor.
 
   - source_code: BOP_ALICANTE
     name: Boletin Oficial de la Provincia de Alicante
     jurisdiction: ES-A
     jurisdiction_level: provincial
-    official_landing_url: http://sede.diputacionalicante.es/consultas-bop/
+    official_landing_url: https://sede.diputacionalicante.es/consultas-bop/
     access_methods:
       - type: html
-        url: http://sede.diputacionalicante.es/consultas-bop/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://sede.diputacionalicante.es/wp-content/themes/Desarrollo-Diputacion/webservices/wseConsultaAjax.php
+        status: validated
+        notes: Official consultation-page backing endpoint used by BOP Alicante HTML discovery; queried one date at a time.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-26"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Alicante.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - The validated request uses the official consultation page backing endpoint, not a general API contract.
+    notes: Official provincial bulletin HTML discovery monitor.
 
   - source_code: BOP_ALMERIA
     name: Boletin Oficial de la Provincia de Almeria
@@ -595,6 +595,7 @@ sources:
     limitations:
       - Provincial bulletin inventory only; access method not validated for monitoring.
       - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+      - Technical evaluation found a ZK/JavaScript application; defer until a separate JS-capable or endpoint-specific audit.
     notes: Official provincial bulletin inventory entry for Almeria.
 
   - source_code: BOP_ARABA_ALAVA

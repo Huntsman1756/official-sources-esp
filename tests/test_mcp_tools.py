@@ -715,9 +715,9 @@ def test_mcp_recommend_next_sources_returns_deterministic_provincial_inventory_s
     assert result["strategy"] == "provincial_html_discovery_pilot"
     assert result["count"] == 3
     assert [item["source_code"] for item in result["recommendations"]] == [
-        "BOP_ALBACETE",
-        "BOP_ALICANTE",
         "BOP_ALMERIA",
+        "BOP_ARABA_ALAVA",
+        "BOP_AVILA",
     ]
     first = result["recommendations"][0]
     assert first["recommended_task"] == "provincial_html_discovery_pilot"
@@ -737,19 +737,19 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
     result = tools.recommend_next_sources(limit=20, output_root=tmp_path)
 
     source_codes = {item["source_code"] for item in result["recommendations"]}
-    assert "BOP_A_CORUNA" not in source_codes
+    assert {"BOP_A_CORUNA", "BOP_ALBACETE", "BOP_ALICANTE"}.isdisjoint(source_codes)
     assert all(
         item["operational_status"] == "inventory_only" for item in result["recommendations"]
     )
 
 
 def test_mcp_recommend_next_sources_surfaces_existing_cache_without_reading_live(tmp_path):
-    output_path = tmp_path / "BOP_ALBACETE" / "2026-05-24" / "html_discovery.jsonl"
+    output_path = tmp_path / "BOP_ALMERIA" / "2026-05-24" / "html_discovery.jsonl"
     output_path.parent.mkdir(parents=True)
     output_path.write_text(
         json.dumps(
             {
-                "source_code": "BOP_ALBACETE",
+                "source_code": "BOP_ALMERIA",
                 "candidate_status": "not_candidate",
                 "evidence_status": "not_evidence",
                 "classification_status": "unclassified",
@@ -762,7 +762,7 @@ def test_mcp_recommend_next_sources_surfaces_existing_cache_without_reading_live
 
     result = tools.recommend_next_sources(limit=1, output_root=tmp_path)
 
-    assert result["recommendations"][0]["source_code"] == "BOP_ALBACETE"
+    assert result["recommendations"][0]["source_code"] == "BOP_ALMERIA"
     assert result["recommendations"][0]["discovery_cache_status"] == "has_discovery_cache"
     assert result["recommendations"][0]["latest_cache_date"] == "2026-05-24"
 

@@ -13,7 +13,7 @@ The source coverage platform now has:
 config/sources.yaml
 RSS/Atom discovery: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
 API discovery: BOPV
-HTML discovery: BOP_A_CORUNA
+HTML discovery: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE
 MCP read-only coverage and discovery readers
 MCP controlled one-source discovery preview
 MCP deterministic next-source recommendations
@@ -54,6 +54,8 @@ official-sources rss monitor --source BOC_CANTABRIA --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source DOE --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 1
 ```
 
 Preview rules:
@@ -75,6 +77,8 @@ Allowed write examples:
 official-sources rss monitor --source BOCYL --date YYYY-MM-DD --limit 10 --write
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 10 --write
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 10 --write
 ```
 
 Write output paths:
@@ -238,7 +242,7 @@ Task: `<TASK_ID>`
 ## Scope
 
 - source: `<SOURCE_CODE>`
-- monitor type: `rss` | `atom` | `api`
+- monitor type: `rss` | `atom` | `api` | `html`
 - mode: `preview` | `write`
 - date: `<YYYY-MM-DD>`
 - limit: `<N>`
@@ -247,7 +251,7 @@ Task: `<TASK_ID>`
 
 ```bash
 official-sources sources status --source <SOURCE_CODE>
-official-sources <rss|api> monitor --source <SOURCE_CODE> --date <YYYY-MM-DD> --limit <N>
+official-sources <rss|api|html> monitor --source <SOURCE_CODE> --date <YYYY-MM-DD> --limit <N>
 ```
 
 ## Results
@@ -303,6 +307,8 @@ Allowed preview examples:
 {"source_code": "BOCYL", "date": "YYYY-MM-DD", "limit": 1}
 {"source_code": "BOPV", "date": "YYYY-MM-DD", "limit": 1}
 {"source_code": "BOP_A_CORUNA", "date": "YYYY-MM-DD", "limit": 1}
+{"source_code": "BOP_ALBACETE", "date": "YYYY-MM-DD", "limit": 1}
+{"source_code": "BOP_ALICANTE", "date": "YYYY-MM-DD", "limit": 1}
 ```
 
 MCP preview rules:

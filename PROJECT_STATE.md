@@ -1,8 +1,71 @@
 # Project State
 
-Last updated: 2026-05-25
+Last updated: 2026-05-26
 
 ## Current Decision
+
+`TASK-SOURCE-PROVINCIAL-DISCOVERY-002` is implemented locally.
+
+The second provincial metadata-only discovery task used the deterministic MCP recommendations as
+input and evaluated:
+
+```text
+BOP_ALBACETE
+BOP_ALICANTE
+BOP_ALMERIA
+```
+
+Selected sources:
+
+```text
+BOP_ALBACETE
+BOP_ALICANTE
+```
+
+Rejected source:
+
+```text
+BOP_ALMERIA
+```
+
+`BOP_ALBACETE` and `BOP_ALICANTE` now have source-specific HTML discovery previews. `BOP_ALMERIA`
+remains `inventory_only` because the tested official surface is a ZK/JavaScript application and
+needs a separate endpoint or JS-capable audit before monitoring.
+
+Current executable registry counts:
+
+```text
+total sources: 65
+estatal: 2
+european: 1
+autonÃ³mica: 19
+provincial: 43
+metadata_adapter_validated: 9
+monitor_validated: 6
+inventory_only: 49
+paused: 1
+RSS/Atom discovery sources: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
+API discovery sources: BOPV
+HTML discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
+```
+
+The added previews are metadata-only. They do not write JSONL by default, create candidates,
+create evidence-grade records, download PDFs/artifacts, run backfills, touch downstream repos, run
+VPS/prod DB operations, or add LLM classification.
+
+Report:
+
+```text
+docs/reports/provincial-html-discovery-002-2026-05-24.md
+```
+
+Previous completed source-platform task:
+
+```text
+TASK-MCP-COVERAGE-RECOMMENDATIONS-001
+```
 
 `TASK-MCP-COVERAGE-RECOMMENDATIONS-001` is implemented locally.
 
@@ -52,7 +115,7 @@ Supported preview families:
 ```text
 rss: validated RSS/Atom discovery sources
 api: BOPV API discovery
-html: BOP_A_CORUNA HTML discovery
+html: validated provincial HTML discovery sources
 ```
 
 The tool runs preview mode only. It refuses broad/all-source requests, unknown sources,

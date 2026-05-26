@@ -425,7 +425,7 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         for method in access_methods
     ):
         preview_types.append("api")
-    if source_code == "BOP_A_CORUNA" and any(
+    if source_code in {"BOP_A_CORUNA", "BOP_ALBACETE", "BOP_ALICANTE"} and any(
         method.get("type") == "html"
         and method.get("status") == "validated"
         and str(method.get("url", "")).strip()

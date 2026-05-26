@@ -17,7 +17,9 @@ directory inventory only: they are not RSS/API monitors, candidates, evidence, o
 monitors.
 
 `BOP_A_CORUNA` was later promoted from provincial inventory to a single-source metadata-only HTML
-discovery pilot. This does not change the rest of the provincial inventory entries.
+discovery pilot. `BOP_ALBACETE` and `BOP_ALICANTE` were then added as the next two provincial
+HTML discovery monitors after technical preview validation. This does not change the rest of the
+provincial inventory entries.
 
 The executable registry separates:
 
@@ -48,6 +50,8 @@ Metadata-only HTML discovery command:
 
 ```bash
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD
+official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD
+official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD
 ```
 
 RSS/Atom discovery records are not candidates and are not evidence. The command defaults to
@@ -104,10 +108,10 @@ Last checked: 2026-05-25.
 | DOGV | Diari Oficial de la Generalitat Valenciana | autonomous | ES-VC | Comunitat Valenciana | https://dogv.gva.es/es/inici | Diari Oficial de la Generalitat Valenciana (DOGV) y base de datos de legislacion | mvp_implemented_backfill_validated | P1 | Metadata MVP and controlled 30-day metadata backfill are validated. Recommended next step: candidate dry-run, not more adapter discovery. |
 | BOCCE | Boletin Oficial de la Ciudad Autonoma de Ceuta | statutory_city | ES-CE | Ceuta | http://www.ceuta.es/ceuta/documentos/ | Boletin Oficial de la Ciudad Autonoma de Ceuta (BOCCE) | not_audited | not_prioritized | Registry entry only. Prior audit notes suggest deferring implementation until another cleaner autonomous adapter is stable. |
 | BOME | Boletin Oficial de la Ciudad Autonoma de Melilla | statutory_city | ES-ML | Melilla | https://bomemelilla.es/ | Boletin Oficial de la Ciudad Autonoma de Melilla (BOME) | not_audited | not_prioritized | Registry entry only. Prior audit notes suggest deferring implementation until another cleaner autonomous adapter is stable. |
-| BOP_A_CORUNA | Boletin Oficial de la Provincia de A Coruna | provincial | A Coruna | A Coruna | https://bop.dacoruna.gal/bopportal/ | A Coruna | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
-| BOP_ALBACETE | Boletin Oficial de la Provincia de Albacete | provincial | Albacete | Albacete | http://www.dipualba.es/WebBop/ | Albacete | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
-| BOP_ALICANTE | Boletin Oficial de la Provincia de Alicante | provincial | Alicante | Alicante | http://sede.diputacionalicante.es/consultas-bop/ | Alicante | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
-| BOP_ALMERIA | Boletin Oficial de la Provincia de Almeria | provincial | Almeria | Almeria | http://www.dipalme.org/Servicios/cmsdipro/index.nsf/bop_view.xsp?p=dipalme | Almeria | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
+| BOP_A_CORUNA | Boletin Oficial de la Provincia de A Coruna | provincial | A Coruna | A Coruna | https://bop.dacoruna.gal/bopportal/ | A Coruna | pilot_validated | after_autonomous_p1 | Metadata-only HTML discovery pilot; no PDFs/artifacts/candidates/evidence. |
+| BOP_ALBACETE | Boletin Oficial de la Provincia de Albacete | provincial | Albacete | Albacete | https://bop.dipualba.es | Albacete | pilot_validated | after_autonomous_p1 | Metadata-only current-bulletin HTML discovery; PDF page URLs are recorded but never downloaded. |
+| BOP_ALICANTE | Boletin Oficial de la Provincia de Alicante | provincial | Alicante | Alicante | https://sede.diputacionalicante.es/consultas-bop/ | Alicante | pilot_validated | after_autonomous_p1 | Metadata-only discovery uses the official consultation-page backing endpoint one date at a time. |
+| BOP_ALMERIA | Boletin Oficial de la Provincia de Almeria | provincial | Almeria | Almeria | http://www.dipalme.org/Servicios/cmsdipro/index.nsf/bop_view.xsp?p=dipalme | Almeria | not_audited | after_autonomous_p1 | Evaluated for provincial discovery 002 but not added; official surface is a ZK/JavaScript app and needs a separate endpoint/JS-capable audit. |
 | BOP_ARABA_ALAVA | Boletin Oficial del Territorio Historico de Araba/Alava | provincial | Araba/Alava | Araba/Alava | http://www.araba.eus/botha/Inicio/SGBO5001.aspx | Araba/Alava | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
 | BOP_AVILA | Boletin Oficial de la Provincia de Avila | provincial | Avila | Avila | https://www.diputacionavila.es/boletin-oficial/ | Avila | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
 | BOP_BADAJOZ | Boletin Oficial de la Provincia de Badajoz | provincial | Badajoz | Badajoz | http://www.dip-badajoz.es/bop/ | Badajoz | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |

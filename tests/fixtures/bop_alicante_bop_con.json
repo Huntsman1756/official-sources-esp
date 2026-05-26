@@ -1,0 +1,33 @@
+{
+  "boletin": {
+    "boletin": [
+      {
+        "registro": [
+          {
+            "sumario": ["Nº 96 del 25-05-2026"],
+            "urlsumario": ["https://www.dip-alicante.es/bop2/pdftotal/2026/05/25_96/Sumario.pdf"],
+            "bobcompleto": ["Nº 96 del 25-05-2026"],
+            "urlbopcompleto": ["https://www.dip-alicante.es/bop2/pdftotal/2026/05/25_96/bop.pdf"]
+          }
+        ]
+      }
+    ],
+    "bop": [
+      {
+        "registro": [
+          {
+            "anyo": ["2026"],
+            "nBop": ["96"],
+            "fechaPublica": ["25/05/2026"],
+            "gndenom": ["III. ADMINISTRACIÓN LOCAL"],
+            "ampliacion": ["AYUNTAMIENTO ADSUBIA"],
+            "denominacion": ["Adsubia"],
+            "extracto": ["APROVACIÓ DEFINITIVA ORDENANÇA FISCAL REGULADORA DE LA TAXA PER EXPEDICIÓ DE DOCUMENTS ADMINISTRATIUS"],
+            "edicto": ["3923"],
+            "ubicacion": ["https://www.dip-alicante.es/bop2/pdftotal/2026/05/25_96/2026_003923.pdf"]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -11,10 +11,13 @@ import official_sources.html_monitor as html_monitor
 from official_sources.html_monitor import (
     HTMLMonitorError,
     build_bop_a_coruna_html_url,
+    build_bop_alicante_html_url,
     build_html_entry_hash,
     build_html_monitor_output_path,
     monitor_html_source,
     parse_bop_a_coruna_html,
+    parse_bop_albacete_html,
+    parse_bop_alicante_response,
     select_html_access_method,
 )
 from official_sources.source_coverage import list_monitorable_sources
@@ -43,11 +46,36 @@ def test_bop_a_coruna_html_access_method_exists_in_registry():
     assert source["evidence_grade_allowed"] is False
 
 
+def test_selected_provincial_html_access_methods_exist_in_registry():
+    for source_code in ("BOP_ALBACETE", "BOP_ALICANTE"):
+        source = get_source(source_code)
+        method = select_html_access_method(source)
+
+        assert source["operational_status"] == "monitor_validated"
+        assert source["monitor_support"] == "available"
+        assert method["type"] == "html"
+        assert method["status"] == "validated"
+        assert source["candidate_creation_allowed"] is False
+        assert source["evidence_grade_allowed"] is False
+
+
 def test_build_bop_a_coruna_html_url_is_one_date_request():
     assert build_bop_a_coruna_html_url(
         "https://bop.dacoruna.gal/bopportal/cambioBoletin.do?fechaInput={date_ddmmyyyy}",
         target_date="2026-05-25",
     ) == "https://bop.dacoruna.gal/bopportal/cambioBoletin.do?fechaInput=25%2F05%2F2026"
+
+
+def test_build_bop_alicante_html_url_is_one_date_request():
+    url = build_bop_alicante_html_url(
+        "https://sede.diputacionalicante.es/wp-content/themes/"
+        "Desarrollo-Diputacion/webservices/wseConsultaAjax.php",
+        target_date="2026-05-25",
+    )
+
+    assert "nemo=BOP_CON" in url
+    assert "usuario=-" in url
+    assert "%3CfechaPub%3E25%2F05%2F2026%3C%2FfechaPub%3E" in url
 
 
 def test_parse_bop_a_coruna_fixture_emits_metadata_only_records():
@@ -78,6 +106,81 @@ def test_parse_bop_a_coruna_fixture_emits_metadata_only_records():
     assert record["classification_status"] == "unclassified"
     assert record["evidence_status"] == "not_evidence"
     assert record["candidate_status"] == "not_candidate"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_albacete_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_albacete_latest.html")
+    page_url = "https://bop.dipualba.es"
+
+    result = parse_bop_albacete_html(
+        raw,
+        source_code="BOP_ALBACETE",
+        page_url=page_url,
+        requested_date="2026-05-25",
+        discovered_at="2026-05-25T00:00:00Z",
+        monitor_run_id="run-albacete",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_ALBACETE"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "297598"
+    assert record["document_id"] == "297598"
+    assert record["title"] == (
+        "Información pública para conocimiento de usuarios de concesiones de aguas "
+        "superficiales de la parte española"
+    )
+    assert record["published_at"] == "2026-05-25"
+    assert record["official_url"] == (
+        "https://bop.dipualba.es/servicesajax/descargararchivopaginaBOP/297598"
+    )
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_alicante_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_alicante_bop_con.json")
+    page_url = build_bop_alicante_html_url(
+        "https://sede.diputacionalicante.es/wp-content/themes/"
+        "Desarrollo-Diputacion/webservices/wseConsultaAjax.php",
+        target_date="2026-05-25",
+    )
+
+    result = parse_bop_alicante_response(
+        raw,
+        source_code="BOP_ALICANTE",
+        page_url=page_url,
+        requested_date="2026-05-25",
+        discovered_at="2026-05-25T00:00:00Z",
+        monitor_run_id="run-alicante",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_ALICANTE"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "json-backed-html"
+    assert record["entry_id"] == "96-3923"
+    assert record["document_id"] == "3923"
+    assert record["title"] == (
+        "APROVACIÓ DEFINITIVA ORDENANÇA FISCAL REGULADORA DE LA TAXA PER "
+        "EXPEDICIÓ DE DOCUMENTS ADMINISTRATIUS"
+    )
+    assert record["published_at"] == "2026-05-25"
+    assert record["official_url"] == (
+        "https://www.dip-alicante.es/bop2/pdftotal/2026/05/25_96/2026_003923.pdf"
+    )
+    assert record["summary"] == "III. ADMINISTRACIÓN LOCAL - AYUNTAMIENTO ADSUBIA"
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
     assert "pdf_url" not in record
 
 
@@ -115,6 +218,39 @@ def test_monitor_html_source_fetches_one_bounded_request():
     assert len(result.records) == 1
     assert result.records[0]["candidate_status"] == "not_candidate"
     assert result.records[0]["evidence_status"] == "not_evidence"
+
+
+def test_monitor_html_source_supports_selected_provincial_sources():
+    fixtures = {
+        "BOP_ALBACETE": "bop_albacete_latest.html",
+        "BOP_ALICANTE": "bop_alicante_bop_con.json",
+    }
+
+    for source_code, fixture_name in fixtures.items():
+        requested_urls = []
+
+        def fetcher(
+            url: str,
+            *,
+            fixture_name: str = fixture_name,
+            requested_urls: list[str] = requested_urls,
+        ) -> bytes:
+            requested_urls.append(url)
+            return _fixture_bytes(fixture_name)
+
+        result = monitor_html_source(
+            get_source(source_code),
+            fetcher=fetcher,
+            target_date="2026-05-25",
+            limit=1,
+        )
+
+        assert len(requested_urls) == 1
+        assert len(result.records) == 1
+        assert result.records[0]["source_code"] == source_code
+        assert result.records[0]["candidate_status"] == "not_candidate"
+        assert result.records[0]["evidence_status"] == "not_evidence"
+        assert result.records[0]["classification_status"] == "unclassified"
 
 
 def test_html_monitor_refuses_source_without_validated_html_access_method():
@@ -224,11 +360,12 @@ def test_cli_html_monitor_write_requires_explicit_write_flag_and_writes_jsonl(tm
 def test_mcp_source_coverage_sees_bop_a_coruna_as_html_monitorable():
     result = list_monitorable_sources()
     sources = {source["source_code"]: source for source in result["sources"]}
-    method_types = {method["type"] for method in sources["BOP_A_CORUNA"]["access_methods"]}
+    for source_code in ("BOP_A_CORUNA", "BOP_ALBACETE", "BOP_ALICANTE"):
+        method_types = {method["type"] for method in sources[source_code]["access_methods"]}
 
-    assert "html" in method_types
-    assert sources["BOP_A_CORUNA"]["candidate_creation_allowed"] is False
-    assert sources["BOP_A_CORUNA"]["evidence_grade_allowed"] is False
+        assert "html" in method_types
+        assert sources[source_code]["candidate_creation_allowed"] is False
+        assert sources[source_code]["evidence_grade_allowed"] is False
 
 
 def test_existing_source_registry_validation_still_passes():

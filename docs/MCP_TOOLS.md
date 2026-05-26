@@ -168,7 +168,8 @@ create files, does not create candidates, and does not promote entries to eviden
 
 Inputs:
 
-- `source_code`: one explicit registered source code such as `BOCYL`, `BOPV`, or `BOP_A_CORUNA`.
+- `source_code`: one explicit registered source code such as `BOCYL`, `BOPV`, `BOP_A_CORUNA`,
+  `BOP_ALBACETE`, or `BOP_ALICANTE`.
 - `date`: required `YYYY-MM-DD`.
 - `limit`: integer, default `1`, maximum `10`.
 - `discovery_type`: optional `rss`, `api`, or `html`; required only if a future source has more
@@ -189,7 +190,7 @@ Supported preview families:
 ```text
 rss: validated RSS/Atom discovery sources
 api: BOPV API discovery
-html: BOP_A_CORUNA HTML discovery
+html: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE HTML discovery
 ```
 
 The tool refuses broad/all-source requests, unknown sources, inventory-only sources without an
@@ -212,7 +213,8 @@ provincial_html_discovery_pilot
 ```
 
 The tool recommends provincial `inventory_only` sources with official landing URLs and no validated
-monitor yet. Already monitored sources such as `BOP_A_CORUNA` are excluded. Each recommendation
+monitor yet. Already monitored sources such as `BOP_A_CORUNA`, `BOP_ALBACETE`, and
+`BOP_ALICANTE` are excluded. Each recommendation
 includes:
 
 ```text
