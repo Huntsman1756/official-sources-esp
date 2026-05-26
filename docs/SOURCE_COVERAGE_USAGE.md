@@ -18,8 +18,8 @@ Current source counts:
 
 ```text
 registered sources: 65
-provincial inventory-only sources: 40
-RSS/Atom discovery sources: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
+provincial inventory-only sources: 39
+RSS/Atom discovery sources: BOC_CANARIAS, BOC_CANTABRIA, BOCYL, BOE, BOIB, BOJA, BOP_LUGO, DOE, DOG
 API discovery sources: BOPV
 HTML discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE
 candidate_creation_allowed=true: 0
@@ -73,14 +73,20 @@ $env:PYTHONPATH='src'; python -m official_sources.cli sources list
 $env:PYTHONPATH='src'; python -m official_sources.cli sources status --source BOIB
 $env:PYTHONPATH='src'; python -m official_sources.cli sources status --source BOC_CANTABRIA
 $env:PYTHONPATH='src'; python -m official_sources.cli sources status --source DOE
+$env:PYTHONPATH='src'; python -m official_sources.cli sources status --source BOC_CANARIAS
+$env:PYTHONPATH='src'; python -m official_sources.cli sources status --source DOG
+$env:PYTHONPATH='src'; python -m official_sources.cli sources status --source BOP_LUGO
 ```
 
-Expected current source-tree status for the RSS-003 sources:
+Expected current source-tree status for the RSS-003 and RSS-004 sources:
 
 ```text
 BOIB: operational_status=monitor_validated monitor_support=available
 BOC_CANTABRIA: operational_status=monitor_validated monitor_support=available
 DOE: operational_status=monitor_validated monitor_support=available
+BOC_CANARIAS: operational_status=monitor_validated monitor_support=available
+DOG: operational_status=monitor_validated monitor_support=available
+BOP_LUGO: operational_status=monitor_validated monitor_support=available
 ```
 
 To refresh the local console script for development, reinstall the project in editable mode from
@@ -109,6 +115,9 @@ official-sources rss monitor --source BOCYL --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOIB --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOC_CANTABRIA --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source DOE --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOC_CANARIAS --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source DOG --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOP_LUGO --date YYYY-MM-DD --limit 1
 ```
 
 Write JSONL only when explicitly requested:

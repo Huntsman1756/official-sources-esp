@@ -4,7 +4,59 @@ Last updated: 2026-05-26
 
 ## Current Decision
 
-`TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001` is implemented locally.
+`TASK-SOURCE-RSS-MONITOR-004` is implemented locally.
+
+The RSS monitor now has three additional metadata-only official RSS sources:
+
+```text
+BOC_CANARIAS = official BOC RSS section feed for I. Disposiciones generales
+DOG = official DOG complete summary RSS feed
+BOP_LUGO = official BOP Lugo RSS feed
+```
+
+Current executable registry counts:
+
+```text
+total sources: 65
+metadata_adapter_validated: 9
+monitor_validated: 9
+inventory_only: 46
+paused: 1
+provincial inventory-only sources: 39
+RSS/Atom discovery sources: BOC_CANARIAS, BOC_CANTABRIA, BOCYL, BOE, BOIB, BOJA, BOP_LUGO, DOE, DOG
+API discovery sources: BOPV
+HTML discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
+```
+
+Live preview validation on `2026-05-26` ran one source at a time, with `--limit 1`, and without
+`--write`:
+
+```text
+BOC_CANARIAS: records=1 feed_format=rss candidate_status=not_candidate evidence_status=not_evidence
+DOG: records=1 feed_format=rss candidate_status=not_candidate evidence_status=not_evidence
+BOP_LUGO: records=1 feed_format=rss candidate_status=not_candidate evidence_status=not_evidence
+data/rss_monitor exists: false
+```
+
+Report:
+
+```text
+docs/reports/rss-monitor-004-2026-05-26.md
+```
+
+This task did not change `src/official_sources/rss_monitor.py`, create candidates, create
+evidence-grade records, download PDFs/artifacts, write downstream data, run backfills, run broad
+monitoring, touch VPS/prod DB, touch Hermes, or touch systemd.
+
+Previous completed source-platform task:
+
+```text
+TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001
+```
+
+`TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001` is merged in main.
 
 The RSS monitor baseline is already present in current `main`; `TASK-SOURCE-RSS-MONITOR-001`
 must not be reopened or reimplemented. Current repository evidence includes:
@@ -35,8 +87,9 @@ The historical report `docs/reports/rss-monitor-pilot-2026-05-24.md` remains tru
 task boundary: BOE was not used as a control in RSS-001 itself. The current repo state is broader
 because later RSS and coverage work added BOE/BOJA and validated integrated RSS previews.
 
-Next implementation work for RSS should be `TASK-SOURCE-RSS-MONITOR-004`, not RSS-001. Keep it
-metadata-only and one source at a time.
+`TASK-SOURCE-RSS-MONITOR-004` has now been opened separately after this reconciliation, so future
+RSS work should not reuse RSS-001 or RSS-004. Keep any later RSS task metadata-only and one source
+at a time.
 
 Previous completed source-platform task:
 
@@ -1005,19 +1058,21 @@ Hard guardrails:
 | `TASK-SOURCE-COVERAGE-V1.2-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-2-snapshot-2026-05-24.md` | Captures the v1.2 coverage baseline after RSS-003, including six RSS/Atom sources and one API discovery source. |
 | `TASK-DEV-CLI-ENTRYPOINT-CONSISTENCY-001` | Implemented locally | `src/official_sources/cli.py`, `docs/reports/cli-entrypoint-consistency-2026-05-24.md` | Makes `python -m official_sources.cli` usable for source-tree validation and documents stale console script handling. |
 | `TASK-VPS-INTEGRITY-CHECK-RAW-METADATA-001` | Implemented locally | `src/official_sources/cli.py`, `tests/test_cli.py`, `docs/reports/vps-service-drift-diagnosis-2026-05-26.md` | Clarifies local artifact integrity so non-local raw metadata rows do not fail the check while missing real local artifacts still fail. |
-| `TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001` | Implemented locally | `docs/reports/rss-monitor-state-reconciliation-2026-05-26.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Reconciles RSS monitor documentation with current main and confirms RSS-001 should not be reopened. |
+| `TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001` | Merged | `docs/reports/rss-monitor-state-reconciliation-2026-05-26.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Reconciles RSS monitor documentation with current main and confirms RSS-001 should not be reopened. |
+| `TASK-SOURCE-RSS-MONITOR-004` | Implemented locally | `config/sources.yaml`, `tests/test_rss_monitor.py`, `docs/reports/rss-monitor-004-2026-05-26.md` | Adds BOC_CANARIAS, DOG, and BOP_LUGO as validated metadata-only RSS discovery sources. |
 
 ## Next Allowed Work
 
 Allowed next work:
 
-1. `TASK-SOURCE-RSS-MONITOR-004` only after selecting another 2-3 verified official RSS/Atom feeds.
-2. `TASK-SOURCE-HTML-MONITOR-PILOT-001` only for sources without RSS/API after source-specific audit.
-3. `TASK-SOURCE-COVERAGE-RUN-REPORT-001` if actual metadata-only JSONL writes are run.
-4. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
-5. Product-local design/preview for draft process creation in `oposiciones2.0`.
-6. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
-7. A source-needs audit for `renta-verificable` before any integration.
+1. `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` if a fresh coverage snapshot is wanted after RSS-004.
+2. `TASK-SOURCE-RSS-MONITOR-005` only after selecting another 2-3 verified official RSS/Atom feeds.
+3. `TASK-SOURCE-HTML-MONITOR-PILOT-001` only for sources without RSS/API after source-specific audit.
+4. `TASK-SOURCE-COVERAGE-RUN-REPORT-001` if actual metadata-only JSONL writes are run.
+5. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
+6. Product-local design/preview for draft process creation in `oposiciones2.0`.
+7. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
+8. A source-needs audit for `renta-verificable` before any integration.
 
 Not allowed from this repo:
 

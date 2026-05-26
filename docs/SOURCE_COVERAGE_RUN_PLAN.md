@@ -11,7 +11,7 @@ The source coverage platform now has:
 
 ```text
 config/sources.yaml
-RSS/Atom discovery: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
+RSS/Atom discovery: BOC_CANARIAS, BOC_CANTABRIA, BOCYL, BOE, BOIB, BOJA, BOP_LUGO, DOE, DOG
 API discovery: BOPV
 HTML discovery: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE
 MCP read-only coverage and discovery readers

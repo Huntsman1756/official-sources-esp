@@ -21,6 +21,9 @@ discovery pilot. `BOP_ALBACETE` and `BOP_ALICANTE` were then added as the next t
 HTML discovery monitors after technical preview validation. This does not change the rest of the
 provincial inventory entries.
 
+`BOC_CANARIAS`, `DOG`, and `BOP_LUGO` were later promoted to metadata-only RSS discovery monitors.
+`BOC_CANARIAS` is section-scoped, and `BOP_LUGO` may expose PDF URLs as RSS metadata only.
+
 The executable registry separates:
 
 ```text
@@ -44,6 +47,9 @@ official-sources rss monitor --source BOJA --date YYYY-MM-DD
 official-sources rss monitor --source BOIB --date YYYY-MM-DD
 official-sources rss monitor --source BOC_CANTABRIA --date YYYY-MM-DD
 official-sources rss monitor --source DOE --date YYYY-MM-DD
+official-sources rss monitor --source BOC_CANARIAS --date YYYY-MM-DD
+official-sources rss monitor --source DOG --date YYYY-MM-DD
+official-sources rss monitor --source BOP_LUGO --date YYYY-MM-DD
 ```
 
 Metadata-only HTML discovery command:
@@ -93,13 +99,13 @@ Last checked: 2026-05-25.
 | BOA | Boletin Oficial de Aragon | autonomous | ES-AR | Aragon | https://www.boa.aragon.es/ | Boletin Oficial de Aragon (BOA) y base de datos de legislacion | not_audited | not_prioritized | Registry entry only. Audit endpoint model, identifiers, robots, and fixture strategy before implementation. |
 | BOPA | Boletin Oficial del Principado de Asturias | autonomous | ES-AS | Principado de Asturias | https://sede.asturias.es/servicios-del-bopa | Boletin Oficial del Principado de Asturias (BOPA) y base de datos de legislacion | not_audited | not_prioritized | Registry entry only. Audit endpoint model, identifiers, robots, and fixture strategy before implementation. |
 | BOIB | Boletin Oficial de las Illes Balears | autonomous | ES-IB | Illes Balears | http://www.caib.es/eboibfront/?lang=es | Boletin Oficial de las Illes Balears (BOIB) | metadata_monitor_validated | done | RSS discovery uses the official BOIB feed linked from the BOIB landing page and service RSS section. BOE also links a separate legislation database for this territory. |
-| BOC_CANARIAS | Boletin Oficial de Canarias | autonomous | ES-CN | Canarias | http://www.gobiernodecanarias.org/boc/ | Boletin Oficial de Canarias (BOC) | not_audited | not_prioritized | Registry entry only. BOE also links a separate legislation database for this territory. |
+| BOC_CANARIAS | Boletin Oficial de Canarias | autonomous | ES-CN | Canarias | http://www.gobiernodecanarias.org/boc/ | Boletin Oficial de Canarias (BOC) | metadata_monitor_validated | done | RSS discovery uses an official BOC section feed for "I. Disposiciones generales"; it is section-scoped, not complete bulletin coverage. BOE also links a separate legislation database for this territory. |
 | BOC_CANTABRIA | Boletin Oficial de Cantabria | autonomous | ES-CB | Cantabria | https://boc.cantabria.es/boces/ | Boletin Oficial de Cantabria (BOC) y base de datos de legislacion | metadata_monitor_validated | done | RSS discovery uses an official BOC category feed for "1 Disposiciones Generales"; it is category-scoped, not complete bulletin coverage. |
 | DOCM | Diario Oficial de Castilla-La Mancha | autonomous | ES-CM | Castilla-La Mancha | http://docm.castillalamancha.es/portaldocm/sumario.do | Diario Oficial de Castilla-La Mancha (DOCM) y base de datos de legislacion | not_audited | not_prioritized | Registry entry only. Audit endpoint model, identifiers, robots, and fixture strategy before implementation. |
 | BOCYL | Boletin Oficial de Castilla y Leon | autonomous | ES-CL | Castilla y Leon | https://bocyl.jcyl.es/portada.do | Boletin Oficial de Castilla y Leon (BOCYL) | metadata_monitor_validated | done | Metadata adapter and RSS discovery pilot have been validated. BOE also links a separate legislation database for this territory. |
 | DOGC | Diari Oficial de la Generalitat de Catalunya | autonomous | ES-CT | Catalunya | https://dogc.gencat.cat/es/index.html?newLang=es_ES&language=es_ES | Diari Oficial de la Generalitat de Catalunya (DOGC) | not_audited | not_prioritized | Registry entry only. BOE also links a separate legislation database for this territory. |
 | DOE | Diario Oficial de Extremadura | autonomous | ES-EX | Extremadura | http://doe.juntaex.es/ | Diario Oficial de Extremadura (DOE) y base de datos de legislacion | metadata_monitor_validated | done | RSS discovery uses the official DOE "SUMARIO COMPLETO" RSS endpoint linked from the DOE RSS page. |
-| DOG | Diario Oficial de Galicia | autonomous | ES-GA | Galicia | https://www.xunta.gal/diario-oficial-galicia/portalPublicoHome.do?lang=es | Diario Oficial de Galicia (DOG) | not_audited | not_prioritized | Registry entry only. BOE also links a separate legislation database for this territory. |
+| DOG | Diario Oficial de Galicia | autonomous | ES-GA | Galicia | https://www.xunta.gal/diario-oficial-galicia/portalPublicoHome.do?lang=es | Diario Oficial de Galicia (DOG) | metadata_monitor_validated | done | RSS discovery uses the official DOG complete summary feed linked from the DOG RSS subscriptions page. BOE also links a separate legislation database for this territory. |
 | BOR | Boletin Oficial de La Rioja | autonomous | ES-RI | La Rioja | http://www.larioja.org/bor/es | Boletin Oficial de la Rioja (BOR) | not_audited | not_prioritized | Registry entry only. BOE also links a separate legislation database for this territory. |
 | BOCM | Boletin Oficial de la Comunidad de Madrid | autonomous | ES-MD | Comunidad de Madrid | http://www.bocm.es/ | Boletin Oficial de la Comunidad de Madrid (BOCM) | mvp_implemented_paused | paused | Metadata MVP exists, but broader work is paused on endpoint/connectivity instability observed during backfill. |
 | BORM | Boletin Oficial de la Region de Murcia | autonomous | ES-MC | Region de Murcia | https://www.borm.es/#/home/ | Boletin Oficial de la Region de Murcia (BORM) | not_audited | not_prioritized | Registry entry only. BOE also links a separate legislation database for this territory. |
@@ -134,7 +140,7 @@ Last checked: 2026-05-25.
 | BOP_LAS_PALMAS | Boletin Oficial de la Provincia de Las Palmas | provincial | Las Palmas | Las Palmas | http://www.boplaspalmas.com | Las Palmas | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
 | BOP_LEON | Boletin Oficial de la Provincia de Leon | provincial | Leon | Leon | https://bop.dipuleon.es/ | Leon | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
 | BOP_LLEIDA | Boletin Oficial de la Provincia de Lleida | provincial | Lleida | Lleida | https://ebop.diputaciolleida.cat/bop/ | Lleida | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
-| BOP_LUGO | Boletin Oficial da Provincia de Lugo | provincial | Lugo | Lugo | http://www.deputacionlugo.gal/boletin-oficial-da-provincia-de-lugo | Lugo | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
+| BOP_LUGO | Boletin Oficial da Provincia de Lugo | provincial | Lugo | Lugo | http://www.deputacionlugo.gal/boletin-oficial-da-provincia-de-lugo | Lugo | metadata_monitor_validated | done | RSS discovery uses the official BOP Lugo feed linked from the bulletin landing page; PDF links in summaries remain metadata only. |
 | BOP_MALAGA | Boletin Oficial de la Provincia de Malaga | provincial | Malaga | Malaga | http://www.bopmalaga.es/ | Malaga | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
 | BOP_OURENSE | Boletin Oficial da Provincia de Ourense | provincial | Ourense | Ourense | https://bop.depourense.es/portal/ | Ourense | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |
 | BOP_PALENCIA | Boletin Oficial de la Provincia de Palencia | provincial | Palencia | Palencia | https://www.diputaciondepalencia.es/servicios/boletin-oficial-provincia | Palencia | not_audited | after_autonomous_p1 | BOE provincial registry entry only; audit before adapter work. |

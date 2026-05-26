@@ -181,18 +181,23 @@ sources:
     jurisdiction: ES-CN
     jurisdiction_level: autonómica
     official_landing_url: http://www.gobiernodecanarias.org/boc/
-    access_methods: []
-    operational_status: inventory_only
+    access_methods:
+      - type: rss
+        url: https://www.gobiernodecanarias.org/boc/feeds/capitulo/disposiciones_generales.rss
+        status: validated
+        notes: Official BOC RSS section feed for "I. Disposiciones generales" linked from the BOC RSS subscriptions page.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-22"
+    last_verified_at: "2026-05-26"
     limitations:
-      - Access method not validated yet.
-    notes: Registry entry only.
+      - Validated RSS is section-scoped, not complete bulletin coverage.
+      - RSS discovery is metadata-only and does not imply a metadata adapter or evidence support.
+    notes: Official section feed is validated for controlled discovery monitoring.
 
   - source_code: BOC_CANTABRIA
     name: Boletin Oficial de Cantabria
@@ -314,18 +319,22 @@ sources:
     jurisdiction: ES-GA
     jurisdiction_level: autonómica
     official_landing_url: https://www.xunta.gal/diario-oficial-galicia/portalPublicoHome.do?lang=es
-    access_methods: []
-    operational_status: inventory_only
+    access_methods:
+      - type: rss
+        url: https://www.xunta.gal/diario-oficial-galicia/rss/Sumario_es.rss
+        status: validated
+        notes: Official DOG complete summary RSS feed linked from the Diario Oficial de Galicia RSS subscriptions page.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-22"
+    last_verified_at: "2026-05-26"
     limitations:
-      - Access method not validated yet.
-    notes: Registry entry only.
+      - RSS discovery is metadata-only and does not imply a metadata adapter or evidence support.
+    notes: Official complete summary feed is validated for controlled discovery monitoring.
 
   - source_code: BOR
     name: Boletin Oficial de La Rioja
@@ -1114,18 +1123,22 @@ sources:
         url: http://www.deputacionlugo.gal/boletin-oficial-da-provincia-de-lugo
         status: inventory
         notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+      - type: rss
+        url: https://deputacionlugo.gal/boletin-oficial-da-provincia-de-lugo/bop/feed.xml
+        status: validated
+        notes: Official BOP Lugo RSS feed linked from the bulletin landing page.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-26"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Lugo.
+      - RSS discovery is metadata-only and does not imply a metadata adapter or evidence support.
+      - Feed entries may summarize a full bulletin and include PDF links as metadata only; the monitor must not download PDFs.
+    notes: Official provincial RSS feed is validated for controlled discovery monitoring.
 
   - source_code: BOP_MALAGA
     name: Boletin Oficial de la Provincia de Malaga
