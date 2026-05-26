@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+  <channel>
+    <title>RSS I. Disposiciones generales</title>
+    <link>https://www.gobiernodecanarias.org/boc/feeds</link>
+    <description>Feed RSS de los anuncios publicados en la seccion I.</description>
+    <atom:link href="https://www.gobiernodecanarias.org/boc/feeds/capitulo/disposiciones_generales.rss" />
+    <item>
+      <title>DECRETO 87/2026, de 18 de mayo, por el que se aprueba el Plan Estadistico de Canarias 2026-2030.</title>
+      <link>https://www.gobiernodecanarias.org/boc/2026/099/001.html</link>
+      <guid>BOC-A-2026-099-1708</guid>
+      <pubDate>Mon, 25 May 2026 00:00:00 +0200</pubDate>
+      <description>I. Disposiciones generales - Consejeria de Hacienda y Relaciones con la Union Europea</description>
+    </item>
+  </channel>
+</rss>

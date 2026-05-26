@@ -39,7 +39,8 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 | `TASK-SOURCE-PROVINCIAL-PATTERN-REPORT-001` | implemented locally | Pattern report compares BOP_A_CORUNA, BOP_ALBACETE, and BOP_ALICANTE; decision is source-specific parsers for now with small shared helpers only. |
 | `TASK-SOURCE-PROVINCIAL-HTML-HEALTH-001` | implemented locally | Health check validated BOP_A_CORUNA, BOP_ALBACETE, and BOP_ALICANTE previews without writes; all returned `records=1` with `not_candidate`, `not_evidence`, and `unclassified` safety status. |
 | `TASK-VPS-INTEGRITY-CHECK-RAW-METADATA-001` | implemented locally | `integrity-check` now reports `local_path=NULL` metadata rows as `non_local_metadata`, while missing stored local artifact paths still fail. |
-| `TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001` | implemented locally | Reconciles RSS monitor documentation with current `main`; confirms RSS-001 should not be reopened and points next implementation work to RSS-004. |
+| `TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001` | merged | Reconciles RSS monitor documentation with current `main`; confirms RSS-001 should not be reopened and points next implementation work to RSS-004. |
+| `TASK-SOURCE-RSS-MONITOR-004` | implemented locally | Adds BOC_CANARIAS, DOG, and BOP_LUGO as validated metadata-only RSS discovery sources; no writes, candidates, evidence-grade records, PDFs, downstream, VPS, Hermes, or systemd changes. |
 
 ## Next
 
@@ -47,7 +48,8 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 | --- | --- | --- |
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-PILOT-002` | proposed | Choose at most 1-2 additional provincial sources after access-path verification; no bulk provincial monitoring. |
 | `TASK-SOURCE-PROVINCIAL-URL-DIFF-AUDIT-001` | proposed | Compare BOE and PAG provincial URLs source by source; documentation-only unless a URL correction is verified. |
-| `TASK-SOURCE-RSS-MONITOR-004` | proposed | Only after selecting another 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
+| `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` | proposed | Optional snapshot after RSS-004 if current coverage counts need a standalone report. |
+| `TASK-SOURCE-RSS-MONITOR-005` | proposed | Only after selecting another 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
 | `TASK-SOURCE-HTML-MONITOR-PILOT-001` | proposed | Only for sources without RSS/API, after source-specific endpoint/robots/fixture audit. |
 | `TASK-SOURCE-COVERAGE-RUN-REPORT-001` | proposed | Only if actual metadata-only JSONL writes are run; document source, date, output path, row count, and guardrails. |
 | `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |

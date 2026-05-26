@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xml:base="https://deputacionlugo.gal/gl/boletin-oficial-da-provincia-de-lugo/bop/feed.xml">
+  <channel>
+    <title>BOP Lugo</title>
+    <link>https://deputacionlugo.gal/boletin-oficial-da-provincia-de-lugo</link>
+    <description>Boletin Oficial da Provincia de Lugo</description>
+    <item>
+      <title>BOP DE 26/05/2026</title>
+      <link>https://deputacionlugo.gal/gl/node/84389</link>
+      <guid>https://deputacionlugo.gal/gl/node/84389</guid>
+      <pubDate>Tue, 26 May 2026 06:00:00 +0000</pubDate>
+      <description>Sumario metadata-only del Boletin Oficial da Provincia de Lugo.</description>
+    </item>
+  </channel>
+</rss>

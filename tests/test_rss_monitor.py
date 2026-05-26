@@ -112,6 +112,33 @@ def test_bocyl_pilot_access_method_exists_in_registry():
 
 
 @pytest.mark.parametrize(
+    ("source_code", "expected_url"),
+    [
+        (
+            "BOC_CANARIAS",
+            "https://www.gobiernodecanarias.org/boc/feeds/capitulo/disposiciones_generales.rss",
+        ),
+        ("DOG", "https://www.xunta.gal/diario-oficial-galicia/rss/Sumario_es.rss"),
+        (
+            "BOP_LUGO",
+            "https://deputacionlugo.gal/boletin-oficial-da-provincia-de-lugo/bop/feed.xml",
+        ),
+    ],
+)
+def test_rss_004_feed_access_methods_are_validated_in_registry(source_code, expected_url):
+    source = get_source(source_code)
+    access_method = select_feed_access_method(source)
+
+    assert access_method["type"] == "rss"
+    assert access_method["status"] == "validated"
+    assert access_method["url"] == expected_url
+    assert source["operational_status"] == "monitor_validated"
+    assert source["monitor_support"] == "available"
+    assert source["candidate_creation_allowed"] is False
+    assert source["evidence_grade_allowed"] is False
+
+
+@pytest.mark.parametrize(
     ("source_code", "expected_type", "expected_url"),
     [
         ("BOE", "rss", "https://www.boe.es/rss/boe.php"),
@@ -142,6 +169,9 @@ def test_expanded_feed_access_methods_exist_in_registry(
         ("BOIB", "rss_monitor_minimal.xml"),
         ("BOC_CANTABRIA", "rss_monitor_minimal.xml"),
         ("DOE", "rss_monitor_minimal.xml"),
+        ("BOC_CANARIAS", "rss_monitor_boc_canarias_disposiciones.xml"),
+        ("DOG", "rss_monitor_dog_sumario.xml"),
+        ("BOP_LUGO", "rss_monitor_bop_lugo.xml"),
     ],
 )
 def test_monitor_accepts_expanded_sources_as_discovery_only(source_code, fixture_name):
