@@ -317,6 +317,9 @@ official-sources status --date 2024-05-29
 The CLI also accepts `--date today` for timer use.
 On a `no_publication` day, artifact download is skipped because there are no BOE document URLs
 to fetch for that date.
+`integrity-check` verifies local cached artifacts. Metadata/provenance records with
+`local_path=NULL`, such as `raw_api_response`, are reported as `non_local_metadata` rather than
+missing files; rows with a stored local path still fail if that file is absent.
 
 ## systemd Templates
 

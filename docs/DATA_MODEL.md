@@ -225,6 +225,11 @@ Hash changes must not update downstream project data automatically.
 
 Unchanged artifact downloads still update `last_seen_at` and `last_integrity_check_at` and create an integrity check with `changed = 0`. Changed artifact downloads preserve `previous_hash`, set `content_changed_at`, set `change_detected_by`, and create an integrity check with `changed = 1`.
 
+The operational `integrity-check` command verifies local cached files. `document_files` rows with
+`local_path = NULL`, such as metadata/provenance `raw_api_response` rows, are not local artifacts
+and are reported separately as `non_local_metadata`. Missing files remain failures when a row has a
+non-null `local_path`.
+
 ### artifact_download_attempts
 
 Stores operational audit rows for attempts to fetch official artifacts.

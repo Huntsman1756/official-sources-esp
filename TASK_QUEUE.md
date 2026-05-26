@@ -35,11 +35,13 @@ for source-platform work in this repository.
 | `TASK-SOURCE-COVERAGE-V1.5-SNAPSHOT-001` | implemented locally | Coverage v1.5 snapshot added after BOP_ALBACETE and BOP_ALICANTE HTML discovery promotion; current coverage is 6 RSS/Atom, 1 API, and 3 HTML provincial discovery sources. |
 | `TASK-SOURCE-PROVINCIAL-PATTERN-REPORT-001` | implemented locally | Pattern report compares BOP_A_CORUNA, BOP_ALBACETE, and BOP_ALICANTE; decision is source-specific parsers for now with small shared helpers only. |
 | `TASK-SOURCE-PROVINCIAL-HTML-HEALTH-001` | implemented locally | Health check validated BOP_A_CORUNA, BOP_ALBACETE, and BOP_ALICANTE previews without writes; all returned `records=1` with `not_candidate`, `not_evidence`, and `unclassified` safety status. |
+| `TASK-VPS-INTEGRITY-CHECK-RAW-METADATA-001` | implemented locally | `integrity-check` now reports `local_path=NULL` metadata rows as `non_local_metadata`, while missing stored local artifact paths still fail. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
+| `TASK-VPS-INTEGRITY-CHECK-RAW-METADATA-001` VPS validation | pending after merge/deploy | Start only `official-sources-integrity-check.service`, inspect status/logs, and do not touch Hermes/systemd units beyond this service validation. |
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-PILOT-002` | proposed | Choose at most 1-2 additional provincial sources after access-path verification; no bulk provincial monitoring. |
 | `TASK-SOURCE-PROVINCIAL-URL-DIFF-AUDIT-001` | proposed | Compare BOE and PAG provincial URLs source by source; documentation-only unless a URL correction is verified. |
 | `TASK-SOURCE-RSS-MONITOR-004` | proposed | Only after selecting another 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
