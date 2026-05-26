@@ -1,0 +1,25 @@
+model:
+  default: __MODEL__
+  provider: custom
+  base_url: __BASE_URL__
+  api_key: "__API_KEY__"
+  context_length: 256000
+
+streaming:
+  enabled: true
+
+agent:
+  max_turns: 24
+  verbose: false
+  reasoning_effort: medium
+
+terminal:
+  backend: local
+  cwd: /repo
+  timeout: 120
+  docker_mount_cwd_to_workspace: false
+  lifetime_seconds: 300
+
+sampling:
+  temperature: 0.6
+  top_p: 0.95
