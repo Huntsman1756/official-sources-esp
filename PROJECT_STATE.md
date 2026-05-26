@@ -4,6 +4,42 @@ Last updated: 2026-05-26
 
 ## Current Decision
 
+`TASK-SOURCE-PROVINCIAL-HTML-HEALTH-001` is implemented locally.
+
+The project now has a health check report for the current provincial HTML discovery monitors:
+
+```text
+docs/reports/provincial-html-health-check-2026-05-26.md
+```
+
+Health check scope:
+
+```text
+BOP_A_CORUNA
+BOP_ALBACETE
+BOP_ALICANTE
+```
+
+Result:
+
+```text
+BOP_A_CORUNA: preview OK, records=1
+BOP_ALBACETE: preview OK, records=1
+BOP_ALICANTE: preview OK, records=1
+```
+
+The check used source-tree CLI commands with `PYTHONPATH=src`, preview mode only, date
+`2026-05-25`, and `--limit 1`. It did not use `--write`, did not create JSONL output, did not add
+sources, did not change parser behavior, did not create candidates/evidence, did not download
+PDFs/artifacts, did not touch downstream repos, did not run backfills, did not run broad discovery,
+and did not use VPS/prod DB operations or LLM classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-PROVINCIAL-PATTERN-REPORT-001
+```
+
 `TASK-SOURCE-PROVINCIAL-PATTERN-REPORT-001` is implemented locally.
 
 The project now has a provincial HTML discovery pattern report:
