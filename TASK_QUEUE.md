@@ -7,11 +7,14 @@ for source-platform work in this repository.
 
 ## Completed
 
+Status note: older `implemented locally` rows are historical accepted work in this repository.
+Rows marked `closed in main` have been explicitly reconciled against current `main`.
+
 | Task | Status | Notes |
 | --- | --- | --- |
 | `TASK-SOURCE-PLATFORM-001` | accepted | Cross-project boundary accepted in `PROJECT_STATE.md` and `docs/CROSS_PROJECT_INTEGRATION_MAP.md`. |
 | `TASK-SOURCE-REGISTRY-001` | implemented locally | Canonical executable registry added at `config/sources.yaml`, with validation tests and read-only CLI coverage reporting. |
-| `TASK-SOURCE-RSS-MONITOR-001` | implemented locally | Metadata-only RSS/Atom discovery monitor added with BOCYL as pilot. Default mode is preview; JSONL writes require explicit `--write`. |
+| `TASK-SOURCE-RSS-MONITOR-001` | closed in main | Metadata-only RSS/Atom discovery monitor is present in `main` with BOCYL as the original pilot. Default mode is preview; JSONL writes require explicit `--write`. Current `main` also validates BOE RSS through later RSS/coverage work. |
 | `TASK-MCP-SOURCE-COVERAGE-001` | implemented locally | Read-only MCP tools expose registry coverage and existing RSS discovery JSONL without live fetches or writes. |
 | `TASK-SOURCE-RSS-MONITOR-002` | implemented locally | BOE RSS and BOJA Atom feeds added as validated metadata-only discovery sources. |
 | `TASK-SOURCE-COVERAGE-V1-SNAPSHOT-001` | implemented locally | Canonical Coverage v1 snapshot added from the executable registry and current monitor/MCP capabilities. |
@@ -36,12 +39,12 @@ for source-platform work in this repository.
 | `TASK-SOURCE-PROVINCIAL-PATTERN-REPORT-001` | implemented locally | Pattern report compares BOP_A_CORUNA, BOP_ALBACETE, and BOP_ALICANTE; decision is source-specific parsers for now with small shared helpers only. |
 | `TASK-SOURCE-PROVINCIAL-HTML-HEALTH-001` | implemented locally | Health check validated BOP_A_CORUNA, BOP_ALBACETE, and BOP_ALICANTE previews without writes; all returned `records=1` with `not_candidate`, `not_evidence`, and `unclassified` safety status. |
 | `TASK-VPS-INTEGRITY-CHECK-RAW-METADATA-001` | implemented locally | `integrity-check` now reports `local_path=NULL` metadata rows as `non_local_metadata`, while missing stored local artifact paths still fail. |
+| `TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001` | implemented locally | Reconciles RSS monitor documentation with current `main`; confirms RSS-001 should not be reopened and points next implementation work to RSS-004. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
-| `TASK-VPS-INTEGRITY-CHECK-RAW-METADATA-001` VPS validation | pending after merge/deploy | Start only `official-sources-integrity-check.service`, inspect status/logs, and do not touch Hermes/systemd units beyond this service validation. |
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-PILOT-002` | proposed | Choose at most 1-2 additional provincial sources after access-path verification; no bulk provincial monitoring. |
 | `TASK-SOURCE-PROVINCIAL-URL-DIFF-AUDIT-001` | proposed | Compare BOE and PAG provincial URLs source by source; documentation-only unless a URL correction is verified. |
 | `TASK-SOURCE-RSS-MONITOR-004` | proposed | Only after selecting another 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
