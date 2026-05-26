@@ -10,6 +10,7 @@ data/
 artifacts/
 backups/
 logs/
+.ai/
 dist/
 build/
 *.egg-info/

@@ -36,3 +36,34 @@ Never block or delay a task waiting on the helper. The helper is an optional che
 - Always use VPS `157.90.22.40` for this project.
 - Connect as `root@157.90.22.40`.
 - Preferred SSH alias: `mcpspain-official-sources-vps`.
+
+## AI Delegation Workflow
+
+Codex is the orchestrator and reviewer. OpenCode may be used only as an implementation worker through `tools/delegate-opencode.ps1`.
+
+Default workflow for non-trivial implementation tasks:
+
+1. Codex reads `AGENTS.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md`, and relevant docs first.
+2. Codex defines the task boundary and validation criteria.
+3. Codex delegates implementation with:
+
+   ```powershell
+   pwsh ./tools/delegate-opencode.ps1 -Task "<precise bounded task>"
+   ```
+
+4. The wrapper uses an isolated git worktree by default and writes prompt, log, and patch artifacts under `.ai/`.
+5. Codex reviews `git status`, `git diff`, the `.ai/logs/` output, and the `.ai/patches/` patch before accepting any work.
+6. Codex may amend small issues directly after review.
+7. Codex runs repo-appropriate validation before commit, deploy, or VPS work.
+
+OpenCode restrictions:
+
+- Do not commit.
+- Do not push.
+- Do not deploy.
+- Do not run VPS or database operations.
+- Do not edit secrets, `.env` files, credentials, tokens, or unrelated config.
+- Do not bypass permission prompts with dangerous flags.
+- Do not modify downstream product repos or add downstream product writes from `official-sources`.
+
+VPS/deployment remains a separate Codex-reviewed step. Use `mcpspain-official-sources-vps` / `root@157.90.22.40` only after the diff has been reviewed, validation has run, and the task explicitly requires VPS work.
