@@ -964,18 +964,20 @@ Hard guardrails:
 | `TASK-SOURCE-RSS-MONITOR-003` | Implemented locally | `config/sources.yaml`, `docs/reports/rss-monitor-003-verified-feeds-2026-05-24.md` | Adds BOIB, BOC_CANTABRIA, and DOE as validated metadata-only RSS discovery sources; DOGC and BON were not added. |
 | `TASK-SOURCE-COVERAGE-V1.2-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-2-snapshot-2026-05-24.md` | Captures the v1.2 coverage baseline after RSS-003, including six RSS/Atom sources and one API discovery source. |
 | `TASK-DEV-CLI-ENTRYPOINT-CONSISTENCY-001` | Implemented locally | `src/official_sources/cli.py`, `docs/reports/cli-entrypoint-consistency-2026-05-24.md` | Makes `python -m official_sources.cli` usable for source-tree validation and documents stale console script handling. |
+| `TASK-VPS-INTEGRITY-CHECK-RAW-METADATA-001` | Implemented locally | `src/official_sources/cli.py`, `tests/test_cli.py`, `docs/reports/vps-service-drift-diagnosis-2026-05-26.md` | Clarifies local artifact integrity so non-local raw metadata rows do not fail the check while missing real local artifacts still fail. |
 
 ## Next Allowed Work
 
 Allowed next work:
 
-1. `TASK-SOURCE-RSS-MONITOR-004` only after selecting another 2-3 verified official RSS/Atom feeds.
-2. `TASK-SOURCE-HTML-MONITOR-PILOT-001` only for sources without RSS/API after source-specific audit.
-3. `TASK-SOURCE-COVERAGE-RUN-REPORT-001` if actual metadata-only JSONL writes are run.
-4. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
-5. Product-local design/preview for draft process creation in `oposiciones2.0`.
-6. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
-7. A source-needs audit for `renta-verificable` before any integration.
+1. Post-merge/deploy VPS validation for `TASK-VPS-INTEGRITY-CHECK-RAW-METADATA-001`, limited to `official-sources-integrity-check.service`.
+2. `TASK-SOURCE-RSS-MONITOR-004` only after selecting another 2-3 verified official RSS/Atom feeds.
+3. `TASK-SOURCE-HTML-MONITOR-PILOT-001` only for sources without RSS/API after source-specific audit.
+4. `TASK-SOURCE-COVERAGE-RUN-REPORT-001` if actual metadata-only JSONL writes are run.
+5. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
+6. Product-local design/preview for draft process creation in `oposiciones2.0`.
+7. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
+8. A source-needs audit for `renta-verificable` before any integration.
 
 Not allowed from this repo:
 

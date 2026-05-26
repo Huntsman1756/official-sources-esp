@@ -2806,10 +2806,13 @@ def _run_integrity_check(
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
-    counts = {"unchanged": 0, "changed": 0, "missing": 0}
+    counts = {"unchanged": 0, "changed": 0, "missing": 0, "non_local_metadata": 0}
     for file_record in repository.list_document_files_by_date(target_date):
         local_path = file_record["local_path"]
-        if not local_path or not Path(local_path).exists():
+        if not local_path:
+            counts["non_local_metadata"] += 1
+            continue
+        if not Path(local_path).exists():
             counts["missing"] += 1
             print(f"missing file_id={file_record['id']}", file=stderr)
             continue

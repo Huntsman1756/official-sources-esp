@@ -116,6 +116,11 @@ artifact_download_attempts = what happened when trying to fetch an artifact
 integrity_checks = what happened when comparing artifact content hashes
 ```
 
+Local artifact integrity checks verify rows that point at local cached files. Metadata/provenance
+rows such as `raw_api_response` can have `local_path = NULL`; these rows are counted as
+`non_local_metadata` and do not make local artifact integrity fail. Rows with a non-null
+`local_path` still fail integrity checks if the referenced file is missing.
+
 The local cache layout is:
 
 ```text

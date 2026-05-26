@@ -1795,6 +1795,99 @@ def test_integrity_check_detects_changed_local_artifact(tmp_path, capsys):
     assert file_record["previous_hash"] == sha256_bytes(original)
 
 
+def test_integrity_check_ignores_non_local_raw_metadata(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    document = _seed_document(db_path)
+    payload = _fixture_bytes("boe_document.xml")
+    run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-boe-artifacts",
+            "--date",
+            "2024-05-29",
+            "--types",
+            "xml",
+        ],
+        artifact_client=_artifact_client({document["url_xml"]: payload}),
+    )
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    repository.upsert_document_file(
+        document_id=document["id"],
+        file_type="raw_api_response",
+        official_url="https://www.boe.es/datosabiertos/api/boe/sumario/20240529",
+        local_path=None,
+        media_type="application/json",
+        payload=b'{"metadata":"source snapshot"}',
+        ingestion_run_id=None,
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "integrity-check",
+            "--date",
+            "2024-05-29",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "unchanged=1" in captured.out
+    assert "missing=0" in captured.out
+    assert "non_local_metadata=1" in captured.out
+    assert "missing file_id=" not in captured.err
+
+
+def test_integrity_check_still_fails_for_missing_local_artifact(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    artifact_dir = tmp_path / "artifacts"
+    document = _seed_document(db_path)
+    payload = _fixture_bytes("boe_document.xml")
+    run(
+        [
+            "--db-path",
+            str(db_path),
+            "--artifact-dir",
+            str(artifact_dir),
+            "download-boe-artifacts",
+            "--date",
+            "2024-05-29",
+            "--types",
+            "xml",
+        ],
+        artifact_client=_artifact_client({document["url_xml"]: payload}),
+    )
+    local_path = (
+        artifact_dir / "boe" / "2024" / "05" / "29" / document["external_id"] / "document.xml"
+    )
+    local_path.unlink()
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "integrity-check",
+            "--date",
+            "2024-05-29",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "missing=1" in captured.out
+    assert "missing file_id=" in captured.err
+
+
 def test_status_reports_expected_counts(tmp_path, capsys):
     from official_sources.cli import run
 
