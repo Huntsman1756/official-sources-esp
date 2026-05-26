@@ -4,6 +4,45 @@ Last updated: 2026-05-26
 
 ## Current Decision
 
+`TASK-SOURCE-COVERAGE-V1.5-SNAPSHOT-001` is implemented locally.
+
+The project now has a Coverage v1.5 snapshot after `TASK-SOURCE-PROVINCIAL-DISCOVERY-002`:
+
+```text
+docs/reports/source-coverage-v1-5-snapshot-2026-05-26.md
+```
+
+Coverage v1.5 summarizes the executable registry after `BOP_ALBACETE` and `BOP_ALICANTE` were
+promoted from provincial inventory to metadata-only HTML discovery monitors:
+
+```text
+total sources: 65
+estatal: 2
+european: 1
+autonomica: 19
+provincial: 43
+metadata_adapter_validated: 9
+monitor_validated: 6
+inventory_only: 49
+paused: 1
+RSS/Atom discovery sources: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
+API discovery sources: BOPV
+HTML discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE
+BOP_ALMERIA: rejected for this task; remains inventory_only because the tested surface is ZK/JavaScript
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
+```
+
+This snapshot is reporting/control-plane only. It did not add sources, ingestion behavior,
+RSS/API/HTML writes, candidates, evidence-grade records, PDFs, artifacts, downstream writes,
+backfills, all-source runs, VPS operations, production DB operations, or LLM classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-PROVINCIAL-DISCOVERY-002
+```
+
 `TASK-SOURCE-PROVINCIAL-DISCOVERY-002` is implemented locally.
 
 The second provincial metadata-only discovery task used the deterministic MCP recommendations as

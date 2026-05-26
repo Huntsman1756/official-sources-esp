@@ -32,6 +32,7 @@ for source-platform work in this repository.
 | `TASK-MCP-DISCOVERY-PREVIEW-001` | implemented locally | MCP now exposes controlled one-source metadata-only discovery previews for RSS/API/HTML, with no writes, candidates, evidence-grade records, PDFs/artifacts, backfills, or downstream writes. |
 | `TASK-MCP-COVERAGE-RECOMMENDATIONS-001` | implemented locally | MCP now recommends next source work deterministically from registry/cache state, without LLMs, live fetches, previews, writes, candidates, evidence-grade records, or downstream writes. |
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-002` | implemented locally | Evaluated BOP_ALBACETE, BOP_ALICANTE, and BOP_ALMERIA from MCP recommendations; added metadata-only HTML discovery for BOP_ALBACETE and BOP_ALICANTE; left BOP_ALMERIA inventory-only due ZK/JavaScript surface. |
+| `TASK-SOURCE-COVERAGE-V1.5-SNAPSHOT-001` | implemented locally | Coverage v1.5 snapshot added after BOP_ALBACETE and BOP_ALICANTE HTML discovery promotion; current coverage is 6 RSS/Atom, 1 API, and 3 HTML provincial discovery sources. |
 
 ## Next
 
@@ -43,7 +44,7 @@ for source-platform work in this repository.
 | `TASK-SOURCE-HTML-MONITOR-PILOT-001` | proposed | Only for sources without RSS/API, after source-specific endpoint/robots/fixture audit. |
 | `TASK-SOURCE-COVERAGE-RUN-REPORT-001` | proposed | Only if actual metadata-only JSONL writes are run; document source, date, output path, row count, and guardrails. |
 | `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |
-| `TASK-SOURCE-COVERAGE-V1.5-SNAPSHOT-001` | proposed | Snapshot coverage after BOP_ALBACETE and BOP_ALICANTE HTML discovery promotion. |
+| `TASK-SOURCE-PROVINCIAL-PATTERN-REPORT-001` | proposed | Compare BOP_A_CORUNA, BOP_ALBACETE, and BOP_ALICANTE to decide whether a reusable provincial HTML abstraction exists or source-specific adapters remain correct. |
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-003` | proposed | Only after v1.5 snapshot; evaluate at most 2 more provincial sources, no bulk monitoring. |
 
 ## Guardrails
