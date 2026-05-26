@@ -21,7 +21,7 @@ registered sources: 65
 provincial inventory-only sources: 40
 RSS/Atom discovery sources: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
 API discovery sources: BOPV
-HTML discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE
+HTML discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ARABA_ALAVA, BOP_AVILA
 candidate_creation_allowed=true: 0
 evidence_grade_allowed=true: 0
 ```
@@ -155,7 +155,8 @@ API monitor rules:
 ## HTML Discovery CLI
 
 HTML discovery is metadata-only. Current provincial HTML discovery supports `BOP_A_CORUNA`,
-`BOP_ALBACETE`, and `BOP_ALICANTE` through source-specific parsers. PDF links may appear as
+`BOP_ALBACETE`, `BOP_ALICANTE`, `BOP_ARABA_ALAVA`, and `BOP_AVILA` through source-specific parsers.
+PDF links may appear as
 official URLs in records, but the monitor does not download PDFs or artifacts.
 
 Preview BOP_A_CORUNA without writing JSONL:
@@ -164,6 +165,8 @@ Preview BOP_A_CORUNA without writing JSONL:
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_ARABA_ALAVA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_AVILA --date YYYY-MM-DD --limit 1
 ```
 
 Write JSONL only when explicitly requested:
@@ -172,6 +175,8 @@ Write JSONL only when explicitly requested:
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 10 --write
 official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 10 --write
 official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_ARABA_ALAVA --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_AVILA --date YYYY-MM-DD --limit 10 --write
 ```
 
 HTML monitor rules:
@@ -309,7 +314,7 @@ Runs a one-source metadata-only discovery preview through the MCP layer. The too
 ```text
 rss: validated RSS/Atom discovery sources
 api: BOPV
-html: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE
+html: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ARABA_ALAVA, BOP_AVILA
 ```
 
 The default `limit` is `1`; the maximum allowed limit is `10`. If `discovery_type` is omitted, the
@@ -348,7 +353,7 @@ provincial_html_discovery_pilot
 
 The tool scans the registry and recommends provincial `inventory_only` sources with official landing
 URLs and no validated monitor yet. It excludes already monitored sources such as `BOP_A_CORUNA`,
-`BOP_ALBACETE`, and `BOP_ALICANTE`.
+`BOP_ALBACETE`, `BOP_ALICANTE`, `BOP_ARABA_ALAVA`, and `BOP_AVILA`.
 
 Each recommendation includes:
 
@@ -408,6 +413,8 @@ official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_ARABA_ALAVA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_AVILA --date YYYY-MM-DD --limit 1
 ```
 
 If `official-sources` does not reflect the current source tree, use the module entrypoint shown in

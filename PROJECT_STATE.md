@@ -4,6 +4,41 @@ Last updated: 2026-05-26
 
 ## Current Decision
 
+`TASK-SOURCE-PROVINCIAL-DISCOVERY-003` is implemented locally.
+
+The project now has two additional source-specific provincial HTML discovery monitors:
+
+```text
+BOP_ARABA_ALAVA
+BOP_AVILA
+```
+
+Report:
+
+```text
+docs/reports/provincial-discovery-003-2026-05-26.md
+```
+
+Selection result:
+
+```text
+recommend_next_sources still returned BOP_ALMERIA first.
+BOP_ALMERIA was not selected because prior work documents the tested official surface as ZK/JavaScript.
+BOP_ARABA_ALAVA was selected and preview returned records=1.
+BOP_AVILA was selected and preview returned records=1.
+```
+
+The task kept discovery metadata-only and source-specific. It did not use `--write`, did not create
+JSONL output, did not download PDFs/artifacts, did not create candidates/evidence, did not touch
+downstream repos, did not run backfills, did not run broad discovery, did not use VPS/prod DB
+operations or LLM classification, and did not create a generic provincial HTML framework.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-PROVINCIAL-HTML-HEALTH-001
+```
+
 `TASK-SOURCE-PROVINCIAL-HTML-HEALTH-001` is implemented locally.
 
 The project now has a health check report for the current provincial HTML discovery monitors:

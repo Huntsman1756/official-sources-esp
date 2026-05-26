@@ -87,6 +87,19 @@ def build_bop_alicante_html_url(template_url: str, *, target_date: str) -> str:
     return f"{template_url}?{urlencode({'nemo': 'BOP_CON', 'param': param_xml, 'usuario': '-'})}"
 
 
+def build_bop_araba_alava_html_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
+    date_ddmmyyyy = quote(parsed_date.strftime("%d/%m/%Y"), safe="")
+    return template_url.replace("{date_ddmmyyyy}", date_ddmmyyyy).replace(
+        "{date}", parsed_date.isoformat()
+    )
+
+
+def build_bop_avila_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url.replace("{date}", target_date)
+
+
 def select_html_access_method(source: dict[str, Any]) -> dict[str, Any]:
     for access_method in source.get("access_methods", []):
         if (
@@ -262,6 +275,73 @@ def parse_bop_alicante_response(
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
+def parse_bop_araba_alava_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    published_at: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    records = [
+        _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at,
+            official_url=urljoin(page_url, href),
+            summary=None,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=[],
+        )
+        for title, href, document_id in _iter_bop_araba_alava_announcements(text)
+    ]
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
+def parse_bop_avila_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_bop_avila_publication_date(text) or requested_date
+    records = [
+        _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at,
+            official_url=urljoin(page_url, href),
+            summary=None,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"],
+        )
+        for title, href, document_id in _iter_bop_avila_announcements(text)
+    ]
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
 def write_html_jsonl(records: list[dict[str, Any]], output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = "".join(
@@ -315,8 +395,13 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_albacete_html_url(template_url, target_date=target_date)
     if source_code == "BOP_ALICANTE":
         return build_bop_alicante_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_ARABA_ALAVA":
+        return build_bop_araba_alava_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_AVILA":
+        return build_bop_avila_html_url(template_url, target_date=target_date)
     raise HTMLMonitorError(
-        "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, and BOP_ALICANTE only"
+        "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
+        "BOP_ARABA_ALAVA, and BOP_AVILA only"
     )
 
 
@@ -349,6 +434,24 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_ALICANTE":
         return parse_bop_alicante_response(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_ARABA_ALAVA":
+        return parse_bop_araba_alava_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            published_at=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_AVILA":
+        return parse_bop_avila_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -525,6 +628,54 @@ def _bop_alicante_items(payload: dict[str, Any]) -> list[dict[str, Any]]:
     if not isinstance(items, list):
         return []
     return [item for item in items if isinstance(item, dict)]
+
+
+def _iter_bop_araba_alava_announcements(text: str) -> list[tuple[str, str, str]]:
+    pattern = re.compile(
+        r'<a[^>]+href="(?P<href>[^"]*Resultado\.aspx\?File=Boletines/'
+        r'(?P<year>\d{4})/(?P<number>\d{3})/'
+        r'\d{4}_\d{3}_(?P<doc>\d+)_C\.xml&amp;hl=)"[^>]*>'
+        r"(?P<title>.*?)</a>",
+        re.I | re.S,
+    )
+    announcements = []
+    seen: set[str] = set()
+    for match in pattern.finditer(text):
+        title = _normalize_text(match.group("title"))
+        href = html.unescape(match.group("href"))
+        document_id = f"{match.group('year')}/{match.group('number')}/{match.group('doc')}"
+        if title and href and document_id not in seen:
+            seen.add(document_id)
+            announcements.append((title, href, document_id))
+    return announcements
+
+
+def _extract_bop_avila_publication_date(text: str) -> str | None:
+    match = re.search(
+        r"<title>\s*[^[]*\[\s*(\d{2}/\d{2}/\d{4})\s*\]\s*</title>",
+        text,
+        re.I,
+    )
+    if not match:
+        return None
+    return _ddmmyyyy_to_iso(match.group(1))
+
+
+def _iter_bop_avila_announcements(text: str) -> list[tuple[str, str, str]]:
+    pattern = re.compile(
+        r'<p[^>]*class="num"[^>]*>\s*n(?:&ordm;|º)\s*(?P<document_id>\d+/\d+)'
+        r"(?:</p>)?.*?"
+        r'<a[^>]+href="(?P<href>[^"]+)"[^>]*>(?P<title>.*?)</a>',
+        re.I | re.S,
+    )
+    announcements = []
+    for match in pattern.finditer(text):
+        title = _normalize_text(match.group("title"))
+        href = html.unescape(match.group("href"))
+        document_id = _normalize_text(match.group("document_id"))
+        if title and href and document_id:
+            announcements.append((title, href, document_id))
+    return announcements
 
 
 def _first_json_value(item: dict[str, Any], key: str) -> str | None:

@@ -13,7 +13,7 @@ The source coverage platform now has:
 config/sources.yaml
 RSS/Atom discovery: BOE, BOJA, BOCYL, BOIB, BOC_CANTABRIA, DOE
 API discovery: BOPV
-HTML discovery: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE
+HTML discovery: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ARABA_ALAVA, BOP_AVILA
 MCP read-only coverage and discovery readers
 MCP controlled one-source discovery preview
 MCP deterministic next-source recommendations
@@ -56,6 +56,8 @@ official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_ARABA_ALAVA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_AVILA --date YYYY-MM-DD --limit 1
 ```
 
 Preview rules:
@@ -79,6 +81,8 @@ official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 10 --write
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 10 --write
 official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 10 --write
 official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_ARABA_ALAVA --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_AVILA --date YYYY-MM-DD --limit 10 --write
 ```
 
 Write output paths:

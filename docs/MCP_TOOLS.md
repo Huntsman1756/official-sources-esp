@@ -190,7 +190,7 @@ Supported preview families:
 ```text
 rss: validated RSS/Atom discovery sources
 api: BOPV API discovery
-html: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE HTML discovery
+html: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ARABA_ALAVA, BOP_AVILA HTML discovery
 ```
 
 The tool refuses broad/all-source requests, unknown sources, inventory-only sources without an
@@ -213,8 +213,8 @@ provincial_html_discovery_pilot
 ```
 
 The tool recommends provincial `inventory_only` sources with official landing URLs and no validated
-monitor yet. Already monitored sources such as `BOP_A_CORUNA`, `BOP_ALBACETE`, and
-`BOP_ALICANTE` are excluded. Each recommendation
+monitor yet. Already monitored sources such as `BOP_A_CORUNA`, `BOP_ALBACETE`, `BOP_ALICANTE`,
+`BOP_ARABA_ALAVA`, and `BOP_AVILA` are excluded. Each recommendation
 includes:
 
 ```text

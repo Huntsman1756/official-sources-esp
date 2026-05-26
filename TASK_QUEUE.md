@@ -35,6 +35,7 @@ for source-platform work in this repository.
 | `TASK-SOURCE-COVERAGE-V1.5-SNAPSHOT-001` | implemented locally | Coverage v1.5 snapshot added after BOP_ALBACETE and BOP_ALICANTE HTML discovery promotion; current coverage is 6 RSS/Atom, 1 API, and 3 HTML provincial discovery sources. |
 | `TASK-SOURCE-PROVINCIAL-PATTERN-REPORT-001` | implemented locally | Pattern report compares BOP_A_CORUNA, BOP_ALBACETE, and BOP_ALICANTE; decision is source-specific parsers for now with small shared helpers only. |
 | `TASK-SOURCE-PROVINCIAL-HTML-HEALTH-001` | implemented locally | Health check validated BOP_A_CORUNA, BOP_ALBACETE, and BOP_ALICANTE previews without writes; all returned `records=1` with `not_candidate`, `not_evidence`, and `unclassified` safety status. |
+| `TASK-SOURCE-PROVINCIAL-DISCOVERY-003` | implemented locally | Added metadata-only source-specific HTML discovery for BOP_ARABA_ALAVA and BOP_AVILA; BOP_ALMERIA was not selected because prior work documents a ZK/JavaScript surface. |
 
 ## Next
 
@@ -46,7 +47,8 @@ for source-platform work in this repository.
 | `TASK-SOURCE-HTML-MONITOR-PILOT-001` | proposed | Only for sources without RSS/API, after source-specific endpoint/robots/fixture audit. |
 | `TASK-SOURCE-COVERAGE-RUN-REPORT-001` | proposed | Only if actual metadata-only JSONL writes are run; document source, date, output path, row count, and guardrails. |
 | `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |
-| `TASK-SOURCE-PROVINCIAL-DISCOVERY-003` | proposed | Evaluate at most 2 more provincial sources using the pattern report and health-check criteria; no bulk monitoring and no generic framework unless evidence improves. |
+| `TASK-MCP-COVERAGE-RECOMMENDATIONS-002` | proposed | Penalize or annotate previously rejected provincial sources such as BOP_ALMERIA so deterministic recommendations do not ignore documented rejection notes. |
+| `TASK-SOURCE-PROVINCIAL-DISCOVERY-004` | proposed | Evaluate at most 2 more provincial sources after recommender handling is improved; no bulk monitoring and no generic framework unless evidence improves. |
 | `TASK-SOURCE-HTML-MONITOR-HELPERS-001` | deferred | Only extract additional shared helpers after another source proves repeated duplication; do not create a broad generic provincial framework yet. |
 
 ## Guardrails

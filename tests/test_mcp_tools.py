@@ -716,8 +716,8 @@ def test_mcp_recommend_next_sources_returns_deterministic_provincial_inventory_s
     assert result["count"] == 3
     assert [item["source_code"] for item in result["recommendations"]] == [
         "BOP_ALMERIA",
-        "BOP_ARABA_ALAVA",
-        "BOP_AVILA",
+        "BOP_BADAJOZ",
+        "BOP_BARCELONA",
     ]
     first = result["recommendations"][0]
     assert first["recommended_task"] == "provincial_html_discovery_pilot"
@@ -737,7 +737,13 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
     result = tools.recommend_next_sources(limit=20, output_root=tmp_path)
 
     source_codes = {item["source_code"] for item in result["recommendations"]}
-    assert {"BOP_A_CORUNA", "BOP_ALBACETE", "BOP_ALICANTE"}.isdisjoint(source_codes)
+    assert {
+        "BOP_A_CORUNA",
+        "BOP_ALBACETE",
+        "BOP_ALICANTE",
+        "BOP_ARABA_ALAVA",
+        "BOP_AVILA",
+    }.isdisjoint(source_codes)
     assert all(
         item["operational_status"] == "inventory_only" for item in result["recommendations"]
     )

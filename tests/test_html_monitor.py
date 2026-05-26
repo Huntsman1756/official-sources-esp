@@ -18,6 +18,8 @@ from official_sources.html_monitor import (
     parse_bop_a_coruna_html,
     parse_bop_albacete_html,
     parse_bop_alicante_response,
+    parse_bop_araba_alava_html,
+    parse_bop_avila_html,
     select_html_access_method,
 )
 from official_sources.source_coverage import list_monitorable_sources
@@ -47,7 +49,7 @@ def test_bop_a_coruna_html_access_method_exists_in_registry():
 
 
 def test_selected_provincial_html_access_methods_exist_in_registry():
-    for source_code in ("BOP_ALBACETE", "BOP_ALICANTE"):
+    for source_code in ("BOP_ALBACETE", "BOP_ALICANTE", "BOP_ARABA_ALAVA", "BOP_AVILA"):
         source = get_source(source_code)
         method = select_html_access_method(source)
 
@@ -76,6 +78,21 @@ def test_build_bop_alicante_html_url_is_one_date_request():
     assert "nemo=BOP_CON" in url
     assert "usuario=-" in url
     assert "%3CfechaPub%3E25%2F05%2F2026%3C%2FfechaPub%3E" in url
+
+
+def test_bop_araba_alava_html_access_method_is_one_date_request():
+    source = get_source("BOP_ARABA_ALAVA")
+    result = monitor_html_source(
+        source,
+        fetcher=lambda _url: _fixture_bytes("bop_araba_alava_latest.html"),
+        target_date="2026-05-25",
+        limit=1,
+    )
+
+    assert len(result.records) == 1
+    assert result.records[0]["page_url"] == (
+        "http://www.araba.eus/botha/Inicio/SGBO5001.aspx?FechaBotha=25%2F05%2F2026"
+    )
 
 
 def test_parse_bop_a_coruna_fixture_emits_metadata_only_records():
@@ -184,6 +201,70 @@ def test_parse_bop_alicante_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_araba_alava_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_araba_alava_latest.html")
+    page_url = "http://www.araba.eus/botha/Inicio/SGBO5001.aspx?FechaBotha=25%2F05%2F2026"
+
+    result = parse_bop_araba_alava_html(
+        raw,
+        source_code="BOP_ARABA_ALAVA",
+        page_url=page_url,
+        published_at="2026-05-25",
+        discovered_at="2026-05-25T00:00:00Z",
+        monitor_run_id="run-araba",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_ARABA_ALAVA"
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "2026/059/01429"
+    assert record["document_id"] == "2026/059/01429"
+    assert record["title"].startswith("Moción 49/2026")
+    assert record["published_at"] == "2026-05-25"
+    assert record["official_url"] == (
+        "http://www.araba.eus/botha/Busquedas/Resultado.aspx?"
+        "File=Boletines/2026/059/2026_059_01429_C.xml&hl="
+    )
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_avila_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_avila_latest.html")
+    page_url = "https://www.diputacionavila.es/boletin-oficial/"
+
+    result = parse_bop_avila_html(
+        raw,
+        source_code="BOP_AVILA",
+        page_url=page_url,
+        requested_date="2026-05-25",
+        discovered_at="2026-05-25T00:00:00Z",
+        monitor_run_id="run-avila",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_AVILA"
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "1118/26"
+    assert record["document_id"] == "1118/26"
+    assert record["title"] == "EXPOSICIÓN PÚBLICA DE LA CUENTA GENERAL DEL EJERCICIO 2025"
+    assert record["published_at"] == "2026-05-25"
+    assert record["official_url"] == (
+        "https://www.diputacionavila.es/bops/2026/25-05-2026/25-05-2026_111826.pdf"
+    )
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert "pdf_url" not in record
+
+
 def test_html_entry_hash_prefers_source_published_at_and_official_url():
     assert build_html_entry_hash(
         source_code="BOP_A_CORUNA",
@@ -224,6 +305,8 @@ def test_monitor_html_source_supports_selected_provincial_sources():
     fixtures = {
         "BOP_ALBACETE": "bop_albacete_latest.html",
         "BOP_ALICANTE": "bop_alicante_bop_con.json",
+        "BOP_ARABA_ALAVA": "bop_araba_alava_latest.html",
+        "BOP_AVILA": "bop_avila_latest.html",
     }
 
     for source_code, fixture_name in fixtures.items():
@@ -360,7 +443,13 @@ def test_cli_html_monitor_write_requires_explicit_write_flag_and_writes_jsonl(tm
 def test_mcp_source_coverage_sees_bop_a_coruna_as_html_monitorable():
     result = list_monitorable_sources()
     sources = {source["source_code"]: source for source in result["sources"]}
-    for source_code in ("BOP_A_CORUNA", "BOP_ALBACETE", "BOP_ALICANTE"):
+    for source_code in (
+        "BOP_A_CORUNA",
+        "BOP_ALBACETE",
+        "BOP_ALICANTE",
+        "BOP_ARABA_ALAVA",
+        "BOP_AVILA",
+    ):
         method_types = {method["type"] for method in sources[source_code]["access_methods"]}
 
         assert "html" in method_types

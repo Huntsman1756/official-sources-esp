@@ -605,21 +605,22 @@ sources:
     official_landing_url: http://www.araba.eus/botha/Inicio/SGBO5001.aspx
     access_methods:
       - type: html
-        url: http://www.araba.eus/botha/Inicio/SGBO5001.aspx
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: http://www.araba.eus/botha/Inicio/SGBO5001.aspx?FechaBotha={date_ddmmyyyy}
+        status: validated
+        notes: Official date-scoped BOTHA summary page used by provincial metadata-only discovery; Spanish XML result links are recorded as official_url and no PDFs are downloaded.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-26"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Araba/Alava.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Parser selects Spanish `_C.xml` result links to avoid duplicate Basque/Spanish entries.
+      - HTML monitor support is source-specific; do not generalize to all provincial bulletins.
+    notes: Official provincial bulletin HTML discovery monitor.
 
   - source_code: BOP_AVILA
     name: Boletin Oficial de la Provincia de Avila
@@ -629,20 +630,21 @@ sources:
     access_methods:
       - type: html
         url: https://www.diputacionavila.es/boletin-oficial/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        status: validated
+        notes: Official current-bulletin HTML page used by provincial metadata-only discovery; PDF links are recorded as official_url but never downloaded.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-26"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Avila.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Current-bulletin page is not a historical backfill interface; use preview only and keep date-scoped assumptions explicit.
+      - HTML monitor support is source-specific; do not generalize to all provincial bulletins.
+    notes: Official provincial bulletin HTML discovery monitor.
 
   - source_code: BOP_BADAJOZ
     name: Boletin Oficial de la Provincia de Badajoz
