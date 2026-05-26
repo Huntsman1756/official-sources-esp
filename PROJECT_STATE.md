@@ -4,6 +4,45 @@ Last updated: 2026-05-26
 
 ## Current Decision
 
+`TASK-SOURCE-PROVINCIAL-PATTERN-REPORT-001` is implemented locally.
+
+The project now has a provincial HTML discovery pattern report:
+
+```text
+docs/reports/provincial-html-discovery-patterns-2026-05-26.md
+```
+
+Decision:
+
+```text
+Keep source-specific provincial HTML parsers for now.
+Use small shared helpers only where duplication is already proven.
+Do not build a broad generic provincial HTML framework yet.
+```
+
+Rationale:
+
+```text
+BOP_A_CORUNA: date-scoped HTML page with bloqueAnuncio blocks and HTML document URLs.
+BOP_ALBACETE: current-bulletin HTML summary with page-link PDF endpoints recorded as metadata only.
+BOP_ALICANTE: official consultation page backed by a JSON endpoint, one date at a time.
+BOP_ALMERIA: rejected/deferred because the tested official surface is a ZK/JavaScript app.
+```
+
+The common contract is real: one-source preview, metadata-only record shape, SHA-256 raw payload and
+entry hashes, no PDF download, and `not_candidate`/`not_evidence`/`unclassified` safety flags. The
+source extraction mechanics are not yet common enough to justify a generic framework.
+
+This task is analysis/docs only. It did not add sources, change parser behavior, run monitor writes,
+create candidates, create evidence-grade records, download PDFs/artifacts, touch downstream repos,
+run backfills, run broad discovery, run VPS/prod DB operations, or add LLM classification.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-COVERAGE-V1.5-SNAPSHOT-001
+```
+
 `TASK-SOURCE-COVERAGE-V1.5-SNAPSHOT-001` is implemented locally.
 
 The project now has a Coverage v1.5 snapshot after `TASK-SOURCE-PROVINCIAL-DISCOVERY-002`:
