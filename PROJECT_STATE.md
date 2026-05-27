@@ -4,6 +4,73 @@ Last updated: 2026-05-27
 
 ## Current Decision
 
+`TASK-PROVINCIAL-READONLY-BATCH-AUDIT-001` is implemented locally.
+
+The batch audit ran against the 38 remaining provincial `inventory_only` sources without a
+documented technical blocker, excluding `BOP_ALMERIA` and excluding already monitored provincial
+sources:
+
+```text
+BOP_A_CORUNA
+BOP_ALBACETE
+BOP_ALICANTE
+BOP_LUGO
+```
+
+The audit used one read-only landing-page request per source with a 5 second timeout and 200 KB
+response cap. It did not use login, headless browser automation, anti-bot bypass, broad scraping,
+monitor writes, registry status changes, candidate creation, evidence-grade creation, PDF/artifact
+downloads, downstream writes, VPS/prod DB operations, Hermes, BOE timer, integrity timer, or
+systemd.
+
+Outputs:
+
+```text
+docs/reports/provincial-readonly-batch-audit-2026-05-27.md
+data/provincial_audit/provincial-readonly-batch-audit-2026-05-27.json
+```
+
+Category counts:
+
+```text
+rss_or_api_detected: 4
+open_data_detected: 7
+static_html_viable: 5
+stable_form_or_endpoint: 14
+unknown: 8
+```
+
+Recommended metadata-only pilot candidates by evidence and prior wave weighting:
+
+```text
+BOP_BARCELONA
+BOP_MALAGA
+BOP_BIZKAIA
+BOP_VALENCIA
+BOP_SEVILLA
+```
+
+Defer/manual from this first pass:
+
+```text
+BOP_CADIZ
+BOP_CIUDAD_REAL
+BOP_CUENCA
+BOP_GIRONA
+BOP_GUADALAJARA
+BOP_OURENSE
+BOP_TARRAGONA
+BOP_ZARAGOZA
+```
+
+This audit is planning evidence only. It does not validate or add any new provincial monitor.
+
+Previous completed source-ranking task:
+
+```text
+TASK-MCP-SOURCE-RANKING-CLEANUP-001
+```
+
 `TASK-MCP-SOURCE-RANKING-CLEANUP-001` is implemented locally.
 
 `recommend_next_sources` no longer treats documented blocked/deferred provincial sources as normal
