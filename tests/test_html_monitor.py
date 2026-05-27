@@ -13,7 +13,9 @@ from official_sources.html_monitor import (
     build_bop_a_coruna_html_url,
     build_bop_alicante_html_url,
     build_bop_barcelona_html_url,
+    build_bop_bizkaia_html_url,
     build_bop_malaga_html_url,
+    build_bop_valencia_html_url,
     build_html_entry_hash,
     build_html_monitor_output_path,
     monitor_html_source,
@@ -21,7 +23,9 @@ from official_sources.html_monitor import (
     parse_bop_albacete_html,
     parse_bop_alicante_response,
     parse_bop_barcelona_html,
+    parse_bop_bizkaia_detail_html,
     parse_bop_malaga_html,
+    parse_bop_valencia_html,
     select_html_access_method,
 )
 from official_sources.source_coverage import list_monitorable_sources
@@ -51,7 +55,14 @@ def test_bop_a_coruna_html_access_method_exists_in_registry():
 
 
 def test_selected_provincial_html_access_methods_exist_in_registry():
-    for source_code in ("BOP_ALBACETE", "BOP_ALICANTE", "BOP_BARCELONA", "BOP_MALAGA"):
+    for source_code in (
+        "BOP_ALBACETE",
+        "BOP_ALICANTE",
+        "BOP_BARCELONA",
+        "BOP_BIZKAIA",
+        "BOP_MALAGA",
+        "BOP_VALENCIA",
+    ):
         source = get_source(source_code)
         method = select_html_access_method(source)
 
@@ -89,11 +100,25 @@ def test_build_bop_barcelona_html_url_is_one_date_request():
     ) == "https://bop.diba.cat/butlleti-del-dia"
 
 
+def test_build_bop_bizkaia_html_url_is_one_landing_request():
+    assert build_bop_bizkaia_html_url(
+        "https://www.bizkaia.eus/es/bob",
+        target_date="2026-05-25",
+    ) == "https://www.bizkaia.eus/es/bob"
+
+
 def test_build_bop_malaga_html_url_is_one_date_request():
     assert build_bop_malaga_html_url(
         "https://www.bopmalaga.es/",
         target_date="2026-05-25",
     ) == "https://www.bopmalaga.es/"
+
+
+def test_build_bop_valencia_html_url_is_one_landing_request():
+    assert build_bop_valencia_html_url(
+        "https://bop.dival.es/bop/drvisapi.dll",
+        target_date="2026-05-25",
+    ) == "https://bop.dival.es/bop/drvisapi.dll"
 
 
 def test_parse_bop_a_coruna_fixture_emits_metadata_only_records():
@@ -160,6 +185,44 @@ def test_parse_bop_barcelona_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_bizkaia_detail_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_bizkaia_detail.html")
+    page_url = (
+        "https://www.bizkaia.eus/es/bob/resultados?p_p_id=IYBIWBCC&"
+        "p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&"
+        "_IYBIWBCC_mvcRenderCommandName=%2Fdetail&"
+        "_IYBIWBCC_bdate=20260525&_IYBIWBCC_bnum=96"
+    )
+
+    result = parse_bop_bizkaia_detail_html(
+        raw,
+        source_code="BOP_BIZKAIA",
+        page_url=page_url,
+        requested_date="2026-05-25",
+        discovered_at="2026-05-25T00:00:00Z",
+        monitor_run_id="run-bizkaia",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_BIZKAIA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "I-600"
+    assert record["document_id"] == "I-600"
+    assert record["title"] == "Departamento de Hacienda y Finanzas - Anuncio de subasta, 42/2026."
+    assert record["published_at"] == "2026-05-25"
+    assert record["official_url"] == (
+        "https://www.bizkaia.eus/lehendakaritza/Bao_bob/2026/05/25/I-600_cas.pdf"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
 def test_parse_bop_albacete_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("bop_albacete_latest.html")
     page_url = "https://bop.dipualba.es"
@@ -189,6 +252,40 @@ def test_parse_bop_albacete_fixture_emits_metadata_only_records():
     assert record["official_url"] == (
         "https://bop.dipualba.es/servicesajax/descargararchivopaginaBOP/297598"
     )
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_valencia_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_valencia_latest.html")
+    page_url = "https://bop.dival.es/bop/drvisapi.dll"
+
+    result = parse_bop_valencia_html(
+        raw,
+        source_code="BOP_VALENCIA",
+        page_url=page_url,
+        requested_date="2026-05-25",
+        discovered_at="2026-05-25T00:00:00Z",
+        monitor_run_id="run-valencia",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_VALENCIA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "2026/06245"
+    assert record["document_id"] == "2026/06245"
+    assert (
+        record["title"]
+        == "Anunci de la Diputacio Provincial de Valencia sobre aprovacio de bases."
+    )
+    assert record["published_at"] == "2026-05-25"
+    assert record["official_url"] is None
+    assert record["warnings"] == ["entry_hash_fallback_missing_official_url"]
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"
     assert record["classification_status"] == "unclassified"
@@ -310,6 +407,7 @@ def test_monitor_html_source_supports_selected_provincial_sources():
         "BOP_ALICANTE": "bop_alicante_bop_con.json",
         "BOP_BARCELONA": "bop_barcelona_latest.html",
         "BOP_MALAGA": "bop_malaga_latest.html",
+        "BOP_VALENCIA": "bop_valencia_latest.html",
     }
 
     for source_code, fixture_name in fixtures.items():
@@ -337,6 +435,38 @@ def test_monitor_html_source_supports_selected_provincial_sources():
         assert result.records[0]["candidate_status"] == "not_candidate"
         assert result.records[0]["evidence_status"] == "not_evidence"
         assert result.records[0]["classification_status"] == "unclassified"
+
+
+def test_monitor_bop_bizkaia_fetches_landing_then_public_detail():
+    requested_urls = []
+    detail_url = (
+        "https://www.bizkaia.eus/es/bob/resultados?p_p_id=IYBIWBCC&"
+        "p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&"
+        "_IYBIWBCC_mvcRenderCommandName=%2Fdetail&"
+        "_IYBIWBCC_bdate=20260525&_IYBIWBCC_bnum=96"
+    )
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        if url == "https://www.bizkaia.eus/es/bob":
+            return _fixture_bytes("bop_bizkaia_landing.html")
+        if url == detail_url:
+            return _fixture_bytes("bop_bizkaia_detail.html")
+        raise AssertionError(f"unexpected URL: {url}")
+
+    result = monitor_html_source(
+        get_source("BOP_BIZKAIA"),
+        fetcher=fetcher,
+        target_date="2026-05-25",
+        limit=1,
+    )
+
+    assert requested_urls == ["https://www.bizkaia.eus/es/bob", detail_url]
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == "BOP_BIZKAIA"
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
+    assert result.records[0]["classification_status"] == "unclassified"
 
 
 def test_html_monitor_refuses_source_without_validated_html_access_method():
@@ -481,7 +611,9 @@ def test_mcp_source_coverage_sees_bop_a_coruna_as_html_monitorable():
         "BOP_ALBACETE",
         "BOP_ALICANTE",
         "BOP_BARCELONA",
+        "BOP_BIZKAIA",
         "BOP_MALAGA",
+        "BOP_VALENCIA",
     ):
         method_types = {method["type"] for method in sources[source_code]["access_methods"]}
 
