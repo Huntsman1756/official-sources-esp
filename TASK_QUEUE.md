@@ -42,12 +42,14 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 | `TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001` | merged | Reconciles RSS monitor documentation with current `main`; confirms RSS-001 should not be reopened and points next implementation work to RSS-004. |
 | `TASK-SOURCE-RSS-MONITOR-004` | implemented locally | Adds BOC_CANARIAS, DOG, and BOP_LUGO as validated metadata-only RSS discovery sources; no writes, candidates, evidence-grade records, PDFs, downstream, VPS, Hermes, or systemd changes. |
 | `TASK-HERMES-AUDITOR-CANONICAL-ROOT-001` | completed | Hermes now audits `/opt/official-sources/app` through explicit `APP_ROOT`/`REPO_ROOT`/`TARGET_REPO` systemd environment; manual run returned `0/SUCCESS`, failed units are `0`, BOE/integrity/Hermes timers remain active, and report `vps-audit-20260527-044105.md` confirms RSS monitor present and RSS-001 completed. Scheduled validation remains pending next timer run. |
+| `TASK-MCP-SOURCE-RANKING-CLEANUP-001` | implemented locally | `recommend_next_sources` now excludes documented blocked/deferred provincial sources such as `BOP_ALMERIA` from the normal ranking while keeping them in registry inventory, and prioritizes Barcelona/Malaga then Bizkaia/Valencia/Sevilla/Zaragoza before alphabetical fallback. No monitors, scraping, writes, VPS, Hermes, timers, candidates, evidence, or downstream changes. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
 | `TASK-HERMES-AUDITOR-SCHEDULED-VALIDATION-001` | proposed | After the next automatic Hermes timer run, confirm the latest report still targets `/opt/official-sources/app`, reports `main`, clean worktree, RSS monitor present, RSS-001 completed/not current work, and no `Reached maximum iterations` truncation that affects the conclusion. No BOE/integrity/RSS logic changes. |
+| `TASK-PROVINCIAL-READONLY-BATCH-AUDIT-001` | proposed | Read-only batch audit of remaining provincial `inventory_only` sources without adding monitors; classify RSS/API/open-data/static HTML/stable endpoint/PDF-first/JS-headless/blocked/unknown with short timeouts, low request count, no writes, no login, no bypass, no registry status changes. |
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-PILOT-002` | proposed | Choose at most 1-2 additional provincial sources after access-path verification; no bulk provincial monitoring. |
 | `TASK-SOURCE-PROVINCIAL-URL-DIFF-AUDIT-001` | proposed | Compare BOE and PAG provincial URLs source by source; documentation-only unless a URL correction is verified. |
 | `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` | proposed | Optional snapshot after RSS-004 if current coverage counts need a standalone report. |

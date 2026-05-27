@@ -37,6 +37,25 @@ from official_sources.source_registry import (
 DEFAULT_RSS_DISCOVERY_ROOT = Path(__file__).resolve().parents[2] / "data" / "rss_monitor"
 DEFAULT_API_DISCOVERY_ROOT = Path(__file__).resolve().parents[2] / "data" / "api_monitor"
 DEFAULT_HTML_DISCOVERY_ROOT = Path(__file__).resolve().parents[2] / "data" / "html_monitor"
+PROVINCIAL_HTML_DISCOVERY_PRIORITY = (
+    "BOP_BARCELONA",
+    "BOP_MALAGA",
+    "BOP_BIZKAIA",
+    "BOP_VALENCIA",
+    "BOP_SEVILLA",
+    "BOP_ZARAGOZA",
+)
+DOCUMENTED_DEFER_MARKERS = (
+    "zk/javascript",
+    "javascript application",
+    "js-capable",
+    "headless",
+    "blocked by",
+    "blocking reason",
+    "defer until",
+    "deferred until",
+    "manual-only",
+)
 
 
 def list_source_coverage() -> dict:
@@ -315,7 +334,7 @@ def recommend_next_sources(
         for source in registry_list_sources()
         if _is_provincial_html_pilot_candidate(source)
     ]
-    recommendations = sorted(candidates, key=lambda item: item["source_code"])[:limit]
+    recommendations = sorted(candidates, key=_provincial_html_recommendation_sort_key)[:limit]
     return {
         "status": "ok",
         "resource_type": "source_recommendations",
@@ -325,6 +344,8 @@ def recommend_next_sources(
         "rules": [
             "deterministic registry scan",
             "provincial inventory_only sources only",
+            "documented blocked/deferred sources excluded from normal ranking",
+            "documented provincial pilot waves prioritized before alphabetical fallback",
             "no monitor execution",
             "no writes",
             "no candidates",
@@ -362,7 +383,32 @@ def _is_provincial_html_pilot_candidate(source: dict[str, Any]) -> bool:
         and source["candidate_creation_allowed"] is False
         and source["evidence_grade_allowed"] is False
         and bool(str(source.get("official_landing_url", "")).strip())
+        and not _has_documented_normal_ranking_blocker(source)
     )
+
+
+def _has_documented_normal_ranking_blocker(source: dict[str, Any]) -> bool:
+    if source["operational_status"] in {"blocked", "paused", "deprecated"}:
+        return True
+    if any(method.get("status") == "blocked" for method in source.get("access_methods", [])):
+        return True
+
+    evidence_text = " ".join(
+        [
+            str(source.get("notes", "")),
+            *[str(limitation) for limitation in source.get("limitations", [])],
+            *[str(method.get("notes", "")) for method in source.get("access_methods", [])],
+        ]
+    ).lower()
+    return any(marker in evidence_text for marker in DOCUMENTED_DEFER_MARKERS)
+
+
+def _provincial_html_recommendation_sort_key(item: dict[str, Any]) -> tuple[int, str]:
+    priority = {
+        source_code: index for index, source_code in enumerate(PROVINCIAL_HTML_DISCOVERY_PRIORITY)
+    }
+    source_code = item["source_code"]
+    return (priority.get(source_code, len(priority)), source_code)
 
 
 def _build_provincial_html_recommendation(
