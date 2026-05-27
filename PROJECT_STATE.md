@@ -4,6 +4,54 @@ Last updated: 2026-05-27
 
 ## Current Decision
 
+`TASK-BOP-ALICANTE-DEGRADED-DNS-001` is implemented locally as a health-reporting contract.
+
+`BOP_ALICANTE` is formally treated as `degraded/manual-review` for provincial monitor health
+reporting because normal live preview still fails during DNS resolution. This does not remove it
+from the registry, does not revert it to `inventory_only`, and does not mark it healthy.
+
+Current provincial monitor health contract:
+
+```text
+healthy monitored provincial sources: 7
+degraded monitored provincial sources: 1
+combined all-sources health: PARTIAL-GO
+all-sources-green claim: not allowed
+BOP_ALICANTE: excluded from healthy set until normal DNS/live preview recovers
+Wave 003: unblocked only under partial-health criteria
+```
+
+Healthy set:
+
+```text
+BOP_A_CORUNA
+BOP_ALBACETE
+BOP_LUGO
+BOP_BARCELONA
+BOP_MALAGA
+BOP_BIZKAIA
+BOP_VALENCIA
+```
+
+Degraded set:
+
+```text
+BOP_ALICANTE
+reason: resolver-dependent DNS instability for sede.diputacionalicante.es
+```
+
+No `config/sources.yaml`, monitor code, registry status, VPS, Hermes, systemd, timers, candidates,
+evidence-grade records, PDF/artifact downloads, downstream writes, or `data/html_monitor` outputs
+were changed.
+
+Report:
+
+```text
+docs/reports/bop-alicante-degraded-dns-2026-05-27.md
+```
+
+## Previous Decision
+
 `TASK-BOP-ALICANTE-HEALTH-REGRESSION-001` is implemented locally as a read-only diagnostic.
 
 `BOP_ALICANTE` still exposes the configured official endpoint when the hostname is resolved through
@@ -33,7 +81,7 @@ Report:
 docs/reports/bop-alicante-health-regression-2026-05-27.md
 ```
 
-## Previous Decision
+## Earlier Decision
 
 `TASK-PROVINCIAL-MONITORS-HEALTH-001` is implemented locally as a documentation-only health check.
 
