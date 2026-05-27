@@ -12,12 +12,16 @@ from official_sources.html_monitor import (
     HTMLMonitorError,
     build_bop_a_coruna_html_url,
     build_bop_alicante_html_url,
+    build_bop_barcelona_html_url,
+    build_bop_malaga_html_url,
     build_html_entry_hash,
     build_html_monitor_output_path,
     monitor_html_source,
     parse_bop_a_coruna_html,
     parse_bop_albacete_html,
     parse_bop_alicante_response,
+    parse_bop_barcelona_html,
+    parse_bop_malaga_html,
     select_html_access_method,
 )
 from official_sources.source_coverage import list_monitorable_sources
@@ -47,7 +51,7 @@ def test_bop_a_coruna_html_access_method_exists_in_registry():
 
 
 def test_selected_provincial_html_access_methods_exist_in_registry():
-    for source_code in ("BOP_ALBACETE", "BOP_ALICANTE"):
+    for source_code in ("BOP_ALBACETE", "BOP_ALICANTE", "BOP_BARCELONA", "BOP_MALAGA"):
         source = get_source(source_code)
         method = select_html_access_method(source)
 
@@ -76,6 +80,20 @@ def test_build_bop_alicante_html_url_is_one_date_request():
     assert "nemo=BOP_CON" in url
     assert "usuario=-" in url
     assert "%3CfechaPub%3E25%2F05%2F2026%3C%2FfechaPub%3E" in url
+
+
+def test_build_bop_barcelona_html_url_is_one_date_request():
+    assert build_bop_barcelona_html_url(
+        "https://bop.diba.cat/butlleti-del-dia",
+        target_date="2026-05-25",
+    ) == "https://bop.diba.cat/butlleti-del-dia"
+
+
+def test_build_bop_malaga_html_url_is_one_date_request():
+    assert build_bop_malaga_html_url(
+        "https://www.bopmalaga.es/",
+        target_date="2026-05-25",
+    ) == "https://www.bopmalaga.es/"
 
 
 def test_parse_bop_a_coruna_fixture_emits_metadata_only_records():
@@ -109,6 +127,39 @@ def test_parse_bop_a_coruna_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_barcelona_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_barcelona_latest.html")
+    page_url = "https://bop.diba.cat/butlleti-del-dia"
+
+    result = parse_bop_barcelona_html(
+        raw,
+        source_code="BOP_BARCELONA",
+        page_url=page_url,
+        requested_date="2026-05-25",
+        discovered_at="2026-05-25T00:00:00Z",
+        monitor_run_id="run-barcelona",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_BARCELONA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "202610094158"
+    assert record["document_id"] == "202610094158"
+    assert record["title"] == "Ajuntament de Barcelona - Aprovacio inicial"
+    assert record["published_at"] == "2026-05-25"
+    assert (
+        record["official_url"]
+        == "https://bop.diba.cat/anunci/3947743/ajuntament-de-barcelona-aprovacio-inicial"
+    )
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
 def test_parse_bop_albacete_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("bop_albacete_latest.html")
     page_url = "https://bop.dipualba.es"
@@ -137,6 +188,39 @@ def test_parse_bop_albacete_fixture_emits_metadata_only_records():
     assert record["published_at"] == "2026-05-25"
     assert record["official_url"] == (
         "https://bop.dipualba.es/servicesajax/descargararchivopaginaBOP/297598"
+    )
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_malaga_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_malaga_latest.html")
+    page_url = "https://www.bopmalaga.es/"
+
+    result = parse_bop_malaga_html(
+        raw,
+        source_code="BOP_MALAGA",
+        page_url=page_url,
+        requested_date="2026-05-25",
+        discovered_at="2026-05-25T00:00:00Z",
+        monitor_run_id="run-malaga",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_MALAGA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "620/2026"
+    assert record["document_id"] == "620/2026"
+    assert record["title"] == "Malaga. Convocatoria para seleccion de personal funcionario."
+    assert record["published_at"] == "2026-05-25"
+    assert (
+        record["official_url"]
+        == "https://www.bopmalaga.es/edicto.php?edicto=20260525-00620-2026-00"
     )
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"
@@ -224,6 +308,8 @@ def test_monitor_html_source_supports_selected_provincial_sources():
     fixtures = {
         "BOP_ALBACETE": "bop_albacete_latest.html",
         "BOP_ALICANTE": "bop_alicante_bop_con.json",
+        "BOP_BARCELONA": "bop_barcelona_latest.html",
+        "BOP_MALAGA": "bop_malaga_latest.html",
     }
 
     for source_code, fixture_name in fixtures.items():
@@ -267,6 +353,36 @@ def test_html_monitor_has_no_candidate_evidence_or_artifact_code_paths():
     assert "ArtifactDownloader" not in source
     assert "download_pdf" not in source.lower()
     assert "evidence_grade" not in source
+
+
+def test_fetch_html_sends_read_only_user_agent(monkeypatch):
+    requested_headers = []
+
+    class FakeResponse:
+        url = "https://example.test"
+        content = b"<html></html>"
+
+        def raise_for_status(self) -> None:
+            return None
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            return None
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def get(self, _url, *, headers):
+            requested_headers.append(headers)
+            return FakeResponse()
+
+    monkeypatch.setattr(html_monitor.httpx, "Client", FakeClient)
+
+    assert html_monitor.fetch_html("https://example.test") == b"<html></html>"
+    assert requested_headers[0]["User-Agent"] == "official-sources-html-monitor/0.1"
 
 
 def test_html_jsonl_output_path_is_source_and_date_scoped(tmp_path):
@@ -360,7 +476,13 @@ def test_cli_html_monitor_write_requires_explicit_write_flag_and_writes_jsonl(tm
 def test_mcp_source_coverage_sees_bop_a_coruna_as_html_monitorable():
     result = list_monitorable_sources()
     sources = {source["source_code"]: source for source in result["sources"]}
-    for source_code in ("BOP_A_CORUNA", "BOP_ALBACETE", "BOP_ALICANTE"):
+    for source_code in (
+        "BOP_A_CORUNA",
+        "BOP_ALBACETE",
+        "BOP_ALICANTE",
+        "BOP_BARCELONA",
+        "BOP_MALAGA",
+    ):
         method_types = {method["type"] for method in sources[source_code]["access_methods"]}
 
         assert "html" in method_types

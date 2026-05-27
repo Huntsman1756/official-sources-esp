@@ -4,6 +4,76 @@ Last updated: 2026-05-27
 
 ## Current Decision
 
+`TASK-PROVINCIAL-MONITORS-WAVE-001` is implemented locally.
+
+The first provincial metadata-only monitor wave adds source-specific HTML discovery support for:
+
+```text
+BOP_BARCELONA
+BOP_MALAGA
+```
+
+Both monitors read only the official current-bulletin HTML page, emit discovery metadata with
+`candidate_status=not_candidate`, `evidence_status=not_evidence`, and
+`classification_status=unclassified`, and do not download PDFs or artifacts.
+
+Current executable registry counts:
+
+```text
+total sources: 65
+metadata_adapter_validated: 9
+monitor_validated: 11
+inventory_only: 44
+paused: 1
+provincial inventory-only sources: 37
+RSS/Atom discovery sources: BOC_CANARIAS, BOC_CANTABRIA, BOCYL, BOE, BOIB, BOJA, BOP_LUGO, DOE, DOG
+API discovery sources: BOPV
+HTML provincial discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_BARCELONA, BOP_MALAGA
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
+```
+
+Live preview validation on `2026-05-27` ran one source at a time, with `--limit 1`, and without
+`--write`:
+
+```text
+BOP_BARCELONA: records=1 published_at=2026-05-27 candidate_status=not_candidate evidence_status=not_evidence
+BOP_MALAGA: records=1 published_at=2026-05-27 candidate_status=not_candidate evidence_status=not_evidence
+data/html_monitor writes: none
+```
+
+The source-specific parsers also extracted more than one live record from the current pages during
+parser validation:
+
+```text
+BOP_BARCELONA: 20 live records parsed from https://bop.diba.cat/butlleti-del-dia
+BOP_MALAGA: 19 live records parsed from http://www.bopmalaga.es/
+```
+
+Scope boundaries:
+
+```text
+metadata-only previews only
+no candidates
+no evidence-grade records
+no PDF/artifact downloads
+no downstream writes
+no broad scraping or backfill
+no VPS, Hermes, systemd, BOE timer, or integrity timer changes
+```
+
+Report:
+
+```text
+docs/reports/provincial-monitors-wave-001-2026-05-27.md
+```
+
+Previous completed provincial audit task:
+
+```text
+TASK-PROVINCIAL-READONLY-BATCH-AUDIT-001
+```
+
 `TASK-PROVINCIAL-READONLY-BATCH-AUDIT-001` is implemented locally.
 
 The batch audit ran against the 38 remaining provincial `inventory_only` sources without a
@@ -192,13 +262,13 @@ Current executable registry counts:
 ```text
 total sources: 65
 metadata_adapter_validated: 9
-monitor_validated: 9
-inventory_only: 46
+monitor_validated: 11
+inventory_only: 44
 paused: 1
-provincial inventory-only sources: 39
+provincial inventory-only sources: 37
 RSS/Atom discovery sources: BOC_CANARIAS, BOC_CANTABRIA, BOCYL, BOE, BOIB, BOJA, BOP_LUGO, DOE, DOG
 API discovery sources: BOPV
-HTML discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE
+HTML provincial discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_BARCELONA, BOP_MALAGA
 candidate_creation_allowed=false: 65
 evidence_grade_allowed=false: 65
 ```

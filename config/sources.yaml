@@ -683,21 +683,22 @@ sources:
     official_landing_url: http://bop.diba.cat
     access_methods:
       - type: html
-        url: http://bop.diba.cat
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bop.diba.cat/butlleti-del-dia
+        status: validated
+        notes: Official daily bulletin HTML page used by provincial metadata-only discovery.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-27"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Barcelona.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - HTML monitor support is source-specific; do not generalize to all provincial bulletins.
+      - Current-bulletin page is not a historical backfill interface; use preview only and keep date-scoped assumptions explicit.
+    notes: Official provincial bulletin HTML discovery monitor.
 
   - source_code: BOP_BIZKAIA
     name: Boletin Oficial de Bizkaia
@@ -1148,20 +1149,20 @@ sources:
     access_methods:
       - type: html
         url: http://www.bopmalaga.es/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        status: validated
+        notes: Official current-bulletin HTML page used by provincial metadata-only discovery; PDF links are recorded as official_url only when present and never downloaded.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-27"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Malaga.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Current-bulletin page is not a historical backfill interface; use preview only and keep date-scoped assumptions explicit.
+    notes: Official provincial bulletin HTML discovery monitor.
 
   - source_code: BOP_OURENSE
     name: Boletin Oficial da Provincia de Ourense
