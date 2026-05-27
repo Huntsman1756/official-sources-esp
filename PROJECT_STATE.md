@@ -1,8 +1,58 @@
 # Project State
 
-Last updated: 2026-05-26
+Last updated: 2026-05-27
 
 ## Current Decision
+
+`TASK-SOURCE-RSS-MONITOR-HEALTH-001` is implemented locally.
+
+The post-merge RSS health check validated the requested five-source RSS set without adding new
+sources and without any operational writes:
+
+```text
+BOE:          records=1 feed_format=rss candidate_status=not_candidate evidence_status=not_evidence
+BOCYL:        records=1 feed_format=rss candidate_status=not_candidate evidence_status=not_evidence
+BOC_CANARIAS: records=1 feed_format=rss candidate_status=not_candidate evidence_status=not_evidence
+DOG:          records=1 feed_format=rss candidate_status=not_candidate evidence_status=not_evidence
+BOP_LUGO:     records=1 feed_format=rss candidate_status=not_candidate evidence_status=not_evidence
+```
+
+The check ran one source at a time on `2026-05-26`, with `--limit 1`, and without `--write`.
+
+Safety confirmation:
+
+```text
+before data/rss_monitor exists: false
+after data/rss_monitor exists: false
+git status after previews: main...origin/main, no file changes
+targeted tests: 35 passed
+```
+
+Report:
+
+```text
+docs/reports/rss-monitor-health-2026-05-26.md
+```
+
+This task did not change functional code, add feeds, create candidates, create evidence-grade
+records, download PDFs/artifacts, write downstream data, run backfills, run broad monitoring, touch
+VPS/prod DB, touch Hermes, or touch systemd.
+
+Recommended next source-platform task:
+
+```text
+TASK-MCP-SOURCE-RANKING-CLEANUP-001
+```
+
+Ranking cleanup should prevent deterministic recommendations from repeatedly proposing sources that
+are already documented as unsuitable or deferred, such as `BOP_ALMERIA` or `BORM`, unless new
+evidence changes their status.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-RSS-MONITOR-004
+```
 
 `TASK-SOURCE-RSS-MONITOR-004` is implemented locally.
 

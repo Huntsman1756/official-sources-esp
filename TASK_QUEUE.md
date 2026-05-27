@@ -1,6 +1,6 @@
 # Task Queue
 
-Last updated: 2026-05-26
+Last updated: 2026-05-27
 
 This file was absent at the start of `TASK-SOURCE-REGISTRY-001`. It is now the local task queue
 for source-platform work in this repository.
@@ -41,11 +41,13 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 | `TASK-VPS-INTEGRITY-CHECK-RAW-METADATA-001` | implemented locally | `integrity-check` now reports `local_path=NULL` metadata rows as `non_local_metadata`, while missing stored local artifact paths still fail. |
 | `TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001` | merged | Reconciles RSS monitor documentation with current `main`; confirms RSS-001 should not be reopened and points next implementation work to RSS-004. |
 | `TASK-SOURCE-RSS-MONITOR-004` | implemented locally | Adds BOC_CANARIAS, DOG, and BOP_LUGO as validated metadata-only RSS discovery sources; no writes, candidates, evidence-grade records, PDFs, downstream, VPS, Hermes, or systemd changes. |
+| `TASK-SOURCE-RSS-MONITOR-HEALTH-001` | implemented locally | Validates BOE, BOCYL, BOC_CANARIAS, DOG, and BOP_LUGO previews after RSS-004 merge; all returned `records=1`, `feed_format=rss`, `not_candidate`, and `not_evidence`; confirms no `data/rss_monitor` write. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
+| `TASK-MCP-SOURCE-RANKING-CLEANUP-001` | proposed | Update deterministic recommendation ranking/exclusions so sources already documented as unsuitable or deferred, such as `BOP_ALMERIA` or `BORM`, are not repeatedly proposed without new evidence. |
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-PILOT-002` | proposed | Choose at most 1-2 additional provincial sources after access-path verification; no bulk provincial monitoring. |
 | `TASK-SOURCE-PROVINCIAL-URL-DIFF-AUDIT-001` | proposed | Compare BOE and PAG provincial URLs source by source; documentation-only unless a URL correction is verified. |
 | `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` | proposed | Optional snapshot after RSS-004 if current coverage counts need a standalone report. |
