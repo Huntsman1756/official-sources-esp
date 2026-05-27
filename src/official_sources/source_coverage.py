@@ -471,7 +471,16 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         for method in access_methods
     ):
         preview_types.append("api")
-    if source_code in {"BOP_A_CORUNA", "BOP_ALBACETE", "BOP_ALICANTE"} and any(
+    if source_code in {
+        "BOP_A_CORUNA",
+        "BOP_ALBACETE",
+        "BOP_ALICANTE",
+        "BOP_BARCELONA",
+        "BOP_BIZKAIA",
+        "BOP_MALAGA",
+        "BOP_SEVILLA",
+        "BOP_VALENCIA",
+    } and any(
         method.get("type") == "html"
         and method.get("status") == "validated"
         and str(method.get("url", "")).strip()

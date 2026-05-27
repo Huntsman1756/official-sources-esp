@@ -4,6 +4,47 @@ Last updated: 2026-05-27
 
 ## Current Decision
 
+`TASK-PROVINCIAL-MONITORS-WAVE-003` is implemented locally under the partial-health contract.
+
+Wave 003 adds `BOP_SEVILLA` as a single metadata-only HTML monitor. It does not modify the
+`BOP_ALICANTE` degraded/manual-review state introduced by `TASK-BOP-ALICANTE-DEGRADED-DNS-001`.
+
+Current provincial monitor health contract after this wave:
+
+```text
+healthy monitored provincial sources: 8
+degraded monitored provincial sources: 1
+contract: PARTIAL-GO
+all-sources-green claim: not allowed
+BOP_ALICANTE: still degraded/manual-review due resolver-dependent DNS instability
+```
+
+Healthy set:
+
+```text
+BOP_A_CORUNA
+BOP_ALBACETE
+BOP_LUGO
+BOP_BARCELONA
+BOP_MALAGA
+BOP_BIZKAIA
+BOP_VALENCIA
+BOP_SEVILLA
+```
+
+`BOP_SEVILLA` live preview on `2026-05-27` returned `records=1` in preview mode with
+`not_candidate`, `not_evidence`, and `unclassified`; parser validation extracted 33 live
+announcement records for the same date. No PDFs/artifacts, candidates, evidence-grade records,
+downstream writes, VPS, Hermes, systemd, timers, or `data/html_monitor` output were created.
+
+Report:
+
+```text
+docs/reports/provincial-monitors-wave-003-2026-05-27.md
+```
+
+## Previous Decision
+
 `TASK-BOP-ALICANTE-DEGRADED-DNS-001` is implemented locally as a health-reporting contract.
 
 `BOP_ALICANTE` is formally treated as `degraded/manual-review` for provincial monitor health

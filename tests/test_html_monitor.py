@@ -15,6 +15,7 @@ from official_sources.html_monitor import (
     build_bop_barcelona_html_url,
     build_bop_bizkaia_html_url,
     build_bop_malaga_html_url,
+    build_bop_sevilla_html_url,
     build_bop_valencia_html_url,
     build_html_entry_hash,
     build_html_monitor_output_path,
@@ -25,6 +26,7 @@ from official_sources.html_monitor import (
     parse_bop_barcelona_html,
     parse_bop_bizkaia_detail_html,
     parse_bop_malaga_html,
+    parse_bop_sevilla_html,
     parse_bop_valencia_html,
     select_html_access_method,
 )
@@ -61,6 +63,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_BARCELONA",
         "BOP_BIZKAIA",
         "BOP_MALAGA",
+        "BOP_SEVILLA",
         "BOP_VALENCIA",
     ):
         source = get_source(source_code)
@@ -112,6 +115,14 @@ def test_build_bop_malaga_html_url_is_one_date_request():
         "https://www.bopmalaga.es/",
         target_date="2026-05-25",
     ) == "https://www.bopmalaga.es/"
+
+
+def test_build_bop_sevilla_html_url_is_one_date_request():
+    assert build_bop_sevilla_html_url(
+        "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/"
+        "BOP-{date_ddmmyyyy_dash}/",
+        target_date="2026-05-25",
+    ) == "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-25-05-2026/"
 
 
 def test_build_bop_valencia_html_url_is_one_landing_request():
@@ -325,6 +336,44 @@ def test_parse_bop_malaga_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_sevilla_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_sevilla_latest.html")
+    page_url = build_bop_sevilla_html_url(
+        "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/"
+        "BOP-{date_ddmmyyyy_dash}/",
+        target_date="2026-05-27",
+    )
+
+    result = parse_bop_sevilla_html(
+        raw,
+        source_code="BOP_SEVILLA",
+        page_url=page_url,
+        requested_date="2026-05-27",
+        discovered_at="2026-05-27T00:00:00Z",
+        monitor_run_id="run-sevilla",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 2
+    record = result.records[0]
+    assert record["source_code"] == "BOP_SEVILLA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "BOP-SE-2026-100001"
+    assert record["document_id"] == "BOP-SE-2026-100001"
+    assert record["title"] == "Bases de la convocatoria de pruebas selectivas"
+    assert record["published_at"] == "2026-05-27"
+    assert record["official_url"] == (
+        "https://bopsevilla.dipusevilla.es/publica/buscador-anuncios/anuncio/"
+        "Bases-de-la-convocatoria-de-pruebas-selectivas/"
+    )
+    assert record["summary"] == "Area del Empleado Publico"
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
 def test_parse_bop_alicante_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("bop_alicante_bop_con.json")
     page_url = build_bop_alicante_html_url(
@@ -407,6 +456,7 @@ def test_monitor_html_source_supports_selected_provincial_sources():
         "BOP_ALICANTE": "bop_alicante_bop_con.json",
         "BOP_BARCELONA": "bop_barcelona_latest.html",
         "BOP_MALAGA": "bop_malaga_latest.html",
+        "BOP_SEVILLA": "bop_sevilla_latest.html",
         "BOP_VALENCIA": "bop_valencia_latest.html",
     }
 
@@ -613,6 +663,7 @@ def test_mcp_source_coverage_sees_bop_a_coruna_as_html_monitorable():
         "BOP_BARCELONA",
         "BOP_BIZKAIA",
         "BOP_MALAGA",
+        "BOP_SEVILLA",
         "BOP_VALENCIA",
     ):
         method_types = {method["type"] for method in sources[source_code]["access_methods"]}

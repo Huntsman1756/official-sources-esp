@@ -715,12 +715,12 @@ def test_mcp_recommend_next_sources_returns_ranked_viable_provincial_inventory_s
     assert result["strategy"] == "provincial_html_discovery_pilot"
     assert result["count"] == 6
     assert [item["source_code"] for item in result["recommendations"]] == [
-        "BOP_SEVILLA",
         "BOP_ZARAGOZA",
         "BOP_ARABA_ALAVA",
         "BOP_AVILA",
         "BOP_BADAJOZ",
         "BOP_BURGOS",
+        "BOP_CACERES",
     ]
     first = result["recommendations"][0]
     assert first["recommended_task"] == "provincial_html_discovery_pilot"
@@ -748,6 +748,7 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
         "BOP_BIZKAIA",
         "BOP_LUGO",
         "BOP_MALAGA",
+        "BOP_SEVILLA",
         "BOP_VALENCIA",
     }.isdisjoint(source_codes)
     assert all(
@@ -772,12 +773,12 @@ def test_mcp_recommend_next_sources_excludes_documented_blocked_or_deferred_sour
 
 
 def test_mcp_recommend_next_sources_surfaces_existing_cache_without_reading_live(tmp_path):
-    output_path = tmp_path / "BOP_SEVILLA" / "2026-05-24" / "html_discovery.jsonl"
+    output_path = tmp_path / "BOP_ZARAGOZA" / "2026-05-24" / "html_discovery.jsonl"
     output_path.parent.mkdir(parents=True)
     output_path.write_text(
         json.dumps(
             {
-                "source_code": "BOP_SEVILLA",
+                "source_code": "BOP_ZARAGOZA",
                 "candidate_status": "not_candidate",
                 "evidence_status": "not_evidence",
                 "classification_status": "unclassified",
@@ -790,7 +791,7 @@ def test_mcp_recommend_next_sources_surfaces_existing_cache_without_reading_live
 
     result = tools.recommend_next_sources(limit=1, output_root=tmp_path)
 
-    assert result["recommendations"][0]["source_code"] == "BOP_SEVILLA"
+    assert result["recommendations"][0]["source_code"] == "BOP_ZARAGOZA"
     assert result["recommendations"][0]["discovery_cache_status"] == "has_discovery_cache"
     assert result["recommendations"][0]["latest_cache_date"] == "2026-05-24"
 

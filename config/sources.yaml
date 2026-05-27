@@ -1307,24 +1307,24 @@ sources:
     name: Boletin Oficial de la Provincia de Sevilla
     jurisdiction: ES-SE
     jurisdiction_level: provincial
-    official_landing_url: http://www.dipusevilla.es/bop/
+    official_landing_url: https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/
     access_methods:
       - type: html
-        url: http://www.dipusevilla.es/bop/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-{date_ddmmyyyy_dash}/
+        status: validated
+        notes: Official current bulletin HTML listing; queried one date at a time and parsed as metadata-only announcement detail links.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-27"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Sevilla.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - The validated request targets the public current-bulletin listing for one date; no broad backfill or search crawling is enabled.
+    notes: Official provincial bulletin HTML discovery monitor.
 
   - source_code: BOP_SORIA
     name: Boletin Oficial de la Provincia de Soria

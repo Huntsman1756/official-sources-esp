@@ -102,6 +102,11 @@ def build_bop_malaga_html_url(template_url: str, *, target_date: str) -> str:
     return template_url
 
 
+def build_bop_sevilla_html_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
+    return template_url.replace("{date_ddmmyyyy_dash}", parsed_date.strftime("%d-%m-%Y"))
+
+
 def build_bop_valencia_html_url(template_url: str, *, target_date: str) -> str:
     validate_html_monitor_date(target_date)
     return template_url
@@ -393,6 +398,41 @@ def parse_bop_malaga_html(
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
+def parse_bop_sevilla_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    records = [
+        _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at or requested_date,
+            official_url=urljoin(page_url, href),
+            summary=summary,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=[],
+        )
+        for title, href, document_id, published_at, summary in _iter_bop_sevilla_announcements(
+            text
+        )
+    ]
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
 def parse_bop_valencia_html(
     raw_page: bytes | str,
     *,
@@ -488,11 +528,13 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_bizkaia_html_url(template_url, target_date=target_date)
     if source_code == "BOP_MALAGA":
         return build_bop_malaga_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_SEVILLA":
+        return build_bop_sevilla_html_url(template_url, target_date=target_date)
     if source_code == "BOP_VALENCIA":
         return build_bop_valencia_html_url(template_url, target_date=target_date)
     raise HTMLMonitorError(
         "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
-        "BOP_BARCELONA, BOP_BIZKAIA, BOP_MALAGA, and BOP_VALENCIA only"
+        "BOP_BARCELONA, BOP_BIZKAIA, BOP_MALAGA, BOP_SEVILLA, and BOP_VALENCIA only"
     )
 
 
@@ -552,6 +594,15 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_MALAGA":
         return parse_bop_malaga_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_SEVILLA":
+        return parse_bop_sevilla_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -826,6 +877,44 @@ def _iter_bop_malaga_announcements(text: str) -> list[tuple[str, str, str]]:
     return announcements
 
 
+def _iter_bop_sevilla_announcements(
+    text: str,
+) -> list[tuple[str, str, str, str | None, str | None]]:
+    item_pattern = re.compile(
+        r'<li[^>]+class="[^"]*\belementoListado\b[^"]*"[^>]*>(?P<body>.*?)</li>',
+        re.I | re.S,
+    )
+    announcements = []
+    for item in item_pattern.finditer(text):
+        body = item.group("body")
+        link = re.search(
+            r"<a\b(?P<attrs>[^>]*\benlace_elemento\b[^>]*)>",
+            body,
+            re.I | re.S,
+        )
+        if not link:
+            continue
+        attrs = link.group("attrs")
+        href_match = re.search(r'href="(?P<href>[^"]+)"', attrs, re.I)
+        if not href_match:
+            continue
+        title_attr_match = re.search(r'title="(?P<title>[^"]*)"', attrs, re.I)
+        href = html.unescape(href_match.group("href"))
+        title = _first_value(
+            [
+                _normalize_text(title_attr_match.group("title") if title_attr_match else None),
+                _first_heading_text(body),
+                _first_class_block_text(body, "titulo_elemento"),
+            ]
+        )
+        document_id = _first_bop_sevilla_cve(body)
+        published_at = _ddmmyyyy_to_iso(_first_date_text(body))
+        summary = _first_class_block_text(body, "campo_1")
+        if title and href and document_id:
+            announcements.append((title, href, document_id, published_at, summary))
+    return announcements
+
+
 def _iter_bop_valencia_announcements(text: str) -> list[tuple[str, str, str | None]]:
     block_pattern = re.compile(
         r'<div[^>]+class="[^"]*\banuncio\b[^"]*"[^>]*>(?P<body>.*?)(?='
@@ -934,6 +1023,13 @@ def _first_register_label_value(text: str, label: str) -> str | None:
     if match:
         return match.group(1)
     return None
+
+
+def _first_bop_sevilla_cve(text: str) -> str | None:
+    match = re.search(r"\bBOP-SE-\d{4}-\d+\b", _strip_tags(text), re.I)
+    if not match:
+        return None
+    return match.group(0).upper()
 
 
 def _first_datetime_value(text: str) -> str | None:
