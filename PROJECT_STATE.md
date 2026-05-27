@@ -4,6 +4,74 @@ Last updated: 2026-05-27
 
 ## Current Decision
 
+`TASK-PROVINCIAL-MONITORS-HEALTH-001` is implemented locally as a documentation-only health check.
+
+The combined provincial monitor health check ran live preview commands on `2026-05-27` for the
+currently monitored provincial sources:
+
+```text
+BOP_A_CORUNA
+BOP_ALBACETE
+BOP_ALICANTE
+BOP_LUGO
+BOP_BARCELONA
+BOP_MALAGA
+BOP_BIZKAIA
+BOP_VALENCIA
+```
+
+Result:
+
+```text
+OK: 7
+FAILED: 1
+overall health decision: NO-GO until BOP_ALICANTE endpoint/DNS is reviewed
+```
+
+Passing sources returned `records=1` in preview mode with metadata-only statuses:
+
+```text
+BOP_A_CORUNA: OK
+BOP_ALBACETE: OK
+BOP_LUGO: OK
+BOP_BARCELONA: OK
+BOP_MALAGA: OK
+BOP_BIZKAIA: OK
+BOP_VALENCIA: OK
+```
+
+`BOP_ALICANTE` failed on two live preview attempts:
+
+```text
+httpx.ConnectError: [Errno 11002] getaddrinfo failed
+endpoint: https://sede.diputacionalicante.es/wp-content/themes/Desarrollo-Diputacion/webservices/wseConsultaAjax.php
+```
+
+No writes were performed:
+
+```text
+data/html_monitor: absent
+data/rss_monitor: absent
+no --write used
+no candidates
+no evidence-grade records
+no PDF/artifact downloads
+no downstream writes
+no VPS, Hermes, systemd, BOE timer, or integrity timer changes
+```
+
+Report:
+
+```text
+docs/reports/provincial-monitors-health-001-2026-05-27.md
+```
+
+Previous completed provincial monitor task:
+
+```text
+TASK-PROVINCIAL-MONITORS-WAVE-002
+```
+
 `TASK-PROVINCIAL-MONITORS-WAVE-002` is implemented locally.
 
 The second provincial metadata-only monitor wave adds source-specific HTML discovery support for:
