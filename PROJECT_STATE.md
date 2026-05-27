@@ -4,6 +4,37 @@ Last updated: 2026-05-27
 
 ## Current Decision
 
+`TASK-BOP-ALICANTE-HEALTH-REGRESSION-001` is implemented locally as a read-only diagnostic.
+
+`BOP_ALICANTE` still exposes the configured official endpoint when the hostname is resolved through
+Google DNS (`195.53.69.137`), and the endpoint returns JSON compatible with the existing parser for
+the previously validated date. Normal local monitor execution still fails with
+`httpx.ConnectError: [Errno 11002] getaddrinfo failed`, and Cloudflare DNS-over-HTTPS returns
+`SERVFAIL` with a delegation error for `diputacionalicante.es`.
+
+Decision:
+
+```text
+root cause: resolver-dependent DNS instability
+endpoint obsolete: no evidence
+parser regression: no evidence
+monitor code fix: NO-GO
+BOP_ALICANTE healthy-set status: degraded/manual-review
+combined provincial health: NO-GO
+Wave 003: blocked until Alicante recovers or is explicitly excluded from the healthy set
+```
+
+No monitor code, registry status, VPS, Hermes, systemd, timers, candidates, evidence-grade records,
+PDF/artifact downloads, downstream writes, or `data/html_monitor` outputs were changed.
+
+Report:
+
+```text
+docs/reports/bop-alicante-health-regression-2026-05-27.md
+```
+
+## Previous Decision
+
 `TASK-PROVINCIAL-MONITORS-HEALTH-001` is implemented locally as a documentation-only health check.
 
 The combined provincial monitor health check ran live preview commands on `2026-05-27` for the
