@@ -1,8 +1,69 @@
 # Project State
 
-Last updated: 2026-05-26
+Last updated: 2026-05-27
 
 ## Current Decision
+
+`TASK-HERMES-AUDITOR-CANONICAL-ROOT-001` is completed with manual validation `GO`.
+
+Scheduled validation is still pending the next automatic Hermes timer run.
+
+Hermes now audits the canonical operational checkout:
+
+```text
+/opt/official-sources/app
+```
+
+The VPS auditor runner/tooling remains separate from the audited repo:
+
+```text
+/opt/hermes-official-sources-auditor/bin/run-official-sources-hermes-auditor.sh
+```
+
+VPS-applied systemd drop-in, documented here but not versioned in this repository:
+
+```text
+/etc/systemd/system/official-sources-hermes-auditor.service.d/canonical-root.conf
+```
+
+It defines `APP_ROOT`, `REPO_ROOT`, and `TARGET_REPO` as `/opt/official-sources/app`.
+
+First valid report:
+
+```text
+/var/lib/hermes-official-sources-auditor/reports/vps-audit-20260527-044105.md
+```
+
+Validation:
+
+```text
+manual service run: 0/SUCCESS
+failed units: 0
+Hermes timer: active/waiting
+BOE daily timer: active/waiting
+integrity timer: active/waiting
+audited repo: main, 9ebf849f1663642071f60023385acc44c9fe5875
+RSS monitor: present
+TASK-SOURCE-RSS-MONITOR-001: already completed, not current work
+```
+
+Hermes reports generated before `2026-05-27 04:41 UTC` are stale/non-authoritative because they
+targeted or reasoned from obsolete context.
+
+Repository documentation report:
+
+```text
+docs/reports/hermes-auditor-canonical-root-2026-05-27.md
+```
+
+This task did not modify BOE daily, integrity-check, source registry, RSS monitor logic, downstream
+writes, candidates, evidence-grade records, PDFs/artifacts, or product data.
+
+Previous completed source-platform task:
+
+```text
+TASK-SOURCE-RSS-MONITOR-004
+```
 
 `TASK-SOURCE-RSS-MONITOR-004` is implemented locally.
 
