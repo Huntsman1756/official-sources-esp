@@ -13,11 +13,16 @@ def test_list_auditable_provincial_sources_excludes_monitored_and_documented_blo
     sources = list_auditable_provincial_sources()
 
     source_codes = {source["source_code"] for source in sources}
-    assert len(sources) == 38
+    assert len(sources) == 36
     assert "BOP_ALMERIA" not in source_codes
-    assert {"BOP_A_CORUNA", "BOP_ALBACETE", "BOP_ALICANTE", "BOP_LUGO"}.isdisjoint(
-        source_codes
-    )
+    assert {
+        "BOP_A_CORUNA",
+        "BOP_ALBACETE",
+        "BOP_ALICANTE",
+        "BOP_BARCELONA",
+        "BOP_LUGO",
+        "BOP_MALAGA",
+    }.isdisjoint(source_codes)
     assert all(source["jurisdiction_level"] == "provincial" for source in sources)
     assert all(source["operational_status"] == "inventory_only" for source in sources)
 
