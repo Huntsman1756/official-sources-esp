@@ -707,17 +707,20 @@ def test_mcp_preview_discovery_never_calls_write_paths(monkeypatch):
     assert result["output_written"] is False
 
 
-def test_mcp_recommend_next_sources_returns_deterministic_provincial_inventory_sources(tmp_path):
-    result = tools.recommend_next_sources(limit=3, output_root=tmp_path)
+def test_mcp_recommend_next_sources_returns_ranked_viable_provincial_inventory_sources(tmp_path):
+    result = tools.recommend_next_sources(limit=6, output_root=tmp_path)
 
     assert result["status"] == "ok"
     assert result["resource_type"] == "source_recommendations"
     assert result["strategy"] == "provincial_html_discovery_pilot"
-    assert result["count"] == 3
+    assert result["count"] == 6
     assert [item["source_code"] for item in result["recommendations"]] == [
-        "BOP_ALMERIA",
-        "BOP_ARABA_ALAVA",
-        "BOP_AVILA",
+        "BOP_BARCELONA",
+        "BOP_MALAGA",
+        "BOP_BIZKAIA",
+        "BOP_VALENCIA",
+        "BOP_SEVILLA",
+        "BOP_ZARAGOZA",
     ]
     first = result["recommendations"][0]
     assert first["recommended_task"] == "provincial_html_discovery_pilot"
@@ -737,19 +740,37 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
     result = tools.recommend_next_sources(limit=20, output_root=tmp_path)
 
     source_codes = {item["source_code"] for item in result["recommendations"]}
-    assert {"BOP_A_CORUNA", "BOP_ALBACETE", "BOP_ALICANTE"}.isdisjoint(source_codes)
+    assert {"BOP_A_CORUNA", "BOP_ALBACETE", "BOP_ALICANTE", "BOP_LUGO"}.isdisjoint(
+        source_codes
+    )
     assert all(
         item["operational_status"] == "inventory_only" for item in result["recommendations"]
     )
 
 
+def test_mcp_recommend_next_sources_excludes_documented_blocked_or_deferred_source(tmp_path):
+    result = tools.recommend_next_sources(limit=20, output_root=tmp_path)
+
+    source_codes = {item["source_code"] for item in result["recommendations"]}
+    assert "BOP_ALMERIA" not in source_codes
+
+    status = tools.get_source_status(source_code="BOP_ALMERIA")
+    assert status["status"] == "ok"
+    assert status["source"]["source_code"] == "BOP_ALMERIA"
+    assert status["source"]["operational_status"] == "inventory_only"
+    assert status["source"]["monitor_support"] == "none"
+    assert status["source"]["candidate_creation_allowed"] is False
+    assert status["source"]["evidence_grade_allowed"] is False
+    assert any("ZK/JavaScript" in limitation for limitation in status["source"]["limitations"])
+
+
 def test_mcp_recommend_next_sources_surfaces_existing_cache_without_reading_live(tmp_path):
-    output_path = tmp_path / "BOP_ALMERIA" / "2026-05-24" / "html_discovery.jsonl"
+    output_path = tmp_path / "BOP_BARCELONA" / "2026-05-24" / "html_discovery.jsonl"
     output_path.parent.mkdir(parents=True)
     output_path.write_text(
         json.dumps(
             {
-                "source_code": "BOP_ALMERIA",
+                "source_code": "BOP_BARCELONA",
                 "candidate_status": "not_candidate",
                 "evidence_status": "not_evidence",
                 "classification_status": "unclassified",
@@ -762,7 +783,7 @@ def test_mcp_recommend_next_sources_surfaces_existing_cache_without_reading_live
 
     result = tools.recommend_next_sources(limit=1, output_root=tmp_path)
 
-    assert result["recommendations"][0]["source_code"] == "BOP_ALMERIA"
+    assert result["recommendations"][0]["source_code"] == "BOP_BARCELONA"
     assert result["recommendations"][0]["discovery_cache_status"] == "has_discovery_cache"
     assert result["recommendations"][0]["latest_cache_date"] == "2026-05-24"
 

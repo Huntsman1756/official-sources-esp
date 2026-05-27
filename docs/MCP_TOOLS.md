@@ -213,9 +213,22 @@ provincial_html_discovery_pilot
 ```
 
 The tool recommends provincial `inventory_only` sources with official landing URLs and no validated
-monitor yet. Already monitored sources such as `BOP_A_CORUNA`, `BOP_ALBACETE`, and
-`BOP_ALICANTE` are excluded. Each recommendation
-includes:
+monitor yet. Already monitored sources such as `BOP_A_CORUNA`, `BOP_ALBACETE`, `BOP_ALICANTE`,
+and `BOP_LUGO` are excluded. Documented blocked/deferred sources such as `BOP_ALMERIA` are excluded
+from the normal ranking but remain visible through `list_sources` and `get_source_status`.
+
+The normal ranking prioritizes the documented provincial pilot waves before alphabetical fallback:
+
+```text
+BOP_BARCELONA
+BOP_MALAGA
+BOP_BIZKAIA
+BOP_VALENCIA
+BOP_SEVILLA
+BOP_ZARAGOZA
+```
+
+Each recommendation includes:
 
 ```text
 source_code

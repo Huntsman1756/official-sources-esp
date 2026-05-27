@@ -4,6 +4,51 @@ Last updated: 2026-05-27
 
 ## Current Decision
 
+`TASK-MCP-SOURCE-RANKING-CLEANUP-001` is implemented locally.
+
+`recommend_next_sources` no longer treats documented blocked/deferred provincial sources as normal
+next candidates. `BOP_ALMERIA` remains in `config/sources.yaml` as `inventory_only` with
+`monitor_support=none`, but it is excluded from the normal recommendation ranking because the
+documented evaluation found a ZK/JavaScript surface requiring a separate endpoint-specific or
+JS-capable audit.
+
+The normal provincial recommendation order now prioritizes the documented pilot waves before the
+alphabetical fallback:
+
+```text
+BOP_BARCELONA
+BOP_MALAGA
+BOP_BIZKAIA
+BOP_VALENCIA
+BOP_SEVILLA
+BOP_ZARAGOZA
+```
+
+Already monitored provincial sources remain excluded:
+
+```text
+BOP_A_CORUNA
+BOP_ALBACETE
+BOP_ALICANTE
+BOP_LUGO
+```
+
+This task did not add provincial monitors, run scraping, write discovery JSONL, create candidates,
+create evidence-grade records, download PDFs/artifacts, touch downstream repos, run VPS/prod DB
+operations, touch Hermes, BOE timer, integrity timer, or systemd.
+
+Report:
+
+```text
+docs/reports/source-ranking-cleanup-2026-05-27.md
+```
+
+Previous completed infrastructure task:
+
+```text
+TASK-HERMES-AUDITOR-CANONICAL-ROOT-001
+```
+
 `TASK-HERMES-AUDITOR-CANONICAL-ROOT-001` is completed with manual validation `GO`.
 
 Scheduled validation is still pending the next automatic Hermes timer run.
