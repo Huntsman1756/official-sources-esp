@@ -1,8 +1,64 @@
 # Project State
 
-Last updated: 2026-05-27
+Last updated: 2026-05-28
 
 ## Current Decision
+
+`TASK-HERMES-AUDITOR-SCHEDULED-VALIDATION-001` is completed with operational `GO`.
+
+This is no longer a manual smoke. Hermes ran automatically on the VPS, then the VPS-side scheduled
+validation ran afterward and returned `GO`.
+
+Evidence:
+
+```text
+automatic Hermes run: 2026-05-28 00:07:44 UTC
+Hermes report: /var/lib/hermes-official-sources-auditor/reports/vps-audit-20260528-000744.md
+scheduled validation run: 2026-05-28 00:45:01 UTC
+validation report: /var/lib/hermes-official-sources-auditor/scheduled-validations/hermes-scheduled-validation-20260528-004501.md
+validation verdict: GO
+```
+
+Checked VPS state:
+
+```text
+repository: /opt/official-sources/app
+branch: main
+commit: 9ebf849f1663642071f60023385acc44c9fe5875
+worktree: clean
+official-sources-hermes-auditor.timer: active
+official-sources-hermes-auditor.service: success, exit 0
+official-sources-hermes-scheduled-validation.service: success, exit 0
+systemctl --failed: 0 loaded units listed
+```
+
+Hermes did not modify the repository. It only wrote reports and logs under:
+
+```text
+/var/lib/hermes-official-sources-auditor/
+```
+
+Report:
+
+```text
+docs/reports/hermes-auditor-scheduled-validation-2026-05-28.md
+```
+
+The Hermes audit report was generated before the scheduled validation report, so its statement that
+no scheduled validation had previously run was accurate at `2026-05-28 00:07:44 UTC` and superseded
+by the validation snapshot at `2026-05-28 00:45:01 UTC`.
+
+No timers, services, source registry, RSS feeds, provincial monitors, candidates, evidence-grade
+records, PDFs/artifacts, downstream writes, VPS checkout fast-forward, or product data were changed
+by this documentation task.
+
+Remaining known item in current `main`:
+
+```text
+TASK-SOURCE-RSS-MONITOR-005: feed selection remains pending
+```
+
+## Previous Decision
 
 `TASK-BOP-ALICANTE-DEGRADED-DNS-001` is implemented locally as a health-reporting contract.
 
@@ -50,7 +106,7 @@ Report:
 docs/reports/bop-alicante-degraded-dns-2026-05-27.md
 ```
 
-## Previous Decision
+## Earlier Decision
 
 `TASK-BOP-ALICANTE-HEALTH-REGRESSION-001` is implemented locally as a read-only diagnostic.
 
@@ -407,7 +463,8 @@ TASK-HERMES-AUDITOR-CANONICAL-ROOT-001
 
 `TASK-HERMES-AUDITOR-CANONICAL-ROOT-001` is completed with manual validation `GO`.
 
-Scheduled validation is still pending the next automatic Hermes timer run.
+Follow-up scheduled validation is also completed as
+`TASK-HERMES-AUDITOR-SCHEDULED-VALIDATION-001`.
 
 Hermes now audits the canonical operational checkout:
 
@@ -435,6 +492,12 @@ First valid report:
 /var/lib/hermes-official-sources-auditor/reports/vps-audit-20260527-044105.md
 ```
 
+First scheduled validation `GO` after a nightly automatic run:
+
+```text
+/var/lib/hermes-official-sources-auditor/scheduled-validations/hermes-scheduled-validation-20260528-004501.md
+```
+
 Validation:
 
 ```text
@@ -455,6 +518,7 @@ Repository documentation report:
 
 ```text
 docs/reports/hermes-auditor-canonical-root-2026-05-27.md
+docs/reports/hermes-auditor-scheduled-validation-2026-05-28.md
 ```
 
 This task did not modify BOE daily, integrity-check, source registry, RSS monitor logic, downstream
@@ -1522,6 +1586,7 @@ Hard guardrails:
 | `TASK-VPS-INTEGRITY-CHECK-RAW-METADATA-001` | Implemented locally | `src/official_sources/cli.py`, `tests/test_cli.py`, `docs/reports/vps-service-drift-diagnosis-2026-05-26.md` | Clarifies local artifact integrity so non-local raw metadata rows do not fail the check while missing real local artifacts still fail. |
 | `TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001` | Merged | `docs/reports/rss-monitor-state-reconciliation-2026-05-26.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Reconciles RSS monitor documentation with current main and confirms RSS-001 should not be reopened. |
 | `TASK-SOURCE-RSS-MONITOR-004` | Implemented locally | `config/sources.yaml`, `tests/test_rss_monitor.py`, `docs/reports/rss-monitor-004-2026-05-26.md` | Adds BOC_CANARIAS, DOG, and BOP_LUGO as validated metadata-only RSS discovery sources. |
+| `TASK-HERMES-AUDITOR-SCHEDULED-VALIDATION-001` | Completed | `docs/reports/hermes-auditor-scheduled-validation-2026-05-28.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Confirms the VPS automatic Hermes run and later scheduled validation report returned operational `GO` without changing timers, services, source logic, downstream writes, or the VPS checkout. |
 
 ## Next Allowed Work
 
