@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="es">
+  <title type="text">Boletin Oficial de la Provincia de Badajoz</title>
+  <id>tag:dip-badajoz.es,2026:bop</id>
+  <updated>2026-05-29T00:00:00+02:00</updated>
+  <entry>
+    <title>[1987/2026] Listado definitivo de aspirantes admitidos y excluidos</title>
+    <id>tag:dip-badajoz.es,2026-05-29:162704</id>
+    <updated>2026-05-29T00:00:00+02:00</updated>
+    <link href="http://www.dip-badajoz.es/bop/ventana_anuncio.php?id_anuncio=162704&amp;FechaSolicitada=2026-05-29" rel="alternate" />
+    <content type="html">Resumen metadata-only del anuncio.</content>
+  </entry>
+</feed>

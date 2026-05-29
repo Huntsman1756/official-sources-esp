@@ -360,6 +360,10 @@ sources:
     jurisdiction_level: autonómica
     official_landing_url: http://www.bocm.es/
     access_methods:
+      - type: rss
+        url: https://www.bocm.es/sumarios.rss
+        status: validated
+        notes: Official BOCM summary RSS feed validated for metadata-only discovery.
       - type: html
         url: https://www.bocm.es/search-day-month
         status: paused
@@ -368,17 +372,18 @@ sources:
         url: https://www.bocm.es/boletin/CM_Boletin_BOCM/{yyyy}/{mm}/{dd}/BOCM-{yyyymmdd}{issue}.xml
         status: paused
         notes: Issue XML pattern exists but is not promoted to validated monitor support.
-    operational_status: paused
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: planned
+    monitor_support: available
     backfill_support: planned
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-24"
+    last_verified_at: "2026-05-29"
     limitations:
-      - Endpoint/connectivity instability must be resolved before further source work.
-    notes: Metadata MVP exists, but operational status remains paused.
+      - RSS summary feed is validated for metadata-only discovery only.
+      - HTML date-to-issue and issue XML paths remain paused until endpoint instability is reviewed.
+    notes: RSS monitor support exists; broader BOCM metadata adapter work remains paused.
 
   - source_code: BORM
     name: Boletin Oficial de la Region de Murcia
@@ -659,22 +664,26 @@ sources:
     jurisdiction_level: provincial
     official_landing_url: http://www.dip-badajoz.es/bop/
     access_methods:
+      - type: atom
+        url: https://www.dip-badajoz.es/canales/atom_xml_bop.php?c=1&u=1
+        status: validated
+        notes: Official BOP Badajoz Atom feed validated for metadata-only discovery.
       - type: html
         url: http://www.dip-badajoz.es/bop/
         status: inventory
         notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-29"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Badajoz.
+      - Atom feed is validated for metadata-only discovery only.
+      - No candidates, evidence-grade records, PDFs, or downstream writes are allowed from RSS monitor output.
+    notes: Official provincial bulletin entry with Atom monitor support for Badajoz.
 
   - source_code: BOP_BARCELONA
     name: Boletin Oficial de la Provincia de Barcelona

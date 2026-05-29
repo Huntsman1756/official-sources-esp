@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xml:base="https://www.bocm.es/listado-de-sumarios" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>BOCM sumarios</title>
+    <link>https://www.bocm.es/sumarios.rss</link>
+    <description>Sumarios del Boletin Oficial de la Comunidad de Madrid</description>
+    <item>
+      <title>Boletin No 125 del 28 Mayo 2026</title>
+      <link>https://www.bocm.es/boletin-completo/BOCM-20260528/125</link>
+      <description>Sumario metadata-only del BOCM.</description>
+      <pubDate>2026-05-28T00:00:00</pubDate>
+      <dc:creator>bocm-carga</dc:creator>
+      <guid>https://www.bocm.es/boletin-completo/BOCM-20260528/125</guid>
+    </item>
+  </channel>
+</rss>

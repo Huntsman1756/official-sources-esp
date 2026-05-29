@@ -252,12 +252,14 @@ def _atom_entries(root: ElementTree.Element) -> list[dict[str, str | None]]:
     for entry in root.findall(f"{ATOM_NS}entry"):
         link_element = entry.find(f"{ATOM_NS}link")
         link = link_element.get("href") if link_element is not None else None
+        published = _text(entry, f"{ATOM_NS}published")
+        updated = _text(entry, f"{ATOM_NS}updated") or _text(entry, f"{DC_NS}date")
         entries.append(
             {
                 "entry_id": _text(entry, f"{ATOM_NS}id") or link,
                 "title": _text(entry, f"{ATOM_NS}title"),
-                "published_at": _text(entry, f"{ATOM_NS}published"),
-                "updated_at": _text(entry, f"{ATOM_NS}updated"),
+                "published_at": published or updated,
+                "updated_at": updated if published else None,
                 "official_url": link,
                 "summary": _text(entry, f"{ATOM_NS}summary") or _text(entry, f"{ATOM_NS}content"),
             }

@@ -719,8 +719,8 @@ def test_mcp_recommend_next_sources_returns_ranked_viable_provincial_inventory_s
         "BOP_ZARAGOZA",
         "BOP_ARABA_ALAVA",
         "BOP_AVILA",
-        "BOP_BADAJOZ",
         "BOP_BURGOS",
+        "BOP_CACERES",
     ]
     first = result["recommendations"][0]
     assert first["recommended_task"] == "provincial_html_discovery_pilot"
