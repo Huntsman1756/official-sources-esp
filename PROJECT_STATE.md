@@ -4,6 +4,44 @@ Last updated: 2026-05-29
 
 ## Current Decision
 
+`TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` is implemented locally as a reporting/control-plane
+snapshot after `TASK-SOURCE-RSS-MONITOR-005`.
+
+Current snapshot:
+
+```text
+integrated commit: 97c05e7
+total sources: 65
+metadata_adapter_validated: 9
+monitor_validated: 15
+inventory_only: 41
+RSS/Atom discovery sources: 11
+API discovery monitor sources: 1
+HTML provincial discovery sources: 7
+provincial inventory-only sources: 34
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
+MCP monitorable-source count: 23
+```
+
+Known degraded/manual-review item remains:
+
+```text
+BOP_ALICANTE: resolver-dependent DNS instability for sede.diputacionalicante.es
+```
+
+Report:
+
+```text
+docs/reports/source-coverage-v1-6-snapshot-2026-05-29.md
+```
+
+This task did not add sources, change monitor logic, create candidates, create evidence-grade
+records, download PDFs/artifacts, write downstream data, run backfills, run broad monitoring, touch
+VPS/prod DB, touch Hermes, or touch systemd.
+
+## Previous Decision
+
 `TASK-SOURCE-RSS-MONITOR-005` is implemented locally.
 
 The RSS/Atom monitor now has two additional metadata-only official feed sources:
@@ -1673,14 +1711,16 @@ Hard guardrails:
 | `TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001` | Merged | `docs/reports/rss-monitor-state-reconciliation-2026-05-26.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Reconciles RSS monitor documentation with current main and confirms RSS-001 should not be reopened. |
 | `TASK-SOURCE-RSS-MONITOR-004` | Implemented locally | `config/sources.yaml`, `tests/test_rss_monitor.py`, `docs/reports/rss-monitor-004-2026-05-26.md` | Adds BOC_CANARIAS, DOG, and BOP_LUGO as validated metadata-only RSS discovery sources. |
 | `TASK-HERMES-AUDITOR-SCHEDULED-VALIDATION-001` | Completed | `docs/reports/hermes-auditor-scheduled-validation-2026-05-28.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Confirms the VPS automatic Hermes run and later scheduled validation report returned operational `GO` without changing timers, services, source logic, downstream writes, or the VPS checkout. |
+| `TASK-SOURCE-RSS-MONITOR-005` | Implemented locally | `config/sources.yaml`, `src/official_sources/rss_monitor.py`, `tests/test_rss_monitor.py`, `docs/reports/rss-monitor-005-2026-05-29.md` | Adds BOCM and BOP_BADAJOZ as validated metadata-only RSS/Atom discovery sources without candidates, evidence-grade records, writes, VPS, Hermes, or systemd changes. |
+| `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-6-snapshot-2026-05-29.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Documents the post-RSS-005 coverage baseline: 65 sources, 11 RSS/Atom, 1 API discovery monitor, 7 HTML provincial discovery sources, 34 provincial inventory-only sources, and BOP_ALICANTE degraded/manual-review. |
 
 ## Next Allowed Work
 
 Allowed next work:
 
-1. `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` if a fresh coverage snapshot is wanted after RSS-004.
-2. `TASK-SOURCE-RSS-MONITOR-005` only after selecting another 2-3 verified official RSS/Atom feeds.
-3. `TASK-SOURCE-HTML-MONITOR-PILOT-001` only for sources without RSS/API after source-specific audit.
+1. `TASK-BOP-ALICANTE-DEGRADED-FOLLOWUP-001` to decide whether to resolve or further document the degraded/manual-review state.
+2. `TASK-SOURCE-COVERAGE-STATUS-CONTRACT-001` to clarify consumer-facing meanings of `healthy`, `metadata-only`, `inventory_only`, and `degraded/manual-review`.
+3. `TASK-PROVINCIAL-MONITORS-WAVE-003` only under the partial-health contract, without all-sources-green claims.
 4. `TASK-SOURCE-COVERAGE-RUN-REPORT-001` if actual metadata-only JSONL writes are run.
 5. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
 6. Product-local design/preview for draft process creation in `oposiciones2.0`.
