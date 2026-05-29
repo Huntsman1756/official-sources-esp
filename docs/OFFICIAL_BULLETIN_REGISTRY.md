@@ -21,8 +21,9 @@ discovery pilot. `BOP_ALBACETE` and `BOP_ALICANTE` were then added as the next t
 HTML discovery monitors after technical preview validation. This does not change the rest of the
 provincial inventory entries.
 
-`BOC_CANARIAS`, `DOG`, and `BOP_LUGO` were later promoted to metadata-only RSS discovery monitors.
-`BOC_CANARIAS` is section-scoped, and `BOP_LUGO` may expose PDF URLs as RSS metadata only.
+`BOC_CANARIAS`, `DOG`, `BOP_LUGO`, `BOCM`, and `BOP_BADAJOZ` were later promoted to metadata-only
+RSS/Atom discovery monitors. `BOC_CANARIAS` is section-scoped, `BOP_LUGO` may expose PDF URLs as RSS
+metadata only, and `BOP_BADAJOZ` uses Atom `updated` as the item date when `published` is absent.
 
 The executable registry separates:
 
@@ -50,6 +51,8 @@ official-sources rss monitor --source DOE --date YYYY-MM-DD
 official-sources rss monitor --source BOC_CANARIAS --date YYYY-MM-DD
 official-sources rss monitor --source DOG --date YYYY-MM-DD
 official-sources rss monitor --source BOP_LUGO --date YYYY-MM-DD
+official-sources rss monitor --source BOCM --date YYYY-MM-DD
+official-sources rss monitor --source BOP_BADAJOZ --date YYYY-MM-DD
 ```
 
 Metadata-only HTML discovery command:

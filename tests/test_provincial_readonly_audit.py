@@ -13,7 +13,7 @@ def test_list_auditable_provincial_sources_excludes_monitored_and_documented_blo
     sources = list_auditable_provincial_sources()
 
     source_codes = {source["source_code"] for source in sources}
-    assert len(sources) == 34
+    assert len(sources) == 33
     assert "BOP_ALMERIA" not in source_codes
     assert {
         "BOP_A_CORUNA",
@@ -21,6 +21,7 @@ def test_list_auditable_provincial_sources_excludes_monitored_and_documented_blo
         "BOP_ALICANTE",
         "BOP_BARCELONA",
         "BOP_BIZKAIA",
+        "BOP_BADAJOZ",
         "BOP_LUGO",
         "BOP_MALAGA",
         "BOP_VALENCIA",

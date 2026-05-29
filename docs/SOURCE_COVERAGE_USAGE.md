@@ -76,9 +76,11 @@ $env:PYTHONPATH='src'; python -m official_sources.cli sources status --source DO
 $env:PYTHONPATH='src'; python -m official_sources.cli sources status --source BOC_CANARIAS
 $env:PYTHONPATH='src'; python -m official_sources.cli sources status --source DOG
 $env:PYTHONPATH='src'; python -m official_sources.cli sources status --source BOP_LUGO
+$env:PYTHONPATH='src'; python -m official_sources.cli sources status --source BOCM
+$env:PYTHONPATH='src'; python -m official_sources.cli sources status --source BOP_BADAJOZ
 ```
 
-Expected current source-tree status for the RSS-003 and RSS-004 sources:
+Expected current source-tree status for the RSS-003, RSS-004, and RSS-005 sources:
 
 ```text
 BOIB: operational_status=monitor_validated monitor_support=available
@@ -87,6 +89,8 @@ DOE: operational_status=monitor_validated monitor_support=available
 BOC_CANARIAS: operational_status=monitor_validated monitor_support=available
 DOG: operational_status=monitor_validated monitor_support=available
 BOP_LUGO: operational_status=monitor_validated monitor_support=available
+BOCM: operational_status=monitor_validated monitor_support=available
+BOP_BADAJOZ: operational_status=monitor_validated monitor_support=available
 ```
 
 To refresh the local console script for development, reinstall the project in editable mode from
@@ -118,6 +122,8 @@ official-sources rss monitor --source DOE --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOC_CANARIAS --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source DOG --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOP_LUGO --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOCM --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOP_BADAJOZ --date YYYY-MM-DD --limit 1
 ```
 
 Write JSONL only when explicitly requested:

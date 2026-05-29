@@ -72,6 +72,25 @@ def test_parse_minimal_atom_fixture_emits_discovery_metadata():
     assert result.records[0]["summary"] == "Resumen Atom metadata-only."
 
 
+def test_parse_atom_fixture_uses_updated_as_primary_date_without_published():
+    result = parse_feed(
+        _fixture_bytes("atom_monitor_bop_badajoz.xml"),
+        source_code="BOP_BADAJOZ",
+        feed_url="https://www.dip-badajoz.es/canales/atom_xml_bop.php?c=1&u=1",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-badajoz",
+    )
+
+    assert result.feed_format == "atom"
+    assert result.records[0]["entry_id"] == "tag:dip-badajoz.es,2026-05-29:162704"
+    assert result.records[0]["published_at"] == "2026-05-29T00:00:00+02:00"
+    assert result.records[0]["updated_at"] is None
+    assert result.records[0]["official_url"] == (
+        "http://www.dip-badajoz.es/bop/ventana_anuncio.php?id_anuncio=162704"
+        "&FechaSolicitada=2026-05-29"
+    )
+
+
 def test_entry_hash_prefers_source_published_at_and_official_url():
     assert build_entry_hash(
         source_code="BOCYL",
@@ -141,6 +160,34 @@ def test_rss_004_feed_access_methods_are_validated_in_registry(source_code, expe
 @pytest.mark.parametrize(
     ("source_code", "expected_type", "expected_url"),
     [
+        ("BOCM", "rss", "https://www.bocm.es/sumarios.rss"),
+        (
+            "BOP_BADAJOZ",
+            "atom",
+            "https://www.dip-badajoz.es/canales/atom_xml_bop.php?c=1&u=1",
+        ),
+    ],
+)
+def test_rss_005_feed_access_methods_are_validated_in_registry(
+    source_code,
+    expected_type,
+    expected_url,
+):
+    source = get_source(source_code)
+    access_method = select_feed_access_method(source)
+
+    assert access_method["type"] == expected_type
+    assert access_method["status"] == "validated"
+    assert access_method["url"] == expected_url
+    assert source["operational_status"] == "monitor_validated"
+    assert source["monitor_support"] == "available"
+    assert source["candidate_creation_allowed"] is False
+    assert source["evidence_grade_allowed"] is False
+
+
+@pytest.mark.parametrize(
+    ("source_code", "expected_type", "expected_url"),
+    [
         ("BOE", "rss", "https://www.boe.es/rss/boe.php"),
         ("BOJA", "atom", "https://www.juntadeandalucia.es/boja/distribucion/boja.xml"),
         ("BOIB", "rss", "https://www.caib.es/eboibfront/es/rss"),
@@ -172,6 +219,8 @@ def test_expanded_feed_access_methods_exist_in_registry(
         ("BOC_CANARIAS", "rss_monitor_boc_canarias_disposiciones.xml"),
         ("DOG", "rss_monitor_dog_sumario.xml"),
         ("BOP_LUGO", "rss_monitor_bop_lugo.xml"),
+        ("BOCM", "rss_monitor_bocm_sumarios.xml"),
+        ("BOP_BADAJOZ", "atom_monitor_bop_badajoz.xml"),
     ],
 )
 def test_monitor_accepts_expanded_sources_as_discovery_only(source_code, fixture_name):

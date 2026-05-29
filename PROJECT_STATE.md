@@ -1,8 +1,52 @@
 # Project State
 
-Last updated: 2026-05-28
+Last updated: 2026-05-29
 
 ## Current Decision
+
+`TASK-SOURCE-RSS-MONITOR-005` is implemented locally.
+
+The RSS/Atom monitor now has two additional metadata-only official feed sources:
+
+```text
+BOCM = official BOCM summary RSS feed
+BOP_BADAJOZ = official BOP Badajoz Atom feed
+```
+
+Current executable registry counts:
+
+```text
+total sources: 65
+metadata_adapter_validated: 9
+monitor_validated: 15
+inventory_only: 41
+RSS/Atom discovery sources: BOC_CANARIAS, BOC_CANTABRIA, BOCM, BOCYL, BOE, BOIB, BOJA, BOP_BADAJOZ, BOP_LUGO, DOE, DOG
+API discovery sources: BOPV
+HTML provincial discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_BARCELONA, BOP_BIZKAIA, BOP_MALAGA, BOP_VALENCIA
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
+```
+
+Live preview validation on `2026-05-29` ran one source at a time, with `--limit 1`, and without
+`--write`:
+
+```text
+BOCM: records=1 feed_format=rss candidate_status=not_candidate evidence_status=not_evidence
+BOP_BADAJOZ: records=1 feed_format=atom candidate_status=not_candidate evidence_status=not_evidence
+data/rss_monitor exists: false
+```
+
+Report:
+
+```text
+docs/reports/rss-monitor-005-2026-05-29.md
+```
+
+This task did not create candidates, create evidence-grade records, download PDFs/artifacts, write
+downstream data, run backfills, run broad monitoring, touch VPS/prod DB, touch Hermes, or touch
+systemd.
+
+## Previous Decision
 
 `TASK-HERMES-AUDITOR-RUNTIME-GUARD-001` is completed with operational `GO`.
 
@@ -94,10 +138,10 @@ No timers, services, source registry, RSS feeds, provincial monitors, candidates
 records, PDFs/artifacts, downstream writes, VPS checkout fast-forward, or product data were changed
 by this documentation task.
 
-Remaining known item in current `main`:
+Historical note from that snapshot:
 
 ```text
-TASK-SOURCE-RSS-MONITOR-005: feed selection remains pending
+TASK-SOURCE-RSS-MONITOR-005 was pending at the time of the Hermes documentation snapshot.
 ```
 
 ## Previous Decision

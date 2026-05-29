@@ -1,6 +1,6 @@
 # Task Queue
 
-Last updated: 2026-05-28
+Last updated: 2026-05-29
 
 This file was absent at the start of `TASK-SOURCE-REGISTRY-001`. It is now the local task queue
 for source-platform work in this repository.
@@ -41,6 +41,7 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 | `TASK-VPS-INTEGRITY-CHECK-RAW-METADATA-001` | implemented locally | `integrity-check` now reports `local_path=NULL` metadata rows as `non_local_metadata`, while missing stored local artifact paths still fail. |
 | `TASK-DOCS-RSS-MONITOR-STATE-RECONCILIATION-001` | merged | Reconciles RSS monitor documentation with current `main`; confirms RSS-001 should not be reopened and points next implementation work to RSS-004. |
 | `TASK-SOURCE-RSS-MONITOR-004` | implemented locally | Adds BOC_CANARIAS, DOG, and BOP_LUGO as validated metadata-only RSS discovery sources; no writes, candidates, evidence-grade records, PDFs, downstream, VPS, Hermes, or systemd changes. |
+| `TASK-SOURCE-RSS-MONITOR-005` | implemented locally | Adds BOCM and BOP_BADAJOZ as validated metadata-only RSS/Atom discovery sources. Atom entries without `published` now use `updated` as the primary item date. Live previews returned `records=1` for both sources with `not_candidate` and `not_evidence`; `data/rss_monitor` remained absent. No writes, candidates, evidence-grade records, PDFs/artifacts, downstream, VPS, Hermes, or systemd changes. |
 | `TASK-HERMES-AUDITOR-CANONICAL-ROOT-001` | completed | Hermes now audits `/opt/official-sources/app` through explicit `APP_ROOT`/`REPO_ROOT`/`TARGET_REPO` systemd environment; manual run returned `0/SUCCESS`, failed units are `0`, BOE/integrity/Hermes timers remain active, and report `vps-audit-20260527-044105.md` confirms RSS monitor present and RSS-001 completed. Follow-up scheduled validation is completed in `TASK-HERMES-AUDITOR-SCHEDULED-VALIDATION-001`. |
 | `TASK-HERMES-AUDITOR-SCHEDULED-VALIDATION-001` | completed | VPS automatic Hermes run at `2026-05-28 00:07:44 UTC` generated `vps-audit-20260528-000744.md`; later VPS scheduled validation at `2026-05-28 00:45:01 UTC` generated `hermes-scheduled-validation-20260528-004501.md` with `verdict=GO`. The audited repo was `/opt/official-sources/app` on `main` commit `9ebf849f1663642071f60023385acc44c9fe5875`, worktree clean, Hermes service success exit 0, scheduled-validation service success exit 0, and `systemctl --failed` reported `0 loaded units listed`. Documentation report: `docs/reports/hermes-auditor-scheduled-validation-2026-05-28.md`. No BOE/integrity/RSS logic, timers, services, candidates, evidence, downstream writes, or VPS checkout fast-forward changes. |
 | `TASK-HERMES-AUDITOR-RUNTIME-GUARD-001` | completed | VPS-only hardening added a non-blocking runner lock at `/var/lib/hermes-official-sources-auditor/hermes-auditor.lock` and a systemd drop-in with `TimeoutStartSec=5min`. Lock skip path returned status 0 with `skipped=concurrent_existing_run`; post-guard manual smoke generated `vps-audit-20260528-180136.md` against `/opt/official-sources/app` on `main` commit `08becb29162a8b896eedb91a7c8c33c4c8f6b79c`, clean worktree, RSS monitor present, service result success, and `systemctl --failed` reported `0 loaded units listed`. Documentation report: `docs/reports/hermes-auditor-runtime-guard-2026-05-28.md`. No timer calendar, model setting, source logic, downstream write, or checkout HEAD change. |
@@ -58,8 +59,7 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 | --- | --- | --- |
 | `TASK-PROVINCIAL-MONITORS-WAVE-003` | proposed | May proceed only under the partial-health contract: seven monitored provincial sources are healthy, `BOP_ALICANTE` is explicitly degraded/manual-review and excluded from healthy-set claims, and no PR may claim all eight monitored provincial sources are healthy. `BOP_SEVILLA` remains the next prior audit candidate. Keep source-specific parsers, fixtures/fetchers, preview validation, and no publication/candidate/evidence/PDF/downstream writes. |
 | `TASK-SOURCE-PROVINCIAL-URL-DIFF-AUDIT-001` | proposed | Compare BOE and PAG provincial URLs source by source; documentation-only unless a URL correction is verified. |
-| `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` | proposed | Optional snapshot after RSS-004 if current coverage counts need a standalone report. |
-| `TASK-SOURCE-RSS-MONITOR-005` | proposed | Only after selecting another 2-3 verified official RSS/Atom feeds; keep discovery metadata-only. |
+| `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` | proposed | Optional snapshot after RSS-005 if current coverage counts need a standalone report. |
 | `TASK-SOURCE-HTML-MONITOR-PILOT-001` | proposed | Only for sources without RSS/API, after source-specific endpoint/robots/fixture audit. |
 | `TASK-SOURCE-COVERAGE-RUN-REPORT-001` | proposed | Only if actual metadata-only JSONL writes are run; document source, date, output path, row count, and guardrails. |
 | `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |
