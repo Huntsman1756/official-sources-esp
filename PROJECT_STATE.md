@@ -4,6 +4,48 @@ Last updated: 2026-05-28
 
 ## Current Decision
 
+`TASK-HERMES-AUDITOR-RUNTIME-GUARD-001` is completed with operational `GO`.
+
+The VPS Hermes auditor now has two runtime safeguards:
+
+```text
+runner lock: /var/lib/hermes-official-sources-auditor/hermes-auditor.lock
+systemd runtime guard: TimeoutStartSec=5min
+```
+
+The anti-overlap test returned:
+
+```text
+skip_status=0
+skip_output=skipped=concurrent_existing_run lock=/var/lib/hermes-official-sources-auditor/hermes-auditor.lock
+```
+
+Manual service smoke after the guard:
+
+```text
+official-sources-hermes-auditor.service: Result=success
+ExecMainStatus=0
+latest report: /var/lib/hermes-official-sources-auditor/reports/vps-audit-20260528-180136.md
+target_repo: /opt/official-sources/app
+git_branch: main
+git_commit: 08becb29162a8b896eedb91a7c8c33c4c8f6b79c
+git_worktree: clean
+rss_monitor: present
+systemctl --failed: 0 loaded units listed
+```
+
+Report:
+
+```text
+docs/reports/hermes-auditor-runtime-guard-2026-05-28.md
+```
+
+This task did not change the Hermes timer calendar, `RandomizedDelaySec`, model settings, source
+registry, RSS/provincial monitor logic, candidates, evidence-grade records, downstream writes, or
+the VPS checkout HEAD.
+
+## Previous Decision
+
 `TASK-HERMES-AUDITOR-SCHEDULED-VALIDATION-001` is completed with operational `GO`.
 
 This is no longer a manual smoke. Hermes ran automatically on the VPS, then the VPS-side scheduled
