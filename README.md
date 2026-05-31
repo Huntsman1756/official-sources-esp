@@ -133,7 +133,8 @@ The coverage platform is documented in `docs/SOURCE_COVERAGE_USAGE.md`.
 Source status semantics for downstream consumers are documented in `docs/SOURCE_STATUS_CONTRACT.md`.
 Downstream-demand prioritization for the shared MCP/upstream model is documented in
 `docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md`.
-The proposed consumer-aware MCP contract is documented in
+Stable downstream case taxonomy is documented in `docs/MCP_CASE_TAXONOMY.md`.
+The consumer-aware MCP contract is documented in
 `docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md`.
 
 Quick registry commands:

@@ -10,6 +10,7 @@ from official_sources.api_monitor import (
     build_api_monitor_output_path,
     monitor_api_source,
 )
+from official_sources.case_taxonomy import list_case_taxonomy as taxonomy_list_case_taxonomy
 from official_sources.html_monitor import (
     HTMLFetcher,
     HTMLMonitorError,
@@ -624,6 +625,17 @@ def recommend_sources_for_consumer(
             "no downstream mutation",
         ],
     }
+
+
+def list_case_taxonomy(
+    *,
+    consumer: str | None = None,
+    demand_class: str | None = None,
+) -> dict:
+    return taxonomy_list_case_taxonomy(
+        consumer=consumer,
+        demand_class=demand_class,
+    )
 
 
 def _source_safety(source: dict[str, Any]) -> dict:

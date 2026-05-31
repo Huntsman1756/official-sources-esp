@@ -4,6 +4,51 @@ Last updated: 2026-05-31
 
 ## Current Decision
 
+`TASK-MCP-CASE-TAXONOMY-001` is implemented locally as a stable downstream case taxonomy for the
+shared read-only MCP layer.
+
+New contract:
+
+```text
+docs/MCP_CASE_TAXONOMY.md
+```
+
+New MCP tool:
+
+```text
+list_case_taxonomy
+```
+
+The taxonomy formalizes:
+
+```text
+public_employment_alerts: oposiciones2.0
+education_aid_evidence: eduayudas
+benefit_source_discovery: la-ayuda
+fiscal_reference_resolution: renta-verificable
+future_grants_registry: future grants/subsidy consumers
+```
+
+The tool is deterministic and read-only. It does not fetch live sources, run monitor previews, read
+or write discovery JSONL, mutate the registry, create candidates, create evidence-grade records,
+download files, write downstream repositories, decide eligibility, decide legal/fiscal meaning,
+rank products, publish pages, or send notifications.
+
+Responses preserve:
+
+```text
+mode=read_only
+writes_performed=false
+candidate_creation_allowed=false
+evidence_grade_allowed=false
+product_automation_allowed=false
+human_review_required=true
+```
+
+`BOP_ALICANTE` remains `degraded/manual-review`; no all-sources-green claim is allowed.
+
+## Previous Decision
+
 `TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001` is implemented locally as the first source expansion
 after the downstream-demand MCP matrix.
 
@@ -1926,15 +1971,21 @@ Hard guardrails:
 | `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-6-snapshot-2026-05-29.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Documents the post-RSS-005 coverage baseline: 65 sources, 11 RSS/Atom, 1 API discovery monitor, 7 HTML provincial discovery sources, 34 provincial inventory-only sources, and BOP_ALICANTE degraded/manual-review. |
 | `TASK-SOURCE-COVERAGE-STATUS-CONTRACT-001` | Merged | `docs/SOURCE_STATUS_CONTRACT.md`, PR #21 | Defines downstream-facing status semantics and separates registry presence, monitor capability, runtime health, metadata-only discovery, inventory-only status, candidate permission, evidence-grade permission, and product readiness. |
 | `TASK-PROJECT-CLOSURE-READONLY-UPSTREAM-001` | Implemented locally | `PROJECT_STATE.md`, `TASK_QUEUE.md` | Marks `official-sources` closed as read-only upstream v1 after PR #21 merged, VPS fast-forwarded, timers remained healthy, and old conflicting PRs #3, #7, and #16 were closed as superseded. |
+| `TASK-MCP-DOWNSTREAM-SOURCE-NEEDS-MATRIX-001` | Implemented locally | `docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md` | Defines downstream-demand classes and prioritizes future MCP/source work for current and future consumers. |
+| `TASK-MCP-OFFICIAL-SOURCES-CONTRACT-001` | Implemented locally | `docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md` | Defines downstream-demand MCP tool semantics and shared read-only safety envelope. |
+| `TASK-MCP-TOOLS-READONLY-SKELETON-001` | Implemented locally | `src/official_sources/source_coverage.py`, `src/official_sources/mcp/tools.py`, `src/official_sources/mcp/server.py` | Implements read-only `recommend_sources_for_consumer`. |
+| `TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001` | Implemented locally | `docs/reports/source-coverage-reopen-oposiciones-001-2026-05-31.md` | Adds metadata-only BOP Castellon and BOP Sevilla monitors for `oposiciones2.0` demand. |
+| `TASK-MCP-CASE-TAXONOMY-001` | Implemented locally | `docs/MCP_CASE_TAXONOMY.md`, `src/official_sources/case_taxonomy.py` | Adds stable downstream case taxonomy and read-only `list_case_taxonomy` MCP tool. |
 
 ## Next Allowed Work
 
 Allowed next work:
 
-1. `TASK-BOP-ALICANTE-DEGRADED-FOLLOWUP-001` to decide whether to resolve or further document the degraded/manual-review state.
-2. Product-local design/preview for draft process creation in `oposiciones2.0`.
-3. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean and product-side review gates are explicit.
-4. A source-needs audit for `renta-verificable` before any integration.
+1. `TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001` to define reviewable education-aid evidence packets.
+2. `TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001` to define official source and normative-reference resolver behavior.
+3. `TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001` only after a product infrastructure gate or explicit source audit.
+4. `TASK-BOP-ALICANTE-DEGRADED-FOLLOWUP-001` only if the degraded/manual-review state needs recovery or more documentation.
+5. Product-local design/preview work only inside the downstream product repositories.
 
 No new source expansion is planned from the current operational baseline. `TASK-PROVINCIAL-MONITORS-WAVE-003`
 and other source expansion work should remain out of scope unless a new task explicitly reopens

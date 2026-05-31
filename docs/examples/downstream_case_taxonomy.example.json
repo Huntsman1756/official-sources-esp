@@ -1,0 +1,32 @@
+{
+  "status": "ok",
+  "resource_type": "case_taxonomy",
+  "mode": "read_only",
+  "writes_performed": false,
+  "candidate_creation_allowed": false,
+  "evidence_grade_allowed": false,
+  "product_automation_allowed": false,
+  "human_review_required": true,
+  "cases": [
+    {
+      "demand_class": "public_employment_alerts",
+      "case_type": "public_employment_alert",
+      "primary_consumers": ["oposiciones2.0"],
+      "topics": ["public_employment"],
+      "jurisdictions": ["state", "autonomous", "provincial", "local"],
+      "safe_outputs": [
+        "source recommendation",
+        "metadata-only discovery record",
+        "official URL",
+        "manual-review alert input"
+      ],
+      "must_not_infer": [
+        "candidate_ready",
+        "evidence_grade",
+        "notification_ready",
+        "all_sources_green",
+        "product_publication_allowed"
+      ]
+    }
+  ]
+}

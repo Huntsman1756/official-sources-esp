@@ -16,6 +16,7 @@ Related contracts:
 ```text
 docs/SOURCE_STATUS_CONTRACT.md
 docs/DOWNSTREAM_CONTRACT.md
+docs/MCP_CASE_TAXONOMY.md
 docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md
 docs/MCP_TOOLS.md
 ```
@@ -35,6 +36,13 @@ What source work should be prioritized next?
 The MCP must not turn relevance into approval.
 
 ## Consumer Model
+
+Stable demand classes, case types, topic values, jurisdiction values, safe outputs, and
+`must_not_infer` values are defined in:
+
+```text
+docs/MCP_CASE_TAXONOMY.md
+```
 
 Supported current consumers:
 
@@ -110,6 +118,47 @@ normal runtime recovery.
 
 The following tools define the downstream-demand MCP surface. Implementation status is tracked in
 `docs/MCP_TOOLS.md`.
+
+### `list_case_taxonomy`
+
+Status:
+
+```text
+implemented
+```
+
+Purpose:
+
+```text
+Expose stable downstream case types, demand classes, source-family targets, and safety boundaries.
+```
+
+Inputs:
+
+```json
+{
+  "consumer": "optional known consumer or alias",
+  "demand_class": "optional demand-class filter"
+}
+```
+
+Required behavior:
+
+- return deterministic taxonomy entries from `docs/MCP_CASE_TAXONOMY.md`;
+- preserve the shared safety envelope;
+- refuse unknown consumers;
+- refuse unsupported demand classes;
+- refuse consumer/demand-class mismatches.
+
+Must not:
+
+- fetch live sources;
+- run discovery previews;
+- write JSONL;
+- mutate `config/sources.yaml`;
+- create candidates or evidence-grade records;
+- write downstream records;
+- decide eligibility, legal meaning, fiscal meaning, product ranking, or publication readiness.
 
 ### `recommend_sources_for_consumer`
 

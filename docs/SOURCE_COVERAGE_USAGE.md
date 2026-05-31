@@ -419,6 +419,43 @@ This tool is deterministic and does not use LLM classification. It does not exec
 live sources, write JSONL, create files, create candidates, create evidence-grade records, download
 PDFs/artifacts, run backfills, mutate registry state, or touch downstream repositories.
 
+### list_case_taxonomy
+
+Input:
+
+```json
+{
+  "consumer": "optional consumer alias",
+  "demand_class": "optional demand-class filter"
+}
+```
+
+Returns the stable downstream case taxonomy used by consumer-aware MCP tools.
+
+Implemented demand classes:
+
+```text
+public_employment_alerts
+education_aid_evidence
+benefit_source_discovery
+fiscal_reference_resolution
+future_grants_registry
+```
+
+The response is read-only and preserves:
+
+```text
+writes_performed=false
+candidate_creation_allowed=false
+evidence_grade_allowed=false
+product_automation_allowed=false
+human_review_required=true
+```
+
+This tool does not execute previews, fetch live sources, write JSONL, create candidates, create
+evidence-grade records, mutate registry state, decide eligibility, decide fiscal or legal meaning,
+approve publication, or touch downstream repositories.
+
 ## Safety Boundaries
 
 The coverage surface must preserve these boundaries:
@@ -427,6 +464,7 @@ The coverage surface must preserve these boundaries:
 - MCP cache readback is read-only.
 - MCP `preview_discovery` may fetch one explicit source in preview mode only.
 - MCP `recommend_next_sources` is deterministic and does not execute previews or live fetches.
+- MCP `list_case_taxonomy` is deterministic and does not execute previews or live fetches.
 - MCP does not write JSONL.
 - MCP does not create files.
 - `--write` is explicit for CLI monitor output.
