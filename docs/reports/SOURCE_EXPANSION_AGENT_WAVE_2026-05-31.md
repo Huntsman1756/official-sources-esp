@@ -446,6 +446,25 @@ Deferred after VPS validation:
   fetching the official sede even with a 60 second timeout. Kept inventory-only until the VPS path
   is validated.
 
+## Follow-up batch: Girona, Tarragona
+
+Validated locally on 2026-05-31 as metadata-only monitors:
+
+- `BOP_GIRONA`: official DDGI current-bulletin page at `https://www.ddgi.cat/bop/`; emits announcement metadata when the page bulletin date matches the requested date. PDF endpoints are stored only as official metadata and marked `pdf_endpoint_not_downloaded`.
+- `BOP_TARRAGONA`: official date-scoped BOPT page at `https://aplicacions.dipta.cat/bopt/web/anteriores/{date}`; emits announcement-card metadata from page one only.
+
+Local live preview evidence for `2026-05-29`:
+
+- `BOP_GIRONA`: `records=1`, `candidate_status=not_candidate`, `evidence_status=not_evidence`, first `document_id=202610204663`.
+- `BOP_TARRAGONA`: `records=1`, `candidate_status=not_candidate`, `evidence_status=not_evidence`, first `document_id=359557`.
+
+Registry impact after this batch:
+
+- `monitor_validated`: 45
+- `inventory_only`: 11
+- provincial `inventory_only`: 8
+- normal next-source ranking: `BOP_ZARAGOZA`, `BOP_CIUDAD_REAL`, `BOP_CUENCA`, `BOP_HUESCA`, `BOP_OURENSE`, `BOP_SALAMANCA`.
+
 ## Deferred
 
 - BOP_ZARAGOZA: previous priority is stale; current evidence remains unknown/high friction.

@@ -24,6 +24,7 @@ from official_sources.html_monitor import (
     build_bop_cordoba_html_url,
     build_bop_cuenca_html_url,
     build_bop_gipuzkoa_html_url,
+    build_bop_girona_html_url,
     build_bop_granada_html_url,
     build_bop_jaen_html_url,
     build_bop_las_palmas_html_url,
@@ -37,6 +38,7 @@ from official_sources.html_monitor import (
     build_bop_segovia_html_url,
     build_bop_sevilla_html_url,
     build_bop_soria_html_url,
+    build_bop_tarragona_html_url,
     build_bop_teruel_html_url,
     build_bop_toledo_html_url,
     build_bop_valencia_html_url,
@@ -62,6 +64,7 @@ from official_sources.html_monitor import (
     parse_bop_cordoba_html,
     parse_bop_cuenca_html,
     parse_bop_gipuzkoa_html,
+    parse_bop_girona_html,
     parse_bop_jaen_html,
     parse_bop_las_palmas_html,
     parse_bop_leon_html,
@@ -74,6 +77,7 @@ from official_sources.html_monitor import (
     parse_bop_segovia_html,
     parse_bop_sevilla_html,
     parse_bop_soria_html,
+    parse_bop_tarragona_html,
     parse_bop_teruel_html,
     parse_bop_toledo_html,
     parse_bop_valencia_html,
@@ -120,6 +124,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_BURGOS",
         "BOP_CASTELLON",
         "BOP_CORDOBA",
+        "BOP_GIRONA",
         "BOP_GIPUZKOA",
         "BOP_GRANADA",
         "BOP_JAEN",
@@ -133,6 +138,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_SEVILLA",
         "BOP_SANTA_CRUZ_TENERIFE",
         "BOP_SORIA",
+        "BOP_TARRAGONA",
         "BOP_TERUEL",
         "BOP_TOLEDO",
         "BOP_VALENCIA",
@@ -284,6 +290,13 @@ def test_build_bop_cuenca_html_url_is_one_date_request():
     )
 
 
+def test_build_bop_girona_html_url_is_latest_landing_request():
+    assert (
+        build_bop_girona_html_url("https://www.ddgi.cat/bop/", target_date="2026-05-29")
+        == "https://www.ddgi.cat/bop/"
+    )
+
+
 def test_build_bop_gipuzkoa_html_url_is_one_date_request():
     assert build_bop_gipuzkoa_html_url(
         "https://egoitza.gipuzkoa.eus/gao-bog/castell/bog/{yyyy}/{mm}/{dd}/bc{yymmdd}.htm",
@@ -412,6 +425,13 @@ def test_build_bop_soria_html_url_is_one_date_request():
         )
         == "https://bop.dipsoria.es/index.php/mod.boloficial/mem.listadodia/fecha.29-05-2026"
     )
+
+
+def test_build_bop_tarragona_html_url_is_one_date_request():
+    assert build_bop_tarragona_html_url(
+        "https://aplicacions.dipta.cat/bopt/web/anteriores/{date}",
+        target_date="2026-05-29",
+    ) == "https://aplicacions.dipta.cat/bopt/web/anteriores/2026-05-29"
 
 
 def test_build_bop_toledo_html_url_is_one_date_request():
@@ -1414,6 +1434,86 @@ def test_parse_bop_gipuzkoa_html_emits_announcement_metadata():
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"
     assert "pdf_url" not in record
+
+
+def test_parse_bop_girona_html_emits_pdf_link_metadata_only_records():
+    raw = b"""
+    <h1>Bop numero: 102/0 - 29/05/2026</h1>
+    <h2 class="seccioTau">Administracio local - Ajuntaments</h2>
+    <li class="edicte">
+      <a href="https://ssl4.ddgi.cat/bopV1/pdf/2026/102/202610204663.pdf"
+         target="new" class="linkAjuda">
+        4663 - <span>AJUNTAMENT D'AMER</span> - Aprovacio definitiva dels expedients
+      </a>
+    </li>
+    """
+    page_url = "https://www.ddgi.cat/bop/"
+
+    result = parse_bop_girona_html(
+        raw,
+        source_code="BOP_GIRONA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-girona",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_GIRONA"
+    assert record["entry_id"] == "202610204663"
+    assert record["document_id"] == "202610204663"
+    assert record["title"] == "Aprovacio definitiva dels expedients"
+    assert record["published_at"] == "2026-05-29"
+    assert record["issue_number"] == "102"
+    assert record["official_url"] == "https://ssl4.ddgi.cat/bopV1/pdf/2026/102/202610204663.pdf"
+    assert record["summary"] == "Administracio local - Ajuntaments - AJUNTAMENT D'AMER"
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+
+
+def test_parse_bop_tarragona_html_emits_announcement_metadata():
+    raw = b"""
+    <time datetime="2026-05-29">viernes <span>29 de mayo</span> de 2026</time>
+    <div class="card bg-white mb-4 shadow-sm rounded-0">
+      <div class="card-body">
+        <h3 class="card-title h6">
+          <a href="/bopt/web/anuncio/359557/comissio-paritaria" class="stretched-link">
+            GENERALITAT CATALUNYA - EMPRESA I TREBALL - TARRAGONA
+          </a>
+        </h3>
+        <p>Comissio Paritaria del Conveni collectiu de treball</p>
+      </div>
+    </div>
+    """
+    page_url = "https://aplicacions.dipta.cat/bopt/web/anteriores/2026-05-29"
+
+    result = parse_bop_tarragona_html(
+        raw,
+        source_code="BOP_TARRAGONA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-tarragona",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_TARRAGONA"
+    assert record["entry_id"] == "359557"
+    assert record["document_id"] == "359557"
+    assert record["title"] == "Comissio Paritaria del Conveni collectiu de treball"
+    assert record["published_at"] == "2026-05-29"
+    assert record["official_url"] == (
+        "https://aplicacions.dipta.cat/bopt/web/anuncio/359557/comissio-paritaria"
+    )
+    assert record["summary"] == "GENERALITAT CATALUNYA - EMPRESA I TREBALL - TARRAGONA"
+    assert record["warnings"] == []
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
 
 
 def test_parse_bop_las_palmas_html_emits_bulletin_metadata():

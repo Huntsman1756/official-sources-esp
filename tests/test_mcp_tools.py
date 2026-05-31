@@ -842,9 +842,9 @@ def test_mcp_recommend_next_sources_returns_ranked_viable_provincial_inventory_s
         "BOP_ZARAGOZA",
         "BOP_CIUDAD_REAL",
         "BOP_CUENCA",
-        "BOP_GIRONA",
         "BOP_HUESCA",
         "BOP_OURENSE",
+        "BOP_SALAMANCA",
     ]
     first = result["recommendations"][0]
     assert first["recommended_task"] == "provincial_html_discovery_pilot"
@@ -875,6 +875,7 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
         "BOP_BURGOS",
         "BOP_CACERES",
         "BOP_CORDOBA",
+        "BOP_GIRONA",
         "BOP_GIPUZKOA",
         "BOP_GRANADA",
         "BOP_GUADALAJARA",
@@ -891,6 +892,7 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
         "BOP_SEVILLA",
         "BOP_VALENCIA",
         "BOP_SORIA",
+        "BOP_TARRAGONA",
         "BOP_TERUEL",
         "BOP_TOLEDO",
         "BOP_ZAMORA",

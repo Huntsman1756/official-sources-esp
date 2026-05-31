@@ -952,24 +952,25 @@ sources:
     name: Boletin Oficial de la Provincia de Girona
     jurisdiction: ES-GI
     jurisdiction_level: provincial
-    official_landing_url: http://www.ddgi.cat/
+    official_landing_url: https://www.ddgi.cat/bop/
     access_methods:
       - type: html
-        url: http://www.ddgi.cat/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://www.ddgi.cat/bop/
+        status: validated
+        notes: Official current-bulletin landing page used by metadata-only HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Girona.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Current-bulletin landing page only; monitor returns records only when the requested date matches the exposed bulletin date.
+      - Historical backfill disabled; preview one latest bulletin page only.
+    notes: Official provincial bulletin HTML discovery monitor for Girona.
 
   - source_code: BOP_GRANADA
     name: Boletin Oficial de la Provincia de Granada
@@ -1404,24 +1405,25 @@ sources:
     name: Butlleti Oficial de la Provincia de Tarragona
     jurisdiction: ES-T
     jurisdiction_level: provincial
-    official_landing_url: http://www.diputaciodetarragona.cat/ebop/
+    official_landing_url: https://aplicacions.dipta.cat/bopt/web/es
     access_methods:
       - type: html
-        url: http://www.diputaciodetarragona.cat/ebop/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://aplicacions.dipta.cat/bopt/web/anteriores/{date}
+        status: validated
+        notes: Official date-scoped BOPT page used by metadata-only HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Tarragona.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Date-scoped page exposes paginated announcement cards; monitor fetches page one only.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin HTML discovery monitor for Tarragona.
 
   - source_code: BOP_TERUEL
     name: Boletin Oficial de la Provincia de Teruel

@@ -171,6 +171,11 @@ def build_bop_cuenca_html_url(template_url: str, *, target_date: str) -> str:
     )
 
 
+def build_bop_girona_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url.replace("{date}", target_date)
+
+
 def build_bop_gipuzkoa_html_url(template_url: str, *, target_date: str) -> str:
     parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
     return (
@@ -259,6 +264,11 @@ def build_bop_soria_html_url(template_url: str, *, target_date: str) -> str:
     return template_url.replace("{dd_mm_yyyy}", parsed_date.strftime("%d-%m-%Y")).replace(
         "{date}", parsed_date.isoformat()
     )
+
+
+def build_bop_tarragona_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url.replace("{date}", target_date)
 
 
 def build_bop_teruel_html_url(template_url: str, *, target_date: str) -> str:
@@ -976,6 +986,82 @@ def parse_bop_gipuzkoa_html(
         if issue_number:
             record["issue_number"] = issue_number
         records.append(record)
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
+def parse_bop_girona_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_bop_girona_publication_date(text)
+    if published_at != requested_date:
+        return HTMLParseResult(raw_page_hash=raw_page_hash, records=[])
+    issue_number = _extract_bop_girona_issue_number(text)
+    records = []
+    for title, href, document_id, summary in _iter_bop_girona_announcements(text):
+        record = _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at,
+            official_url=urljoin(page_url, href),
+            summary=summary,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"],
+        )
+        if issue_number:
+            record["issue_number"] = issue_number
+        records.append(record)
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
+def parse_bop_tarragona_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _first_datetime_value(text)
+    if published_at != requested_date:
+        return HTMLParseResult(raw_page_hash=raw_page_hash, records=[])
+    records = []
+    for title, href, document_id, summary in _iter_bop_tarragona_announcements(text):
+        records.append(
+            _build_html_record(
+                source_code=source_code,
+                page_url=page_url,
+                page_format="html",
+                entry_id=document_id,
+                document_id=document_id,
+                title=title,
+                published_at=published_at,
+                official_url=urljoin(page_url, href),
+                summary=summary,
+                raw_page_hash=raw_page_hash,
+                discovered_at=discovered_at,
+                monitor_run_id=monitor_run_id,
+                warnings=[],
+            )
+        )
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
@@ -1720,6 +1806,8 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_ciudad_real_html_url(template_url, target_date=target_date)
     if source_code == "BOP_CUENCA":
         return build_bop_cuenca_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_GIRONA":
+        return build_bop_girona_html_url(template_url, target_date=target_date)
     if source_code == "BOP_GIPUZKOA":
         return build_bop_gipuzkoa_html_url(template_url, target_date=target_date)
     if source_code == "BOP_GRANADA":
@@ -1748,6 +1836,8 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_santa_cruz_tenerife_html_url(template_url, target_date=target_date)
     if source_code == "BOP_SORIA":
         return build_bop_soria_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_TARRAGONA":
+        return build_bop_tarragona_html_url(template_url, target_date=target_date)
     if source_code == "BOP_TERUEL":
         return build_bop_teruel_html_url(template_url, target_date=target_date)
     if source_code == "BOP_TOLEDO":
@@ -1766,9 +1856,10 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
         "BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BON, BOP_BIZKAIA, "
         "BOP_BURGOS, BOP_CADIZ, BOP_CASTELLON, BOP_CIUDAD_REAL, BOP_CORDOBA, BOP_CUENCA, "
-        "BOP_GIPUZKOA, BOP_GRANADA, BOP_JAEN, BOP_LAS_PALMAS, BOP_LEON, BOP_LLEIDA, "
+        "BOP_GIRONA, BOP_GIPUZKOA, BOP_GRANADA, BOP_JAEN, BOP_LAS_PALMAS, BOP_LEON, BOP_LLEIDA, "
         "BOP_MALAGA, BOP_PALENCIA, BOP_SALAMANCA, BOP_SEGOVIA, BOP_SEVILLA, "
-        "BOP_SANTA_CRUZ_TENERIFE, BOP_SORIA, BOP_PONTEVEDRA, BOP_TERUEL, BOP_TOLEDO, "
+        "BOP_SANTA_CRUZ_TENERIFE, BOP_SORIA, BOP_TARRAGONA, BOP_PONTEVEDRA, "
+        "BOP_TERUEL, BOP_TOLEDO, "
         "BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA, BOPA, and DOCM only"
     )
 
@@ -1917,6 +2008,15 @@ def _parse_html_monitor_response(
             discovered_at=discovered_at,
             monitor_run_id=monitor_run_id,
         )
+    if source_code == "BOP_GIRONA":
+        return parse_bop_girona_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
     if source_code == "BOP_GRANADA":
         return parse_bop_sevilla_html(
             raw_page,
@@ -2027,6 +2127,15 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_SORIA":
         return parse_bop_soria_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_TARRAGONA":
+        return parse_bop_tarragona_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -3127,6 +3236,107 @@ def _extract_bop_gipuzkoa_publication_date(text: str) -> str | None:
 def _extract_bop_gipuzkoa_issue_number(text: str) -> str | None:
     match = re.search(r"\bN[uú]mero\s+(\d+)\b", _strip_tags(text), re.I)
     return match.group(1) if match else None
+
+
+def _extract_bop_girona_publication_date(text: str) -> str | None:
+    match = re.search(
+        r"\bBop\s+n\S*mero:\s*(\d+)/\d+\s*-\s*(\d{2})/(\d{2})/(\d{4})\b",
+        _strip_tags(text),
+        re.I,
+    )
+    if not match:
+        return None
+    return date(int(match.group(4)), int(match.group(3)), int(match.group(2))).isoformat()
+
+
+def _extract_bop_girona_issue_number(text: str) -> str | None:
+    match = re.search(r"\bBop\s+n\S*mero:\s*(\d+)/\d+", _strip_tags(text), re.I)
+    return match.group(1) if match else None
+
+
+def _iter_bop_girona_announcements(text: str) -> list[tuple[str, str, str, str | None]]:
+    sections = [
+        (match.start(), _normalize_text(_strip_tags(match.group("body"))))
+        for match in re.finditer(
+            r'<h2[^>]+class="[^"]*\bseccioTau\b[^"]*"[^>]*>(?P<body>.*?)</h2>',
+            text,
+            re.I | re.S,
+        )
+    ]
+    announcements = []
+    seen: set[str] = set()
+    for item in re.finditer(
+        r'<li[^>]+class="[^"]*\bedicte\b[^"]*"[^>]*>(?P<body>.*?)</li>',
+        text,
+        re.I | re.S,
+    ):
+        body = item.group("body")
+        link = re.search(
+            r'<a[^>]+href="(?P<href>[^"]+)"[^>]*>(?P<body>.*?)</a>',
+            body,
+            re.I | re.S,
+        )
+        if not link:
+            continue
+        href = html.unescape(link.group("href"))
+        document_id = _document_id_from_filename(href)
+        if not document_id or document_id in seen:
+            continue
+        seen.add(document_id)
+        _, issuer, title = _split_bop_girona_link_text(
+            _normalize_text(_strip_tags(link.group("body")))
+        )
+        if title and href:
+            announcements.append(
+                (
+                    title,
+                    href,
+                    document_id,
+                    _join_title_parts(_last_positioned_value(sections, item.start()), issuer),
+                )
+            )
+    return announcements
+
+
+def _split_bop_girona_link_text(value: str) -> tuple[str | None, str | None, str | None]:
+    parts = [_normalize_text(part) for part in value.split(" - ") if _normalize_text(part)]
+    if len(parts) >= 3:
+        return parts[0], parts[1], " - ".join(parts[2:])
+    if len(parts) == 2:
+        return parts[0], None, parts[1]
+    if len(parts) == 1:
+        return None, None, parts[0]
+    return None, None, None
+
+
+def _iter_bop_tarragona_announcements(text: str) -> list[tuple[str, str, str, str | None]]:
+    announcements = []
+    seen: set[str] = set()
+    for card in re.finditer(
+        r'<div[^>]+class="[^"]*\bcard-body\b[^"]*"[^>]*>(?P<body>.*?)</div>',
+        text,
+        re.I | re.S,
+    ):
+        body = card.group("body")
+        link = re.search(
+            r'<a[^>]+href="(?P<href>[^"]*/bopt/web/anuncio/(?P<id>\d+)[^"]*)"[^>]*>'
+            r"(?P<body>.*?)</a>",
+            body,
+            re.I | re.S,
+        )
+        if not link:
+            continue
+        document_id = link.group("id")
+        if document_id in seen:
+            continue
+        seen.add(document_id)
+        paragraph = re.search(r"<p\b[^>]*>(?P<body>.*?)</p>", body, re.I | re.S)
+        title = _normalize_text(_strip_tags(paragraph.group("body"))) if paragraph else None
+        href = html.unescape(link.group("href"))
+        summary = _normalize_text(_strip_tags(link.group("body")))
+        if title and href:
+            announcements.append((title, href, document_id, summary))
+    return announcements
 
 
 def _iter_bop_gipuzkoa_announcements(text: str) -> list[tuple[str, str, str, str | None]]:

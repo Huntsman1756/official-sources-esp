@@ -188,6 +188,7 @@ official-sources html monitor --source BOP_BIZKAIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BURGOS --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_CASTELLON --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_CORDOBA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_GIRONA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GIPUZKOA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GRANADA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_JAEN --date YYYY-MM-DD --limit 1
@@ -201,6 +202,7 @@ official-sources html monitor --source BOP_SEGOVIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SEVILLA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SANTA_CRUZ_TENERIFE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SORIA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_TARRAGONA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_TERUEL --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_TOLEDO --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 1
