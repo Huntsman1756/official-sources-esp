@@ -26,14 +26,18 @@ from official_sources.html_monitor import (
     build_bop_gipuzkoa_html_url,
     build_bop_granada_html_url,
     build_bop_jaen_html_url,
+    build_bop_las_palmas_html_url,
     build_bop_leon_html_url,
     build_bop_lleida_html_url,
     build_bop_malaga_html_url,
     build_bop_palencia_html_url,
     build_bop_pontevedra_html_url,
+    build_bop_salamanca_html_url,
+    build_bop_santa_cruz_tenerife_html_url,
     build_bop_segovia_html_url,
     build_bop_sevilla_html_url,
     build_bop_soria_html_url,
+    build_bop_teruel_html_url,
     build_bop_toledo_html_url,
     build_bop_valencia_html_url,
     build_bop_valladolid_html_url,
@@ -59,14 +63,18 @@ from official_sources.html_monitor import (
     parse_bop_cuenca_html,
     parse_bop_gipuzkoa_html,
     parse_bop_jaen_html,
+    parse_bop_las_palmas_html,
     parse_bop_leon_html,
     parse_bop_lleida_html,
     parse_bop_malaga_html,
     parse_bop_palencia_html,
     parse_bop_pontevedra_html,
+    parse_bop_salamanca_html,
+    parse_bop_santa_cruz_tenerife_html,
     parse_bop_segovia_html,
     parse_bop_sevilla_html,
     parse_bop_soria_html,
+    parse_bop_teruel_html,
     parse_bop_toledo_html,
     parse_bop_valencia_html,
     parse_bop_valladolid_html,
@@ -115,6 +123,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_GIPUZKOA",
         "BOP_GRANADA",
         "BOP_JAEN",
+        "BOP_LAS_PALMAS",
         "BOP_LEON",
         "BOP_LLEIDA",
         "BOP_MALAGA",
@@ -122,7 +131,9 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_PONTEVEDRA",
         "BOP_SEGOVIA",
         "BOP_SEVILLA",
+        "BOP_SANTA_CRUZ_TENERIFE",
         "BOP_SORIA",
+        "BOP_TERUEL",
         "BOP_TOLEDO",
         "BOP_VALENCIA",
         "BOP_VALLADOLID",
@@ -278,6 +289,46 @@ def test_build_bop_gipuzkoa_html_url_is_one_date_request():
         "https://egoitza.gipuzkoa.eus/gao-bog/castell/bog/{yyyy}/{mm}/{dd}/bc{yymmdd}.htm",
         target_date="2026-05-29",
     ) == "https://egoitza.gipuzkoa.eus/gao-bog/castell/bog/2026/05/29/bc260529.htm"
+
+
+def test_build_bop_las_palmas_html_url_is_one_date_request():
+    assert build_bop_las_palmas_html_url(
+        "https://www.boplaspalmas.net/nbop2/sumario.php?"
+        "codigopub=1&fecha_mas_reciente={date}",
+        target_date="2026-05-29",
+    ) == (
+        "https://www.boplaspalmas.net/nbop2/sumario.php?"
+        "codigopub=1&fecha_mas_reciente=2026-05-29"
+    )
+
+
+def test_build_bop_salamanca_html_url_is_one_date_request():
+    assert build_bop_salamanca_html_url(
+        "https://sede.diputaciondesalamanca.gob.es/opencms/opencms/sede/BOP/"
+        "index.jsp?fechaBoletin={date}",
+        target_date="2026-05-29",
+    ) == (
+        "https://sede.diputaciondesalamanca.gob.es/opencms/opencms/sede/BOP/"
+        "index.jsp?fechaBoletin=2026-05-29"
+    )
+
+
+def test_build_bop_santa_cruz_tenerife_html_url_is_one_date_request():
+    assert build_bop_santa_cruz_tenerife_html_url(
+        "http://www.bopsantacruzdetenerife.es/bopsc2/sumario.php?"
+        "codigopub=1&fecha_mas_reciente={date}",
+        target_date="2026-05-29",
+    ) == (
+        "http://www.bopsantacruzdetenerife.es/bopsc2/sumario.php?"
+        "codigopub=1&fecha_mas_reciente=2026-05-29"
+    )
+
+
+def test_build_bop_teruel_html_url_is_one_current_bulletin_request():
+    assert build_bop_teruel_html_url(
+        "https://236ws.dpteruel.es/DPT/bopt.nsf/inicio.xsp",
+        target_date="2026-05-29",
+    ) == "https://236ws.dpteruel.es/DPT/bopt.nsf/inicio.xsp"
 
 
 def test_build_bop_granada_html_url_is_one_date_request():
@@ -1363,6 +1414,164 @@ def test_parse_bop_gipuzkoa_html_emits_announcement_metadata():
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"
     assert "pdf_url" not in record
+
+
+def test_parse_bop_las_palmas_html_emits_bulletin_metadata():
+    raw = b"""
+    <strong>SUMARIO DEL BOLET&Iacute;N N&ordm; </strong>
+    <font color="navy" size="3">64</font>
+    <font color="navy" size="3">, DE FECHA </font>
+    <font color="navy" size="3">29-5-26</font>
+    <a href="../boletines/2026/29-5-26/29-5-26.pdf">Descargar Bolet&iacute;n</a>
+    <b><i>EXCMO. AYUNTAMIENTO DE ARRECIFE</i></b><br>
+    - Aprobacion definitiva de bases reguladoras<br>
+    """
+    page_url = (
+        "https://www.boplaspalmas.net/nbop2/sumario.php?"
+        "codigopub=1&fecha_mas_reciente=2026-05-29"
+    )
+
+    result = parse_bop_las_palmas_html(
+        raw,
+        source_code="BOP_LAS_PALMAS",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-laspalmas",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_LAS_PALMAS"
+    assert record["title"] == "Sumario del boletin 64 de fecha 29-5-26"
+    assert record["published_at"] == "2026-05-29"
+    assert record["document_id"] == "29-5-26"
+    assert record["issue_number"] == "64"
+    assert record["official_url"] == (
+        "https://www.boplaspalmas.net/boletines/2026/29-5-26/29-5-26.pdf"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+
+
+def test_parse_bop_salamanca_html_emits_bulletin_metadata():
+    raw = b"""
+    <h2>Bolet&iacute;n del d&iacute;a 29/05/2026</h2>
+    <h1>BOP</h1>
+    <p align="center"><a href="/documentacion/bop/2026/20260529/BOP-SA-20260529-999.pdf">
+      Descargar bolet&iacute;n completo
+    </a></p>
+    <a href="documentos/Modelo-Anexo-tasa-BOP.pdf">Anexo tasa</a>
+    <div><strong>SUMARIO</strong></div>
+    """
+    page_url = (
+        "https://sede.diputaciondesalamanca.gob.es/opencms/opencms/sede/BOP/"
+        "index.jsp?fechaBoletin=2026-05-29"
+    )
+
+    result = parse_bop_salamanca_html(
+        raw,
+        source_code="BOP_SALAMANCA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-salamanca",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_SALAMANCA"
+    assert record["title"] == "Boletín del día 29/05/2026"
+    assert record["published_at"] == "2026-05-29"
+    assert record["document_id"] == "BOP-SA-20260529-999"
+    assert record["issue_number"] == "999"
+    assert record["official_url"] == (
+        "https://sede.diputaciondesalamanca.gob.es/documentacion/bop/2026/20260529/"
+        "BOP-SA-20260529-999.pdf"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+
+
+def test_parse_bop_santa_cruz_tenerife_html_emits_bulletin_metadata():
+    raw = b"""
+    <strong>SUMARIO DEL BOLET&Iacute;N N&ordm; </strong>
+    <font color="navy" size="3">64</font>
+    <font color="navy" size="3">, DE FECHA </font>
+    <font color="navy" size="3">29-5-26</font>
+    <a href="../boletines/2026/29-5-26/29-5-26.pdf">Descargar Bolet&iacute;n</a>
+    <b><i>PUERTOS DE TENERIFE</i></b><br>
+    - Anuncio relativo a informacion publica<br>
+    """
+    page_url = (
+        "http://www.bopsantacruzdetenerife.es/bopsc2/sumario.php?"
+        "codigopub=1&fecha_mas_reciente=2026-05-29"
+    )
+
+    result = parse_bop_santa_cruz_tenerife_html(
+        raw,
+        source_code="BOP_SANTA_CRUZ_TENERIFE",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-sctfe",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_SANTA_CRUZ_TENERIFE"
+    assert record["title"] == "Sumario del boletin 64 de fecha 29-5-26"
+    assert record["published_at"] == "2026-05-29"
+    assert record["document_id"] == "29-5-26"
+    assert record["issue_number"] == "64"
+    assert record["official_url"] == (
+        "http://www.bopsantacruzdetenerife.es/boletines/2026/29-5-26/29-5-26.pdf"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+
+
+def test_parse_bop_teruel_html_emits_current_bulletin_metadata():
+    raw = b"""
+    <h2 class="bop-dia">BOP del d&iacute;a</h2>
+    <span id="computedFieldfechatexto">29 de Mayo de 2026</span>.
+    <br>BOP n&uacute;mero &nbsp;<span id="computedField1">100</span>.
+    <a class="ver-boletin"
+       href="https://236ws.dpteruel.es/DPT/bopt.nsf/Redireccion?OpenPage&dia=20260529">
+       Ver bolet&iacute;n
+    </a>
+    """
+    page_url = "https://236ws.dpteruel.es/DPT/bopt.nsf/inicio.xsp"
+
+    result = parse_bop_teruel_html(
+        raw,
+        source_code="BOP_TERUEL",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-teruel",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_TERUEL"
+    assert record["title"] == "BOP del dia 29 de Mayo de 2026"
+    assert record["published_at"] == "2026-05-29"
+    assert record["document_id"] == "20260529"
+    assert record["issue_number"] == "100"
+    assert record["official_url"] == (
+        "https://236ws.dpteruel.es/DPT/bopt.nsf/Redireccion?OpenPage&dia=20260529"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
 
 
 def test_parse_bop_cuenca_html_emits_matching_date_card_metadata():

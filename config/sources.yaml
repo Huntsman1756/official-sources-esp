@@ -1000,22 +1000,23 @@ sources:
     jurisdiction_level: provincial
     official_landing_url: http://boletin.dguadalajara.es/
     access_methods:
-      - type: html
-        url: http://boletin.dguadalajara.es/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+      - type: rss
+        url: https://boletin.dguadalajara.es/boletin/index.php?format=feed&type=rss
+        status: validated
+        notes: Official Joomla RSS feed used by metadata-only monitor; feed includes bulletin summaries and PDF links as metadata only.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Guadalajara.
+      - Provincial RSS discovery is metadata-only and does not download PDFs or artifacts.
+      - RSS payload is large because it embeds bulletin summaries; preview one requested run only.
+      - Historical backfill disabled; preview current feed only.
+    notes: Official provincial bulletin RSS discovery monitor for Guadalajara.
 
   - source_code: BOP_HUELVA
     name: Boletin Oficial de la Provincia de Huelva
@@ -1094,21 +1095,22 @@ sources:
     official_landing_url: http://www.boplaspalmas.com
     access_methods:
       - type: html
-        url: http://www.boplaspalmas.com
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://www.boplaspalmas.net/nbop2/sumario.php?codigopub=1&fecha_mas_reciente={date}
+        status: validated
+        notes: Official date-scoped summary page used by metadata-only bulletin-level HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Las Palmas.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Summary page exposes bulletin-level metadata and official PDF links, but no stable granular announcement HTML was confirmed.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin-level HTML discovery monitor for Las Palmas.
 
   - source_code: BOP_LEON
     name: Boletin Oficial de la Provincia de Leon
@@ -1288,7 +1290,7 @@ sources:
       - type: html
         url: https://sede.diputaciondesalamanca.gob.es/BOP/
         status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
+        notes: Official directory landing URL; date-scoped page is parseable locally but not validated on the project VPS.
     operational_status: inventory_only
     mcp_support: false
     monitor_support: none
@@ -1300,6 +1302,7 @@ sources:
     limitations:
       - Provincial bulletin inventory only; access method not validated for monitoring.
       - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+      - Date-scoped HTML was found and parsed locally, but project VPS fetch timed out at 60 seconds.
     notes: Official provincial bulletin inventory entry for Salamanca.
 
   - source_code: BOP_SANTA_CRUZ_TENERIFE
@@ -1309,21 +1312,22 @@ sources:
     official_landing_url: http://www.bopsantacruzdetenerife.es/
     access_methods:
       - type: html
-        url: http://www.bopsantacruzdetenerife.es/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: http://www.bopsantacruzdetenerife.es/bopsc2/sumario.php?codigopub=1&fecha_mas_reciente={date}
+        status: validated
+        notes: Official date-scoped summary page used by metadata-only bulletin-level HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Santa Cruz de Tenerife.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Summary page exposes bulletin-level metadata and official PDF links, but no stable granular announcement HTML was confirmed.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin-level HTML discovery monitor for Santa Cruz de Tenerife.
 
   - source_code: BOP_SEGOVIA
     name: Boletin Oficial de la Provincia de Segovia
@@ -1426,21 +1430,22 @@ sources:
     official_landing_url: http://www.dpteruel.es/boletines.htm
     access_methods:
       - type: html
-        url: http://www.dpteruel.es/boletines.htm
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://236ws.dpteruel.es/DPT/bopt.nsf/inicio.xsp
+        status: validated
+        notes: Official current-bulletin page used by metadata-only bulletin-level HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Teruel.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Current-bulletin page is not a historical backfill interface; monitor returns no records on date mismatch.
+      - Historical backfill disabled; preview current/latest bulletin only.
+    notes: Official provincial bulletin-level HTML discovery monitor for Teruel.
 
   - source_code: BOP_TOLEDO
     name: Boletin Oficial de la Provincia de Toledo

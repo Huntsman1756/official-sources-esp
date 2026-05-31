@@ -197,6 +197,11 @@ def build_bop_jaen_html_url(template_url: str, *, target_date: str) -> str:
     )
 
 
+def build_bop_las_palmas_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url.replace("{date}", target_date)
+
+
 def build_bop_leon_html_url(template_url: str, *, target_date: str) -> str:
     parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
     return template_url.replace("{dd_mm_yyyy}", parsed_date.strftime("%d-%m-%Y")).replace(
@@ -224,9 +229,19 @@ def build_bop_pontevedra_html_url(template_url: str, *, target_date: str) -> str
     )
 
 
+def build_bop_salamanca_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url.replace("{date}", target_date)
+
+
 def build_bop_palencia_html_url(template_url: str, *, target_date: str) -> str:
     validate_html_monitor_date(target_date)
     return template_url
+
+
+def build_bop_santa_cruz_tenerife_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url.replace("{date}", target_date)
 
 
 def build_bop_segovia_html_url(template_url: str, *, target_date: str) -> str:
@@ -242,6 +257,13 @@ def build_bop_sevilla_html_url(template_url: str, *, target_date: str) -> str:
 def build_bop_soria_html_url(template_url: str, *, target_date: str) -> str:
     parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
     return template_url.replace("{dd_mm_yyyy}", parsed_date.strftime("%d-%m-%Y")).replace(
+        "{date}", parsed_date.isoformat()
+    )
+
+
+def build_bop_teruel_html_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
+    return template_url.replace("{yyyymmdd}", parsed_date.strftime("%Y%m%d")).replace(
         "{date}", parsed_date.isoformat()
     )
 
@@ -957,6 +979,124 @@ def parse_bop_gipuzkoa_html(
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
+def parse_bop_las_palmas_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    return _parse_legacy_island_bop_html(
+        raw_page,
+        source_code=source_code,
+        page_url=page_url,
+        requested_date=requested_date,
+        discovered_at=discovered_at,
+        monitor_run_id=monitor_run_id,
+    )
+
+
+def parse_bop_salamanca_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_bop_salamanca_publication_date(text)
+    if published_at != requested_date:
+        return HTMLParseResult(raw_page_hash=raw_page_hash, records=[])
+    pdf_url = _extract_bop_salamanca_bulletin_pdf_url(text, page_url, published_at)
+    document_id = _document_id_from_filename(pdf_url) if pdf_url else None
+    issue_number = _regex_value(r"BOP-SA-\d{8}-(\d+)", pdf_url or "")
+    title = _extract_bop_salamanca_title(text) or (
+        f"Boletin del dia {date.fromisoformat(published_at):%d/%m/%Y}"
+    )
+    record = _build_html_record(
+        source_code=source_code,
+        page_url=page_url,
+        page_format="html",
+        entry_id=document_id,
+        document_id=document_id,
+        title=title,
+        published_at=published_at,
+        official_url=pdf_url,
+        summary="SUMARIO" if "SUMARIO" in _strip_tags(text).upper() else None,
+        raw_page_hash=raw_page_hash,
+        discovered_at=discovered_at,
+        monitor_run_id=monitor_run_id,
+        warnings=["pdf_endpoint_not_downloaded"] if pdf_url else [],
+    )
+    if issue_number:
+        record["issue_number"] = issue_number
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=[record])
+
+
+def parse_bop_santa_cruz_tenerife_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    return _parse_legacy_island_bop_html(
+        raw_page,
+        source_code=source_code,
+        page_url=page_url,
+        requested_date=requested_date,
+        discovered_at=discovered_at,
+        monitor_run_id=monitor_run_id,
+    )
+
+
+def parse_bop_teruel_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_bop_teruel_publication_date(text)
+    if published_at != requested_date:
+        return HTMLParseResult(raw_page_hash=raw_page_hash, records=[])
+    issue_number = _extract_bop_teruel_issue_number(text)
+    official_url = _extract_bop_teruel_official_url(text, page_url)
+    document_id = _regex_value(r"\bdia=(\d{8})\b", official_url or "")
+    title = f"BOP del dia {_extract_bop_teruel_publication_label(text) or requested_date}"
+    record = _build_html_record(
+        source_code=source_code,
+        page_url=page_url,
+        page_format="html",
+        entry_id=document_id,
+        document_id=document_id,
+        title=title,
+        published_at=published_at,
+        official_url=official_url,
+        summary="BOP del dia",
+        raw_page_hash=raw_page_hash,
+        discovered_at=discovered_at,
+        monitor_run_id=monitor_run_id,
+        warnings=["pdf_endpoint_not_downloaded"] if official_url else [],
+    )
+    if issue_number:
+        record["issue_number"] = issue_number
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=[record])
+
+
 def parse_bop_jaen_html(
     raw_page: bytes | str,
     *,
@@ -1586,6 +1726,8 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_granada_html_url(template_url, target_date=target_date)
     if source_code == "BOP_JAEN":
         return build_bop_jaen_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_LAS_PALMAS":
+        return build_bop_las_palmas_html_url(template_url, target_date=target_date)
     if source_code == "BOP_LEON":
         return build_bop_leon_html_url(template_url, target_date=target_date)
     if source_code == "BOP_LLEIDA":
@@ -1596,12 +1738,18 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_pontevedra_html_url(template_url, target_date=target_date)
     if source_code == "BOP_PALENCIA":
         return build_bop_palencia_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_SALAMANCA":
+        return build_bop_salamanca_html_url(template_url, target_date=target_date)
     if source_code == "BOP_SEGOVIA":
         return build_bop_segovia_html_url(template_url, target_date=target_date)
     if source_code == "BOP_SEVILLA":
         return build_bop_sevilla_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_SANTA_CRUZ_TENERIFE":
+        return build_bop_santa_cruz_tenerife_html_url(template_url, target_date=target_date)
     if source_code == "BOP_SORIA":
         return build_bop_soria_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_TERUEL":
+        return build_bop_teruel_html_url(template_url, target_date=target_date)
     if source_code == "BOP_TOLEDO":
         return build_bop_toledo_html_url(template_url, target_date=target_date)
     if source_code == "BOP_VALENCIA":
@@ -1618,9 +1766,10 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
         "BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BON, BOP_BIZKAIA, "
         "BOP_BURGOS, BOP_CADIZ, BOP_CASTELLON, BOP_CIUDAD_REAL, BOP_CORDOBA, BOP_CUENCA, "
-        "BOP_GIPUZKOA, BOP_GRANADA, BOP_JAEN, BOP_LEON, BOP_LLEIDA, BOP_MALAGA, "
-        "BOP_PALENCIA, BOP_SEGOVIA, BOP_SEVILLA, BOP_SORIA, BOP_PONTEVEDRA, "
-        "BOP_TOLEDO, BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA, BOPA, and DOCM only"
+        "BOP_GIPUZKOA, BOP_GRANADA, BOP_JAEN, BOP_LAS_PALMAS, BOP_LEON, BOP_LLEIDA, "
+        "BOP_MALAGA, BOP_PALENCIA, BOP_SALAMANCA, BOP_SEGOVIA, BOP_SEVILLA, "
+        "BOP_SANTA_CRUZ_TENERIFE, BOP_SORIA, BOP_PONTEVEDRA, BOP_TERUEL, BOP_TOLEDO, "
+        "BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA, BOPA, and DOCM only"
     )
 
 
@@ -1786,6 +1935,15 @@ def _parse_html_monitor_response(
             discovered_at=discovered_at,
             monitor_run_id=monitor_run_id,
         )
+    if source_code == "BOP_LAS_PALMAS":
+        return parse_bop_las_palmas_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
     if source_code == "BOP_LEON":
         return parse_bop_leon_html(
             raw_page,
@@ -1831,6 +1989,15 @@ def _parse_html_monitor_response(
             discovered_at=discovered_at,
             monitor_run_id=monitor_run_id,
         )
+    if source_code == "BOP_SALAMANCA":
+        return parse_bop_salamanca_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
     if source_code == "BOP_SEGOVIA":
         return parse_bop_segovia_html(
             raw_page,
@@ -1849,8 +2016,26 @@ def _parse_html_monitor_response(
             discovered_at=discovered_at,
             monitor_run_id=monitor_run_id,
         )
+    if source_code == "BOP_SANTA_CRUZ_TENERIFE":
+        return parse_bop_santa_cruz_tenerife_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
     if source_code == "BOP_SORIA":
         return parse_bop_soria_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_TERUEL":
+        return parse_bop_teruel_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -3150,6 +3335,146 @@ def _toledo_label_value(text: str, label: str) -> str | None:
 def _first_numeric_token(value: str | None) -> str | None:
     match = re.search(r"\d+", value or "")
     return match.group(0) if match else None
+
+
+def _parse_legacy_island_bop_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    issue_number, legacy_date = _extract_legacy_island_bop_issue_and_date(text)
+    published_at = _legacy_short_date_to_iso(legacy_date)
+    if published_at != requested_date:
+        return HTMLParseResult(raw_page_hash=raw_page_hash, records=[])
+    pdf_url = _first_pdf_url(text, page_url)
+    record = _build_html_record(
+        source_code=source_code,
+        page_url=page_url,
+        page_format="html",
+        entry_id=legacy_date,
+        document_id=legacy_date,
+        title=f"Sumario del boletin {issue_number} de fecha {legacy_date}",
+        published_at=published_at,
+        official_url=pdf_url,
+        summary="SUMARIO",
+        raw_page_hash=raw_page_hash,
+        discovered_at=discovered_at,
+        monitor_run_id=monitor_run_id,
+        warnings=["pdf_endpoint_not_downloaded"] if pdf_url else [],
+    )
+    if issue_number:
+        record["issue_number"] = issue_number
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=[record])
+
+
+def _extract_legacy_island_bop_issue_and_date(text: str) -> tuple[str | None, str | None]:
+    plain = _normalize_text(_strip_tags(text))
+    match = re.search(
+        r"SUMARIO\s+DEL\s+BOLET[IÍ]N\s+N[ºo]\s*(\d+).*?"
+        r"DE\s+FECHA\s+(\d{1,2}-\d{1,2}-\d{2,4})",
+        plain,
+        re.I,
+    )
+    if not match:
+        return None, None
+    return match.group(1), match.group(2)
+
+
+def _legacy_short_date_to_iso(value: str | None) -> str | None:
+    if not value:
+        return None
+    try:
+        day, month, year = value.split("-")
+        parsed_year = int(year)
+        if parsed_year < 100:
+            parsed_year += 2000
+        return date(parsed_year, int(month), int(day)).isoformat()
+    except ValueError:
+        return None
+
+
+def _first_pdf_url(text: str, page_url: str) -> str | None:
+    match = re.search(r'<a[^>]+href=["\'](?P<href>[^"\']+\.pdf)["\']', text, re.I | re.S)
+    if not match:
+        return None
+    return urljoin(page_url, html.unescape(match.group("href")))
+
+
+def _extract_bop_salamanca_publication_date(text: str) -> str | None:
+    plain = _normalize_text(_strip_tags(text))
+    match = re.search(r"Bolet[ií]n\s+del\s+d[ií]a\s+(\d{1,2})/(\d{1,2})/(\d{4})", plain, re.I)
+    if not match:
+        return None
+    return date(int(match.group(3)), int(match.group(2)), int(match.group(1))).isoformat()
+
+
+def _extract_bop_salamanca_title(text: str) -> str | None:
+    for match in re.finditer(r"<h[1-6]\b[^>]*>(?P<title>.*?)</h[1-6]>", text, re.I | re.S):
+        title = _normalize_text(_strip_tags(match.group("title")))
+        if re.search(r"Bolet[ií]n\s+del\s+d[ií]a", title, re.I):
+            return title
+    return None
+
+
+def _extract_bop_salamanca_bulletin_pdf_url(
+    text: str, page_url: str, published_at: str
+) -> str | None:
+    yyyymmdd = date.fromisoformat(published_at).strftime("%Y%m%d")
+    match = re.search(
+        rf'<a[^>]+href=["\'](?P<href>[^"\']*BOP-SA-{yyyymmdd}-\d+\.pdf)["\']',
+        text,
+        re.I | re.S,
+    )
+    return urljoin(page_url, html.unescape(match.group("href"))) if match else None
+
+
+def _extract_bop_teruel_publication_label(text: str) -> str | None:
+    plain = _normalize_text(_strip_tags(text))
+    match = re.search(
+        r"\b(\d{1,2}\s+de\s+[A-Za-zÁÉÍÓÚáéíóúñÑ]+\s+de\s+\d{4})\b",
+        plain,
+        re.I,
+    )
+    return match.group(1) if match else None
+
+
+def _extract_bop_teruel_publication_date(text: str) -> str | None:
+    label = _extract_bop_teruel_publication_label(text)
+    if not label:
+        return None
+    return _long_spanish_date_to_iso(label)
+
+
+def _extract_bop_teruel_issue_number(text: str) -> str | None:
+    plain = _normalize_text(_strip_tags(text))
+    return _regex_value(r"BOP\s+n[uú]mero\s+(\d+)", plain)
+
+
+def _extract_bop_teruel_official_url(text: str, page_url: str) -> str | None:
+    match = re.search(
+        r'<a[^>]+class=["\'][^"\']*\bver-boletin\b[^"\']*["\'][^>]+href=["\'](?P<href>[^"\']+)',
+        text,
+        re.I | re.S,
+    )
+    if not match:
+        match = re.search(
+            r'<a[^>]+href=["\'](?P<href>[^"\']*Redireccion[^"\']+)',
+            text,
+            re.I | re.S,
+        )
+    return urljoin(page_url, html.unescape(match.group("href"))) if match else None
+
+
+def _regex_value(pattern: str, value: str) -> str | None:
+    match = re.search(pattern, value, re.I)
+    return match.group(1) if match else None
 
 
 def _last_positioned_value(items: list[tuple[int, str | None]], position: int) -> str | None:

@@ -170,6 +170,7 @@ official-sources rss monitor --source DOG --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOP_LUGO --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOCM --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOP_BADAJOZ --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOP_GUADALAJARA --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOR --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOP_CACERES --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOP_HUELVA --date YYYY-MM-DD --limit 1
@@ -190,6 +191,7 @@ official-sources html monitor --source BOP_CORDOBA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GIPUZKOA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GRANADA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_JAEN --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_LAS_PALMAS --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_LEON --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_LLEIDA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 1
@@ -197,7 +199,9 @@ official-sources html monitor --source BOP_PALENCIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_PONTEVEDRA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SEGOVIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SEVILLA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_SANTA_CRUZ_TENERIFE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SORIA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_TERUEL --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_TOLEDO --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALLADOLID --date YYYY-MM-DD --limit 1

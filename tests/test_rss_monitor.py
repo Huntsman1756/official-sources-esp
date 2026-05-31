@@ -166,6 +166,11 @@ def test_rss_004_feed_access_methods_are_validated_in_registry(source_code, expe
             "atom",
             "https://www.dip-badajoz.es/canales/atom_xml_bop.php?c=1&u=1",
         ),
+        (
+            "BOP_GUADALAJARA",
+            "rss",
+            "https://boletin.dguadalajara.es/boletin/index.php?format=feed&type=rss",
+        ),
     ],
 )
 def test_rss_005_feed_access_methods_are_validated_in_registry(

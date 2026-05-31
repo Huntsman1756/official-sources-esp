@@ -428,17 +428,23 @@ Deferred after live probing:
 
 - `BOP_CADIZ`, `BOP_CIUDAD_REAL`, and `BOP_CUENCA` exposed plausible public HTML surfaces, but standard monitor execution failed local TLS certificate validation. They remain inventory-only / blocked until a validated fetch path exists without weakening TLS verification.
 
-### BOP_SALAMANCA
+## Follow-up batch: Guadalajara, Las Palmas, Santa Cruz de Tenerife, Teruel
 
-Endpoint candidate:
+Validated locally on 2026-05-31 as metadata-only monitors:
 
-```text
-https://salamanca.diputaciondesalamanca.es/boletin-oficial-de-la-provincia
-```
+- `BOP_GUADALAJARA`: official Joomla RSS feed under `/boletin/index.php?format=feed&type=rss`; emits bulletin summary metadata only. The feed is large because it embeds full bulletin summaries.
+- `BOP_LAS_PALMAS`: official date-scoped `sumario.php` page; emits bulletin-level metadata and stores the official PDF URL only as metadata.
+- `BOP_SANTA_CRUZ_TENERIFE`: official date-scoped `sumario.php` page; emits bulletin-level metadata and stores the official PDF URL only as metadata.
+- `BOP_TERUEL`: official current-bulletin XPages page; emits bulletin-level metadata when the current page date matches the requested date.
 
-Risk: calendar dates were visible, but GET/POST probes against the public BOP form did not expose
-stable current bulletin records or 2026 PDF links. Keep as inventory-only until a stable endpoint is
-confirmed.
+Local live preview evidence for `2026-05-29`: all four returned `records=1`,
+`candidate_status=not_candidate`, and `evidence_status=not_evidence`.
+
+Deferred after VPS validation:
+
+- `BOP_SALAMANCA`: date-scoped HTML was found and parsed locally, but the project VPS timed out
+  fetching the official sede even with a 60 second timeout. Kept inventory-only until the VPS path
+  is validated.
 
 ## Deferred
 

@@ -26,12 +26,12 @@ Current source counts:
 ```text
 registered sources: 65
 metadata_adapter_validated: 9
-monitor_validated: 39
-inventory_only: 17
-provincial inventory-only sources: 14
-RSS/Atom discovery sources: BOC_CANARIAS, BOC_CANTABRIA, BOCM, BOCYL, BOE, BOIB, BOJA, BOP_BADAJOZ, BOP_LUGO, DOE, DOG
+monitor_validated: 43
+inventory_only: 13
+provincial inventory-only sources: 10
+RSS/Atom discovery sources: BOC_CANARIAS, BOC_CANTABRIA, BOCM, BOCYL, BOE, BOIB, BOJA, BOP_BADAJOZ, BOP_GUADALAJARA, BOP_LUGO, DOE, DOG
 API discovery sources: BOPV, BOR, BOP_CACERES, BOP_HUELVA
-HTML discovery sources: BON, BOPA, DOCM, BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_BURGOS, BOP_CASTELLON, BOP_CORDOBA, BOP_GIPUZKOA, BOP_GRANADA, BOP_JAEN, BOP_LEON, BOP_LLEIDA, BOP_MALAGA, BOP_PALENCIA, BOP_PONTEVEDRA, BOP_SEGOVIA, BOP_SEVILLA, BOP_SORIA, BOP_TOLEDO, BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA
+HTML discovery sources: BON, BOPA, DOCM, BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_BURGOS, BOP_CASTELLON, BOP_CORDOBA, BOP_GIPUZKOA, BOP_GRANADA, BOP_JAEN, BOP_LAS_PALMAS, BOP_LEON, BOP_LLEIDA, BOP_MALAGA, BOP_PALENCIA, BOP_PONTEVEDRA, BOP_SEGOVIA, BOP_SEVILLA, BOP_SANTA_CRUZ_TENERIFE, BOP_SORIA, BOP_TERUEL, BOP_TOLEDO, BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA
 BOP_ALICANTE runtime health: degraded/manual-review
 candidate_creation_allowed=false: 65
 evidence_grade_allowed=false: 65
@@ -137,6 +137,7 @@ official-sources rss monitor --source DOG --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOP_LUGO --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOCM --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOP_BADAJOZ --date YYYY-MM-DD --limit 1
+official-sources rss monitor --source BOP_GUADALAJARA --date YYYY-MM-DD --limit 1
 ```
 
 Write JSONL only when explicitly requested:
@@ -189,9 +190,10 @@ API monitor rules:
 HTML discovery is metadata-only. Current HTML discovery supports autonomous `BON`, `BOPA`, and `DOCM`,
 plus provincial `BOP_A_CORUNA`, `BOP_ALBACETE`, `BOP_ALICANTE`, `BOP_AVILA`,
 `BOP_ARABA_ALAVA`, `BOP_BARCELONA`, `BOP_BIZKAIA`, `BOP_BURGOS`, `BOP_CASTELLON`,
-`BOP_CORDOBA`, `BOP_GIPUZKOA`, `BOP_GRANADA`, `BOP_JAEN`, `BOP_LEON`, `BOP_LLEIDA`, `BOP_MALAGA`,
-`BOP_PALENCIA`, `BOP_PONTEVEDRA`, `BOP_SEGOVIA`, `BOP_SEVILLA`, `BOP_SORIA`,
-`BOP_TOLEDO`, `BOP_VALENCIA`, `BOP_VALLADOLID`, and `BOP_ZAMORA`
+`BOP_CORDOBA`, `BOP_GIPUZKOA`, `BOP_GRANADA`, `BOP_JAEN`, `BOP_LAS_PALMAS`,
+`BOP_LEON`, `BOP_LLEIDA`, `BOP_MALAGA`, `BOP_PALENCIA`, `BOP_PONTEVEDRA`,
+`BOP_SEGOVIA`, `BOP_SEVILLA`, `BOP_SANTA_CRUZ_TENERIFE`, `BOP_SORIA`,
+`BOP_TERUEL`, `BOP_TOLEDO`, `BOP_VALENCIA`, `BOP_VALLADOLID`, and `BOP_ZAMORA`
 through source-specific parsers.
 `BOP_ALICANTE` remains
 `degraded/manual-review` for runtime health and must not be counted in all-green claims. PDF links
@@ -317,15 +319,37 @@ BOC_CANTABRIA: RSS access method declared; category-scoped feed
 BOCM: RSS access method declared
 DOE: RSS access method declared
 BOP_BADAJOZ: Atom access method declared
+BOP_GUADALAJARA: RSS access method declared
 BOP_LUGO: RSS access method declared
 BOPV: API/XML/HTML access methods declared
+BOP_CACERES: API access method declared
 BOP_A_CORUNA: HTML access method declared
 BOP_ALBACETE: HTML access method declared
 BOP_ALICANTE: HTML access method declared; runtime health degraded/manual-review
+BOP_ARABA_ALAVA: HTML access method declared
 BOP_BARCELONA: HTML access method declared
 BOP_BIZKAIA: HTML access method declared
+BOP_BURGOS: HTML access method declared
+BOP_CASTELLON: HTML access method declared
+BOP_CORDOBA: HTML access method declared
+BOP_GIPUZKOA: HTML access method declared
+BOP_GRANADA: HTML access method declared
+BOP_JAEN: HTML access method declared
+BOP_LAS_PALMAS: HTML access method declared
+BOP_LEON: HTML access method declared
+BOP_LLEIDA: HTML access method declared
 BOP_MALAGA: HTML access method declared
+BOP_PALENCIA: HTML access method declared
+BOP_PONTEVEDRA: HTML access method declared
+BOP_SEGOVIA: HTML access method declared
+BOP_SEVILLA: HTML access method declared
+BOP_SANTA_CRUZ_TENERIFE: HTML access method declared
+BOP_SORIA: HTML access method declared
+BOP_TERUEL: HTML access method declared
+BOP_TOLEDO: HTML access method declared
 BOP_VALENCIA: HTML access method declared
+BOP_VALLADOLID: HTML access method declared
+BOP_ZAMORA: HTML access method declared
 ```
 
 ### list_latest_discovery_entries
@@ -381,7 +405,7 @@ Runs a one-source metadata-only discovery preview through the MCP layer. The too
 ```text
 rss: validated RSS/Atom discovery sources
 api: BOPV, BOR, BOP_CACERES, BOP_HUELVA
-html: BON, BOPA, DOCM, BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_BURGOS, BOP_CASTELLON, BOP_CORDOBA, BOP_GIPUZKOA, BOP_GRANADA, BOP_JAEN, BOP_LEON, BOP_LLEIDA, BOP_MALAGA, BOP_PALENCIA, BOP_PONTEVEDRA, BOP_SEGOVIA, BOP_SEVILLA, BOP_SORIA, BOP_TOLEDO, BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA
+html: BON, BOPA, DOCM, BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_BURGOS, BOP_CASTELLON, BOP_CORDOBA, BOP_GIPUZKOA, BOP_GRANADA, BOP_JAEN, BOP_LAS_PALMAS, BOP_LEON, BOP_LLEIDA, BOP_MALAGA, BOP_PALENCIA, BOP_PONTEVEDRA, BOP_SEGOVIA, BOP_SEVILLA, BOP_SANTA_CRUZ_TENERIFE, BOP_SORIA, BOP_TERUEL, BOP_TOLEDO, BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA
 ```
 
 The default `limit` is `1`; the maximum allowed limit is `10`. If `discovery_type` is omitted, the
@@ -575,6 +599,7 @@ official-sources html monitor --source BOP_CORDOBA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GIPUZKOA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GRANADA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_JAEN --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_LAS_PALMAS --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_LEON --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_LLEIDA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 1
@@ -582,7 +607,9 @@ official-sources html monitor --source BOP_PALENCIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_PONTEVEDRA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SEGOVIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SEVILLA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_SANTA_CRUZ_TENERIFE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SORIA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_TERUEL --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_TOLEDO --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALLADOLID --date YYYY-MM-DD --limit 1
