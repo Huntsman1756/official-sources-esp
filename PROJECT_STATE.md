@@ -1,8 +1,62 @@
 # Project State
 
-Last updated: 2026-05-29
+Last updated: 2026-05-31
 
 ## Current Decision
+
+`TASK-SOURCE-COVERAGE-STATUS-CONTRACT-001` is implemented locally as a downstream-facing
+documentation/control-plane contract.
+
+Project operational status remains `GO`:
+
+```text
+main/local/origin/VPS baseline: 2018c15
+VPS worktree: clean
+Hermes: GO
+BOE daily: GO
+integrity-check: GO
+registered sources: 65
+metadata_adapter_validated: 9
+monitor_validated: 15
+inventory_only: 41
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
+writes enabled: false
+data/rss_monitor present: false
+data/html_monitor present: false
+```
+
+Downstream/product closure remains pending until this contract is merged and consumers update their
+interpretation of registry, monitor, discovery, candidate, and evidence states.
+
+Contract:
+
+```text
+docs/SOURCE_STATUS_CONTRACT.md
+```
+
+The contract explicitly separates registry presence, runtime health, metadata-only discovery,
+`inventory_only`, `monitor_validated`, `monitor_support=available`, `evidence_adapter`,
+`candidate_creation_allowed`, and `evidence_grade_allowed`.
+
+Known degraded/manual-review item remains:
+
+```text
+BOP_ALICANTE: resolver-dependent DNS instability for sede.diputacionalicante.es
+```
+
+`BOP_ALICANTE` remains registered and monitor-capable but excluded from all-green claims. It was
+not marked healthy, removed from the registry, converted back to `inventory_only`, or runtime-fixed.
+
+No new source expansion is planned from this task. Future source work remains proposed only when a
+separate task explicitly authorizes it. Writes, candidate creation, and evidence-grade creation
+remain disabled for all registered sources.
+
+This task did not add sources, change parsers, change monitors, create candidates, create
+evidence-grade records, download PDFs/artifacts, write downstream data, run backfills, touch VPS,
+touch Hermes, touch systemd, or attempt a `BOP_ALICANTE` DNS/runtime fix.
+
+## Previous Decision
 
 `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` is implemented locally as a reporting/control-plane
 snapshot after `TASK-SOURCE-RSS-MONITOR-005`.
@@ -1719,13 +1773,15 @@ Hard guardrails:
 Allowed next work:
 
 1. `TASK-BOP-ALICANTE-DEGRADED-FOLLOWUP-001` to decide whether to resolve or further document the degraded/manual-review state.
-2. `TASK-SOURCE-COVERAGE-STATUS-CONTRACT-001` to clarify consumer-facing meanings of `healthy`, `metadata-only`, `inventory_only`, and `degraded/manual-review`.
-3. `TASK-PROVINCIAL-MONITORS-WAVE-003` only under the partial-health contract, without all-sources-green claims.
-4. `TASK-SOURCE-COVERAGE-RUN-REPORT-001` if actual metadata-only JSONL writes are run.
-5. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
-6. Product-local design/preview for draft process creation in `oposiciones2.0`.
-7. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean.
-8. A source-needs audit for `renta-verificable` before any integration.
+2. `TASK-SOURCE-COVERAGE-RUN-REPORT-001` if actual metadata-only JSONL writes are explicitly approved and run.
+3. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
+4. Product-local design/preview for draft process creation in `oposiciones2.0`.
+5. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean and this status contract is merged.
+6. A source-needs audit for `renta-verificable` before any integration.
+
+No new source expansion is planned from the current operational baseline. `TASK-PROVINCIAL-MONITORS-WAVE-003`
+and other source expansion work should remain out of scope unless a new task explicitly reopens
+source expansion under the status contract and the partial-health rules.
 
 Not allowed from this repo:
 

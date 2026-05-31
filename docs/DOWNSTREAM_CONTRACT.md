@@ -6,6 +6,7 @@ For the operational onboarding guide and examples, see:
 
 ```text
 docs/DOWNSTREAM_ONBOARDING.md
+docs/SOURCE_STATUS_CONTRACT.md
 docs/examples/downstream_evidence_contract.example.json
 docs/examples/downstream_profile.example.yaml
 ```
@@ -25,6 +26,11 @@ workflow, publication workflow, legal or fiscal interpretation, and user-facing 
 - Downstream projects must create their own `pending_review` candidates.
 - `official-sources` does not approve candidates.
 - `official-sources` does not publish anything.
+- Source registry presence, monitor validation, or monitor health does not mean product readiness.
+- Discovery monitor output is metadata-only unless a separate explicit evidence contract says
+  otherwise.
+- Downstream projects must follow `docs/SOURCE_STATUS_CONTRACT.md` before interpreting registry,
+  monitor, discovery, candidate, evidence, or runtime-health states.
 - `official-sources` does not decide eligibility, tax applicability, legal validity, ranking,
   grant amounts, or deadline compliance.
 - `official-sources` does not provide legal advice.
