@@ -227,18 +227,24 @@ sources:
     jurisdiction: ES-CM
     jurisdiction_level: autonómica
     official_landing_url: http://docm.castillalamancha.es/portaldocm/sumario.do
-    access_methods: []
-    operational_status: inventory_only
+    access_methods:
+      - type: html
+        url: https://docm.jccm.es/docm/cambiarBoletin.do?fecha={yyyymmdd}
+        status: validated
+        notes: Official date-scoped summary HTML used by the metadata-only HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-22"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Access method not validated yet.
-    notes: Registry entry only.
+      - Metadata-only HTML monitor; does not download PDFs or artifacts.
+      - Date page may return 200 with zero records for non-publication dates.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official DOCM summary HTML discovery monitor.
 
   - source_code: BOCYL
     name: Boletin Oficial de Castilla y Leon
@@ -648,21 +654,22 @@ sources:
     official_landing_url: https://www.diputacionavila.es/boletin-oficial/
     access_methods:
       - type: html
-        url: https://www.diputacionavila.es/boletin-oficial/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://www.diputacionavila.es/boletin-oficial/{yyyy}/{dd_mm_yyyy}.html
+        status: validated
+        notes: Official date-scoped bulletin page used by the metadata-only HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Avila.
+      - Metadata-only HTML monitor; does not download PDFs or artifacts.
+      - Date page exposes announcement PDF links; monitor stores the URL and a PDF-not-downloaded warning.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin HTML discovery monitor for Avila.
 
   - source_code: BOP_BADAJOZ
     name: Boletin Oficial de la Provincia de Badajoz

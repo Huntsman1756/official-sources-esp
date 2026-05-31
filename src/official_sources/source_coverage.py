@@ -1373,9 +1373,11 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
     ):
         preview_types.append("api")
     if source_code in {
+        "DOCM",
         "BOP_A_CORUNA",
         "BOP_ALBACETE",
         "BOP_ALICANTE",
+        "BOP_AVILA",
         "BOP_BARCELONA",
         "BOP_BIZKAIA",
         "BOP_CASTELLON",

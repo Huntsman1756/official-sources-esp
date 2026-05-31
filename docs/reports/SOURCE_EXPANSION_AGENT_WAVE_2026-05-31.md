@@ -47,6 +47,43 @@ Parser scope:
 - document id from the trailing numeric BOPPO detail URL segment
 - `warnings=["pdf_endpoint_not_downloaded"]`
 
+### BOP_AVILA
+
+Status: implemented as a metadata-only HTML monitor.
+
+Validated URL pattern:
+
+```text
+https://www.diputacionavila.es/boletin-oficial/{yyyy}/{dd_mm_yyyy}.html
+```
+
+Parser scope:
+
+- publication date from the official page title/header
+- one record per announcement PDF link in the date page
+- document id from the PDF basename
+- PDF URL stored only as metadata `official_url`
+- `warnings=["pdf_endpoint_not_downloaded"]`
+
+### DOCM
+
+Status: implemented as a metadata-only HTML monitor.
+
+Validated URL pattern:
+
+```text
+https://docm.jccm.es/docm/cambiarBoletin.do?fecha={yyyymmdd}
+```
+
+Parser scope:
+
+- publication date and issue number from the DOCM summary header
+- one record per `disp_*` summary block
+- title and NID from `p.sumario`
+- official URL from the HTML document route `verArchivoHtml.do`
+- category and organism in `summary`
+- visible PDF links ignored except for `pdf_endpoint_not_downloaded`
+
 ## Local validation evidence
 
 ```text
@@ -59,6 +96,16 @@ candidate_status=not_candidate
 evidence_status=not_evidence
 
 python -m official_sources.cli html monitor --source BOP_PONTEVEDRA --date 2026-05-29 --limit 1
+records=1
+candidate_status=not_candidate
+evidence_status=not_evidence
+
+python -m official_sources.cli html monitor --source BOP_AVILA --date 2026-05-29 --limit 1
+records=1
+candidate_status=not_candidate
+evidence_status=not_evidence
+
+python -m official_sources.cli html monitor --source DOCM --date 2026-05-29 --limit 1
 records=1
 candidate_status=not_candidate
 evidence_status=not_evidence
@@ -85,6 +132,28 @@ candidate_creation_allowed=False
 evidence_grade_allowed=False
 
 official-sources html monitor --source BOP_PONTEVEDRA --date 2026-05-29 --limit 1
+records=1
+candidate_status=not_candidate
+evidence_status=not_evidence
+
+official-sources sources status --source BOP_AVILA
+operational_status=monitor_validated
+monitor_support=available
+candidate_creation_allowed=False
+evidence_grade_allowed=False
+
+official-sources html monitor --source BOP_AVILA --date 2026-05-29 --limit 1
+records=1
+candidate_status=not_candidate
+evidence_status=not_evidence
+
+official-sources sources status --source DOCM
+operational_status=monitor_validated
+monitor_support=available
+candidate_creation_allowed=False
+evidence_grade_allowed=False
+
+official-sources html monitor --source DOCM --date 2026-05-29 --limit 1
 records=1
 candidate_status=not_candidate
 evidence_status=not_evidence

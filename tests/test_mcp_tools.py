@@ -841,10 +841,10 @@ def test_mcp_recommend_next_sources_returns_ranked_viable_provincial_inventory_s
     assert [item["source_code"] for item in result["recommendations"]] == [
         "BOP_ZARAGOZA",
         "BOP_ARABA_ALAVA",
-        "BOP_AVILA",
         "BOP_BURGOS",
         "BOP_CACERES",
         "BOP_CADIZ",
+        "BOP_CIUDAD_REAL",
     ]
     first = result["recommendations"][0]
     assert first["recommended_task"] == "provincial_html_discovery_pilot"
@@ -868,6 +868,7 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
         "BOP_A_CORUNA",
         "BOP_ALBACETE",
         "BOP_ALICANTE",
+        "BOP_AVILA",
         "BOP_BARCELONA",
         "BOP_BIZKAIA",
         "BOP_LUGO",
@@ -961,7 +962,8 @@ def test_mcp_recommend_sources_for_consumer_prioritizes_downstream_need():
     ]
     first_status = result["recommendations"][0]["source_status"]
     assert first_status["registered"] is True
-    assert first_status["registry_operational_status"] == "inventory_only"
+    assert first_status["registry_operational_status"] == "monitor_validated"
+    assert "metadata_discovery" in first_status["safe_downstream_uses"]
     assert first_status["product_ready"] is False
     assert first_status["candidate_creation_allowed"] is False
     assert first_status["evidence_grade_allowed"] is False

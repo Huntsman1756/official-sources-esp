@@ -87,6 +87,15 @@ def build_bop_alicante_html_url(template_url: str, *, target_date: str) -> str:
     return f"{template_url}?{urlencode({'nemo': 'BOP_CON', 'param': param_xml, 'usuario': '-'})}"
 
 
+def build_bop_avila_html_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
+    return (
+        template_url.replace("{yyyy}", f"{parsed_date:%Y}")
+        .replace("{dd_mm_yyyy}", parsed_date.strftime("%d-%m-%Y"))
+        .replace("{date}", parsed_date.isoformat())
+    )
+
+
 def build_bop_barcelona_html_url(template_url: str, *, target_date: str) -> str:
     validate_html_monitor_date(target_date)
     return template_url
@@ -130,6 +139,13 @@ def build_bop_valencia_html_url(template_url: str, *, target_date: str) -> str:
 def build_bop_valladolid_html_url(template_url: str, *, target_date: str) -> str:
     validate_html_monitor_date(target_date)
     return template_url.replace("{date}", target_date)
+
+
+def build_docm_html_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
+    return template_url.replace("{yyyymmdd}", f"{parsed_date:%Y%m%d}").replace(
+        "{date}", parsed_date.isoformat()
+    )
 
 
 def select_html_access_method(source: dict[str, Any]) -> dict[str, Any]:
@@ -325,6 +341,40 @@ def parse_bop_alicante_response(
                 warnings=["pdf_endpoint_not_downloaded"] if official_url else [],
             )
         )
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
+def parse_bop_avila_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_bop_avila_publication_date(text) or requested_date
+    records = [
+        _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at,
+            official_url=urljoin(page_url, href),
+            summary=None,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"],
+        )
+        for title, href, document_id in _iter_bop_avila_announcements(text)
+    ]
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
@@ -597,6 +647,45 @@ def parse_bop_valladolid_html(
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
+def parse_docm_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_docm_publication_date(text) or requested_date
+    issue_number = _extract_docm_issue_number(text)
+    records = []
+    for item in _iter_docm_announcements(text):
+        record = _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=item["entry_id"],
+            document_id=item["document_id"],
+            title=item["title"],
+            published_at=published_at,
+            official_url=urljoin(page_url, item["href"]) if item["href"] else None,
+            summary=item["summary"],
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"] if item["has_pdf"] else [],
+        )
+        if issue_number:
+            record["issue_number"] = issue_number
+        if item["page"]:
+            record["page"] = item["page"]
+        records.append(record)
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
 def write_html_jsonl(records: list[dict[str, Any]], output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = "".join(
@@ -656,6 +745,8 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_albacete_html_url(template_url, target_date=target_date)
     if source_code == "BOP_ALICANTE":
         return build_bop_alicante_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_AVILA":
+        return build_bop_avila_html_url(template_url, target_date=target_date)
     if source_code == "BOP_BARCELONA":
         return build_bop_barcelona_html_url(template_url, target_date=target_date)
     if source_code == "BOP_BIZKAIA":
@@ -672,10 +763,12 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_valencia_html_url(template_url, target_date=target_date)
     if source_code == "BOP_VALLADOLID":
         return build_bop_valladolid_html_url(template_url, target_date=target_date)
+    if source_code == "DOCM":
+        return build_docm_html_url(template_url, target_date=target_date)
     raise HTMLMonitorError(
         "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
-        "BOP_BARCELONA, BOP_BIZKAIA, BOP_CASTELLON, BOP_MALAGA, BOP_SEVILLA, "
-        "BOP_PONTEVEDRA, BOP_VALENCIA, and BOP_VALLADOLID only"
+        "BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_CASTELLON, BOP_MALAGA, "
+        "BOP_SEVILLA, BOP_PONTEVEDRA, BOP_VALENCIA, BOP_VALLADOLID, and DOCM only"
     )
 
 
@@ -708,6 +801,15 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_ALICANTE":
         return parse_bop_alicante_response(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_AVILA":
+        return parse_bop_avila_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -780,6 +882,15 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_VALLADOLID":
         return parse_bop_valladolid_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "DOCM":
+        return parse_docm_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -1143,6 +1254,29 @@ def _iter_bop_valencia_announcements(text: str) -> list[tuple[str, str, str | No
     return announcements
 
 
+def _extract_bop_avila_publication_date(text: str) -> str | None:
+    match = re.search(r"\[\s*(\d{2}/\d{2}/\d{4})\s*\]", _strip_tags(text))
+    if not match:
+        match = re.search(r"\b(\d{2}/\d{2}/\d{4})\b", _strip_tags(text))
+    return _ddmmyyyy_to_iso(match.group(1)) if match else None
+
+
+def _iter_bop_avila_announcements(text: str) -> list[tuple[str, str, str]]:
+    link_pattern = re.compile(
+        r'<a[^>]+href="(?P<href>[^"]*/bops/\d{4}/\d{2}-\d{2}-\d{4}/[^"]+\.pdf)"'
+        r"[^>]*>(?P<title>.*?)</a>",
+        re.I | re.S,
+    )
+    announcements = []
+    for link in link_pattern.finditer(text):
+        href = html.unescape(link.group("href"))
+        document_id = _bop_avila_document_id_from_url(href)
+        title = _normalize_text(_strip_tags(link.group("title")))
+        if title and document_id:
+            announcements.append((title, href, document_id))
+    return announcements
+
+
 def _extract_bop_valladolid_publication_date(text: str) -> str | None:
     match = re.search(
         r'id="bop_sumario_tit_fecha"[^>]*>\s*(\d{1,2})\s+de\s+'
@@ -1247,6 +1381,93 @@ def _iter_bop_pontevedra_announcements(text: str) -> list[tuple[str, str, str, s
     return announcements
 
 
+def _extract_docm_publication_date(text: str) -> str | None:
+    date_text = _first_class_block_text(text, "fechaDiario")
+    if not date_text:
+        return None
+    match = re.search(r"\b(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})\b", date_text, re.I)
+    if not match:
+        return None
+    month = _SPANISH_MONTHS.get(match.group(2).lower())
+    if not month:
+        return None
+    return date(int(match.group(3)), month, int(match.group(1))).isoformat()
+
+
+def _extract_docm_issue_number(text: str) -> str | None:
+    issue_text = _first_class_block_text(text, "numeroDiario")
+    if not issue_text:
+        return None
+    match = re.search(r"\bN[úu]m\.?\s*(\d+)\b", issue_text, re.I)
+    return match.group(1) if match else None
+
+
+def _iter_docm_announcements(text: str) -> list[dict[str, Any]]:
+    block_pattern = re.compile(
+        r'<div\s+class\s*=\s*"disp_(?P<id>\d+)"[^>]*>(?P<body>.*?)(?='
+        r'<div\s+class\s*=\s*"disp_|<div\s+class\s*=\s*"organismo|'
+        r'<div\s+class\s*=\s*"categoriaDiario|</body>)',
+        re.I | re.S,
+    )
+    announcements = []
+    for block in block_pattern.finditer(text):
+        body = block.group("body")
+        title = _first_docm_sumario_text(body)
+        nid = _first_docm_nid(body)
+        href = _first_docm_html_href(body)
+        page = _first_class_block_text(body, "paginaDisposicion")
+        category = _last_docm_context_text(text[: block.start()], "cabeceraCategoria")
+        organism = _last_docm_context_text(text[: block.start()], "tituloOrganismo")
+        if title and (nid or href):
+            announcements.append(
+                {
+                    "entry_id": f"DOCM:{nid}" if nid else f"DOCM:{block.group('id')}",
+                    "document_id": nid,
+                    "title": title,
+                    "href": href,
+                    "summary": _join_title_parts(category, organism),
+                    "page": page,
+                    "has_pdf": "descargarArchivo.do" in body,
+                }
+            )
+    return announcements
+
+
+def _first_docm_sumario_text(text: str) -> str | None:
+    value = _first_class_block_text(text, "sumario")
+    if not value:
+        return None
+    return re.sub(r"\s*\[NID\s+\d{4}/\d+\]\s*$", "", value).strip()
+
+
+def _first_docm_nid(text: str) -> str | None:
+    match = re.search(r"\[NID\s+(\d{4}/\d+)\]", _strip_tags(text), re.I)
+    return match.group(1) if match else None
+
+
+def _first_docm_html_href(text: str) -> str | None:
+    match = re.search(
+        r"abreVentanaHtml\('(?P<href>verArchivoHtml\.do\?ruta=[^']+?\.html&amp;tipo=rutaDocm)'\)",
+        text,
+        re.I | re.S,
+    )
+    if not match:
+        return None
+    return html.unescape(match.group("href"))
+
+
+def _last_docm_context_text(text: str, class_name: str) -> str | None:
+    pattern = re.compile(
+        rf'<[^>]+class\s*=\s*"[^"]*\b{re.escape(class_name)}\b[^"]*"[^>]*>'
+        r"(?P<body>.*?)</[^>]+>",
+        re.I | re.S,
+    )
+    matches = list(pattern.finditer(text))
+    if not matches:
+        return None
+    return _normalize_text(_strip_tags(matches[-1].group("body")))
+
+
 def _extract_bop_malaga_publication_date(text: str) -> str | None:
     match = re.search(r"Bolet[ií]n\s+del\s+(\d{2}/\d{2}/\d{4})", text, re.I)
     if match:
@@ -1319,6 +1540,16 @@ def _bop_bizkaia_document_id_from_url(value: str) -> str | None:
     return match.group(1)
 
 
+def _bop_avila_document_id_from_url(value: str) -> str | None:
+    match = re.search(r"/([^/]+)\.pdf\b", value, re.I)
+    if not match:
+        return None
+    document_id = match.group(1)
+    if re.fullmatch(r"\d{2}-\d{2}-\d{4}", document_id):
+        return None
+    return document_id
+
+
 def _bop_valladolid_document_id_from_url(value: str) -> str | None:
     match = re.search(r"/(BOPVA-A-\d{4}-\d+)\.pdf\b", value, re.I)
     if not match:
@@ -1378,7 +1609,7 @@ def _first_value(values: list[str | None]) -> str | None:
 
 def _first_class_block_text(text: str, class_name: str) -> str | None:
     match = re.search(
-        rf'<[^>]+class="[^"]*\b{re.escape(class_name)}\b[^"]*"[^>]*>'
+        rf'<[^>]+class\s*=\s*"[^"]*\b{re.escape(class_name)}\b[^"]*"[^>]*>'
         r"(?P<body>.*?)(?:<span\b|</span>|</p>|</div>)",
         text,
         re.I | re.S,

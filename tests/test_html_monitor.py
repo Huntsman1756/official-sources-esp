@@ -12,6 +12,7 @@ from official_sources.html_monitor import (
     HTMLMonitorError,
     build_bop_a_coruna_html_url,
     build_bop_alicante_html_url,
+    build_bop_avila_html_url,
     build_bop_barcelona_html_url,
     build_bop_bizkaia_html_url,
     build_bop_castellon_html_url,
@@ -20,12 +21,14 @@ from official_sources.html_monitor import (
     build_bop_sevilla_html_url,
     build_bop_valencia_html_url,
     build_bop_valladolid_html_url,
+    build_docm_html_url,
     build_html_entry_hash,
     build_html_monitor_output_path,
     monitor_html_source,
     parse_bop_a_coruna_html,
     parse_bop_albacete_html,
     parse_bop_alicante_response,
+    parse_bop_avila_html,
     parse_bop_barcelona_html,
     parse_bop_bizkaia_detail_html,
     parse_bop_castellon_html,
@@ -34,6 +37,7 @@ from official_sources.html_monitor import (
     parse_bop_sevilla_html,
     parse_bop_valencia_html,
     parse_bop_valladolid_html,
+    parse_docm_html,
     select_html_access_method,
 )
 from official_sources.source_coverage import list_monitorable_sources
@@ -65,6 +69,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
     for source_code in (
         "BOP_ALBACETE",
         "BOP_ALICANTE",
+        "BOP_AVILA",
         "BOP_BARCELONA",
         "BOP_BIZKAIA",
         "BOP_CASTELLON",
@@ -73,6 +78,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_SEVILLA",
         "BOP_VALENCIA",
         "BOP_VALLADOLID",
+        "DOCM",
     ):
         source = get_source(source_code)
         method = select_html_access_method(source)
@@ -105,6 +111,16 @@ def test_build_bop_alicante_html_url_is_one_date_request():
     assert "nemo=BOP_CON" in url
     assert "usuario=-" in url
     assert "%3CfechaPub%3E25%2F05%2F2026%3C%2FfechaPub%3E" in url
+
+
+def test_build_bop_avila_html_url_is_one_date_request():
+    assert (
+        build_bop_avila_html_url(
+            "https://www.diputacionavila.es/boletin-oficial/{yyyy}/{dd_mm_yyyy}.html",
+            target_date="2026-05-29",
+        )
+        == "https://www.diputacionavila.es/boletin-oficial/2026/29-05-2026.html"
+    )
 
 
 def test_build_bop_barcelona_html_url_is_one_date_request():
@@ -191,6 +207,16 @@ def test_build_bop_valladolid_html_url_is_one_date_request():
         "p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&"
         "p_p_col_id=column-1&p_p_col_count=3&"
         "_BOPVisualizaBoletin_WAR_BOPVisualizaBoletin_fecha=2026-05-29"
+    )
+
+
+def test_build_docm_html_url_is_one_date_request():
+    assert (
+        build_docm_html_url(
+            "https://docm.jccm.es/docm/cambiarBoletin.do?fecha={yyyymmdd}",
+            target_date="2026-05-29",
+        )
+        == "https://docm.jccm.es/docm/cambiarBoletin.do?fecha=20260529"
     )
 
 
@@ -471,6 +497,82 @@ def test_parse_bop_pontevedra_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_avila_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_avila_detail.html")
+    page_url = "https://www.diputacionavila.es/boletin-oficial/2026/29-05-2026.html"
+
+    result = parse_bop_avila_html(
+        raw,
+        source_code="BOP_AVILA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-avila",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_AVILA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "29-05-2026_116626"
+    assert record["document_id"] == "29-05-2026_116626"
+    assert record["title"] == (
+        "APROBACION DEFINITIVA EXPEDIENTES DE CREDITO EXTRAORDINARIO 1-2026 "
+        "Y SUPLEMENTO DE CREDITO 1-2026"
+    )
+    assert record["published_at"] == "2026-05-29"
+    assert record["official_url"] == (
+        "https://www.diputacionavila.es/bops/2026/29-05-2026/29-05-2026_116626.pdf"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_docm_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("docm_summary_2026_05_29.html")
+    page_url = "https://docm.jccm.es/docm/cambiarBoletin.do?fecha=20260529"
+
+    result = parse_docm_html(
+        raw,
+        source_code="DOCM",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-docm",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "DOCM"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "DOCM:2026/4101"
+    assert record["document_id"] == "2026/4101"
+    assert record["title"] == (
+        "Presupuestos Generales. Orden 75/2026, de 26 de mayo, por la que se "
+        "regulan normas presupuestarias."
+    )
+    assert record["published_at"] == "2026-05-29"
+    assert record["official_url"] == (
+        "https://docm.jccm.es/docm/verArchivoHtml.do?"
+        "ruta=2026/05/29/html/2026_4101.html&tipo=rutaDocm"
+    )
+    assert record["summary"] == "I.- DISPOSICIONES GENERALES - Consejería de Hacienda"
+    assert record["issue_number"] == "101"
+    assert record["page"] == "21205"
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
 def test_parse_bop_sevilla_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("bop_sevilla_latest.html")
     page_url = "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-28-05-2026/"
@@ -629,12 +731,14 @@ def test_monitor_html_source_supports_selected_provincial_sources():
     fixtures = {
         "BOP_ALBACETE": "bop_albacete_latest.html",
         "BOP_ALICANTE": "bop_alicante_bop_con.json",
+        "BOP_AVILA": "bop_avila_detail.html",
         "BOP_BARCELONA": "bop_barcelona_latest.html",
         "BOP_CASTELLON": "bop_castellon_latest.html",
         "BOP_MALAGA": "bop_malaga_latest.html",
         "BOP_PONTEVEDRA": "bop_pontevedra_detail.html",
         "BOP_VALENCIA": "bop_valencia_latest.html",
         "BOP_VALLADOLID": "bop_valladolid_latest.html",
+        "DOCM": "docm_summary_2026_05_29.html",
     }
 
     for source_code, fixture_name in fixtures.items():
