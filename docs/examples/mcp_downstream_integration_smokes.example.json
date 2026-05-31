@@ -1,0 +1,87 @@
+{
+  "status": "ok",
+  "resource_type": "downstream_integration_smoke_matrix",
+  "version": "read-only-upstream-v1",
+  "mode": "read_only",
+  "writes_performed": false,
+  "candidate_creation_allowed": false,
+  "evidence_grade_allowed": false,
+  "product_automation_allowed": false,
+  "human_review_required": true,
+  "contract_refs": [
+    "docs/SOURCE_STATUS_CONTRACT.md",
+    "docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md",
+    "docs/MCP_DOWNSTREAM_INTEGRATION_CLOSURE.md",
+    "docs/MCP_TOOLS.md"
+  ],
+  "count": 1,
+  "smokes": [
+    {
+      "consumer": "renta-verificable",
+      "demand_class": "fiscal_reference_resolution",
+      "integration_mode": "build_time_reference_review_before_seed_import",
+      "current_mcp_entrypoint": "resolve_fiscal_reference",
+      "smoke_call": {
+        "tool": "resolve_fiscal_reference",
+        "arguments": {
+          "consumer": "renta-verificable",
+          "tax_year": 2025,
+          "jurisdiction": "Madrid",
+          "deduction_key": "madrid-alquiler-vivienda-habitual-joven",
+          "limit": 3
+        }
+      },
+      "expected_status": "manual_review_required",
+      "expected_output_contract": [
+        "resource_type=fiscal_reference_resolution",
+        "consumer=renta-verificable",
+        "resolution_status=source_leads_only",
+        "exact_reference_resolved=false",
+        "source_leads[0].source_code=AEAT"
+      ],
+      "downstream_preview_command": "python src/scripts/python/importers/import_json_to_sqlite.py --check",
+      "required_source_families": [
+        "AEAT",
+        "state_legal_reference",
+        "autonomous_bulletin",
+        "foral_or_autonomous_bulletin"
+      ],
+      "required_fields": [
+        "slug",
+        "references",
+        "type",
+        "name",
+        "url",
+        "section",
+        "jurisdiction",
+        "status",
+        "retrieved_at",
+        "last_reviewed_at"
+      ],
+      "must_not_do": [
+        "do not make MCP or AI a fiscal source of truth",
+        "do not auto-promote records to verified",
+        "do not fabricate fiscal facts, amounts, URLs, or applicability",
+        "do not return definitive entitlement language",
+        "do not make the live app depend on MCP availability"
+      ],
+      "known_risks": [
+        "downstream fiscal enums and importer expectations need alignment before automation",
+        "generic BOE URLs are not exact legal references",
+        "project status is not official certification"
+      ],
+      "closure_status": "ready_for_product_side_preview",
+      "acceptance_gate": "Downstream product must run its preview/import check and keep records in manual review before any product write or publication."
+    }
+  ],
+  "rules": [
+    "read-only upstream only",
+    "consumer preview before import",
+    "no downstream writes from MCP",
+    "no candidate creation",
+    "no evidence-grade promotion",
+    "no product publication",
+    "no legal, fiscal, eligibility, ranking, or approval conclusions",
+    "manual review required before product automation"
+  ]
+}

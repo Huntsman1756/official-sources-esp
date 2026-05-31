@@ -18,6 +18,7 @@ docs/SOURCE_STATUS_CONTRACT.md
 docs/DOWNSTREAM_CONTRACT.md
 docs/MCP_CASE_TAXONOMY.md
 docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md
+docs/MCP_DOWNSTREAM_INTEGRATION_CLOSURE.md
 docs/MCP_TOOLS.md
 ```
 
@@ -241,6 +242,48 @@ Must not:
 - invent source URLs;
 - treat a source family as verified evidence;
 - decide eligibility, amount, deadline, or legal meaning.
+
+### `list_downstream_integration_smokes`
+
+Status:
+
+```text
+implemented
+```
+
+Purpose:
+
+```text
+Expose the current read-only integration smoke matrix for supported downstream consumers.
+```
+
+Inputs:
+
+```json
+{
+  "consumer": "optional known consumer or alias"
+}
+```
+
+Required behavior:
+
+- return one smoke profile for each current supported consumer unless filtered;
+- identify the current MCP entrypoint and smoke-call arguments;
+- identify downstream preview command shape when one exists;
+- preserve the shared read-only safety envelope;
+- include `must_not_do` constraints and known risks;
+- refuse unknown consumers.
+
+Must not:
+
+- run the smoke calls;
+- run downstream preview/import commands;
+- fetch live sources;
+- write JSONL;
+- mutate `config/sources.yaml`;
+- create candidates or evidence-grade records;
+- write downstream records;
+- approve product automation or publication.
 
 ### `build_evidence_packet`
 

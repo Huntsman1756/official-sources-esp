@@ -287,6 +287,44 @@ This tool does not fetch live sources, run monitor previews, read discovery JSON
 mutate the registry, create candidates, create evidence-grade records, download artifacts, or touch
 downstream repositories.
 
+### list_downstream_integration_smokes
+
+Inputs:
+
+- `consumer`: optional known downstream consumer or alias such as `oposiciones2.0`, `eduayudas`,
+  `la-ayuda`, `renta-verificable`, or `renta`.
+
+Output: deterministic read-only downstream integration smoke matrix from
+`docs/MCP_DOWNSTREAM_INTEGRATION_CLOSURE.md`.
+
+The matrix covers the current downstream projects:
+
+```text
+oposiciones2.0
+eduayudas
+la-ayuda
+renta-verificable
+```
+
+Each profile includes the current MCP entrypoint, smoke-call arguments, expected status,
+downstream preview command shape, required source families, required fields, known risks, and
+`must_not_do` constraints.
+
+Each response preserves:
+
+```text
+mode=read_only
+writes_performed=false
+candidate_creation_allowed=false
+evidence_grade_allowed=false
+product_automation_allowed=false
+human_review_required=true
+```
+
+This tool does not fetch live sources, run monitor previews, read or write discovery JSONL, mutate
+the registry, create candidates, create evidence-grade records, create product records, publish
+content, send notifications, run downstream imports, or touch downstream repositories.
+
 ### list_case_taxonomy
 
 Inputs:

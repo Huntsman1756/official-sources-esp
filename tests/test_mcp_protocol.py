@@ -91,6 +91,37 @@ async def test_mcp_case_taxonomy_call_returns_readonly_envelope_without_writes(
 
 
 @pytest.mark.asyncio
+async def test_mcp_downstream_integration_smokes_call_returns_readonly_matrix_without_writes(
+    tmp_path,
+    monkeypatch,
+):
+    database_path = tmp_path / "mcp.sqlite"
+    monkeypatch.setenv("OFFICIAL_SOURCES_DB_PATH", str(database_path))
+
+    async with Client(create_server()) as client:
+        result = await client.call_tool(
+            "list_downstream_integration_smokes",
+            {"consumer": "renta"},
+        )
+
+    assert result.structured_content["status"] == "ok"
+    assert result.structured_content["resource_type"] == "downstream_integration_smoke_matrix"
+    assert result.structured_content["writes_performed"] is False
+    assert result.structured_content["candidate_creation_allowed"] is False
+    assert result.structured_content["evidence_grade_allowed"] is False
+    assert result.structured_content["product_automation_allowed"] is False
+    assert result.structured_content["smokes"][0]["consumer"] == "renta-verificable"
+    assert result.structured_content["smokes"][0]["smoke_call"]["tool"] == (
+        "resolve_fiscal_reference"
+    )
+    with sqlite3.connect(database_path) as connection:
+        after_candidates = connection.execute("SELECT COUNT(*) FROM source_candidates").fetchone()[
+            0
+        ]
+    assert after_candidates == 0
+
+
+@pytest.mark.asyncio
 async def test_mcp_downstream_planner_calls_return_readonly_envelopes_without_writes(
     tmp_path,
     monkeypatch,

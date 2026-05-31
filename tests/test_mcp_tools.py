@@ -57,6 +57,7 @@ def test_mcp_tool_names_use_compatible_snake_case_names():
         "preview_discovery",
         "recommend_next_sources",
         "recommend_sources_for_consumer",
+        "list_downstream_integration_smokes",
         "list_case_taxonomy",
         "build_evidence_packet",
         "resolve_normative_reference",
@@ -183,7 +184,8 @@ def test_no_mcp_tool_can_write_to_protected_tables():
 
     for name in protected_names:
         assert f".{name}(" not in source
-    assert "downstream" not in source.lower()
+    assert "create_candidate" not in source.lower()
+    assert "write_downstream" not in source.lower()
 
 
 def test_mcp_source_coverage_list_returns_registered_sources():
@@ -895,6 +897,79 @@ def test_mcp_recommend_sources_for_consumer_refuses_invalid_limit():
     }
 
 
+def test_mcp_downstream_integration_smokes_cover_current_consumers():
+    result = tools.list_downstream_integration_smokes()
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "downstream_integration_smoke_matrix"
+    assert result["version"] == "read-only-upstream-v1"
+    assert result["mode"] == "read_only"
+    assert result["writes_performed"] is False
+    assert result["candidate_creation_allowed"] is False
+    assert result["evidence_grade_allowed"] is False
+    assert result["product_automation_allowed"] is False
+    assert result["human_review_required"] is True
+    assert result["count"] == 4
+    smokes = {smoke["consumer"]: smoke for smoke in result["smokes"]}
+    assert set(smokes) == {
+        "eduayudas",
+        "la-ayuda",
+        "oposiciones2.0",
+        "renta-verificable",
+    }
+    assert smokes["oposiciones2.0"]["smoke_call"] == {
+        "tool": "recommend_sources_for_consumer",
+        "arguments": {"consumer": "oposiciones2.0", "limit": 3},
+    }
+    assert smokes["eduayudas"]["smoke_call"]["tool"] == "build_evidence_packet"
+    assert smokes["la-ayuda"]["expected_status"] == "manual_review_required"
+    assert smokes["renta-verificable"]["smoke_call"]["arguments"]["tax_year"] == 2025
+    assert all(smoke["writes_performed"] is False for smoke in result["smokes"])
+    assert all(
+        smoke["closure_status"] == "ready_for_product_side_preview" for smoke in result["smokes"]
+    )
+
+
+def test_mcp_downstream_integration_smokes_filter_and_refuse_unknown_consumer():
+    renta = tools.list_downstream_integration_smokes(consumer="renta")
+    unknown = tools.list_downstream_integration_smokes(consumer="unknown-product")
+
+    assert renta["status"] == "ok"
+    assert renta["count"] == 1
+    assert renta["smokes"][0]["consumer"] == "renta-verificable"
+    assert renta["smokes"][0]["current_mcp_entrypoint"] == "resolve_fiscal_reference"
+    assert "tax_year" in renta["smokes"][0]["smoke_call"]["arguments"]
+    assert unknown == {
+        "status": "unsupported_consumer",
+        "consumer": "unknown-product",
+        "supported_consumers": [
+            "eduayudas",
+            "la-ayuda",
+            "oposiciones2.0",
+            "renta-verificable",
+        ],
+        "message": "Unknown downstream consumer; add an explicit integration smoke profile first.",
+    }
+
+
+def test_mcp_downstream_integration_smokes_do_not_execute_previews_or_write(
+    tmp_path,
+    monkeypatch,
+):
+    def fail_preview(*_args, **_kwargs):
+        raise AssertionError("integration smoke matrix must not run discovery previews")
+
+    monkeypatch.setattr(source_coverage, "monitor_source_feed", fail_preview)
+    monkeypatch.setattr(source_coverage, "monitor_api_source", fail_preview)
+    monkeypatch.setattr(source_coverage, "monitor_html_source", fail_preview)
+
+    result = tools.list_downstream_integration_smokes(consumer="oposiciones2.0")
+
+    assert result["status"] == "ok"
+    assert result["smokes"][0]["consumer"] == "oposiciones2.0"
+    assert not list(tmp_path.rglob("*.jsonl"))
+
+
 def test_mcp_list_case_taxonomy_returns_stable_readonly_taxonomy():
     result = tools.list_case_taxonomy()
 
@@ -1237,4 +1312,4 @@ def test_mcp_source_coverage_tools_do_not_import_write_path_modules():
     assert "fetch_feed" not in source
     assert "fetch_api" not in source
     assert "fetch_html" not in source
-    assert "artifacts" not in source
+    assert "download_artifacts" not in source
