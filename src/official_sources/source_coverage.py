@@ -62,18 +62,6 @@ DOWNSTREAM_DEMAND_PROFILES = {
         "demand_class": "public_employment_alerts",
         "recommended_sources": (
             (
-                "BOP_CASTELLON",
-                "Product-side public-employment ingestion already exists; reconcile into "
-                "shared MCP metadata coverage.",
-                "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
-            ),
-            (
-                "BOP_SEVILLA",
-                "High-value provincial public-employment source and prior read-only audit "
-                "candidate.",
-                "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
-            ),
-            (
                 "BOP_AVILA",
                 "Low-friction provincial RSS/API signal for public-employment alert coverage.",
                 "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
@@ -115,6 +103,7 @@ DOWNSTREAM_DEMAND_PROFILES = {
             ),
         ),
         "missing_capabilities": (
+            "BOP_CASTELLON and BOP_SEVILLA are now shared metadata-only monitors",
             "source-specific metadata-only monitors for selected provincial BOPs",
             "consumer-aware alert-grade export ranking",
             "explicit exclusion of BOP_ALICANTE from all-green claims while degraded/manual-review",
@@ -810,7 +799,17 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         for method in access_methods
     ):
         preview_types.append("api")
-    if source_code in {"BOP_A_CORUNA", "BOP_ALBACETE", "BOP_ALICANTE"} and any(
+    if source_code in {
+        "BOP_A_CORUNA",
+        "BOP_ALBACETE",
+        "BOP_ALICANTE",
+        "BOP_BARCELONA",
+        "BOP_BIZKAIA",
+        "BOP_CASTELLON",
+        "BOP_MALAGA",
+        "BOP_SEVILLA",
+        "BOP_VALENCIA",
+    } and any(
         method.get("type") == "html"
         and method.get("status") == "validated"
         and str(method.get("url", "")).strip()

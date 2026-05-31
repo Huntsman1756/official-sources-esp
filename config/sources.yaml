@@ -806,24 +806,24 @@ sources:
     name: Boletin Oficial de la Provincia de Castellon
     jurisdiction: ES-CS
     jurisdiction_level: provincial
-    official_landing_url: http://bop.dipcas.es/PortalBOP/boletin.do
+    official_landing_url: https://bop.dipcas.es/PortalBOP/
     access_methods:
       - type: html
-        url: http://bop.dipcas.es/PortalBOP/boletin.do
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bop.dipcas.es/PortalBOP/
+        status: validated
+        notes: Official current-bulletin HTML page used by provincial metadata-only discovery; PDF links are recorded as official_url only when present and never downloaded.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Castellon.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Current-bulletin page is not a historical backfill interface; use preview only and keep date-scoped assumptions explicit.
+    notes: Official provincial bulletin HTML discovery monitor for Castellon public-employment coverage.
 
   - source_code: BOP_CIUDAD_REAL
     name: Boletin Oficial de la Provincia de Ciudad Real
@@ -1316,24 +1316,24 @@ sources:
     name: Boletin Oficial de la Provincia de Sevilla
     jurisdiction: ES-SE
     jurisdiction_level: provincial
-    official_landing_url: http://www.dipusevilla.es/bop/
+    official_landing_url: https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/
     access_methods:
       - type: html
-        url: http://www.dipusevilla.es/bop/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/
+        status: validated
+        notes: Official current-bulletin landing page used by provincial metadata-only discovery; the monitor follows the latest public bulletin detail link and does not download PDFs or artifacts.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Sevilla.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Current-bulletin landing page requires following the latest public bulletin detail link; use preview only and keep date-scoped assumptions explicit.
+    notes: Official provincial bulletin HTML discovery monitor for Sevilla public-employment coverage.
 
   - source_code: BOP_SORIA
     name: Boletin Oficial de la Provincia de Soria

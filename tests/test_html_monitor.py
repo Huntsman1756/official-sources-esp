@@ -14,7 +14,9 @@ from official_sources.html_monitor import (
     build_bop_alicante_html_url,
     build_bop_barcelona_html_url,
     build_bop_bizkaia_html_url,
+    build_bop_castellon_html_url,
     build_bop_malaga_html_url,
+    build_bop_sevilla_html_url,
     build_bop_valencia_html_url,
     build_html_entry_hash,
     build_html_monitor_output_path,
@@ -24,7 +26,9 @@ from official_sources.html_monitor import (
     parse_bop_alicante_response,
     parse_bop_barcelona_html,
     parse_bop_bizkaia_detail_html,
+    parse_bop_castellon_html,
     parse_bop_malaga_html,
+    parse_bop_sevilla_html,
     parse_bop_valencia_html,
     select_html_access_method,
 )
@@ -47,8 +51,7 @@ def test_bop_a_coruna_html_access_method_exists_in_registry():
     assert method["type"] == "html"
     assert method["status"] == "validated"
     assert method["url"] == (
-        "https://bop.dacoruna.gal/bopportal/"
-        "cambioBoletin.do?fechaInput={date_ddmmyyyy}"
+        "https://bop.dacoruna.gal/bopportal/cambioBoletin.do?fechaInput={date_ddmmyyyy}"
     )
     assert source["candidate_creation_allowed"] is False
     assert source["evidence_grade_allowed"] is False
@@ -60,7 +63,9 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_ALICANTE",
         "BOP_BARCELONA",
         "BOP_BIZKAIA",
+        "BOP_CASTELLON",
         "BOP_MALAGA",
+        "BOP_SEVILLA",
         "BOP_VALENCIA",
     ):
         source = get_source(source_code)
@@ -75,10 +80,13 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
 
 
 def test_build_bop_a_coruna_html_url_is_one_date_request():
-    assert build_bop_a_coruna_html_url(
-        "https://bop.dacoruna.gal/bopportal/cambioBoletin.do?fechaInput={date_ddmmyyyy}",
-        target_date="2026-05-25",
-    ) == "https://bop.dacoruna.gal/bopportal/cambioBoletin.do?fechaInput=25%2F05%2F2026"
+    assert (
+        build_bop_a_coruna_html_url(
+            "https://bop.dacoruna.gal/bopportal/cambioBoletin.do?fechaInput={date_ddmmyyyy}",
+            target_date="2026-05-25",
+        )
+        == "https://bop.dacoruna.gal/bopportal/cambioBoletin.do?fechaInput=25%2F05%2F2026"
+    )
 
 
 def test_build_bop_alicante_html_url_is_one_date_request():
@@ -94,31 +102,63 @@ def test_build_bop_alicante_html_url_is_one_date_request():
 
 
 def test_build_bop_barcelona_html_url_is_one_date_request():
-    assert build_bop_barcelona_html_url(
-        "https://bop.diba.cat/butlleti-del-dia",
-        target_date="2026-05-25",
-    ) == "https://bop.diba.cat/butlleti-del-dia"
+    assert (
+        build_bop_barcelona_html_url(
+            "https://bop.diba.cat/butlleti-del-dia",
+            target_date="2026-05-25",
+        )
+        == "https://bop.diba.cat/butlleti-del-dia"
+    )
 
 
 def test_build_bop_bizkaia_html_url_is_one_landing_request():
-    assert build_bop_bizkaia_html_url(
-        "https://www.bizkaia.eus/es/bob",
-        target_date="2026-05-25",
-    ) == "https://www.bizkaia.eus/es/bob"
+    assert (
+        build_bop_bizkaia_html_url(
+            "https://www.bizkaia.eus/es/bob",
+            target_date="2026-05-25",
+        )
+        == "https://www.bizkaia.eus/es/bob"
+    )
+
+
+def test_build_bop_castellon_html_url_is_one_landing_request():
+    assert (
+        build_bop_castellon_html_url(
+            "https://bop.dipcas.es/PortalBOP/",
+            target_date="2026-05-25",
+        )
+        == "https://bop.dipcas.es/PortalBOP/"
+    )
 
 
 def test_build_bop_malaga_html_url_is_one_date_request():
-    assert build_bop_malaga_html_url(
-        "https://www.bopmalaga.es/",
-        target_date="2026-05-25",
-    ) == "https://www.bopmalaga.es/"
+    assert (
+        build_bop_malaga_html_url(
+            "https://www.bopmalaga.es/",
+            target_date="2026-05-25",
+        )
+        == "https://www.bopmalaga.es/"
+    )
+
+
+def test_build_bop_sevilla_html_url_is_one_landing_request():
+    assert (
+        build_bop_sevilla_html_url(
+            "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/",
+            target_date="2026-05-25",
+        )
+        == "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/"
+    )
 
 
 def test_build_bop_valencia_html_url_is_one_landing_request():
-    assert build_bop_valencia_html_url(
-        "https://bop.dival.es/bop/drvisapi.dll",
-        target_date="2026-05-25",
-    ) == "https://bop.dival.es/bop/drvisapi.dll"
+    assert (
+        build_bop_valencia_html_url(
+            "https://bop.dival.es/bop/drvisapi.dll",
+            target_date="2026-05-25",
+        )
+        == "https://bop.dival.es/bop/drvisapi.dll"
+    )
 
 
 def test_parse_bop_a_coruna_fixture_emits_metadata_only_records():
@@ -223,6 +263,42 @@ def test_parse_bop_bizkaia_detail_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_castellon_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_castellon_latest.html")
+    page_url = "https://bop.dipcas.es/PortalBOP/"
+
+    result = parse_bop_castellon_html(
+        raw,
+        source_code="BOP_CASTELLON",
+        page_url=page_url,
+        requested_date="2026-05-25",
+        discovered_at="2026-05-25T00:00:00Z",
+        monitor_run_id="run-castellon",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_CASTELLON"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "165893"
+    assert record["document_id"] == "165893"
+    assert record["title"] == (
+        "RESOLUCION DE ARCHIVO DE EXPEDIENTE POR DESISTIMIENTO DEL INTERESADO. "
+        "EXPDTE: ATALFE/2023/188/12"
+    )
+    assert record["published_at"] == "2026-05-30"
+    assert record["official_url"] == (
+        "https://bop.dipcas.es/PortalBOP/api/descargarAnuncio?idAnuncio=165893&idioma=es"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
 def test_parse_bop_albacete_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("bop_albacete_latest.html")
     page_url = "https://bop.dipualba.es"
@@ -280,8 +356,7 @@ def test_parse_bop_valencia_fixture_emits_metadata_only_records():
     assert record["entry_id"] == "2026/06245"
     assert record["document_id"] == "2026/06245"
     assert (
-        record["title"]
-        == "Anunci de la Diputacio Provincial de Valencia sobre aprovacio de bases."
+        record["title"] == "Anunci de la Diputacio Provincial de Valencia sobre aprovacio de bases."
     )
     assert record["published_at"] == "2026-05-25"
     assert record["official_url"] is None
@@ -319,6 +394,43 @@ def test_parse_bop_malaga_fixture_emits_metadata_only_records():
         record["official_url"]
         == "https://www.bopmalaga.es/edicto.php?edicto=20260525-00620-2026-00"
     )
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_sevilla_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_sevilla_latest.html")
+    page_url = "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-28-05-2026/"
+
+    result = parse_bop_sevilla_html(
+        raw,
+        source_code="BOP_SEVILLA",
+        page_url=page_url,
+        requested_date="2026-05-25",
+        discovered_at="2026-05-25T00:00:00Z",
+        monitor_run_id="run-sevilla",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_SEVILLA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "BOP-SE-2026-101002"
+    assert record["document_id"] == "BOP-SE-2026-101002"
+    assert record["title"] == (
+        "Bases para la selección de personal laboral fijo en la categoría de Técnico OPEM "
+        "y creación de bolsa de trabajo"
+    )
+    assert record["published_at"] == "2026-05-28"
+    assert record["official_url"] == (
+        "https://bopsevilla.dipusevilla.es/publica/buscador-anuncios/anuncio/"
+        "Bases-para-la-seleccion-de-personal-laboral-fijo-en-la-categoria-de-Tecnico-OPEM/"
+    )
+    assert record["summary"] == "La Algaba"
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"
     assert record["classification_status"] == "unclassified"
@@ -366,17 +478,18 @@ def test_parse_bop_alicante_fixture_emits_metadata_only_records():
 
 
 def test_html_entry_hash_prefers_source_published_at_and_official_url():
-    assert build_html_entry_hash(
-        source_code="BOP_A_CORUNA",
-        published_at="2026-05-25",
-        official_url="https://bop.dacoruna.gal/bopportal/2026_0000003193.html",
-        document_id="ignored",
-        title="ignored",
-    ) == hashlib.sha256(
-        b"BOP_A_CORUNA"
-        b"2026-05-25"
-        b"https://bop.dacoruna.gal/bopportal/2026_0000003193.html"
-    ).hexdigest()
+    assert (
+        build_html_entry_hash(
+            source_code="BOP_A_CORUNA",
+            published_at="2026-05-25",
+            official_url="https://bop.dacoruna.gal/bopportal/2026_0000003193.html",
+            document_id="ignored",
+            title="ignored",
+        )
+        == hashlib.sha256(
+            b"BOP_A_CORUNA2026-05-25https://bop.dacoruna.gal/bopportal/2026_0000003193.html"
+        ).hexdigest()
+    )
 
 
 def test_monitor_html_source_fetches_one_bounded_request():
@@ -406,6 +519,7 @@ def test_monitor_html_source_supports_selected_provincial_sources():
         "BOP_ALBACETE": "bop_albacete_latest.html",
         "BOP_ALICANTE": "bop_alicante_bop_con.json",
         "BOP_BARCELONA": "bop_barcelona_latest.html",
+        "BOP_CASTELLON": "bop_castellon_latest.html",
         "BOP_MALAGA": "bop_malaga_latest.html",
         "BOP_VALENCIA": "bop_valencia_latest.html",
     }
@@ -464,6 +578,36 @@ def test_monitor_bop_bizkaia_fetches_landing_then_public_detail():
     assert requested_urls == ["https://www.bizkaia.eus/es/bob", detail_url]
     assert len(result.records) == 1
     assert result.records[0]["source_code"] == "BOP_BIZKAIA"
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
+    assert result.records[0]["classification_status"] == "unclassified"
+
+
+def test_monitor_bop_sevilla_fetches_landing_then_public_detail():
+    requested_urls = []
+    landing_url = "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/"
+    detail_url = (
+        "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-28-05-2026/"
+    )
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        if url == landing_url:
+            return _fixture_bytes("bop_sevilla_landing.html")
+        if url == detail_url:
+            return _fixture_bytes("bop_sevilla_latest.html")
+        raise AssertionError(f"unexpected URL: {url}")
+
+    result = monitor_html_source(
+        get_source("BOP_SEVILLA"),
+        fetcher=fetcher,
+        target_date="2026-05-25",
+        limit=1,
+    )
+
+    assert requested_urls == [landing_url, detail_url]
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == "BOP_SEVILLA"
     assert result.records[0]["candidate_status"] == "not_candidate"
     assert result.records[0]["evidence_status"] == "not_evidence"
     assert result.records[0]["classification_status"] == "unclassified"
@@ -612,7 +756,9 @@ def test_mcp_source_coverage_sees_bop_a_coruna_as_html_monitorable():
         "BOP_ALICANTE",
         "BOP_BARCELONA",
         "BOP_BIZKAIA",
+        "BOP_CASTELLON",
         "BOP_MALAGA",
+        "BOP_SEVILLA",
         "BOP_VALENCIA",
     ):
         method_types = {method["type"] for method in sources[source_code]["access_methods"]}

@@ -192,7 +192,7 @@ Supported preview families:
 ```text
 rss: validated RSS/Atom discovery sources
 api: BOPV API discovery
-html: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE HTML discovery
+html: validated provincial HTML discovery sources
 ```
 
 The tool refuses broad/all-source requests, unknown sources, inventory-only sources without an
@@ -216,8 +216,10 @@ provincial_html_discovery_pilot
 
 The tool recommends provincial `inventory_only` sources with official landing URLs and no validated
 monitor yet. Already monitored sources such as `BOP_A_CORUNA`, `BOP_ALBACETE`, `BOP_ALICANTE`,
-and `BOP_LUGO` are excluded. Documented blocked/deferred sources such as `BOP_ALMERIA` are excluded
-from the normal ranking but remain visible through `list_sources` and `get_source_status`.
+`BOP_BARCELONA`, `BOP_BIZKAIA`, `BOP_CASTELLON`, `BOP_LUGO`, `BOP_MALAGA`, `BOP_SEVILLA`, and
+`BOP_VALENCIA` are excluded. Documented blocked/deferred sources such as `BOP_ALMERIA` are
+excluded from the normal ranking but remain visible through `list_sources` and
+`get_source_status`.
 
 The normal ranking prioritizes the documented provincial pilot waves before alphabetical fallback:
 
@@ -226,8 +228,6 @@ BOP_BARCELONA
 BOP_MALAGA
 BOP_BIZKAIA
 BOP_VALENCIA
-BOP_SEVILLA
-BOP_ZARAGOZA
 ```
 
 Each recommendation includes:

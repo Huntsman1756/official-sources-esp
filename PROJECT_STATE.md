@@ -4,6 +4,41 @@ Last updated: 2026-05-31
 
 ## Current Decision
 
+`TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001` is implemented locally as the first source expansion
+after the downstream-demand MCP matrix.
+
+This task adds metadata-only provincial HTML discovery monitors for:
+
+```text
+BOP_CASTELLON
+BOP_SEVILLA
+```
+
+Current executable registry counts:
+
+```text
+registered sources: 65
+metadata_adapter_validated: 9
+monitor_validated: 17
+inventory_only: 39
+monitor_support=available: 26
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
+```
+
+Report:
+
+```text
+docs/reports/source-coverage-reopen-oposiciones-001-2026-05-31.md
+```
+
+This expansion is scoped to `oposiciones2.0` public-employment alert demand. It remains
+metadata-only and did not create candidates, create evidence-grade records, download PDFs/artifacts,
+write discovery JSONL by default, write downstream repositories, run broad backfills, touch VPS,
+touch Hermes, or change systemd. `BOP_ALICANTE` remains `degraded/manual-review`.
+
+## Previous Decision
+
 `TASK-MCP-TOOLS-READONLY-SKELETON-001` is implemented locally with the first consumer-aware
 read-only MCP planning tool:
 

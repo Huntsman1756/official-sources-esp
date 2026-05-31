@@ -12,11 +12,11 @@ Current baseline for this contract:
 ```text
 registered sources: 65
 metadata_adapter_validated: 9
-monitor_validated: 15
-inventory_only: 41
+monitor_validated: 17
+inventory_only: 39
 RSS/Atom discovery sources: 11
 API discovery monitor sources: 1
-HTML provincial discovery sources: 7
+HTML provincial discovery sources: 9
 candidate_creation_allowed=false: 65
 evidence_grade_allowed=false: 65
 data/rss_monitor present: false
