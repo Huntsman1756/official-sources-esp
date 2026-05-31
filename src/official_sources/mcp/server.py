@@ -29,6 +29,8 @@ MCP_TOOL_NAMES = (
     "recommend_next_sources",
     "recommend_sources_for_consumer",
     "list_case_taxonomy",
+    "build_evidence_packet",
+    "resolve_normative_reference",
     "boe_consolidated_law_get",
     "boe_consolidated_law_text_get",
     "boe_consolidated_law_citation_build",
@@ -175,6 +177,38 @@ def create_server(repository: OfficialSourcesRepository | None = None):
         return tools.list_case_taxonomy(
             consumer=consumer,
             demand_class=demand_class,
+        )
+
+    @mcp.tool
+    def build_evidence_packet(
+        consumer: str,
+        source_code: str | None = None,
+        official_identifier: str | None = None,
+        profile: str | None = None,
+    ) -> dict:
+        """Return reviewable evidence-packet planning metadata without writes."""
+        return tools.build_evidence_packet(
+            consumer=consumer,
+            source_code=source_code,
+            official_identifier=official_identifier,
+            profile=profile,
+        )
+
+    @mcp.tool
+    def resolve_normative_reference(
+        consumer: str,
+        topic: str,
+        jurisdiction: str,
+        known_title: str | None = None,
+        limit: int = 10,
+    ) -> dict:
+        """Return official source leads for benefit references without resolving legal meaning."""
+        return tools.resolve_normative_reference(
+            consumer=consumer,
+            topic=topic,
+            jurisdiction=jurisdiction,
+            known_title=known_title,
+            limit=limit,
         )
 
     @mcp.tool

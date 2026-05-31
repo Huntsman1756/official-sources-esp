@@ -58,6 +58,8 @@ def test_mcp_tool_names_use_compatible_snake_case_names():
         "recommend_next_sources",
         "recommend_sources_for_consumer",
         "list_case_taxonomy",
+        "build_evidence_packet",
+        "resolve_normative_reference",
         "boe_consolidated_law_get",
         "boe_consolidated_law_text_get",
         "boe_consolidated_law_index_get",
@@ -977,6 +979,153 @@ def test_mcp_list_case_taxonomy_does_not_execute_previews_or_write(tmp_path, mon
 
     assert result["status"] == "ok"
     assert result["count"] == 1
+    assert not list(tmp_path.rglob("*.jsonl"))
+
+
+def test_mcp_build_evidence_packet_returns_eduayudas_profile():
+    result = tools.build_evidence_packet(consumer="eduayudas")
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "evidence_packet_profile"
+    assert result["consumer"] == "eduayudas"
+    assert result["demand_class"] == "education_aid_evidence"
+    assert result["profile"] == "education_aid"
+    assert result["mode"] == "read_only"
+    assert result["writes_performed"] is False
+    assert result["candidate_creation_allowed"] is False
+    assert result["evidence_grade_allowed"] is False
+    assert result["product_automation_allowed"] is False
+    assert result["human_review_required"] is True
+    assert result["staging_only"] is True
+    assert result["packet_candidate"] is None
+    assert [source["source_code"] for source in result["source_requirements"]] == [
+        "BDNS",
+        "BOE",
+        "BOJA",
+        "BOCYL",
+        "BOCM",
+        "DOGV",
+    ]
+    bdns = result["source_requirements"][0]
+    assert bdns["source_family"] == "grants_registry"
+    assert bdns["registered"] is True
+    assert bdns["candidate_creation_allowed"] is False
+    assert bdns["evidence_grade_allowed"] is False
+    assert "convocatoria_id" in bdns["required_fields"]
+    assert "aid_published" in result["must_not_infer"]
+
+
+def test_mcp_build_evidence_packet_with_identifier_remains_review_only():
+    result = tools.build_evidence_packet(
+        consumer="eduayudas",
+        source_code="BOE",
+        official_identifier="BOE-A-2026-12345",
+    )
+
+    assert result["status"] == "ok"
+    assert result["packet_status"] == "profile_only"
+    assert result["packet_candidate"] == {
+        "official_identifier": "BOE-A-2026-12345",
+        "source_code": "BOE",
+        "evidence_status": "not_evidence",
+        "candidate_status": "not_candidate",
+        "review_status": "manual_review_required",
+        "stored_metadata_status": "not_loaded_by_this_planning_tool",
+        "message": (
+            "Use this as a review target only; no artifact download, evidence-grade "
+            "promotion, or product import was performed."
+        ),
+    }
+    assert result["source_requirements"][0]["source_code"] == "BOE"
+    assert result["source_requirements"][0]["product_ready"] is False
+
+
+def test_mcp_build_evidence_packet_refuses_unsupported_consumer_and_source():
+    wrong_consumer = tools.build_evidence_packet(consumer="la-ayuda")
+    wrong_source = tools.build_evidence_packet(consumer="eduayudas", source_code="BOP_SEVILLA")
+
+    assert wrong_consumer["status"] == "unsupported_consumer"
+    assert wrong_consumer["supported_consumers"] == ["eduayudas"]
+    assert wrong_source["status"] == "unsupported_source"
+    assert wrong_source["source_code"] == "BOP_SEVILLA"
+    assert "BDNS" in wrong_source["supported_sources"]
+
+
+def test_mcp_resolve_normative_reference_returns_laayuda_manual_review_leads():
+    result = tools.resolve_normative_reference(
+        consumer="la-ayuda",
+        topic="housing",
+        jurisdiction="Comunidad de Madrid",
+        known_title="Ayuda al alquiler",
+        limit=3,
+    )
+
+    assert result["status"] == "manual_review_required"
+    assert result["resource_type"] == "normative_reference_resolution"
+    assert result["consumer"] == "la-ayuda"
+    assert result["demand_class"] == "benefit_source_discovery"
+    assert result["topic"] == "housing"
+    assert result["jurisdiction"] == "Comunidad de Madrid"
+    assert result["known_title"] == "Ayuda al alquiler"
+    assert result["mode"] == "read_only"
+    assert result["writes_performed"] is False
+    assert result["candidate_creation_allowed"] is False
+    assert result["evidence_grade_allowed"] is False
+    assert result["product_automation_allowed"] is False
+    assert result["human_review_required"] is True
+    assert result["exact_reference_resolved"] is False
+    assert [lead["source_code"] for lead in result["source_leads"]] == ["BOE", "BDNS", "BOCM"]
+    assert all(lead["review_status"] == "manual_review_required" for lead in result["source_leads"])
+    assert "housing_portals" in {
+        family["source_family"] for family in result["missing_source_families"]
+    }
+    assert "legal_meaning_decided" in result["must_not_infer"]
+
+
+def test_mcp_resolve_normative_reference_refuses_unsupported_inputs():
+    wrong_consumer = tools.resolve_normative_reference(
+        consumer="eduayudas",
+        topic="housing",
+        jurisdiction="state",
+    )
+    wrong_topic = tools.resolve_normative_reference(
+        consumer="la-ayuda",
+        topic="tax",
+        jurisdiction="state",
+    )
+    invalid_limit = tools.resolve_normative_reference(
+        consumer="la-ayuda",
+        topic="housing",
+        jurisdiction="state",
+        limit=0,
+    )
+
+    assert wrong_consumer["status"] == "unsupported_consumer"
+    assert wrong_topic["status"] == "unsupported_topic"
+    assert "housing" in wrong_topic["supported_topics"]
+    assert invalid_limit == {
+        "status": "invalid_request",
+        "message": "limit must be between 1 and 20",
+    }
+
+
+def test_mcp_downstream_planners_do_not_execute_previews_or_write(tmp_path, monkeypatch):
+    def fail_preview(*_args, **_kwargs):
+        raise AssertionError("downstream planners must not run discovery previews")
+
+    monkeypatch.setattr(source_coverage, "monitor_source_feed", fail_preview)
+    monkeypatch.setattr(source_coverage, "monitor_api_source", fail_preview)
+    monkeypatch.setattr(source_coverage, "monitor_html_source", fail_preview)
+
+    evidence = tools.build_evidence_packet(consumer="eduayudas", source_code="BDNS")
+    reference = tools.resolve_normative_reference(
+        consumer="la-ayuda",
+        topic="benefits",
+        jurisdiction="state",
+    )
+
+    assert evidence["status"] == "ok"
+    assert reference["status"] == "manual_review_required"
     assert not list(tmp_path.rglob("*.jsonl"))
 
 

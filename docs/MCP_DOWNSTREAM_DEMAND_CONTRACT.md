@@ -247,7 +247,7 @@ Must not:
 Status:
 
 ```text
-proposed
+implemented for eduayudas education-aid profiles
 ```
 
 Purpose:
@@ -260,19 +260,21 @@ Inputs:
 
 ```json
 {
-  "consumer": "eduayudas|la-ayuda",
-  "source_code": "BOE",
-  "official_identifier": "BOE-A-YYYY-NNNNN",
-  "profile": "education_aid|benefit_source"
+  "consumer": "eduayudas",
+  "source_code": "BDNS|BOE|BOJA|BOCYL|BOCM|DOGV",
+  "official_identifier": "optional review target",
+  "profile": "education_aid"
 }
 ```
 
 Required behavior:
 
-- return citation and integrity metadata when already available;
-- return structured cache misses when evidence is absent;
-- preserve official URL, identifier, publication date, version date, and integrity warnings;
-- mark output as staging/review only.
+- return a review-only packet profile and required packet fields;
+- distinguish source requirements from existing evidence;
+- identify missing source families such as education portals;
+- preserve the shared read-only safety envelope;
+- mark output as staging/review only;
+- return unsupported consumers, profiles, and sources as structured refusals.
 
 Must not:
 
@@ -286,7 +288,7 @@ Must not:
 Status:
 
 ```text
-proposed
+implemented for la-ayuda source-lead planning
 ```
 
 Purpose:
@@ -300,9 +302,10 @@ Inputs:
 ```json
 {
   "consumer": "la-ayuda",
-  "topic": "family",
+  "topic": "benefits|housing|family|dependency|disability|social_services",
   "jurisdiction": "Comunidad de Madrid",
-  "known_title": "optional current product title"
+  "known_title": "optional current product title",
+  "limit": 10
 }
 ```
 
@@ -311,7 +314,8 @@ Required behavior:
 - return possible official source families and registered sources;
 - distinguish exact references from unresolved source leads;
 - require manual review for unresolved or ambiguous matches;
-- include uncertainty state.
+- include uncertainty state;
+- return `manual_review_required` while exact references are unresolved.
 
 Must not:
 

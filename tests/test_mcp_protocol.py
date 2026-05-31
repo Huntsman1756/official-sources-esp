@@ -90,6 +90,37 @@ async def test_mcp_case_taxonomy_call_returns_readonly_envelope_without_writes(
     assert after_candidates == 0
 
 
+@pytest.mark.asyncio
+async def test_mcp_downstream_planner_calls_return_readonly_envelopes_without_writes(
+    tmp_path,
+    monkeypatch,
+):
+    database_path = tmp_path / "mcp.sqlite"
+    monkeypatch.setenv("OFFICIAL_SOURCES_DB_PATH", str(database_path))
+
+    async with Client(create_server()) as client:
+        evidence_result = await client.call_tool(
+            "build_evidence_packet",
+            {"consumer": "eduayudas", "source_code": "BDNS"},
+        )
+        reference_result = await client.call_tool(
+            "resolve_normative_reference",
+            {"consumer": "la-ayuda", "topic": "housing", "jurisdiction": "state", "limit": 2},
+        )
+
+    assert evidence_result.structured_content["status"] == "ok"
+    assert evidence_result.structured_content["writes_performed"] is False
+    assert evidence_result.structured_content["evidence_grade_allowed"] is False
+    assert reference_result.structured_content["status"] == "manual_review_required"
+    assert reference_result.structured_content["exact_reference_resolved"] is False
+    assert reference_result.structured_content["writes_performed"] is False
+    with sqlite3.connect(database_path) as connection:
+        after_candidates = connection.execute("SELECT COUNT(*) FROM source_candidates").fetchone()[
+            0
+        ]
+    assert after_candidates == 0
+
+
 def test_mcp_stdio_initialize_writes_only_json_rpc_to_stdout(tmp_path):
     database_path = tmp_path / "mcp-stdio.sqlite"
     env = os.environ.copy()

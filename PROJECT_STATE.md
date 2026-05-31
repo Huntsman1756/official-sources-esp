@@ -4,6 +4,49 @@ Last updated: 2026-05-31
 
 ## Current Decision
 
+`TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001` and
+`TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001` are implemented locally as read-only downstream
+planning tools.
+
+New contracts:
+
+```text
+docs/MCP_EDUAYUDAS_EVIDENCE_PACKET_PROFILE.md
+docs/MCP_LAAYUDA_SOURCE_RESOLVER_PROFILE.md
+```
+
+New MCP tools:
+
+```text
+build_evidence_packet
+resolve_normative_reference
+```
+
+`build_evidence_packet` now returns review-only education-aid packet requirements for `eduayudas`,
+prioritizing `BDNS`, `BOE`, `BOJA`, `BOCYL`, `BOCM`, and `DOGV`. It does not create aids, create
+candidate records, create evidence-grade records, download artifacts, fetch live sources, approve
+publication, decide eligibility, or write to `G:\_Proyectos\eduayudas\`.
+
+`resolve_normative_reference` now returns manual-review source leads for `la-ayuda` benefit/source
+discovery topics. It does not resolve legal meaning, decide eligibility, verify amount/deadline,
+create Markdown, invent URLs, fetch arbitrary URLs, publish pages, or write to
+`G:\_Proyectos\la-ayuda\`.
+
+Both tools preserve:
+
+```text
+mode=read_only
+writes_performed=false
+candidate_creation_allowed=false
+evidence_grade_allowed=false
+product_automation_allowed=false
+human_review_required=true
+```
+
+`BOP_ALICANTE` remains `degraded/manual-review`; no all-sources-green claim is allowed.
+
+## Previous Decision
+
 `TASK-MCP-CASE-TAXONOMY-001` is implemented locally as a stable downstream case taxonomy for the
 shared read-only MCP layer.
 

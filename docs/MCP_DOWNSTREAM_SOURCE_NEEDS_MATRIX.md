@@ -195,8 +195,8 @@ The MCP layer should grow in this order:
 | `list_case_taxonomy` | implemented | Stable downstream case taxonomy and safety boundaries. |
 | `recommend_sources_for_consumer` | implemented | Uses downstream-demand profiles to rank source work by consumer demand. |
 | `discover_sources_for_case` | proposed | Should return source candidates for a product use case without fetching arbitrary URLs. |
-| `build_evidence_packet` | proposed | Should produce reviewable evidence envelopes only for supported source families. |
-| `resolve_normative_reference` | proposed | Should resolve exact official references without legal interpretation. |
+| `build_evidence_packet` | implemented for `eduayudas` profile planning | Produces review-only education-aid evidence packet requirements, not evidence-grade records. |
+| `resolve_normative_reference` | implemented for `la-ayuda` source-lead planning | Produces manual-review source leads, not exact legal conclusions. |
 | `resolve_fiscal_reference` | proposed | Should be AEAT-first and fiscal-review gated. |
 
 ## Acceptance Gates For New Source Work
@@ -231,8 +231,8 @@ completed: TASK-MCP-OFFICIAL-SOURCES-CONTRACT-001
 completed: TASK-MCP-CASE-TAXONOMY-001
 completed: TASK-MCP-TOOLS-READONLY-SKELETON-001
 completed: TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001
-next: TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001
-next: TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001
+completed: TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001
+completed: TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001
 later/gated: TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001
 ```
 
@@ -242,6 +242,7 @@ Recommended order:
 2. Add read-only MCP outputs that expose consumer-aware recommendations. Done.
 3. Reopen only the public-employment source wave needed by `oposiciones2.0`. Done for
    `BOP_CASTELLON` and `BOP_SEVILLA`.
-4. Add evidence-packet and source-resolver flows for `eduayudas` and `la-ayuda`.
+4. Add evidence-packet and source-resolver flows for `eduayudas` and `la-ayuda`. Done as
+   read-only planning tools.
 5. Add fiscal reference resolution only after the `renta-verificable` infrastructure gate or a
    product-specific source audit request.

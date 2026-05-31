@@ -1,0 +1,32 @@
+{
+  "status": "manual_review_required",
+  "resource_type": "normative_reference_resolution",
+  "consumer": "la-ayuda",
+  "demand_class": "benefit_source_discovery",
+  "topic": "housing",
+  "jurisdiction": "Comunidad de Madrid",
+  "mode": "read_only",
+  "writes_performed": false,
+  "candidate_creation_allowed": false,
+  "evidence_grade_allowed": false,
+  "product_automation_allowed": false,
+  "human_review_required": true,
+  "resolution_status": "source_leads_only",
+  "exact_reference_resolved": false,
+  "source_leads": [
+    {
+      "source_code": "BOE",
+      "registered": true,
+      "exact_reference_resolved": false,
+      "review_status": "manual_review_required",
+      "product_ready": false
+    }
+  ],
+  "must_not_infer": [
+    "benefit_page_approved",
+    "eligibility_decided",
+    "amount_or_deadline_verified",
+    "publication_ready",
+    "legal_meaning_decided"
+  ]
+}
