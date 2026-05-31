@@ -4,6 +4,45 @@ Last updated: 2026-05-31
 
 ## Current Decision
 
+`TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001` is implemented locally as read-only fiscal
+source-lead planning for `renta-verificable`.
+
+New contract:
+
+```text
+docs/MCP_RENTA_FISCAL_REFERENCE_PROFILE.md
+```
+
+New MCP tool:
+
+```text
+resolve_fiscal_reference
+```
+
+The tool is AEAT-first and may return AEAT, BOE, autonomous, or foral source leads depending on
+jurisdiction. It always returns `manual_review_required` and `exact_reference_resolved=false` in
+the current implementation.
+
+It does not provide tax advice, decide deduction applicability, resolve legal meaning, verify fiscal
+claims, update downstream datasets, fetch live sources, download artifacts, create candidates,
+create evidence-grade records, approve publication, or write to
+`G:\_Proyectos\renta-verificable\`.
+
+Responses preserve:
+
+```text
+mode=read_only
+writes_performed=false
+candidate_creation_allowed=false
+evidence_grade_allowed=false
+product_automation_allowed=false
+human_review_required=true
+```
+
+`BOP_ALICANTE` remains `degraded/manual-review`; no all-sources-green claim is allowed.
+
+## Previous Decision
+
 `TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001` and
 `TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001` are implemented locally as read-only downstream
 planning tools.

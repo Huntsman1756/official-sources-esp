@@ -124,6 +124,36 @@ BENEFIT_TOPIC_PROFILES = {
     },
 }
 
+FISCAL_JURISDICTION_SOURCE_PROFILES = {
+    "state": ["AEAT", "BOE"],
+    "estatal": ["AEAT", "BOE"],
+    "madrid": ["AEAT", "BOE", "BOCM"],
+    "comunidad de madrid": ["AEAT", "BOE", "BOCM"],
+    "valencia": ["AEAT", "BOE", "DOGV"],
+    "comunitat valenciana": ["AEAT", "BOE", "DOGV"],
+    "comunidad valenciana": ["AEAT", "BOE", "DOGV"],
+    "catalunya": ["AEAT", "BOE", "DOGC"],
+    "cataluna": ["AEAT", "BOE", "DOGC"],
+    "cataluña": ["AEAT", "BOE", "DOGC"],
+    "navarra": ["AEAT", "BOE", "BON"],
+    "pais vasco": ["AEAT", "BOE", "BOPV"],
+    "país vasco": ["AEAT", "BOE", "BOPV"],
+    "euskadi": ["AEAT", "BOE", "BOPV"],
+}
+
+FISCAL_FALLBACK_SOURCE_CODES = ["AEAT", "BOE"]
+
+AEAT_RENTA_2025_SOURCE = {
+    "source_family": "AEAT",
+    "registered": False,
+    "official_url": "https://sede.agenciatributaria.gob.es/Sede/Ayuda/25Manual/100.html",
+    "deductions_url": (
+        "https://sede.agenciatributaria.gob.es/Sede/Ayuda/25Manual/100/deducciones-autonomicas.html"
+    ),
+    "role": "primary_fiscal_guidance",
+    "required_review": "Verify exact AEAT manual section and reviewed date before product use.",
+}
+
 
 def build_evidence_packet(
     *,
@@ -309,6 +339,101 @@ def resolve_normative_reference(
     }
 
 
+def resolve_fiscal_reference(
+    *,
+    consumer: str,
+    tax_year: int,
+    jurisdiction: str,
+    deduction_key: str | None = None,
+    limit: int = 10,
+) -> dict[str, Any]:
+    normalized_consumer = consumer.strip().lower()
+    if normalized_consumer not in {"renta", "renta-verificable", "renta_verificable"}:
+        return {
+            "status": "unsupported_consumer",
+            "consumer": consumer,
+            "supported_consumers": ["renta-verificable"],
+            "message": (
+                "Fiscal-reference planning is currently implemented only for renta-verificable."
+            ),
+        }
+    if limit < 1 or limit > 20:
+        return {
+            "status": "invalid_request",
+            "message": "limit must be between 1 and 20",
+        }
+    if tax_year < 2000 or tax_year > 2100:
+        return {
+            "status": "invalid_request",
+            "message": "tax_year must be between 2000 and 2100",
+        }
+    normalized_jurisdiction = _normalize_jurisdiction(jurisdiction)
+    if not normalized_jurisdiction:
+        return {
+            "status": "invalid_request",
+            "message": "jurisdiction is required",
+        }
+
+    source_codes = FISCAL_JURISDICTION_SOURCE_PROFILES.get(
+        normalized_jurisdiction,
+        FISCAL_FALLBACK_SOURCE_CODES,
+    )[:limit]
+    source_leads = [
+        _fiscal_source_lead(source_code, tax_year=tax_year, jurisdiction=jurisdiction)
+        for source_code in source_codes
+    ]
+    return {
+        "status": "manual_review_required",
+        "resource_type": "fiscal_reference_resolution",
+        "consumer": "renta-verificable",
+        "demand_class": "fiscal_reference_resolution",
+        "tax_year": tax_year,
+        "jurisdiction": jurisdiction.strip(),
+        "deduction_key": deduction_key.strip() if deduction_key else None,
+        **SHARED_SAFETY,
+        "contract_refs": CONTRACT_REFS,
+        "resolution_status": "source_leads_only",
+        "exact_reference_resolved": False,
+        "source_leads": source_leads,
+        "manual_review_reasons": [
+            "Exact fiscal reference was not resolved by this planning tool.",
+            "AEAT guidance, BOE legal references, and autonomous/foral sources require review.",
+            "Fiscal source matching is not tax advice or deduction applicability review.",
+        ],
+        "required_reference_fields": [
+            "consumer",
+            "tax_year",
+            "jurisdiction",
+            "deduction_key",
+            "source_family",
+            "source_code",
+            "official_url",
+            "official_identifier",
+            "version_date",
+            "reviewed_at",
+            "uncertainty_state",
+            "manual_review_required",
+        ],
+        "must_not_infer": [
+            "tax_advice",
+            "deduction_applicability_decided",
+            "legal_meaning_decided",
+            "fiscal_claim_verified",
+            "product_publication_allowed",
+        ],
+        "rules": [
+            "AEAT-first planning",
+            "exact official reference required before product use",
+            "no arbitrary URL fetching",
+            "no invented URLs",
+            "no tax conclusions",
+            "no legal interpretation",
+            "no product writes",
+            "manual review required",
+        ],
+    }
+
+
 def _select_education_aid_sources(source_code: str | None) -> list[dict[str, Any]] | dict[str, Any]:
     if source_code is None:
         codes = list(EDUCATION_AID_SOURCE_PROFILES)
@@ -346,6 +471,99 @@ def _education_source_requirement(source_code: str) -> dict[str, Any]:
         "required_fields": list(profile["required_fields"]),
         "review_status": "manual_review_required",
     }
+
+
+def _fiscal_source_lead(source_code: str, *, tax_year: int, jurisdiction: str) -> dict[str, Any]:
+    if source_code == "AEAT":
+        return _aeat_source_lead(tax_year=tax_year, jurisdiction=jurisdiction)
+    try:
+        source = get_source(source_code)
+    except SourceRegistryError:
+        return {
+            "source_code": source_code,
+            "registered": False,
+            "source_family": "unknown",
+            "tax_year": tax_year,
+            "jurisdiction": jurisdiction.strip(),
+            "review_status": "manual_review_required",
+            "product_ready": False,
+        }
+    return {
+        "source_code": source["source_code"],
+        "name": source["name"],
+        "registered": True,
+        "source_family": _fiscal_source_family(source_code),
+        "tax_year": tax_year,
+        "jurisdiction": jurisdiction.strip(),
+        "official_landing_url": source.get("official_landing_url"),
+        "registry_operational_status": source["operational_status"],
+        "monitor_support": source["monitor_support"],
+        "evidence_adapter": source["evidence_adapter"],
+        "candidate_creation_allowed": False,
+        "evidence_grade_allowed": False,
+        "exact_reference_resolved": False,
+        "review_status": "manual_review_required",
+        "product_ready": False,
+        "safe_downstream_uses": ["fiscal_reference_planning", "manual_review"],
+        "must_not_infer": [
+            "exact_reference",
+            "tax_advice",
+            "deduction_applicability_decided",
+            "legal_meaning_decided",
+            "publication_ready",
+        ],
+    }
+
+
+def _aeat_source_lead(*, tax_year: int, jurisdiction: str) -> dict[str, Any]:
+    source = AEAT_RENTA_2025_SOURCE if tax_year == 2025 else None
+    return {
+        "source_code": "AEAT",
+        "name": "Agencia Estatal de Administracion Tributaria",
+        "registered": False,
+        "source_family": "AEAT",
+        "tax_year": tax_year,
+        "jurisdiction": jurisdiction.strip(),
+        "official_url": source["official_url"] if source else None,
+        "deductions_url": source["deductions_url"] if source else None,
+        "role": "primary_fiscal_guidance",
+        "exact_reference_resolved": False,
+        "review_status": "manual_review_required",
+        "product_ready": False,
+        "required_review": (
+            source["required_review"]
+            if source
+            else "Map exact AEAT manual/source URL for the requested tax year before product use."
+        ),
+        "safe_downstream_uses": ["fiscal_reference_planning", "manual_review"],
+        "must_not_infer": [
+            "registered_source",
+            "exact_reference",
+            "tax_advice",
+            "deduction_applicability_decided",
+            "publication_ready",
+        ],
+    }
+
+
+def _fiscal_source_family(source_code: str) -> str:
+    if source_code == "BOE":
+        return "state_legal_reference"
+    if source_code in {"BON", "BOPV"}:
+        return "foral_or_autonomous_bulletin"
+    return "autonomous_bulletin"
+
+
+def _normalize_jurisdiction(value: str) -> str:
+    return (
+        value.strip()
+        .lower()
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+    )
 
 
 def _source_lead(source_code: str, *, topic: str, jurisdiction: str) -> dict[str, Any]:

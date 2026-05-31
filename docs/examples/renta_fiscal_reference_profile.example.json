@@ -1,0 +1,41 @@
+{
+  "status": "manual_review_required",
+  "resource_type": "fiscal_reference_resolution",
+  "consumer": "renta-verificable",
+  "demand_class": "fiscal_reference_resolution",
+  "tax_year": 2025,
+  "jurisdiction": "Comunidad de Madrid",
+  "deduction_key": "alquiler-vivienda",
+  "mode": "read_only",
+  "writes_performed": false,
+  "candidate_creation_allowed": false,
+  "evidence_grade_allowed": false,
+  "product_automation_allowed": false,
+  "human_review_required": true,
+  "resolution_status": "source_leads_only",
+  "exact_reference_resolved": false,
+  "source_leads": [
+    {
+      "source_code": "AEAT",
+      "source_family": "AEAT",
+      "registered": false,
+      "review_status": "manual_review_required",
+      "product_ready": false
+    },
+    {
+      "source_code": "BOE",
+      "source_family": "state_legal_reference",
+      "registered": true,
+      "exact_reference_resolved": false,
+      "review_status": "manual_review_required",
+      "product_ready": false
+    }
+  ],
+  "must_not_infer": [
+    "tax_advice",
+    "deduction_applicability_decided",
+    "legal_meaning_decided",
+    "fiscal_claim_verified",
+    "product_publication_allowed"
+  ]
+}

@@ -329,7 +329,7 @@ Must not:
 Status:
 
 ```text
-proposed
+implemented for renta-verificable source-lead planning
 ```
 
 Purpose:
@@ -345,7 +345,8 @@ Inputs:
   "consumer": "renta-verificable",
   "tax_year": 2025,
   "jurisdiction": "Madrid",
-  "deduction_key": "optional product key"
+  "deduction_key": "optional product key",
+  "limit": 10
 }
 ```
 
@@ -354,7 +355,8 @@ Required behavior:
 - treat AEAT as the primary fiscal guidance source;
 - use BOE/autonomous references only as exact legal references;
 - flag generic BOE home links as insufficient;
-- require fiscal/legal product review before use.
+- require fiscal/legal product review before use;
+- return `manual_review_required` while exact references are unresolved.
 
 Must not:
 

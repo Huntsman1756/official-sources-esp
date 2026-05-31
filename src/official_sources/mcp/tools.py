@@ -222,6 +222,23 @@ def resolve_normative_reference(
     )
 
 
+def resolve_fiscal_reference(
+    *,
+    consumer: str,
+    tax_year: int,
+    jurisdiction: str,
+    deduction_key: str | None = None,
+    limit: int = 10,
+) -> dict:
+    return source_coverage.resolve_fiscal_reference(
+        consumer=consumer,
+        tax_year=tax_year,
+        jurisdiction=jurisdiction,
+        deduction_key=deduction_key,
+        limit=limit,
+    )
+
+
 def boe_consolidated_law_get(
     repository: OfficialSourcesRepository,
     *,

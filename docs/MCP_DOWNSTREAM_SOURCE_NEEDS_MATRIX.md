@@ -197,7 +197,7 @@ The MCP layer should grow in this order:
 | `discover_sources_for_case` | proposed | Should return source candidates for a product use case without fetching arbitrary URLs. |
 | `build_evidence_packet` | implemented for `eduayudas` profile planning | Produces review-only education-aid evidence packet requirements, not evidence-grade records. |
 | `resolve_normative_reference` | implemented for `la-ayuda` source-lead planning | Produces manual-review source leads, not exact legal conclusions. |
-| `resolve_fiscal_reference` | proposed | Should be AEAT-first and fiscal-review gated. |
+| `resolve_fiscal_reference` | implemented for `renta-verificable` source-lead planning | AEAT-first source leads and manual-review requirements, not tax advice. |
 
 ## Acceptance Gates For New Source Work
 
@@ -233,7 +233,7 @@ completed: TASK-MCP-TOOLS-READONLY-SKELETON-001
 completed: TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001
 completed: TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001
 completed: TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001
-later/gated: TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001
+completed: TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001
 ```
 
 Recommended order:
@@ -245,4 +245,4 @@ Recommended order:
 4. Add evidence-packet and source-resolver flows for `eduayudas` and `la-ayuda`. Done as
    read-only planning tools.
 5. Add fiscal reference resolution only after the `renta-verificable` infrastructure gate or a
-   product-specific source audit request.
+   product-specific source audit request. Done as read-only source-lead planning only.

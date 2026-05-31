@@ -475,6 +475,22 @@ reference.
 The tool does not fetch arbitrary URLs, invent URLs, create Markdown, rewrite product claims,
 decide eligibility, decide amount/deadline, decide legal meaning, or write downstream records.
 
+### resolve_fiscal_reference
+
+Returns manual-review fiscal source leads for `renta-verificable`. The tool is AEAT-first and may
+return BOE, autonomous, or foral source leads depending on jurisdiction.
+
+The tool keeps:
+
+```text
+status=manual_review_required
+exact_reference_resolved=false
+```
+
+It does not provide tax advice, decide deduction applicability, resolve legal meaning, verify fiscal
+claims, update product data, fetch arbitrary URLs, create candidates, create evidence-grade records,
+or write downstream records.
+
 ## Safety Boundaries
 
 The coverage surface must preserve these boundaries:
@@ -486,6 +502,7 @@ The coverage surface must preserve these boundaries:
 - MCP `list_case_taxonomy` is deterministic and does not execute previews or live fetches.
 - MCP `build_evidence_packet` is review-only profile planning, not evidence generation.
 - MCP `resolve_normative_reference` returns source leads, not legal conclusions.
+- MCP `resolve_fiscal_reference` returns source leads, not tax advice or exact fiscal claims.
 - MCP does not write JSONL.
 - MCP does not create files.
 - `--write` is explicit for CLI monitor output.
