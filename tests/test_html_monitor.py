@@ -10,6 +10,7 @@ import pytest
 import official_sources.html_monitor as html_monitor
 from official_sources.html_monitor import (
     HTMLMonitorError,
+    build_bon_html_url,
     build_bop_a_coruna_html_url,
     build_bop_alicante_html_url,
     build_bop_avila_html_url,
@@ -19,6 +20,7 @@ from official_sources.html_monitor import (
     build_bop_cordoba_html_url,
     build_bop_granada_html_url,
     build_bop_malaga_html_url,
+    build_bop_palencia_html_url,
     build_bop_pontevedra_html_url,
     build_bop_sevilla_html_url,
     build_bop_soria_html_url,
@@ -28,6 +30,7 @@ from official_sources.html_monitor import (
     build_html_entry_hash,
     build_html_monitor_output_path,
     monitor_html_source,
+    parse_bon_html,
     parse_bop_a_coruna_html,
     parse_bop_albacete_html,
     parse_bop_alicante_response,
@@ -37,6 +40,7 @@ from official_sources.html_monitor import (
     parse_bop_castellon_html,
     parse_bop_cordoba_html,
     parse_bop_malaga_html,
+    parse_bop_palencia_html,
     parse_bop_pontevedra_html,
     parse_bop_sevilla_html,
     parse_bop_soria_html,
@@ -76,11 +80,13 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_ALICANTE",
         "BOP_AVILA",
         "BOP_BARCELONA",
+        "BON",
         "BOP_BIZKAIA",
         "BOP_CASTELLON",
         "BOP_CORDOBA",
         "BOP_GRANADA",
         "BOP_MALAGA",
+        "BOP_PALENCIA",
         "BOP_PONTEVEDRA",
         "BOP_SEVILLA",
         "BOP_SORIA",
@@ -141,6 +147,17 @@ def test_build_bop_barcelona_html_url_is_one_date_request():
     )
 
 
+def test_build_bon_html_url_is_one_month_index_request():
+    url = build_bon_html_url(
+        "https://bon.navarra.es/es/indice-boletines",
+        target_date="2026-05-29",
+    )
+
+    assert url.startswith("https://bon.navarra.es/es/indice-boletines?")
+    assert "BoletinSelectorMesPortlet_anyo=2026" in url
+    assert "BoletinSelectorMesPortlet_mes=5" in url
+
+
 def test_build_bop_bizkaia_html_url_is_one_landing_request():
     assert (
         build_bop_bizkaia_html_url(
@@ -198,6 +215,16 @@ def test_build_bop_pontevedra_html_url_is_one_date_request():
             target_date="2026-05-29",
         )
         == "https://boppo.depo.gal/detalle/-/boppo/2026/05/29"
+    )
+
+
+def test_build_bop_palencia_html_url_is_one_date_request():
+    assert (
+        build_bop_palencia_html_url(
+            "https://www.diputaciondepalencia.es/servicios/boletin-oficial-provincia",
+            target_date="2026-05-29",
+        )
+        == "https://www.diputaciondepalencia.es/servicios/boletin-oficial-provincia"
     )
 
 
@@ -316,6 +343,44 @@ def test_parse_bop_barcelona_fixture_emits_metadata_only_records():
         record["official_url"]
         == "https://bop.diba.cat/anunci/3947743/ajuntament-de-barcelona-aprovacio-inicial"
     )
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_bon_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bon_summary_2026_104.html")
+    page_url = "https://bon.navarra.es/es/boletin/-/sumario/2026/104"
+
+    result = parse_bon_html(
+        raw,
+        source_code="BON",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-bon",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BON"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "2026.104.22"
+    assert record["document_id"] == "2026.104.22"
+    assert record["title"] == (
+        "RESOLUCION 220E/2026, de 4 de mayo, por la que se aprueba la convocatoria "
+        "de 2026 de ayudas a entidades locales de Navarra. Codigo BDNS: 903411."
+    )
+    assert record["published_at"] == "2026-05-29"
+    assert record["official_url"] == "https://bon.navarra.es/es/anuncio/-/texto/2026/104/22"
+    assert record["summary"] == (
+        "1. Comunidad Foral de Navarra - 1.4. Subvenciones, ayudas y becas"
+    )
+    assert record["issue_number"] == "104"
+    assert record["warnings"] == []
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"
     assert record["classification_status"] == "unclassified"
@@ -528,6 +593,40 @@ def test_parse_bop_pontevedra_fixture_emits_metadata_only_records():
         "https://boppo.depo.gal/web/boppo/detalle/-/boppo/2026/05/29/2026043804"
     )
     assert record["summary"] == "Deputacion Provincial"
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_palencia_fixture_emits_bulletin_level_metadata_only_record():
+    raw = _fixture_bytes("bop_palencia_latest.html")
+    page_url = "https://www.diputaciondepalencia.es/servicios/boletin-oficial-provincia"
+
+    result = parse_bop_palencia_html(
+        raw,
+        source_code="BOP_PALENCIA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-palencia",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_PALENCIA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "20260529-bop-64-Ordinario"
+    assert record["document_id"] == "20260529-bop-64-Ordinario"
+    assert record["title"] == "BOP No 64 del Viernes, 29 de Mayo de 2026"
+    assert record["published_at"] == "2026-05-29"
+    assert record["official_url"] == (
+        "https://www.diputaciondepalencia.es/servicios/boletin-oficial-provincia/"
+        "bop-no-64-viernes-29-mayo-2026"
+    )
     assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"
@@ -1015,6 +1114,60 @@ def test_monitor_bop_soria_fetches_date_page_then_public_detail():
     assert result.records[0]["candidate_status"] == "not_candidate"
     assert result.records[0]["evidence_status"] == "not_evidence"
     assert result.records[0]["classification_status"] == "unclassified"
+
+
+def test_monitor_bon_fetches_month_index_then_issue_summary():
+    requested_urls = []
+    index_url = build_bon_html_url(
+        "https://bon.navarra.es/es/indice-boletines",
+        target_date="2026-05-29",
+    )
+    summary_url = "https://bon.navarra.es/es/boletin/-/sumario/2026/104"
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        if url == index_url:
+            return _fixture_bytes("bon_index_may_2026.html")
+        if url == summary_url:
+            return _fixture_bytes("bon_summary_2026_104.html")
+        raise AssertionError(f"unexpected URL: {url}")
+
+    result = monitor_html_source(
+        get_source("BON"),
+        fetcher=fetcher,
+        target_date="2026-05-29",
+        limit=1,
+    )
+
+    assert requested_urls == [index_url, summary_url]
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == "BON"
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
+    assert result.records[0]["classification_status"] == "unclassified"
+
+
+def test_monitor_bop_palencia_returns_latest_only_when_date_matches():
+    requested_urls = []
+    landing_url = "https://www.diputaciondepalencia.es/servicios/boletin-oficial-provincia"
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        return _fixture_bytes("bop_palencia_latest.html")
+
+    result = monitor_html_source(
+        get_source("BOP_PALENCIA"),
+        fetcher=fetcher,
+        target_date="2026-05-29",
+        limit=1,
+    )
+
+    assert requested_urls == [landing_url]
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == "BOP_PALENCIA"
+    assert result.records[0]["published_at"] == "2026-05-29"
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
 
 
 def test_html_monitor_refuses_source_without_validated_html_access_method():

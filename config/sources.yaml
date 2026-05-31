@@ -423,19 +423,24 @@ sources:
     name: Boletin Oficial de Navarra
     jurisdiction: ES-NC
     jurisdiction_level: autonómica
-    official_landing_url: http://www.navarra.es/home_es/Actualidad/BON/
-    access_methods: []
-    operational_status: inventory_only
+    official_landing_url: https://bon.navarra.es/es/indice-boletines
+    access_methods:
+      - type: html
+        url: https://bon.navarra.es/es/indice-boletines
+        status: validated
+        notes: Official monthly index resolves publication date to issue summary; monitor follows summary HTML links only.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-22"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Access method not validated yet.
-    notes: Registry entry only.
+      - Metadata-only HTML discovery; does not download PDFs or artifacts.
+      - Monitor resolves one requested date through the monthly index before fetching the issue summary.
+    notes: Official Navarra bulletin HTML discovery monitor.
 
   - source_code: BOPV
     name: Boletin Oficial del Pais Vasco
@@ -1004,24 +1009,24 @@ sources:
     name: Boletin Oficial de la Provincia de Huelva
     jurisdiction: ES-H
     jurisdiction_level: provincial
-    official_landing_url: https://sede.diphuelva.es/servicios/bop
+    official_landing_url: https://sede.diphuelva.es/opencms/opencms/system/modules/gsede/elements/contenedores/BOP.html
     access_methods:
-      - type: html
-        url: https://sede.diphuelva.es/servicios/bop
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+      - type: api
+        url: https://s2.diphuelva.es/lib/bope/anuncios_bop/ajaxAnuncios.php
+        status: validated
+        notes: Official BOP calendar AJAX endpoint; monitor posts tipo=2 and one requested date.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Huelva.
+      - Provincial AJAX discovery is metadata-only and does not download PDFs or artifacts.
+      - Endpoint requires POST form payload tipo=2 and fecha=YYYY-MM-DD; preview requests one date only.
+    notes: Official provincial bulletin AJAX discovery monitor for Huelva.
 
   - source_code: BOP_HUESCA
     name: Boletin Oficial de la Provincia de Huesca
@@ -1219,20 +1224,21 @@ sources:
     access_methods:
       - type: html
         url: https://www.diputaciondepalencia.es/servicios/boletin-oficial-provincia
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        status: validated
+        notes: Official latest bulletin listing; monitor emits bulletin-level metadata only when latest date matches requested date.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Palencia.
+      - Metadata-only HTML discovery emits bulletin-level records because the date listing exposes boletin/PDF entries, not granular anuncios.
+      - Official date filter did not return stable SSR records in validation; monitor uses latest listing and returns no records on date mismatch.
+      - PDFs are referenced only as official endpoints and are not downloaded.
+    notes: Official provincial bulletin HTML discovery monitor for Palencia.
 
   - source_code: BOP_PONTEVEDRA
     name: Boletin Oficial de la Provincia de Pontevedra

@@ -1365,7 +1365,7 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         for method in access_methods
     ):
         preview_types.append("rss")
-    if source_code in {"BOPV", "BOR"} and any(
+    if source_code in {"BOPV", "BOR", "BOP_HUELVA"} and any(
         method.get("type") == "api"
         and method.get("status") == "validated"
         and str(method.get("url", "")).strip()
@@ -1379,11 +1379,13 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         "BOP_ALICANTE",
         "BOP_AVILA",
         "BOP_BARCELONA",
+        "BON",
         "BOP_BIZKAIA",
         "BOP_CASTELLON",
         "BOP_CORDOBA",
         "BOP_GRANADA",
         "BOP_MALAGA",
+        "BOP_PALENCIA",
         "BOP_PONTEVEDRA",
         "BOP_SEVILLA",
         "BOP_SORIA",

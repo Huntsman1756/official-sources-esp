@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "fecha_publicacion": "2026-05-29",
+  "Indice": {
+    "idbop": "764",
+    "num_bop": "102"
+  },
+  "Anuncios": [
+    {
+      "id_anuncio": "10326",
+      "num_expe": "360157",
+      "entidad_anunciante": "Agencia Provincial Tributaria de Huelva",
+      "titulo": "Resolucion aprobando las bases especificas para una plaza de administrativo",
+      "documento": "2026/05/29/360157.pdf",
+      "Seccion": "Administracion Local",
+      "Categoria": "Organismos Autonomos"
+    }
+  ]
+}

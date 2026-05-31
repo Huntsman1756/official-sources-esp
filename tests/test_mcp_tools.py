@@ -873,8 +873,10 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
         "BOP_BIZKAIA",
         "BOP_CORDOBA",
         "BOP_GRANADA",
+        "BOP_HUELVA",
         "BOP_LUGO",
         "BOP_MALAGA",
+        "BOP_PALENCIA",
         "BOP_VALENCIA",
         "BOP_SORIA",
     }.isdisjoint(source_codes)

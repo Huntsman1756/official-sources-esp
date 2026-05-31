@@ -266,64 +266,113 @@ candidate_status=not_candidate
 evidence_status=not_evidence
 ```
 
-## Next ranked autonomous sources
+## Implemented in follow-up batch
 
-### 1. DOCM - Diario Oficial de Castilla-La Mancha
+### BON
 
-Endpoint candidates:
+Status: implemented as a metadata-only HTML monitor.
 
-```text
-https://docm.jccm.es/docm/
-https://docm.jccm.es/docm/cambiarBoletin.do?fecha={yyyymmdd}
-```
-
-Expected parser shape:
-
-- date-scoped HTML summary page
-- section heading and title text
-- `[NID yyyy/nnnn]`
-- detail URL as `official_url`
-- no `descargarArchivo` PDF downloads
-
-### 2. BON - Boletin Oficial de Navarra
-
-Endpoint candidates:
+Validated URL patterns:
 
 ```text
-https://bon.navarra.es/es/inicio
+https://bon.navarra.es/es/indice-boletines
 https://bon.navarra.es/es/boletin/-/sumario/{yyyy}/{numero}
 https://bon.navarra.es/es/anuncio/-/texto/{yyyy}/{numero}/{ordinal}
 ```
 
-Expected parser shape:
+Parser scope:
 
-- month calendar JSON maps date to bulletin number
-- summary HTML provides announcement links
-- `entry_id=BON:{year}:{numero}:{ordinal}`
-- announcement HTML URL as `official_url`
+- monthly index resolves requested date to official issue number
+- issue summary HTML provides one record per announcement link
+- document id is `{year}.{issue_number}.{ordinal}`
+- summary preserves the visible BON section context
+- announcement HTML URL is stored as metadata `official_url`
 
-## Next ranked provincial sources
+### BOP_HUELVA
 
-### 1. BOP_AVILA
+Status: implemented as a metadata-only API monitor.
+
+Validated URL pattern:
+
+```text
+https://s2.diphuelva.es/lib/bope/anuncios_bop/ajaxAnuncios.php
+```
+
+Parser scope:
+
+- monitor posts `tipo=2&fecha=YYYY-MM-DD` to the official BOP AJAX endpoint
+- one record per `Anuncios` item
+- document id from `num_expe`, API id from `id_anuncio`
+- issue number from `Indice.num_bop`
+- detail URL is stored as metadata `official_url`
+- `warnings=["pdf_endpoint_not_downloaded"]` when the response exposes a PDF document reference
+
+### BOP_PALENCIA
+
+Status: implemented as a metadata-only HTML monitor with latest-date verification.
+
+Validated URL pattern:
+
+```text
+https://www.diputaciondepalencia.es/servicios/boletin-oficial-provincia
+```
+
+Parser scope:
+
+- official date filter did not return stable SSR result rows in validation
+- monitor uses the latest listing and extracts the publication date from the bulletin PDF basename
+- records are emitted only when the latest listing date matches the requested date
+- record granularity is bulletin-level because the listing exposes bulletin/PDF entries, not granular announcements
+- `warnings=["pdf_endpoint_not_downloaded"]`
+
+## Next ranked source leads
+
+These were found in the later read-only broad pass and remain candidates for a subsequent
+metadata-only batch after this one is validated locally and on the VPS.
+
+### 1. BOP_JAEN
 
 Endpoint candidate:
 
 ```text
-https://www.diputacionavila.es/boletin-oficial/{yyyy}/{dd-mm-yyyy}.html
+https://bop.dipujaen.es/bop/{dd-mm-yyyy}
 ```
 
-Fast path: static HTML date pages and PDF links visible in server-rendered content. Metadata-only parser should derive document ids from PDF basenames and mark `pdf_endpoint_not_downloaded`.
+Fast path: server-rendered date page with visible bulletin title and edict links. Treat PDF links
+as metadata only and mark `pdf_endpoint_not_downloaded`.
 
-### 2. BOP_CORDOBA
+### 2. BOPA
 
-Endpoint candidates:
+Endpoint candidate:
 
 ```text
-https://bop.dipucordoba.es/
-https://bop.dipucordoba.es/dia/{dd-mm-yyyy}
+https://miprincipado.asturias.es/bopa-sumario
 ```
 
-Fast path: server-rendered current issue and announcement rows. Fixture will be noisier because of Next.js payloads, but no browser execution appears required.
+Fast path: Liferay date-scoped summary with visible title/PDF metadata. Parser needs extra care
+because the HTML is large and noisy.
+
+### 3. BOP_LLEIDA
+
+Endpoint candidate:
+
+```text
+https://ebop.diputaciolleida.cat/bop/
+```
+
+Fast path: latest server-rendered bulletin with announcement links. Date-scoped route was not
+confirmed in the quick pass.
+
+### 4. BOP_ZAMORA
+
+Endpoint candidate:
+
+```text
+https://www.diputaciondezamora.es/opencms/servicios/BOP/bop/index.html
+```
+
+Fast path: landing page discovers an OpenCMS detail UUID for the current bulletin; parser can then
+read bulletin-level/announcement metadata without downloading PDFs.
 
 ## Deferred
 

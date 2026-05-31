@@ -17,6 +17,7 @@ from official_sources.source_registry import get_source
 APIFetcher = Callable[[str], bytes | str]
 BOPV_API_ENDPOINT = "/bopv/administrative-acts/{year}/{month}"
 BOR_API_ENDPOINT = "/boletin/ExportarBoletinServlet"
+BOP_HUELVA_API_ENDPOINT = "/lib/bope/anuncios_bop/ajaxAnuncios.php"
 
 
 class APIMonitorError(ValueError):
@@ -92,6 +93,11 @@ def build_bor_announcement_api_url(template_url: str, *, published_at: str, html
     return f"{template_url}?{urlencode({'tipo': 2, 'fecha': fecha, 'referencia': html_ref})}"
 
 
+def build_bop_huelva_api_url(template_url: str, *, target_date: str) -> str:
+    params = {"tipo": 2, "fecha": validate_api_monitor_date(target_date)}
+    return f"{template_url}?{urlencode(params)}"
+
+
 def monitor_api_source(
     source: dict[str, Any],
     *,
@@ -152,7 +158,28 @@ def monitor_api_source(
             monitor_run_id=monitor_run_id,
         )
         return APIParseResult(raw_response_hash=raw_response_hash, records=result.records[:limit])
-    raise APIMonitorError("api monitor currently supports BOPV and BOR only")
+    if source_code == "BOP_HUELVA":
+        api_url = build_bop_huelva_api_url(access_method["url"], target_date=target_date)
+        raw_response = (
+            _coerce_response_bytes(fetch(api_url))
+            if fetcher
+            else fetch_bop_huelva_api(access_method["url"], target_date=target_date)
+        )
+        raw_response_hash = hashlib.sha256(raw_response).hexdigest()
+        monitor_run_id = hashlib.sha256(
+            f"{source_code}{api_url}{target_date}{raw_response_hash}".encode()
+        ).hexdigest()[:16]
+        result = parse_bop_huelva_api_response(
+            raw_response,
+            source_code=source_code,
+            api_url=api_url,
+            api_endpoint=BOP_HUELVA_API_ENDPOINT,
+            requested_date=target_date,
+            discovered_at=f"{target_date}T00:00:00Z",
+            monitor_run_id=monitor_run_id,
+        )
+        return APIParseResult(raw_response_hash=raw_response_hash, records=result.records[:limit])
+    raise APIMonitorError("api monitor currently supports BOPV, BOR, and BOP_HUELVA only")
 
 
 def monitor_api_source_code(
@@ -280,6 +307,46 @@ def parse_bor_issue_response(
     return APIParseResult(raw_response_hash=raw_response_hash, records=records)
 
 
+def parse_bop_huelva_api_response(
+    raw_response: bytes | str,
+    *,
+    source_code: str,
+    api_url: str,
+    api_endpoint: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> APIParseResult:
+    raw_bytes = _coerce_response_bytes(raw_response)
+    raw_response_hash = hashlib.sha256(raw_bytes).hexdigest()
+    try:
+        payload = json.loads(raw_bytes.decode("utf-8"))
+    except json.JSONDecodeError as exc:
+        raise APIMonitorError(f"BOP_HUELVA API response is not valid JSON: {exc}") from exc
+    if payload.get("success") is not True:
+        return APIParseResult(raw_response_hash=raw_response_hash, records=[])
+    published_at = _string_or_none(payload.get("fecha_publicacion")) or requested_date
+    issue_number = _string_or_none((payload.get("Indice") or {}).get("num_bop"))
+    return APIParseResult(
+        raw_response_hash=raw_response_hash,
+        records=[
+            _build_bop_huelva_record(
+                item=item,
+                source_code=source_code,
+                api_url=api_url,
+                api_endpoint=api_endpoint,
+                published_at=published_at,
+                issue_number=issue_number,
+                raw_response_hash=raw_response_hash,
+                discovered_at=discovered_at,
+                monitor_run_id=monitor_run_id,
+            )
+            for item in payload.get("Anuncios", [])
+            if isinstance(item, dict)
+        ],
+    )
+
+
 def write_api_jsonl(records: list[dict[str, Any]], output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = "".join(
@@ -294,6 +361,20 @@ def fetch_api(url: str) -> bytes:
         response = client.get(
             url,
             headers={"Accept": "application/json, application/xml, text/xml"},
+        )
+        response.raise_for_status()
+        return response.content
+
+
+def fetch_bop_huelva_api(url: str, *, target_date: str) -> bytes:
+    with httpx.Client(follow_redirects=True, timeout=30.0) as client:
+        response = client.post(
+            url,
+            data={"tipo": "2", "fecha": validate_api_monitor_date(target_date)},
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            },
         )
         response.raise_for_status()
         return response.content
@@ -361,6 +442,61 @@ def _bopv_summary(item: dict[str, Any]) -> str | None:
     ]
     summary = " - ".join(value for value in values if value)
     return summary or None
+
+
+def _build_bop_huelva_record(
+    *,
+    item: dict[str, Any],
+    source_code: str,
+    api_url: str,
+    api_endpoint: str,
+    published_at: str,
+    issue_number: str | None,
+    raw_response_hash: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> dict[str, Any]:
+    api_id = _string_or_none(item.get("id_anuncio")) or _string_or_none(item.get("num_expe"))
+    document_id = _string_or_none(item.get("num_expe")) or api_id
+    item_published_at = _iso_date_prefix(_string_or_none(item.get("fecha_publicacion")))
+    effective_published_at = item_published_at or published_at
+    official_url = (
+        f"https://s2.diphuelva.es/servicios/bope_web/anuncio/?anuncio={document_id}"
+        if document_id
+        else None
+    )
+    warnings = ["pdf_endpoint_not_downloaded"] if _string_or_none(item.get("documento")) else []
+    if not official_url:
+        warnings.append("entry_hash_fallback_missing_official_url")
+    return {
+        "source_code": source_code,
+        "api_url": api_url,
+        "api_endpoint": api_endpoint,
+        "title": _string_or_none(item.get("titulo")),
+        "published_at": effective_published_at,
+        "official_url": official_url,
+        "document_id": document_id,
+        "api_id": api_id,
+        "issue_number": issue_number,
+        "summary": _join_summary_parts(
+            _string_or_none(item.get("Seccion")),
+            _string_or_none(item.get("Categoria")),
+            _string_or_none(item.get("entidad_anunciante")),
+        ),
+        "raw_response_hash": raw_response_hash,
+        "entry_hash": build_api_entry_hash(
+            source_code=source_code,
+            published_at=effective_published_at,
+            official_url=official_url,
+            api_id=api_id,
+        ),
+        "discovered_at": discovered_at,
+        "monitor_run_id": monitor_run_id,
+        "classification_status": "unclassified",
+        "evidence_status": "not_evidence",
+        "candidate_status": "not_candidate",
+        "warnings": warnings,
+    }
 
 
 def _parse_bor_xml(raw_response: bytes, *, context: str) -> ET.Element:
@@ -433,6 +569,15 @@ def _ddmmyyyy_dash_to_iso(value: str | None) -> str | None:
     try:
         day, month, year = value.split("-")
         return date(int(year), int(month), int(day)).isoformat()
+    except ValueError:
+        return None
+
+
+def _iso_date_prefix(value: str | None) -> str | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value[:10]).isoformat()
     except ValueError:
         return None
 

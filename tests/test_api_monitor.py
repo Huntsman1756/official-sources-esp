@@ -12,11 +12,13 @@ from official_sources.api_monitor import (
     APIMonitorError,
     build_api_entry_hash,
     build_api_monitor_output_path,
+    build_bop_huelva_api_url,
     build_bopv_api_url,
     build_bor_announcement_api_url,
     build_bor_calendar_api_url,
     build_bor_issue_api_url,
     monitor_api_source,
+    parse_bop_huelva_api_response,
     parse_bopv_api_response,
     parse_bor_calendar_issue_number,
     parse_bor_issue_response,
@@ -50,6 +52,19 @@ def test_bor_api_access_method_exists_in_registry():
     assert method["url"] == "https://ias1.larioja.org/boletin/ExportarBoletinServlet"
 
 
+def test_bop_huelva_api_access_method_exists_in_registry():
+    source = get_source("BOP_HUELVA")
+    method = select_api_access_method(source)
+
+    assert source["operational_status"] == "monitor_validated"
+    assert source["monitor_support"] == "available"
+    assert method["type"] == "api"
+    assert method["status"] == "validated"
+    assert method["url"] == "https://s2.diphuelva.es/lib/bope/anuncios_bop/ajaxAnuncios.php"
+    assert source["candidate_creation_allowed"] is False
+    assert source["evidence_grade_allowed"] is False
+
+
 def test_build_bor_api_urls_are_single_date_requests():
     base_url = "https://ias1.larioja.org/boletin/ExportarBoletinServlet"
 
@@ -68,6 +83,13 @@ def test_build_bor_api_urls_are_single_date_requests():
         "https://ias1.larioja.org/boletin/ExportarBoletinServlet?"
         "tipo=2&fecha=2026%2F05%2F29&referencia=40629535-5-HTML-577687-X"
     )
+
+
+def test_build_bop_huelva_api_url_is_one_date_request():
+    assert build_bop_huelva_api_url(
+        "https://s2.diphuelva.es/lib/bope/anuncios_bop/ajaxAnuncios.php",
+        target_date="2026-05-29",
+    ) == ("https://s2.diphuelva.es/lib/bope/anuncios_bop/ajaxAnuncios.php?tipo=2&fecha=2026-05-29")
 
 
 def test_parse_bor_calendar_fixture_resolves_issue_number_for_date():
@@ -163,6 +185,49 @@ def test_parse_minimal_bopv_api_fixture_emits_metadata_only_records():
     assert "text" not in record
 
 
+def test_parse_bop_huelva_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_huelva_ajax.json")
+    api_url = build_bop_huelva_api_url(
+        "https://s2.diphuelva.es/lib/bope/anuncios_bop/ajaxAnuncios.php",
+        target_date="2026-05-29",
+    )
+
+    result = parse_bop_huelva_api_response(
+        raw,
+        source_code="BOP_HUELVA",
+        api_url=api_url,
+        api_endpoint="/lib/bope/anuncios_bop/ajaxAnuncios.php",
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-huelva",
+    )
+
+    assert result.raw_response_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_HUELVA"
+    assert record["api_url"] == api_url
+    assert record["api_endpoint"] == "/lib/bope/anuncios_bop/ajaxAnuncios.php"
+    assert record["title"] == (
+        "Resolucion aprobando las bases especificas para una plaza de administrativo"
+    )
+    assert record["published_at"] == "2026-05-29"
+    assert record["document_id"] == "360157"
+    assert record["api_id"] == "10326"
+    assert record["issue_number"] == "102"
+    assert record["official_url"] == (
+        "https://s2.diphuelva.es/servicios/bope_web/anuncio/?anuncio=360157"
+    )
+    assert record["summary"] == (
+        "Administracion Local - Organismos Autonomos - Agencia Provincial Tributaria de Huelva"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["classification_status"] == "unclassified"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["candidate_status"] == "not_candidate"
+    assert "pdf_url" not in record
+
+
 def test_api_entry_hash_prefers_source_published_at_and_official_url():
     assert (
         build_api_entry_hash(
@@ -234,6 +299,28 @@ def test_monitor_api_source_fetches_bounded_bor_calendar_then_issue():
     assert requested_urls == [
         build_bor_calendar_api_url(base_url, target_date="2026-05-29"),
         build_bor_issue_api_url(base_url, target_date="2026-05-29", issue_number="101"),
+    ]
+    assert len(result.records) == 1
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
+
+
+def test_monitor_api_source_fetches_one_bounded_bop_huelva_request():
+    requested_urls = []
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        return _fixture_bytes("bop_huelva_ajax.json")
+
+    result = monitor_api_source(
+        get_source("BOP_HUELVA"),
+        fetcher=fetcher,
+        target_date="2026-05-29",
+        limit=1,
+    )
+
+    assert requested_urls == [
+        "https://s2.diphuelva.es/lib/bope/anuncios_bop/ajaxAnuncios.php?tipo=2&fecha=2026-05-29"
     ]
     assert len(result.records) == 1
     assert result.records[0]["candidate_status"] == "not_candidate"
@@ -358,3 +445,4 @@ def test_mcp_source_coverage_sees_api_sources_as_monitorable():
 
     assert "api" in {method["type"] for method in sources["BOPV"]["access_methods"]}
     assert "api" in {method["type"] for method in sources["BOR"]["access_methods"]}
+    assert "api" in {method["type"] for method in sources["BOP_HUELVA"]["access_methods"]}
