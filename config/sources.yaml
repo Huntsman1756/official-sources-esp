@@ -1458,21 +1458,22 @@ sources:
     official_landing_url: https://bop.sede.diputaciondevalladolid.es/
     access_methods:
       - type: html
-        url: https://bop.sede.diputaciondevalladolid.es/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bop.sede.diputaciondevalladolid.es/ultimobop?p_p_id=BOPVisualizaBoletin_WAR_BOPVisualizaBoletin&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&p_p_col_id=column-1&p_p_col_count=3&_BOPVisualizaBoletin_WAR_BOPVisualizaBoletin_fecha={date}
+        status: validated
+        notes: Official date-scoped Liferay current-bulletin page used by the metadata-only HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Valladolid.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Current-bulletin page links announcements directly to PDF files; monitor stores the official URL only.
+      - Date-scoped URL was validated for latest current-bulletin discovery; historical backfill remains disabled.
+    notes: Official provincial bulletin HTML discovery monitor.
 
   - source_code: BOP_ZAMORA
     name: Boletin Oficial de la Provincia de Zamora

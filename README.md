@@ -180,6 +180,7 @@ official-sources html monitor --source BOP_CASTELLON --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SEVILLA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_VALLADOLID --date YYYY-MM-DD --limit 1
 ```
 
 Monitor output writes require explicit `--write`. RSS/API/HTML discovery records are not

@@ -77,6 +77,7 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 | `TASK-SOURCE-COVERAGE-RUN-REPORT-001` | proposed | Only if actual metadata-only JSONL writes are run; document source, date, output path, row count, and guardrails. |
 | `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-003` | proposed | Evaluate at most 2 more provincial sources using the pattern report and health-check criteria; no bulk monitoring and no generic framework unless evidence improves. |
+| `TASK-BOP-VALLADOLID-001` | implemented locally | Promotes `BOP_VALLADOLID` from inventory-only to metadata-only HTML monitor using the official date-scoped Liferay URL pattern confirmed by external repo review. No PDFs/artifacts, candidates, evidence-grade records, broad backfill, downstream writes, VPS, Hermes, systemd, or timer changes. |
 | `TASK-SOURCE-HTML-MONITOR-HELPERS-001` | deferred | Only extract additional shared helpers after another source proves repeated duplication; do not create a broad generic provincial framework yet. |
 
 ## Guardrails

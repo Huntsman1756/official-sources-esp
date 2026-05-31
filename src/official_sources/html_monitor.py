@@ -117,6 +117,11 @@ def build_bop_valencia_html_url(template_url: str, *, target_date: str) -> str:
     return template_url
 
 
+def build_bop_valladolid_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url.replace("{date}", target_date)
+
+
 def select_html_access_method(source: dict[str, Any]) -> dict[str, Any]:
     for access_method in source.get("access_methods", []):
         if (
@@ -514,6 +519,40 @@ def parse_bop_valencia_html(
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
+def parse_bop_valladolid_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_bop_valladolid_publication_date(text) or requested_date
+    records = [
+        _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at,
+            official_url=urljoin(page_url, href),
+            summary=issuer,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"],
+        )
+        for title, href, document_id, issuer in _iter_bop_valladolid_announcements(text)
+    ]
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
 def write_html_jsonl(records: list[dict[str, Any]], output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = "".join(
@@ -524,16 +563,19 @@ def write_html_jsonl(records: list[dict[str, Any]], output_path: Path) -> Path:
 
 
 def fetch_html(url: str) -> bytes:
-    with httpx.Client(follow_redirects=True, timeout=30.0) as client:
-        response = client.get(
-            url,
-            headers={
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "User-Agent": "official-sources-html-monitor/0.1",
-            },
-        )
-        response.raise_for_status()
-        return response.content
+    try:
+        with httpx.Client(follow_redirects=True, timeout=30.0) as client:
+            response = client.get(
+                url,
+                headers={
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "User-Agent": "official-sources-html-monitor/0.1",
+                },
+            )
+            response.raise_for_status()
+            return response.content
+    except httpx.HTTPError as exc:
+        raise HTMLMonitorError(f"html monitor fetch failed for {url}: {exc}") from exc
 
 
 def _build_bop_a_coruna_record(
@@ -582,10 +624,12 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_sevilla_html_url(template_url, target_date=target_date)
     if source_code == "BOP_VALENCIA":
         return build_bop_valencia_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_VALLADOLID":
+        return build_bop_valladolid_html_url(template_url, target_date=target_date)
     raise HTMLMonitorError(
         "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
         "BOP_BARCELONA, BOP_BIZKAIA, BOP_CASTELLON, BOP_MALAGA, BOP_SEVILLA, "
-        "and BOP_VALENCIA only"
+        "BOP_VALENCIA, and BOP_VALLADOLID only"
     )
 
 
@@ -672,6 +716,15 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_VALENCIA":
         return parse_bop_valencia_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_VALLADOLID":
+        return parse_bop_valladolid_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -1035,6 +1088,58 @@ def _iter_bop_valencia_announcements(text: str) -> list[tuple[str, str, str | No
     return announcements
 
 
+def _extract_bop_valladolid_publication_date(text: str) -> str | None:
+    match = re.search(
+        r'id="bop_sumario_tit_fecha"[^>]*>\s*(\d{1,2})\s+de\s+'
+        r"([a-záéíóú]+)\s+de\s+(\d{4})",
+        text,
+        re.I,
+    )
+    if not match:
+        match = re.search(
+            r"\b(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})\b",
+            _strip_tags(text),
+            re.I,
+        )
+    if not match:
+        return None
+    month = _SPANISH_MONTHS.get(match.group(2).lower())
+    if not month:
+        return None
+    return date(int(match.group(3)), month, int(match.group(1))).isoformat()
+
+
+def _iter_bop_valladolid_announcements(text: str) -> list[tuple[str, str, str, str | None]]:
+    item_pattern = re.compile(
+        r'<li[^>]+class="[^"]*\bun_anuncio\b[^"]*"[^>]*>(?P<body>.*?)</li>',
+        re.I | re.S,
+    )
+    announcements = []
+    for item in item_pattern.finditer(text):
+        body = item.group("body")
+        link = re.search(
+            r'<p[^>]+class="[^"]*\bbop_res_articulo\b[^"]*"[^>]*>.*?'
+            r'<a[^>]+href="(?P<href>[^"]+\.pdf)"[^>]*(?:title="(?P<title_attr>[^"]*)")?'
+            r"[^>]*>(?P<title>.*?)</a>",
+            body,
+            re.I | re.S,
+        )
+        if not link:
+            continue
+        href = html.unescape(link.group("href"))
+        document_id = _bop_valladolid_document_id_from_url(href)
+        title = _first_value(
+            [
+                _normalize_text(link.group("title_attr")),
+                _normalize_text(_strip_tags(link.group("title"))),
+            ]
+        )
+        issuer = _first_class_block_text(body, "bop_tit_articulo")
+        if title and href and document_id:
+            announcements.append((title, href, document_id, issuer))
+    return announcements
+
+
 def _extract_bop_malaga_publication_date(text: str) -> str | None:
     match = re.search(r"Bolet[ií]n\s+del\s+(\d{2}/\d{2}/\d{4})", text, re.I)
     if match:
@@ -1105,6 +1210,13 @@ def _bop_bizkaia_document_id_from_url(value: str) -> str | None:
     if not match:
         return None
     return match.group(1)
+
+
+def _bop_valladolid_document_id_from_url(value: str) -> str | None:
+    match = re.search(r"/(BOPVA-A-\d{4}-\d+)\.pdf\b", value, re.I)
+    if not match:
+        return None
+    return match.group(1).upper()
 
 
 def _first_register_number(text: str) -> str | None:

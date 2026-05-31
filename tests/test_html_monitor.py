@@ -18,6 +18,7 @@ from official_sources.html_monitor import (
     build_bop_malaga_html_url,
     build_bop_sevilla_html_url,
     build_bop_valencia_html_url,
+    build_bop_valladolid_html_url,
     build_html_entry_hash,
     build_html_monitor_output_path,
     monitor_html_source,
@@ -30,6 +31,7 @@ from official_sources.html_monitor import (
     parse_bop_malaga_html,
     parse_bop_sevilla_html,
     parse_bop_valencia_html,
+    parse_bop_valladolid_html,
     select_html_access_method,
 )
 from official_sources.source_coverage import list_monitorable_sources
@@ -67,6 +69,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_MALAGA",
         "BOP_SEVILLA",
         "BOP_VALENCIA",
+        "BOP_VALLADOLID",
     ):
         source = get_source(source_code)
         method = select_html_access_method(source)
@@ -158,6 +161,23 @@ def test_build_bop_valencia_html_url_is_one_landing_request():
             target_date="2026-05-25",
         )
         == "https://bop.dival.es/bop/drvisapi.dll"
+    )
+
+
+def test_build_bop_valladolid_html_url_is_one_date_request():
+    assert build_bop_valladolid_html_url(
+        "https://bop.sede.diputaciondevalladolid.es/ultimobop?"
+        "p_p_id=BOPVisualizaBoletin_WAR_BOPVisualizaBoletin&"
+        "p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&"
+        "p_p_col_id=column-1&p_p_col_count=3&"
+        "_BOPVisualizaBoletin_WAR_BOPVisualizaBoletin_fecha={date}",
+        target_date="2026-05-29",
+    ) == (
+        "https://bop.sede.diputaciondevalladolid.es/ultimobop?"
+        "p_p_id=BOPVisualizaBoletin_WAR_BOPVisualizaBoletin&"
+        "p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&"
+        "p_p_col_id=column-1&p_p_col_count=3&"
+        "_BOPVisualizaBoletin_WAR_BOPVisualizaBoletin_fecha=2026-05-29"
     )
 
 
@@ -437,6 +457,47 @@ def test_parse_bop_sevilla_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_valladolid_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_valladolid_latest.html")
+    page_url = (
+        "https://bop.sede.diputaciondevalladolid.es/ultimobop?"
+        "_BOPVisualizaBoletin_WAR_BOPVisualizaBoletin_fecha=2026-05-29"
+    )
+
+    result = parse_bop_valladolid_html(
+        raw,
+        source_code="BOP_VALLADOLID",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-valladolid",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_VALLADOLID"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "BOPVA-A-2026-01573"
+    assert record["document_id"] == "BOPVA-A-2026-01573"
+    assert record["title"] == (
+        "Convocatoria de concurso-oposicion para la seleccion con caracter temporal de un "
+        "puesto de tecnico medio economista en la oficina presupuestaria."
+    )
+    assert record["published_at"] == "2026-05-29"
+    assert record["official_url"] == (
+        "https://bop.sede.diputaciondevalladolid.es/boletines/2026/mayo/29/"
+        "BOPVA-A-2026-01573.pdf"
+    )
+    assert record["summary"] == "AYUNTAMIENTO DE VALLADOLID"
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
 def test_parse_bop_alicante_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("bop_alicante_bop_con.json")
     page_url = build_bop_alicante_html_url(
@@ -522,6 +583,7 @@ def test_monitor_html_source_supports_selected_provincial_sources():
         "BOP_CASTELLON": "bop_castellon_latest.html",
         "BOP_MALAGA": "bop_malaga_latest.html",
         "BOP_VALENCIA": "bop_valencia_latest.html",
+        "BOP_VALLADOLID": "bop_valladolid_latest.html",
     }
 
     for source_code, fixture_name in fixtures.items():
@@ -657,6 +719,28 @@ def test_fetch_html_sends_read_only_user_agent(monkeypatch):
 
     assert html_monitor.fetch_html("https://example.test") == b"<html></html>"
     assert requested_headers[0]["User-Agent"] == "official-sources-html-monitor/0.1"
+
+
+def test_fetch_html_wraps_httpx_errors(monkeypatch):
+    class FailingClient:
+        def __init__(self, **_kwargs):
+            return None
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def get(self, _url, *, headers):
+            raise html_monitor.httpx.ConnectTimeout("timed out")
+
+    monkeypatch.setattr(html_monitor.httpx, "Client", FailingClient)
+
+    with pytest.raises(HTMLMonitorError) as exc_info:
+        html_monitor.fetch_html("https://example.test")
+
+    assert "html monitor fetch failed for https://example.test" in str(exc_info.value)
 
 
 def test_html_jsonl_output_path_is_source_and_date_scoped(tmp_path):
