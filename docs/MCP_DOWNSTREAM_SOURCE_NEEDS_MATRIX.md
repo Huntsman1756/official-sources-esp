@@ -123,11 +123,11 @@ Recommended first-wave source work:
 | --- | --- | --- | --- |
 | `BOP_CASTELLON` | Already useful in `oposiciones2.0`; reconciled into shared MCP coverage. | Provincial audit classified it as `stable_form_or_endpoint`, candidate `yes`. | metadata-only HTML monitor implemented |
 | `BOP_SEVILLA` | High-value provincial employment source and previous recommended candidate. | Provincial audit classified it as `stable_form_or_endpoint`, candidate `yes`. | metadata-only HTML monitor implemented |
-| `BOP_AVILA` | Low-friction provincial feed/API signal. | `rss_or_api_detected`, candidate `yes`. | metadata-only RSS/API or preview task |
-| `BOP_PONTEVEDRA` | Low-friction provincial feed/API signal. | `rss_or_api_detected`, candidate `yes`. | metadata-only RSS/API or preview task |
-| `BOP_SORIA` | Low-friction provincial feed/API signal. | `rss_or_api_detected`, candidate `yes`. | metadata-only RSS/API or preview task |
-| `BOP_CORDOBA` | Open-data signal and public-employment relevance. | `open_data_detected`, candidate `yes`. | metadata-only monitor or preview task |
-| `BOP_GRANADA` | Open-data signal and public-employment relevance. | `open_data_detected`, candidate `yes`. | metadata-only monitor or preview task |
+| `BOP_AVILA` | Provincial public-employment relevance. | HTML monitor implemented from date-scoped bulletin page. | metadata-only HTML monitor implemented |
+| `BOP_PONTEVEDRA` | Provincial public-employment relevance. | HTML monitor implemented from date-scoped BOPPO detail page. | metadata-only HTML monitor implemented |
+| `BOP_SORIA` | Provincial public-employment relevance. | HTML monitor implemented from date-scoped bulletin page plus public detail page. | metadata-only HTML monitor implemented |
+| `BOP_CORDOBA` | Open-data signal and public-employment relevance. | HTML monitor implemented from date-scoped Next.js page. | metadata-only HTML monitor implemented |
+| `BOP_GRANADA` | Open-data signal and public-employment relevance. | HTML monitor implemented from date-scoped public BOP page. | metadata-only HTML monitor implemented |
 | `BOP_LEON` | Open-data signal and public-employment relevance. | `open_data_detected`, candidate `yes`. | metadata-only monitor or preview task |
 | `BOP_PALENCIA` | Open-data signal and public-employment relevance. | `open_data_detected`, candidate `yes`. | metadata-only monitor or preview task |
 | `BOP_SALAMANCA` | Open-data signal and public-employment relevance. | `open_data_detected`, candidate `yes`. | metadata-only monitor or preview task |

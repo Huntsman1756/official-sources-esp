@@ -872,6 +872,7 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
         "BOP_BARCELONA",
         "BOP_BIZKAIA",
         "BOP_CORDOBA",
+        "BOP_GRANADA",
         "BOP_LUGO",
         "BOP_MALAGA",
         "BOP_VALENCIA",

@@ -17,6 +17,7 @@ from official_sources.html_monitor import (
     build_bop_bizkaia_html_url,
     build_bop_castellon_html_url,
     build_bop_cordoba_html_url,
+    build_bop_granada_html_url,
     build_bop_malaga_html_url,
     build_bop_pontevedra_html_url,
     build_bop_sevilla_html_url,
@@ -78,6 +79,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_BIZKAIA",
         "BOP_CASTELLON",
         "BOP_CORDOBA",
+        "BOP_GRANADA",
         "BOP_MALAGA",
         "BOP_PONTEVEDRA",
         "BOP_SEVILLA",
@@ -176,6 +178,16 @@ def test_build_bop_cordoba_html_url_is_one_date_request():
             target_date="2026-05-28",
         )
         == "https://bop.dipucordoba.es/dia/28-05-2026"
+    )
+
+
+def test_build_bop_granada_html_url_is_one_date_request():
+    assert (
+        build_bop_granada_html_url(
+            "https://bop.dipgra.es/publica/consulta-de-bops/buscador/BOP-{dd_mm_yyyy}/",
+            target_date="2026-05-29",
+        )
+        == "https://bop.dipgra.es/publica/consulta-de-bops/buscador/BOP-29-05-2026/"
     )
 
 
@@ -713,6 +725,46 @@ def test_parse_bop_sevilla_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_granada_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_granada_latest.html")
+    page_url = "https://bop.dipgra.es/publica/consulta-de-bops/buscador/BOP-29-05-2026/"
+
+    result = parse_bop_sevilla_html(
+        raw,
+        source_code="BOP_GRANADA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-granada",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_GRANADA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "BOP-GRA-2026-102004"
+    assert record["document_id"] == "BOP-GRA-2026-102004"
+    assert record["title"] == (
+        "BASES PARA LA SELECCION Y CONSTITUCION BOLSA DE AUXILIARES "
+        "ADMINISTRATIVOS MEDIANTE EL PROCEDIMIENTO DE OPOSICION LIBRE, DE LA "
+        "QUE EXTRAER NOMBRAMIENTOS COMO FUNCIONARIOS INTERINOS."
+    )
+    assert record["published_at"] == "2026-05-29"
+    assert record["official_url"] == (
+        "https://bop.dipgra.es/publica/buscador-anuncios/anuncio/"
+        "BASES-PARA-LA-SELECCION-Y-CONSTITUCION-BOLSA-DE-AUXILIARES-"
+        "ADMINISTRATIVOS-MEDIANTE-EL-PROCEDIMIENTO-DE-OPOSICION-LIBRE-DE-LA-"
+        "QUE-EXTRAER-NOMBRAMIENTOS-COMO-FUNCIONARIOS-INTERINOS/"
+    )
+    assert record["summary"] == "AYUNTAMIENTO DE ALPUJARRA DE LA SIERRA"
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
 def test_parse_bop_valladolid_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("bop_valladolid_latest.html")
     page_url = (
@@ -838,6 +890,7 @@ def test_monitor_html_source_supports_selected_provincial_sources():
         "BOP_BARCELONA": "bop_barcelona_latest.html",
         "BOP_CASTELLON": "bop_castellon_latest.html",
         "BOP_CORDOBA": "bop_cordoba_next_payload.html",
+        "BOP_GRANADA": "bop_granada_latest.html",
         "BOP_MALAGA": "bop_malaga_latest.html",
         "BOP_PONTEVEDRA": "bop_pontevedra_detail.html",
         "BOP_VALENCIA": "bop_valencia_latest.html",

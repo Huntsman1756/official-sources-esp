@@ -118,6 +118,13 @@ def build_bop_cordoba_html_url(template_url: str, *, target_date: str) -> str:
     )
 
 
+def build_bop_granada_html_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
+    return template_url.replace("{dd_mm_yyyy}", parsed_date.strftime("%d-%m-%Y")).replace(
+        "{date}", parsed_date.isoformat()
+    )
+
+
 def build_bop_malaga_html_url(template_url: str, *, target_date: str) -> str:
     validate_html_monitor_date(target_date)
     return template_url
@@ -845,6 +852,8 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_castellon_html_url(template_url, target_date=target_date)
     if source_code == "BOP_CORDOBA":
         return build_bop_cordoba_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_GRANADA":
+        return build_bop_granada_html_url(template_url, target_date=target_date)
     if source_code == "BOP_MALAGA":
         return build_bop_malaga_html_url(template_url, target_date=target_date)
     if source_code == "BOP_PONTEVEDRA":
@@ -862,7 +871,7 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
     raise HTMLMonitorError(
         "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
         "BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_CASTELLON, BOP_CORDOBA, "
-        "BOP_MALAGA, BOP_SEVILLA, BOP_SORIA, BOP_PONTEVEDRA, BOP_VALENCIA, "
+        "BOP_GRANADA, BOP_MALAGA, BOP_SEVILLA, BOP_SORIA, BOP_PONTEVEDRA, BOP_VALENCIA, "
         "BOP_VALLADOLID, and DOCM only"
     )
 
@@ -941,6 +950,15 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_CORDOBA":
         return parse_bop_cordoba_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_GRANADA":
+        return parse_bop_sevilla_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -1811,7 +1829,7 @@ def _first_register_label_value(text: str, label: str) -> str | None:
 
 
 def _first_bop_sevilla_document_id(text: str) -> str | None:
-    match = re.search(r"\bBOP-SE-\d{4}-\d+\b", _strip_tags(text), re.I)
+    match = re.search(r"\bBOP-(?:SE|GRA)-\d{4}-\d+\b", _strip_tags(text), re.I)
     if match:
         return match.group(0)
     return None

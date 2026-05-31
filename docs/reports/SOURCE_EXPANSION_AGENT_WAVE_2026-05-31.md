@@ -84,6 +84,25 @@ Parser scope:
 - PDF viewer URL stored only as metadata `official_url`
 - `warnings=["pdf_endpoint_not_downloaded"]`
 
+### BOP_GRANADA
+
+Status: implemented as a metadata-only HTML monitor.
+
+Validated URL pattern:
+
+```text
+https://bop.dipgra.es/publica/consulta-de-bops/buscador/BOP-{dd_mm_yyyy}/
+```
+
+Parser scope:
+
+- date-scoped public BOP page
+- one record per `elementoListado` announcement
+- title and public announcement detail URL from `Ir al detalle`
+- document id from the visible `BOP-GRA-*` code
+- publication date and issuer from visible metadata
+- public announcement detail URL stored as metadata `official_url`
+
 ### BOP_SORIA
 
 Status: implemented as a metadata-only HTML monitor.
@@ -150,6 +169,11 @@ records=1
 candidate_status=not_candidate
 evidence_status=not_evidence
 
+python -m official_sources.cli html monitor --source BOP_GRANADA --date 2026-05-29 --limit 1
+records=1
+candidate_status=not_candidate
+evidence_status=not_evidence
+
 python -m official_sources.cli html monitor --source BOP_SORIA --date 2026-05-29 --limit 1
 records=1
 candidate_status=not_candidate
@@ -204,6 +228,17 @@ candidate_creation_allowed=False
 evidence_grade_allowed=False
 
 official-sources html monitor --source BOP_CORDOBA --date 2026-05-28 --limit 1
+records=1
+candidate_status=not_candidate
+evidence_status=not_evidence
+
+official-sources sources status --source BOP_GRANADA
+operational_status=monitor_validated
+monitor_support=available
+candidate_creation_allowed=False
+evidence_grade_allowed=False
+
+official-sources html monitor --source BOP_GRANADA --date 2026-05-29 --limit 1
 records=1
 candidate_status=not_candidate
 evidence_status=not_evidence

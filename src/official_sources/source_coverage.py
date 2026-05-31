@@ -73,27 +73,27 @@ DOWNSTREAM_DEMAND_PROFILES = {
         "recommended_sources": (
             (
                 "BOP_AVILA",
-                "Low-friction provincial RSS/API signal for public-employment alert coverage.",
+                "Metadata-only provincial HTML monitor for public-employment alert coverage.",
                 "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
             ),
             (
                 "BOP_PONTEVEDRA",
-                "Low-friction provincial RSS/API signal for public-employment alert coverage.",
+                "Metadata-only provincial HTML monitor for public-employment alert coverage.",
                 "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
             ),
             (
                 "BOP_SORIA",
-                "Low-friction provincial RSS/API signal for public-employment alert coverage.",
+                "Metadata-only provincial HTML monitor for public-employment alert coverage.",
                 "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
             ),
             (
                 "BOP_CORDOBA",
-                "Open-data signal for provincial public-employment alert coverage.",
+                "Metadata-only provincial HTML monitor for public-employment alert coverage.",
                 "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
             ),
             (
                 "BOP_GRANADA",
-                "Open-data signal for provincial public-employment alert coverage.",
+                "Metadata-only provincial HTML monitor for public-employment alert coverage.",
                 "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
             ),
             (
@@ -1382,6 +1382,7 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         "BOP_BIZKAIA",
         "BOP_CASTELLON",
         "BOP_CORDOBA",
+        "BOP_GRANADA",
         "BOP_MALAGA",
         "BOP_PONTEVEDRA",
         "BOP_SEVILLA",
