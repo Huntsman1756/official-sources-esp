@@ -183,6 +183,10 @@ def list_downstream_integration_smokes(*, consumer: str | None = None) -> dict:
     return source_coverage.list_downstream_integration_smokes(consumer=consumer)
 
 
+def check_downstream_integration_smokes(*, consumer: str | None = None) -> dict:
+    return source_coverage.check_downstream_integration_smokes(consumer=consumer)
+
+
 def list_case_taxonomy(
     *,
     consumer: str | None = None,

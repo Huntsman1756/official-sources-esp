@@ -325,6 +325,51 @@ This tool does not fetch live sources, run monitor previews, read or write disco
 the registry, create candidates, create evidence-grade records, create product records, publish
 content, send notifications, run downstream imports, or touch downstream repositories.
 
+### check_downstream_integration_smokes
+
+Inputs:
+
+- `consumer`: optional known downstream consumer or alias such as `oposiciones2.0`, `eduayudas`,
+  `la-ayuda`, `renta-verificable`, or `renta`.
+
+Output: read-only contract-check results for the current downstream integration smoke matrix.
+
+The checker executes only hardcoded in-process `official-sources` MCP/planner calls declared by
+`list_downstream_integration_smokes`:
+
+```text
+recommend_sources_for_consumer
+build_evidence_packet
+resolve_normative_reference
+resolve_fiscal_reference
+```
+
+It compares each call result against the profile's expected status, expected output fields, and
+shared safety envelope.
+
+Each response preserves:
+
+```text
+mode=read_only
+writes_performed=false
+candidate_creation_allowed=false
+evidence_grade_allowed=false
+product_automation_allowed=false
+human_review_required=true
+downstream_commands_executed=false
+monitor_previews_executed=false
+live_fetches_performed=false
+jsonl_written=false
+registry_mutated=false
+```
+
+This tool does not run downstream preview/import commands, execute shell commands, fetch live
+sources, run monitor previews, read or write discovery JSONL, mutate the registry, create
+candidates, create evidence-grade records, create product records, publish content, send
+notifications, or touch downstream repositories. A passing smoke means only that the MCP contract
+still matches the expected read-only profile; it does not mean downstream import readiness or
+product approval.
+
 ### list_case_taxonomy
 
 Inputs:

@@ -138,6 +138,8 @@ The consumer-aware MCP contract is documented in
 `docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md`.
 The read-only downstream integration closure and smoke matrix are documented in
 `docs/MCP_DOWNSTREAM_INTEGRATION_CLOSURE.md`.
+The MCP smoke checker `check_downstream_integration_smokes` validates that the current
+consumer-specific MCP planning calls still match that read-only matrix.
 `eduayudas` evidence-packet planning is documented in
 `docs/MCP_EDUAYUDAS_EVIDENCE_PACKET_PROFILE.md`.
 `la-ayuda` source-resolver planning is documented in

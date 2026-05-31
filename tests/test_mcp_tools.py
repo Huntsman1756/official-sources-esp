@@ -58,6 +58,7 @@ def test_mcp_tool_names_use_compatible_snake_case_names():
         "recommend_next_sources",
         "recommend_sources_for_consumer",
         "list_downstream_integration_smokes",
+        "check_downstream_integration_smokes",
         "list_case_taxonomy",
         "build_evidence_packet",
         "resolve_normative_reference",
@@ -968,6 +969,105 @@ def test_mcp_downstream_integration_smokes_do_not_execute_previews_or_write(
     assert result["status"] == "ok"
     assert result["smokes"][0]["consumer"] == "oposiciones2.0"
     assert not list(tmp_path.rglob("*.jsonl"))
+
+
+def test_mcp_check_downstream_integration_smokes_executes_internal_contract_calls_only():
+    result = tools.check_downstream_integration_smokes()
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "downstream_integration_smoke_run"
+    assert result["mode"] == "read_only"
+    assert result["writes_performed"] is False
+    assert result["candidate_creation_allowed"] is False
+    assert result["evidence_grade_allowed"] is False
+    assert result["product_automation_allowed"] is False
+    assert result["human_review_required"] is True
+    assert result["execution_scope"] == "official_sources_internal_mcp_calls_only"
+    assert result["downstream_commands_executed"] is False
+    assert result["monitor_previews_executed"] is False
+    assert result["live_fetches_performed"] is False
+    assert result["jsonl_written"] is False
+    assert result["registry_mutated"] is False
+    assert result["count"] == 4
+    assert result["passed_count"] == 4
+    assert result["failed_count"] == 0
+    consumers = {smoke["consumer"]: smoke for smoke in result["results"]}
+    assert set(consumers) == {
+        "eduayudas",
+        "la-ayuda",
+        "oposiciones2.0",
+        "renta-verificable",
+    }
+    assert consumers["oposiciones2.0"]["actual_status"] == "ok"
+    assert consumers["eduayudas"]["actual_status"] == "ok"
+    assert consumers["la-ayuda"]["actual_status"] == "manual_review_required"
+    assert consumers["renta-verificable"]["actual_status"] == "manual_review_required"
+    assert all(smoke["passed"] is True for smoke in result["results"])
+    assert all(check["passed"] is True for smoke in result["results"] for check in smoke["checks"])
+
+
+def test_mcp_check_downstream_integration_smokes_filter_and_refuse_unknown_consumer():
+    renta = tools.check_downstream_integration_smokes(consumer="renta")
+    unknown = tools.check_downstream_integration_smokes(consumer="unknown-product")
+
+    assert renta["status"] == "ok"
+    assert renta["count"] == 1
+    assert renta["results"][0]["consumer"] == "renta-verificable"
+    assert renta["results"][0]["smoke_call"]["tool"] == "resolve_fiscal_reference"
+    assert unknown == {
+        "status": "unsupported_consumer",
+        "consumer": "unknown-product",
+        "supported_consumers": [
+            "eduayudas",
+            "la-ayuda",
+            "oposiciones2.0",
+            "renta-verificable",
+        ],
+        "message": "Unknown downstream consumer; add an explicit integration smoke profile first.",
+    }
+
+
+def test_mcp_check_downstream_integration_smokes_does_not_execute_previews_or_write(
+    tmp_path,
+    monkeypatch,
+):
+    def fail_preview(*_args, **_kwargs):
+        raise AssertionError("integration smoke checker must not run discovery previews")
+
+    monkeypatch.setattr(source_coverage, "monitor_source_feed", fail_preview)
+    monkeypatch.setattr(source_coverage, "monitor_api_source", fail_preview)
+    monkeypatch.setattr(source_coverage, "monitor_html_source", fail_preview)
+
+    result = tools.check_downstream_integration_smokes()
+
+    assert result["status"] == "ok"
+    assert result["passed_count"] == 4
+    assert not list(tmp_path.rglob("*.jsonl"))
+
+
+def test_mcp_check_downstream_integration_smokes_reports_unsupported_internal_tool(monkeypatch):
+    bad_profile = {
+        **source_coverage.DOWNSTREAM_INTEGRATION_SMOKE_PROFILES["eduayudas"],
+        "smoke_call": {"tool": "preview_discovery", "arguments": {}},
+    }
+    monkeypatch.setitem(
+        source_coverage.DOWNSTREAM_INTEGRATION_SMOKE_PROFILES,
+        "eduayudas",
+        bad_profile,
+    )
+
+    result = tools.check_downstream_integration_smokes(consumer="eduayudas")
+
+    assert result["status"] == "failed"
+    assert result["passed_count"] == 0
+    assert result["failed_count"] == 1
+    assert result["results"][0]["actual_status"] == "failed"
+    assert result["results"][0]["checks"][0] == {
+        "name": "expected_status",
+        "expected": "ok",
+        "actual": "failed",
+        "passed": False,
+    }
 
 
 def test_mcp_list_case_taxonomy_returns_stable_readonly_taxonomy():
