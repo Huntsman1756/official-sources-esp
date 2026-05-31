@@ -763,21 +763,22 @@ sources:
     official_landing_url: http://bopbur.diputaciondeburgos.es/
     access_methods:
       - type: html
-        url: http://bopbur.diputaciondeburgos.es/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: http://bopbur.diputaciondeburgos.es/hemeroteca/{date}?mostrar-anuncio=1
+        status: validated
+        notes: Official date-scoped archive page used to discover the bulletin detail page for metadata-only HTML monitoring.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Burgos.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Date page exposes a public bulletin detail page; monitor follows only that official detail URL for the requested date.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin HTML discovery monitor for Burgos.
 
   - source_code: BOP_CACERES
     name: Boletin Oficial de la Provincia de Caceres
@@ -1110,21 +1111,22 @@ sources:
     official_landing_url: https://bop.dipuleon.es/
     access_methods:
       - type: html
-        url: https://bop.dipuleon.es/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bop.dipuleon.es/publica/consulta-de-bops/buscador/BOP-{dd_mm_yyyy}/
+        status: validated
+        notes: Official date-scoped bulletin page used by metadata-only HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Leon.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Public date page exposes bulletin-level metadata and official PDF links, but no stable granular announcement HTML was confirmed.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin-level HTML discovery monitor for Leon.
 
   - source_code: BOP_LLEIDA
     name: Boletin Oficial de la Provincia de Lleida
@@ -1324,21 +1326,22 @@ sources:
     official_landing_url: http://www.dipsegovia.es/bop
     access_methods:
       - type: html
-        url: http://www.dipsegovia.es/bop
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://www.dipsegovia.es/bop
+        status: validated
+        notes: Official bulletin landing page used by metadata-only HTML monitor when a matching dated bulletin card is present.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Segovia.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Landing page exposes bulletin-level cards; monitor returns records only when a card date matches the requested date.
+      - Historical backfill disabled; preview current landing-page bulletins only.
+    notes: Official provincial bulletin-level HTML discovery monitor for Segovia.
 
   - source_code: BOP_SEVILLA
     name: Boletin Oficial de la Provincia de Sevilla
@@ -1440,21 +1443,22 @@ sources:
     official_landing_url: http://bop.diputoledo.es/webEbop/inicio.jsp
     access_methods:
       - type: html
-        url: http://bop.diputoledo.es/webEbop/inicio.jsp
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bop.diputoledo.es/webEbop/ebopResumen.jsp?publication_date={date_ddmmyyyy}&publication_date_to={date_ddmmyyyy}
+        status: validated
+        notes: Official date-scoped summary page used by metadata-only HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Toledo.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Date-scoped summary links announcements to official DocGet PDF endpoints; monitor stores URLs only.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin HTML discovery monitor for Toledo.
 
   - source_code: BOP_VALENCIA
     name: Boletin Oficial de la Provincia de Valencia

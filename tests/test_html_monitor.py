@@ -16,16 +16,20 @@ from official_sources.html_monitor import (
     build_bop_avila_html_url,
     build_bop_barcelona_html_url,
     build_bop_bizkaia_html_url,
+    build_bop_burgos_html_url,
     build_bop_castellon_html_url,
     build_bop_cordoba_html_url,
     build_bop_granada_html_url,
     build_bop_jaen_html_url,
+    build_bop_leon_html_url,
     build_bop_lleida_html_url,
     build_bop_malaga_html_url,
     build_bop_palencia_html_url,
     build_bop_pontevedra_html_url,
+    build_bop_segovia_html_url,
     build_bop_sevilla_html_url,
     build_bop_soria_html_url,
+    build_bop_toledo_html_url,
     build_bop_valencia_html_url,
     build_bop_valladolid_html_url,
     build_bop_zamora_html_url,
@@ -41,15 +45,19 @@ from official_sources.html_monitor import (
     parse_bop_avila_html,
     parse_bop_barcelona_html,
     parse_bop_bizkaia_detail_html,
+    parse_bop_burgos_html,
     parse_bop_castellon_html,
     parse_bop_cordoba_html,
     parse_bop_jaen_html,
+    parse_bop_leon_html,
     parse_bop_lleida_html,
     parse_bop_malaga_html,
     parse_bop_palencia_html,
     parse_bop_pontevedra_html,
+    parse_bop_segovia_html,
     parse_bop_sevilla_html,
     parse_bop_soria_html,
+    parse_bop_toledo_html,
     parse_bop_valencia_html,
     parse_bop_valladolid_html,
     parse_bop_zamora_html,
@@ -90,16 +98,20 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_BARCELONA",
         "BON",
         "BOP_BIZKAIA",
+        "BOP_BURGOS",
         "BOP_CASTELLON",
         "BOP_CORDOBA",
         "BOP_GRANADA",
         "BOP_JAEN",
+        "BOP_LEON",
         "BOP_LLEIDA",
         "BOP_MALAGA",
         "BOP_PALENCIA",
         "BOP_PONTEVEDRA",
+        "BOP_SEGOVIA",
         "BOP_SEVILLA",
         "BOP_SORIA",
+        "BOP_TOLEDO",
         "BOP_VALENCIA",
         "BOP_VALLADOLID",
         "BOP_ZAMORA",
@@ -180,6 +192,13 @@ def test_build_bop_bizkaia_html_url_is_one_landing_request():
     )
 
 
+def test_build_bop_burgos_html_url_is_one_date_request():
+    assert build_bop_burgos_html_url(
+        "http://bopbur.diputaciondeburgos.es/hemeroteca/{date}?mostrar-anuncio=1",
+        target_date="2026-05-29",
+    ) == "http://bopbur.diputaciondeburgos.es/hemeroteca/2026-05-29?mostrar-anuncio=1"
+
+
 def test_build_bop_castellon_html_url_is_one_landing_request():
     assert (
         build_bop_castellon_html_url(
@@ -229,6 +248,13 @@ def test_build_bop_jaen_html_url_is_one_date_request():
     )
 
 
+def test_build_bop_leon_html_url_is_one_date_request():
+    assert build_bop_leon_html_url(
+        "https://bop.dipuleon.es/publica/consulta-de-bops/buscador/BOP-{dd_mm_yyyy}/",
+        target_date="2026-05-29",
+    ) == "https://bop.dipuleon.es/publica/consulta-de-bops/buscador/BOP-29-05-2026/"
+
+
 def test_build_bop_lleida_html_url_is_latest_landing_request():
     assert (
         build_bop_lleida_html_url(
@@ -259,6 +285,13 @@ def test_build_bop_palencia_html_url_is_one_date_request():
     )
 
 
+def test_build_bop_segovia_html_url_is_landing_request():
+    assert (
+        build_bop_segovia_html_url("https://www.dipsegovia.es/bop", target_date="2026-05-29")
+        == "https://www.dipsegovia.es/bop"
+    )
+
+
 def test_build_bop_sevilla_html_url_is_one_landing_request():
     assert (
         build_bop_sevilla_html_url(
@@ -276,6 +309,17 @@ def test_build_bop_soria_html_url_is_one_date_request():
             target_date="2026-05-29",
         )
         == "https://bop.dipsoria.es/index.php/mod.boloficial/mem.listadodia/fecha.29-05-2026"
+    )
+
+
+def test_build_bop_toledo_html_url_is_one_date_request():
+    assert build_bop_toledo_html_url(
+        "https://bop.diputoledo.es/webEbop/ebopResumen.jsp?"
+        "publication_date={date_ddmmyyyy}&publication_date_to={date_ddmmyyyy}",
+        target_date="2026-05-29",
+    ) == (
+        "https://bop.diputoledo.es/webEbop/ebopResumen.jsp?"
+        "publication_date=29%2F05%2F2026&publication_date_to=29%2F05%2F2026"
     )
 
 
@@ -792,6 +836,84 @@ def test_parse_bop_jaen_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_burgos_html_emits_announcement_metadata():
+    raw = b"""
+    <h1 class="title-numberdate">
+      <span class="title-number"><a href="/bopbur-2026-100">num. 100</a></span>
+      <span class="title-date"><a href="/bopbur-2026-100">viernes, 29 de mayo de 2026</a></span>
+    </h1>
+    <li id="bopbur-anuncio-202602204" class="bopbur-anuncio bopbur-anuncio-level-4">
+      <p>Tablas salariales definitivas para el a&ntilde;o 2025</p>
+      <p class="bopbur-filefield-file">
+        <a href="/bopbur-2026-100-anuncio-202602204.pdf">
+          Anuncio 202602204 (BOPBUR-2026-02204 - 207,08 KB)
+        </a>
+      </p>
+    </li>
+    """
+    page_url = "http://bopbur.diputaciondeburgos.es/bopbur-2026-100"
+
+    result = parse_bop_burgos_html(
+        raw,
+        source_code="BOP_BURGOS",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-burgos",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_BURGOS"
+    assert record["entry_id"] == "202602204"
+    assert record["document_id"] == "BOPBUR-2026-02204"
+    assert record["title"] == "Tablas salariales definitivas para el año 2025"
+    assert record["published_at"] == "2026-05-29"
+    assert record["issue_number"] == "100"
+    assert record["official_url"] == (
+        "http://bopbur.diputaciondeburgos.es/bopbur-2026-100-anuncio-202602204.pdf"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_leon_html_emits_bulletin_metadata_only():
+    raw = b"""
+    <h1><strong>BOP n&uacute;m. 101</strong> del 29/05/2026</h1>
+    <div class="cve">BOP-LE-2026-101</div>
+    <a href="/export/sites/bop/.galleries/DOCUMENTOS-Sumarios-en-PDF/final.pdf">PDF</a>
+    <a href="/export/sites/bop/.galleries/Documentos-BOPs-en-PDF/bop-29_05_2026.pdf">PDF</a>
+    """
+    page_url = "https://bop.dipuleon.es/publica/consulta-de-bops/buscador/BOP-29-05-2026/"
+
+    result = parse_bop_leon_html(
+        raw,
+        source_code="BOP_LEON",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-leon",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_LEON"
+    assert record["entry_id"] == "BOP-LE-2026-101"
+    assert record["document_id"] == "BOP-LE-2026-101"
+    assert "101" in record["title"]
+    assert record["published_at"] == "2026-05-29"
+    assert record["issue_number"] == "101"
+    assert record["official_url"] == page_url
+    assert record["warnings"] == ["bulletin_level_only", "pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert "pdf_url" not in record
+
+
 def test_parse_bop_lleida_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("bop_lleida_latest.html")
     page_url = "https://ebop.diputaciolleida.cat/bop/"
@@ -977,6 +1099,88 @@ def test_parse_bop_granada_fixture_emits_metadata_only_records():
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"
     assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_segovia_html_emits_matching_date_card_metadata():
+    raw = b"""
+    <a href="https://www.dipsegovia.es/bop?p_p_id=as_asac_bulletins_portlet_BulletinsPortlet_INSTANCE_qGil9HCkBMcI&amp;p_p_lifecycle=0&amp;_as_asac_bulletins_portlet_BulletinsPortlet_INSTANCE_qGil9HCkBMcI_mvcPath=%2Fpublisher%2Fdetail.jsp&amp;_as_asac_bulletins_portlet_BulletinsPortlet_INSTANCE_qGil9HCkBMcI_articleId=17714746"
+       title="Ir a viernes, 29 de mayo 2026" rel="nofollow">
+      <span class="card-subtitle">viernes, 29 de mayo 2026</span>
+    </a>
+    <a href="https://www.dipsegovia.es/bop?articleId=17799999" title="Ir a lunes, 01 de junio 2026">
+      <span class="card-subtitle">lunes, 01 de junio 2026</span>
+    </a>
+    """
+    page_url = "https://www.dipsegovia.es/bop"
+
+    result = parse_bop_segovia_html(
+        raw,
+        source_code="BOP_SEGOVIA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-segovia",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_SEGOVIA"
+    assert record["entry_id"] == "17714746"
+    assert record["document_id"] == "17714746"
+    assert record["title"] == "viernes, 29 de mayo 2026"
+    assert record["published_at"] == "2026-05-29"
+    assert record["official_url"].endswith("articleId=17714746")
+    assert record["warnings"] == ["bulletin_level_only"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+
+
+def test_parse_bop_toledo_html_emits_announcement_metadata():
+    raw = b"""
+    <h1>Boletin numero 100 publicado el dia 29/05/2026</h1>
+    <h3 class="publisherBlock">Anunciante : CENTRO REGIONAL DE LA UNED</h3>
+    <div id="26052369>" class="announce">
+      <ul class="announceResumenList">
+        <li><strong>Numero de insercion : </strong>2397
+          <a href="DocGet?id=26052369;0&amp;insert_number=2397&amp;insert_year=2026">Ver anuncio</a>
+          <strong>Tipo de anuncio : </strong>Resolucion
+        </li>
+        <li><strong>Resumen/Asunto : </strong>RECTIFICACION BASES PROCESO SELECTIVO UNED.</li>
+      </ul>
+    </div>
+    """
+    page_url = (
+        "https://bop.diputoledo.es/webEbop/ebopResumen.jsp?"
+        "publication_date=29%2F05%2F2026&publication_date_to=29%2F05%2F2026"
+    )
+
+    result = parse_bop_toledo_html(
+        raw,
+        source_code="BOP_TOLEDO",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-toledo",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_TOLEDO"
+    assert record["entry_id"] == "26052369"
+    assert record["document_id"] == "2397"
+    assert record["title"] == "RECTIFICACION BASES PROCESO SELECTIVO UNED."
+    assert record["published_at"] == "2026-05-29"
+    assert record["issue_number"] == "100"
+    assert record["official_url"] == (
+        "https://bop.diputoledo.es/webEbop/DocGet?id=26052369;0&insert_number=2397&insert_year=2026"
+    )
+    assert record["summary"] == "CENTRO REGIONAL DE LA UNED - Resolucion"
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
     assert "pdf_url" not in record
 
 
@@ -1416,6 +1620,42 @@ def test_monitor_bop_zamora_fetches_landing_then_matching_issue_detail():
     assert requested_urls == [landing_url, detail_url]
     assert len(result.records) == 1
     assert result.records[0]["source_code"] == "BOP_ZAMORA"
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
+
+
+def test_monitor_bop_burgos_fetches_date_then_issue_detail():
+    requested_urls = []
+    landing_url = "http://bopbur.diputaciondeburgos.es/hemeroteca/2026-05-29?mostrar-anuncio=1"
+    detail_url = "http://bopbur.diputaciondeburgos.es/bopbur-2026-100"
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        if url == landing_url:
+            return b'<a href="/bopbur-2026-100">Ver boletin completo</a>'
+        if url == detail_url:
+            return b"""
+            <span class="title-number"><a href="/bopbur-2026-100">num. 100</a></span>
+            <span class="title-date">viernes, 29 de mayo de 2026</span>
+            <li id="bopbur-anuncio-202602204" class="bopbur-anuncio">
+              <p>Tablas salariales</p>
+              <a href="/sites/default/files/private/publicado/bopbur-2026-100/anuncio.pdf">
+                Anuncio 202602204 (BOPBUR-2026-02204 - 207 KB)
+              </a>
+            </li>
+            """
+        raise AssertionError(f"unexpected URL: {url}")
+
+    result = monitor_html_source(
+        get_source("BOP_BURGOS"),
+        fetcher=fetcher,
+        target_date="2026-05-29",
+        limit=1,
+    )
+
+    assert requested_urls == [landing_url, detail_url]
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == "BOP_BURGOS"
     assert result.records[0]["candidate_status"] == "not_candidate"
     assert result.records[0]["evidence_status"] == "not_evidence"
 

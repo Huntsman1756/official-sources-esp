@@ -398,23 +398,19 @@ Parser scope:
 - section/procedencia/organismo are preserved in `summary`
 - official PDF URL is stored as metadata only with `warnings=["pdf_endpoint_not_downloaded"]`
 
-## Next ranked source leads
+## Follow-up batch: Burgos, Leon, Segovia, Toledo
 
-These remain candidates for a subsequent metadata-only batch after the implemented monitors above
-are validated locally and on the VPS.
+Validated locally on 2026-05-31 as metadata-only monitors:
 
-### 1. BOP_LEON
+- `BOP_BURGOS`: date-scoped archive page plus bulletin detail page; emits announcement metadata and stores PDF endpoints as official URLs only.
+- `BOP_LEON`: date-scoped bulletin page; emits bulletin-level metadata only because no stable granular announcement HTML endpoint was confirmed.
+- `BOP_SEGOVIA`: official landing-page bulletin cards with requested-date verification; emits bulletin-level metadata only.
+- `BOP_TOLEDO`: date-scoped summary page; emits announcement metadata and stores DocGet PDF endpoints as official URLs only.
 
-Endpoint candidate:
+Local live preview evidence for `2026-05-29`: all four returned `records=1`,
+`candidate_status=not_candidate`, and `evidence_status=not_evidence`.
 
-```text
-https://bop.dipuleon.es/publica/consulta-de-bops/buscador/BOP-{dd-mm-yyyy}/
-```
-
-Risk: quick pass saw mainly summary/bulletin PDF surfaces, so granular metadata needs a tighter
-detail-page audit before promotion.
-
-### 2. BOP_SALAMANCA
+### BOP_SALAMANCA
 
 Endpoint candidate:
 
@@ -422,7 +418,9 @@ Endpoint candidate:
 https://salamanca.diputaciondesalamanca.es/boletin-oficial-de-la-provincia
 ```
 
-Risk: calendar dates were visible but the summary endpoint needs discovery.
+Risk: calendar dates were visible, but GET/POST probes against the public BOP form did not expose
+stable current bulletin records or 2026 PDF links. Keep as inventory-only until a stable endpoint is
+confirmed.
 
 ## Deferred
 
