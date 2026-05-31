@@ -28,6 +28,7 @@ MCP_TOOL_NAMES = (
     "preview_discovery",
     "recommend_next_sources",
     "recommend_sources_for_consumer",
+    "list_case_taxonomy",
     "boe_consolidated_law_get",
     "boe_consolidated_law_text_get",
     "boe_consolidated_law_citation_build",
@@ -163,6 +164,17 @@ def create_server(repository: OfficialSourcesRepository | None = None):
             consumer=consumer,
             demand_class=demand_class,
             limit=limit,
+        )
+
+    @mcp.tool
+    def list_case_taxonomy(
+        consumer: str | None = None,
+        demand_class: str | None = None,
+    ) -> dict:
+        """List stable downstream case taxonomy entries without fetching or writing."""
+        return tools.list_case_taxonomy(
+            consumer=consumer,
+            demand_class=demand_class,
         )
 
     @mcp.tool

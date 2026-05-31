@@ -57,6 +57,7 @@ def test_mcp_tool_names_use_compatible_snake_case_names():
         "preview_discovery",
         "recommend_next_sources",
         "recommend_sources_for_consumer",
+        "list_case_taxonomy",
         "boe_consolidated_law_get",
         "boe_consolidated_law_text_get",
         "boe_consolidated_law_index_get",
@@ -889,6 +890,94 @@ def test_mcp_recommend_sources_for_consumer_refuses_invalid_limit():
         "status": "invalid_request",
         "message": "limit must be between 1 and 20",
     }
+
+
+def test_mcp_list_case_taxonomy_returns_stable_readonly_taxonomy():
+    result = tools.list_case_taxonomy()
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "case_taxonomy"
+    assert result["mode"] == "read_only"
+    assert result["writes_performed"] is False
+    assert result["candidate_creation_allowed"] is False
+    assert result["evidence_grade_allowed"] is False
+    assert result["product_automation_allowed"] is False
+    assert result["human_review_required"] is True
+    assert result["count"] == 5
+    assert result["supported_demand_classes"] == [
+        "benefit_source_discovery",
+        "education_aid_evidence",
+        "fiscal_reference_resolution",
+        "future_grants_registry",
+        "public_employment_alerts",
+    ]
+    cases = {case["demand_class"]: case for case in result["cases"]}
+    public_employment = cases["public_employment_alerts"]
+    assert public_employment["case_type"] == "public_employment_alert"
+    assert public_employment["primary_consumers"] == ["oposiciones2.0"]
+    assert "public_employment" in public_employment["topics"]
+    assert "provincial" in public_employment["jurisdictions"]
+    assert "candidate_ready" in public_employment["must_not_infer"]
+    assert "all_sources_green" in public_employment["must_not_infer"]
+
+
+def test_mcp_list_case_taxonomy_filters_by_consumer_alias():
+    result = tools.list_case_taxonomy(consumer="renta")
+
+    assert result["status"] == "ok"
+    assert result["count"] == 1
+    fiscal_case = result["cases"][0]
+    assert fiscal_case["demand_class"] == "fiscal_reference_resolution"
+    assert fiscal_case["primary_consumers"] == ["renta-verificable"]
+    assert fiscal_case["review_policy"] == "fiscal_reference_human_review"
+    assert "tax_advice" in fiscal_case["must_not_infer"]
+
+
+def test_mcp_list_case_taxonomy_refuses_unknown_consumer():
+    result = tools.list_case_taxonomy(consumer="unknown-product")
+
+    assert result == {
+        "status": "unsupported_consumer",
+        "consumer": "unknown-product",
+        "supported_consumers": [
+            "eduayudas",
+            "future_grants_registry",
+            "la-ayuda",
+            "oposiciones2.0",
+            "renta-verificable",
+        ],
+        "message": "Unknown downstream consumer; add an explicit taxonomy profile first.",
+    }
+
+
+def test_mcp_list_case_taxonomy_refuses_mismatched_demand_class():
+    result = tools.list_case_taxonomy(
+        consumer="eduayudas",
+        demand_class="public_employment_alerts",
+    )
+
+    assert result == {
+        "status": "unsupported_demand_class",
+        "consumer": "eduayudas",
+        "demand_class": "public_employment_alerts",
+        "supported_demand_class": "education_aid_evidence",
+        "message": "Demand class does not match the registered consumer taxonomy.",
+    }
+
+
+def test_mcp_list_case_taxonomy_does_not_execute_previews_or_write(tmp_path, monkeypatch):
+    def fail_preview(*_args, **_kwargs):
+        raise AssertionError("list_case_taxonomy must not run discovery previews")
+
+    monkeypatch.setattr(source_coverage, "monitor_source_feed", fail_preview)
+    monkeypatch.setattr(source_coverage, "monitor_api_source", fail_preview)
+    monkeypatch.setattr(source_coverage, "monitor_html_source", fail_preview)
+
+    result = tools.list_case_taxonomy(demand_class="benefit_source_discovery")
+
+    assert result["status"] == "ok"
+    assert result["count"] == 1
+    assert not list(tmp_path.rglob("*.jsonl"))
 
 
 def test_mcp_latest_discovery_entries_unknown_source_returns_safe_error(tmp_path):

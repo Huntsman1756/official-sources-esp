@@ -179,6 +179,17 @@ def recommend_sources_for_consumer(
     )
 
 
+def list_case_taxonomy(
+    *,
+    consumer: str | None = None,
+    demand_class: str | None = None,
+) -> dict:
+    return source_coverage.list_case_taxonomy(
+        consumer=consumer,
+        demand_class=demand_class,
+    )
+
+
 def boe_consolidated_law_get(
     repository: OfficialSourcesRepository,
     *,

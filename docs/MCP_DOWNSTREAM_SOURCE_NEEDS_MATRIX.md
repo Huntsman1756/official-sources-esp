@@ -14,9 +14,9 @@ It replaces source expansion by intuition with source expansion by downstream de
 ```text
 registered sources: 65
 metadata_adapter_validated: 9
-monitor_validated: 15
-inventory_only: 41
-monitor_support=available: 24
+monitor_validated: 17
+inventory_only: 39
+monitor_support=available: 26
 evidence_adapter=true: 6
 candidate_creation_allowed=false: 65
 evidence_grade_allowed=false: 65
@@ -76,6 +76,13 @@ public pages
 ## Demand Classes
 
 Downstream needs should be grouped by use case, not only by source administration.
+
+The normative taxonomy for demand classes, case types, topic values, jurisdiction values, safe
+outputs, and refusal semantics is:
+
+```text
+docs/MCP_CASE_TAXONOMY.md
+```
 
 | Demand class | Primary consumers | Required MCP capability | Main safety boundary |
 | --- | --- | --- | --- |
@@ -185,7 +192,8 @@ The MCP layer should grow in this order:
 | `list_latest_discovery_entries` | implemented | Reads existing JSONL only. |
 | `preview_discovery` | implemented | One explicit source, small limit, no writes. |
 | `recommend_next_sources` | implemented | Registry/cache recommendation, not downstream-demand aware yet. |
-| `recommend_sources_for_consumer` | proposed | Should use this matrix to rank work by consumer demand. |
+| `list_case_taxonomy` | implemented | Stable downstream case taxonomy and safety boundaries. |
+| `recommend_sources_for_consumer` | implemented | Uses downstream-demand profiles to rank source work by consumer demand. |
 | `discover_sources_for_case` | proposed | Should return source candidates for a product use case without fetching arbitrary URLs. |
 | `build_evidence_packet` | proposed | Should produce reviewable evidence envelopes only for supported source families. |
 | `resolve_normative_reference` | proposed | Should resolve exact official references without legal interpretation. |
@@ -216,23 +224,24 @@ official-sources remains read-only toward downstream repositories
 BOP_ALICANTE remains degraded/manual-review until a separate recovery task proves otherwise
 ```
 
-## Immediate Next Tasks
+## Task Status
 
 ```text
-TASK-MCP-OFFICIAL-SOURCES-CONTRACT-001
-TASK-MCP-CASE-TAXONOMY-001
-TASK-MCP-TOOLS-READONLY-SKELETON-001
-TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001
-TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001
-TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001
-TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001
+completed: TASK-MCP-OFFICIAL-SOURCES-CONTRACT-001
+completed: TASK-MCP-CASE-TAXONOMY-001
+completed: TASK-MCP-TOOLS-READONLY-SKELETON-001
+completed: TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001
+next: TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001
+next: TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001
+later/gated: TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001
 ```
 
 Recommended order:
 
-1. Define the MCP downstream-demand contract and case taxonomy.
-2. Add read-only MCP outputs that expose consumer-aware recommendations.
-3. Reopen only the public-employment source wave needed by `oposiciones2.0`.
+1. Define the MCP downstream-demand contract and case taxonomy. Done.
+2. Add read-only MCP outputs that expose consumer-aware recommendations. Done.
+3. Reopen only the public-employment source wave needed by `oposiciones2.0`. Done for
+   `BOP_CASTELLON` and `BOP_SEVILLA`.
 4. Add evidence-packet and source-resolver flows for `eduayudas` and `la-ayuda`.
 5. Add fiscal reference resolution only after the `renta-verificable` infrastructure gate or a
    product-specific source audit request.

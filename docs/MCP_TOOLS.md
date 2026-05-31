@@ -8,7 +8,8 @@ Protocol target: MCP `2025-11-25` through FastMCP.
 
 Future MCP development must follow `docs/MCP_OFFICIAL_COMPLIANCE_GUIDE.md`.
 Consumer-aware MCP planning must follow `docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md` and
-`docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md`.
+`docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md`. Stable case classification values are defined in
+`docs/MCP_CASE_TAXONOMY.md`.
 
 The MCP layer does not own storage, ingestion, normalization, citation, or integrity logic. Its
 coverage/cache-readback tools are read-only. Controlled discovery preview may fetch one explicit
@@ -285,6 +286,42 @@ evidence-adapter status, product-readiness status, safe downstream uses, and exp
 This tool does not fetch live sources, run monitor previews, read discovery JSONL, write JSONL,
 mutate the registry, create candidates, create evidence-grade records, download artifacts, or touch
 downstream repositories.
+
+### list_case_taxonomy
+
+Inputs:
+
+- `consumer`: optional known downstream consumer or alias such as `oposiciones2.0`, `eduayudas`,
+  `la-ayuda`, `renta-verificable`, or `renta`.
+- `demand_class`: optional demand-class filter.
+
+Output: deterministic case taxonomy entries from `docs/MCP_CASE_TAXONOMY.md`.
+
+Implemented demand classes:
+
+```text
+public_employment_alerts
+education_aid_evidence
+benefit_source_discovery
+fiscal_reference_resolution
+future_grants_registry
+```
+
+Each response preserves:
+
+```text
+mode=read_only
+writes_performed=false
+candidate_creation_allowed=false
+evidence_grade_allowed=false
+product_automation_allowed=false
+human_review_required=true
+```
+
+Unknown consumers, unsupported demand classes, and consumer/demand-class mismatches return
+structured refusal objects. This tool does not fetch live sources, run monitor previews, read or
+write discovery JSONL, mutate the registry, create candidates, create evidence-grade records,
+download artifacts, perform product automation, or touch downstream repositories.
 
 ### boe_consolidated_law_get
 
