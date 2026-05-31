@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='ISO-8859-1' ?>
+<aplication status='ok' id='' resource=''>
+  <boletin>
+    <cabecera>
+      <fecha>29-05-2026</fecha>
+      <anio>2026</anio>
+      <numero>101</numero>
+      <contenido tipo='pdf'>40637601-2-X</contenido>
+    </cabecera>
+    <anuncios>
+      <romano valor='I' denominacion='DISPOSICIONES GENERALES'>
+        <letra valor='' denominacion='***'>
+          <organo denominacion='CONSEJERIA DE HACIENDA'>
+            <comite denominacion=''>
+              <anuncio>
+                <titulo><![CDATA[Correccion de error en la Orden HGS/29/2026 por la que se establecen bases de ayudas sociales y al estudio]]></titulo>
+                <contenido tipo='pdf'>40637827-1-PDF-577687</contenido>
+                <contenido tipo='html'>40629535-5-HTML-577687-X</contenido>
+              </anuncio>
+            </comite>
+          </organo>
+        </letra>
+      </romano>
+    </anuncios>
+  </boletin>
+</aplication>

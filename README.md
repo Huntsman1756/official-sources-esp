@@ -170,6 +170,7 @@ official-sources rss monitor --source DOG --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOP_LUGO --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOCM --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOP_BADAJOZ --date YYYY-MM-DD --limit 1
+official-sources api monitor --source BOR --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 1

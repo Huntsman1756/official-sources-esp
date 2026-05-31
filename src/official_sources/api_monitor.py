@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
@@ -15,6 +16,7 @@ from official_sources.source_registry import get_source
 
 APIFetcher = Callable[[str], bytes | str]
 BOPV_API_ENDPOINT = "/bopv/administrative-acts/{year}/{month}"
+BOR_API_ENDPOINT = "/boletin/ExportarBoletinServlet"
 
 
 class APIMonitorError(ValueError):
@@ -66,12 +68,28 @@ def select_api_access_method(source: dict[str, Any]) -> dict[str, Any]:
 
 def build_bopv_api_url(template_url: str, *, target_date: str, limit: int) -> str:
     parsed_date = date.fromisoformat(validate_api_monitor_date(target_date))
-    base_url = (
-        template_url.replace("{year}", str(parsed_date.year)).replace(
-            "{month}", str(parsed_date.month)
-        )
+    base_url = template_url.replace("{year}", str(parsed_date.year)).replace(
+        "{month}", str(parsed_date.month)
     )
     return f"{base_url}?{urlencode({'currentPage': 1, 'itemsOfPage': limit, 'lang': 'SPANISH'})}"
+
+
+def build_bor_calendar_api_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_api_monitor_date(target_date))
+    params = {"tipo": 3, "mes": parsed_date.month, "anio": parsed_date.year}
+    return f"{template_url}?{urlencode(params)}"
+
+
+def build_bor_issue_api_url(template_url: str, *, target_date: str, issue_number: str) -> str:
+    parsed_date = date.fromisoformat(validate_api_monitor_date(target_date))
+    fecha = f"{parsed_date:%Y/%m/%d}"
+    return f"{template_url}?{urlencode({'tipo': 1, 'fecha': fecha, 'numero': issue_number})}"
+
+
+def build_bor_announcement_api_url(template_url: str, *, published_at: str, html_ref: str) -> str:
+    parsed_date = date.fromisoformat(validate_api_monitor_date(published_at))
+    fecha = f"{parsed_date:%Y/%m/%d}"
+    return f"{template_url}?{urlencode({'tipo': 2, 'fecha': fecha, 'referencia': html_ref})}"
 
 
 def monitor_api_source(
@@ -87,24 +105,54 @@ def monitor_api_source(
 
     source_code = source["source_code"]
     access_method = select_api_access_method(source)
-    if source_code != "BOPV":
-        raise APIMonitorError("api monitor currently supports BOPV only")
-
-    request_limit = limit or 50
-    api_url = build_bopv_api_url(access_method["url"], target_date=target_date, limit=request_limit)
-    raw_response = _coerce_response_bytes((fetcher or fetch_api)(api_url))
-    raw_response_hash = hashlib.sha256(raw_response).hexdigest()
-    monitor_run_id = hashlib.sha256(
-        f"{source_code}{api_url}{target_date}{raw_response_hash}".encode()
-    ).hexdigest()[:16]
-    return parse_bopv_api_response(
-        raw_response,
-        source_code=source_code,
-        api_url=api_url,
-        api_endpoint=BOPV_API_ENDPOINT,
-        discovered_at=f"{target_date}T00:00:00Z",
-        monitor_run_id=monitor_run_id,
-    )
+    fetch = fetcher or fetch_api
+    if source_code == "BOPV":
+        request_limit = limit or 50
+        api_url = build_bopv_api_url(
+            access_method["url"], target_date=target_date, limit=request_limit
+        )
+        raw_response = _coerce_response_bytes(fetch(api_url))
+        raw_response_hash = hashlib.sha256(raw_response).hexdigest()
+        monitor_run_id = hashlib.sha256(
+            f"{source_code}{api_url}{target_date}{raw_response_hash}".encode()
+        ).hexdigest()[:16]
+        return parse_bopv_api_response(
+            raw_response,
+            source_code=source_code,
+            api_url=api_url,
+            api_endpoint=BOPV_API_ENDPOINT,
+            discovered_at=f"{target_date}T00:00:00Z",
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOR":
+        calendar_url = build_bor_calendar_api_url(access_method["url"], target_date=target_date)
+        raw_calendar = _coerce_response_bytes(fetch(calendar_url))
+        issue_number = parse_bor_calendar_issue_number(raw_calendar, target_date=target_date)
+        if not issue_number:
+            raw_response_hash = hashlib.sha256(raw_calendar).hexdigest()
+            return APIParseResult(raw_response_hash=raw_response_hash, records=[])
+        issue_url = build_bor_issue_api_url(
+            access_method["url"], target_date=target_date, issue_number=issue_number
+        )
+        raw_issue = _coerce_response_bytes(fetch(issue_url))
+        raw_response_hash = hashlib.sha256(
+            raw_calendar + b"\n---BOR-ISSUE---\n" + raw_issue
+        ).hexdigest()
+        monitor_run_id = hashlib.sha256(
+            f"{source_code}{issue_url}{target_date}{raw_response_hash}".encode()
+        ).hexdigest()[:16]
+        result = parse_bor_issue_response(
+            raw_issue,
+            source_code=source_code,
+            api_url=issue_url,
+            api_endpoint=BOR_API_ENDPOINT,
+            source_base_url=access_method["url"],
+            requested_date=target_date,
+            discovered_at=f"{target_date}T00:00:00Z",
+            monitor_run_id=monitor_run_id,
+        )
+        return APIParseResult(raw_response_hash=raw_response_hash, records=result.records[:limit])
+    raise APIMonitorError("api monitor currently supports BOPV and BOR only")
 
 
 def monitor_api_source_code(
@@ -160,6 +208,78 @@ def parse_bopv_api_response(
     )
 
 
+def parse_bor_calendar_issue_number(raw_response: bytes | str, *, target_date: str) -> str | None:
+    raw_bytes = _coerce_response_bytes(raw_response)
+    root = _parse_bor_xml(raw_bytes, context="BOR calendar")
+    parsed_date = date.fromisoformat(validate_api_monitor_date(target_date))
+    target_value = parsed_date.strftime("%d/%m/%Y")
+    for day in root.findall("day"):
+        if day.attrib.get("value") == target_value:
+            return _string_or_none(day.attrib.get("numero"))
+    return None
+
+
+def parse_bor_issue_response(
+    raw_response: bytes | str,
+    *,
+    source_code: str,
+    api_url: str,
+    api_endpoint: str,
+    source_base_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> APIParseResult:
+    raw_bytes = _coerce_response_bytes(raw_response)
+    raw_response_hash = hashlib.sha256(raw_bytes).hexdigest()
+    root = _parse_bor_xml(raw_bytes, context="BOR issue")
+    issue_number = _bor_issue_number(root)
+    published_at = _ddmmyyyy_dash_to_iso(_bor_issue_date(root)) or requested_date
+
+    records = []
+    for item in _iter_bor_announcements(root):
+        html_ref = item["html_ref"]
+        pdf_ref = item["pdf_ref"]
+        api_id = html_ref or pdf_ref
+        official_url = (
+            build_bor_announcement_api_url(
+                source_base_url, published_at=published_at, html_ref=html_ref
+            )
+            if html_ref
+            else None
+        )
+        records.append(
+            {
+                "source_code": source_code,
+                "api_url": api_url,
+                "api_endpoint": api_endpoint,
+                "title": item["title"],
+                "published_at": published_at,
+                "official_url": official_url,
+                "document_id": api_id,
+                "api_id": api_id,
+                "issue_number": issue_number,
+                "summary": _join_summary_parts(
+                    item["section"], item["subsection"], item["department"], item["committee"]
+                ),
+                "raw_response_hash": raw_response_hash,
+                "entry_hash": build_api_entry_hash(
+                    source_code=source_code,
+                    published_at=published_at,
+                    official_url=official_url,
+                    api_id=api_id,
+                ),
+                "discovered_at": discovered_at,
+                "monitor_run_id": monitor_run_id,
+                "classification_status": "unclassified",
+                "evidence_status": "not_evidence",
+                "candidate_status": "not_candidate",
+                "warnings": ["pdf_endpoint_not_downloaded"] if pdf_ref else [],
+            }
+        )
+    return APIParseResult(raw_response_hash=raw_response_hash, records=records)
+
+
 def write_api_jsonl(records: list[dict[str, Any]], output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = "".join(
@@ -171,7 +291,10 @@ def write_api_jsonl(records: list[dict[str, Any]], output_path: Path) -> Path:
 
 def fetch_api(url: str) -> bytes:
     with httpx.Client(follow_redirects=True, timeout=30.0) as client:
-        response = client.get(url, headers={"Accept": "application/json"})
+        response = client.get(
+            url,
+            headers={"Accept": "application/json, application/xml, text/xml"},
+        )
         response.raise_for_status()
         return response.content
 
@@ -237,6 +360,85 @@ def _bopv_summary(item: dict[str, Any]) -> str | None:
         _string_or_none(item.get("department")),
     ]
     summary = " - ".join(value for value in values if value)
+    return summary or None
+
+
+def _parse_bor_xml(raw_response: bytes, *, context: str) -> ET.Element:
+    try:
+        root = ET.fromstring(raw_response)
+    except ET.ParseError as exc:
+        raise APIMonitorError(f"{context} response is not valid XML: {exc}") from exc
+    if root.tag != "aplication" or root.attrib.get("status") != "ok":
+        raise APIMonitorError(f"{context} response is not an ok BOR payload")
+    return root
+
+
+def _bor_issue_date(root: ET.Element) -> str | None:
+    return _xml_text(root.find("./boletin/cabecera/fecha"))
+
+
+def _bor_issue_number(root: ET.Element) -> str | None:
+    return _xml_text(root.find("./boletin/cabecera/numero"))
+
+
+def _iter_bor_announcements(root: ET.Element) -> list[dict[str, str | None]]:
+    records = []
+    for section in root.findall("./boletin/anuncios/romano"):
+        section_label = _xml_attr(section, "denominacion")
+        for subsection in section.findall("letra"):
+            subsection_label = _xml_attr(subsection, "denominacion")
+            for department in subsection.findall("organo"):
+                department_label = _xml_attr(department, "denominacion")
+                for committee in department.findall("comite"):
+                    committee_label = _xml_attr(committee, "denominacion")
+                    for announcement in committee.findall("anuncio"):
+                        title = _xml_text(announcement.find("titulo"))
+                        html_ref = _bor_content_reference(announcement, "html")
+                        pdf_ref = _bor_content_reference(announcement, "pdf")
+                        if title and (html_ref or pdf_ref):
+                            records.append(
+                                {
+                                    "title": title,
+                                    "html_ref": html_ref,
+                                    "pdf_ref": pdf_ref,
+                                    "section": section_label,
+                                    "subsection": subsection_label,
+                                    "department": department_label,
+                                    "committee": committee_label,
+                                }
+                            )
+    return records
+
+
+def _bor_content_reference(announcement: ET.Element, content_type: str) -> str | None:
+    for content in announcement.findall("contenido"):
+        if content.attrib.get("tipo", "").lower() == content_type:
+            return _xml_text(content)
+    return None
+
+
+def _xml_attr(element: ET.Element, key: str) -> str | None:
+    return _string_or_none(element.attrib.get(key))
+
+
+def _xml_text(element: ET.Element | None) -> str | None:
+    if element is None or element.text is None:
+        return None
+    return _string_or_none(element.text)
+
+
+def _ddmmyyyy_dash_to_iso(value: str | None) -> str | None:
+    if not value:
+        return None
+    try:
+        day, month, year = value.split("-")
+        return date(int(year), int(month), int(day)).isoformat()
+    except ValueError:
+        return None
+
+
+def _join_summary_parts(*values: str | None) -> str | None:
+    summary = " - ".join(value for value in values if value and value != "***")
     return summary or None
 
 

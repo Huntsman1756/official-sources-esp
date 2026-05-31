@@ -6,6 +6,28 @@ No downstream repositories were touched. No PDFs or artifacts were downloaded. N
 
 ## Implemented in this pass
 
+### BOR
+
+Status: implemented as a metadata-only XML API monitor.
+
+Validated URL patterns:
+
+```text
+https://ias1.larioja.org/boletin/ExportarBoletinServlet?tipo=3&mes={m}&anio={yyyy}
+https://ias1.larioja.org/boletin/ExportarBoletinServlet?tipo=1&fecha={yyyy}/{mm}/{dd}&numero={N}
+https://ias1.larioja.org/boletin/ExportarBoletinServlet?tipo=2&fecha={yyyy}/{mm}/{dd}&referencia={html_ref}
+```
+
+Parser scope:
+
+- monthly calendar resolves the official issue number for one requested date
+- one daily XML summary request after the issue number is known
+- one record per nested `anuncio`
+- title from `titulo`
+- document id and official URL from the `contenido tipo="html"` reference
+- issue number and hierarchy summary from the XML section/body attributes
+- `warnings=["pdf_endpoint_not_downloaded"]` when a PDF reference is present
+
 ### BOP_PONTEVEDRA
 
 Status: implemented as a metadata-only HTML monitor.
@@ -25,22 +47,37 @@ Parser scope:
 - document id from the trailing numeric BOPPO detail URL segment
 - `warnings=["pdf_endpoint_not_downloaded"]`
 
-Validation evidence:
+## Local validation evidence
 
 ```text
-pytest -q tests/test_html_monitor.py tests/test_source_registry.py tests/test_provincial_readonly_audit.py
-50 passed
+pytest -q tests/test_api_monitor.py tests/test_html_monitor.py tests/test_source_registry.py tests/test_provincial_readonly_audit.py
+passed
+
+python -m official_sources.cli api monitor --source BOR --date 2026-05-29 --limit 1
+records=1
+candidate_status=not_candidate
+evidence_status=not_evidence
 
 python -m official_sources.cli html monitor --source BOP_PONTEVEDRA --date 2026-05-29 --limit 1
 records=1
 candidate_status=not_candidate
 evidence_status=not_evidence
-official_url=https://boppo.depo.gal/web/boppo/detalle/-/boppo/2026/05/29/2026043804
 ```
 
 VPS smoke after copying runtime files to `/opt/official-sources/app`:
 
 ```text
+official-sources sources status --source BOR
+operational_status=monitor_validated
+monitor_support=available
+candidate_creation_allowed=False
+evidence_grade_allowed=False
+
+official-sources api monitor --source BOR --date 2026-05-29 --limit 1
+records=1
+candidate_status=not_candidate
+evidence_status=not_evidence
+
 official-sources sources status --source BOP_PONTEVEDRA
 operational_status=monitor_validated
 monitor_support=available
@@ -55,28 +92,7 @@ evidence_status=not_evidence
 
 ## Next ranked autonomous sources
 
-### 1. BOR - Boletin Oficial de La Rioja
-
-Recommended next implementation. The official XML API is the cleanest path.
-
-Endpoint candidates:
-
-```text
-https://ias1.larioja.org/boletin/ExportarBoletinServlet?tipo=3&mes={m}&anio={yyyy}
-https://ias1.larioja.org/boletin/ExportarBoletinServlet?tipo=1&fecha={yyyy}/{mm}/{dd}&numero={N}
-```
-
-Expected parser shape:
-
-- XML `aplication[@status=ok]`
-- daily issue metadata from `boletin/cabecera`
-- one metadata record per nested `anuncio`
-- `entry_id={fecha}:{numero}:{html_ref}`
-- official XML/detail URL only; ignore PDF content with `pdf_endpoint_not_downloaded`
-
-Target files: `src/official_sources/api_monitor.py`, `tests/test_api_monitor.py`, `config/sources.yaml`, BOR XML fixtures.
-
-### 2. DOCM - Diario Oficial de Castilla-La Mancha
+### 1. DOCM - Diario Oficial de Castilla-La Mancha
 
 Endpoint candidates:
 
@@ -93,7 +109,7 @@ Expected parser shape:
 - detail URL as `official_url`
 - no `descargarArchivo` PDF downloads
 
-### 3. BON - Boletin Oficial de Navarra
+### 2. BON - Boletin Oficial de Navarra
 
 Endpoint candidates:
 

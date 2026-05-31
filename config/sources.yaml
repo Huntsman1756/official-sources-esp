@@ -341,18 +341,24 @@ sources:
     jurisdiction: ES-RI
     jurisdiction_level: autonómica
     official_landing_url: http://www.larioja.org/bor/es
-    access_methods: []
-    operational_status: inventory_only
+    access_methods:
+      - type: api
+        url: https://ias1.larioja.org/boletin/ExportarBoletinServlet
+        status: validated
+        notes: Official XML servlet used by the metadata-only API monitor; monthly calendar resolves daily issue number before fetching one issue summary.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-22"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Access method not validated yet.
-    notes: Registry entry only.
+      - Metadata-only XML API monitor; does not download PDFs or artifacts.
+      - Monitor fetches the monthly publication calendar and one requested daily issue summary.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official XML discovery monitor for BOR La Rioja.
 
   - source_code: BOCM
     name: Boletin Oficial de la Comunidad de Madrid
