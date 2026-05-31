@@ -60,6 +60,7 @@ def test_mcp_tool_names_use_compatible_snake_case_names():
         "list_case_taxonomy",
         "build_evidence_packet",
         "resolve_normative_reference",
+        "resolve_fiscal_reference",
         "boe_consolidated_law_get",
         "boe_consolidated_law_text_get",
         "boe_consolidated_law_index_get",
@@ -1127,6 +1128,93 @@ def test_mcp_downstream_planners_do_not_execute_previews_or_write(tmp_path, monk
     assert evidence["status"] == "ok"
     assert reference["status"] == "manual_review_required"
     assert not list(tmp_path.rglob("*.jsonl"))
+
+
+def test_mcp_resolve_fiscal_reference_returns_aeat_first_manual_review_leads():
+    result = tools.resolve_fiscal_reference(
+        consumer="renta",
+        tax_year=2025,
+        jurisdiction="Comunidad de Madrid",
+        deduction_key="alquiler-vivienda",
+        limit=3,
+    )
+
+    assert result["status"] == "manual_review_required"
+    assert result["resource_type"] == "fiscal_reference_resolution"
+    assert result["consumer"] == "renta-verificable"
+    assert result["demand_class"] == "fiscal_reference_resolution"
+    assert result["tax_year"] == 2025
+    assert result["jurisdiction"] == "Comunidad de Madrid"
+    assert result["deduction_key"] == "alquiler-vivienda"
+    assert result["mode"] == "read_only"
+    assert result["writes_performed"] is False
+    assert result["candidate_creation_allowed"] is False
+    assert result["evidence_grade_allowed"] is False
+    assert result["product_automation_allowed"] is False
+    assert result["human_review_required"] is True
+    assert result["exact_reference_resolved"] is False
+    assert [lead["source_code"] for lead in result["source_leads"]] == ["AEAT", "BOE", "BOCM"]
+    aeat = result["source_leads"][0]
+    assert aeat["registered"] is False
+    assert aeat["source_family"] == "AEAT"
+    assert aeat["official_url"].startswith("https://sede.agenciatributaria.gob.es/")
+    assert aeat["review_status"] == "manual_review_required"
+    assert "tax_advice" in aeat["must_not_infer"]
+    assert "deduction_applicability_decided" in result["must_not_infer"]
+
+
+def test_mcp_resolve_fiscal_reference_keeps_foral_and_autonomous_sources_distinct():
+    navarra = tools.resolve_fiscal_reference(
+        consumer="renta-verificable",
+        tax_year=2025,
+        jurisdiction="Navarra",
+        limit=3,
+    )
+    euskadi = tools.resolve_fiscal_reference(
+        consumer="renta-verificable",
+        tax_year=2025,
+        jurisdiction="Euskadi",
+        limit=3,
+    )
+
+    assert [lead["source_code"] for lead in navarra["source_leads"]] == ["AEAT", "BOE", "BON"]
+    assert navarra["source_leads"][2]["source_family"] == "foral_or_autonomous_bulletin"
+    assert [lead["source_code"] for lead in euskadi["source_leads"]] == ["AEAT", "BOE", "BOPV"]
+    assert euskadi["source_leads"][2]["source_family"] == "foral_or_autonomous_bulletin"
+    assert all(lead["exact_reference_resolved"] is False for lead in navarra["source_leads"])
+    assert all(
+        lead["review_status"] == "manual_review_required" for lead in euskadi["source_leads"]
+    )
+
+
+def test_mcp_resolve_fiscal_reference_refuses_invalid_inputs():
+    wrong_consumer = tools.resolve_fiscal_reference(
+        consumer="la-ayuda",
+        tax_year=2025,
+        jurisdiction="state",
+    )
+    invalid_year = tools.resolve_fiscal_reference(
+        consumer="renta-verificable",
+        tax_year=1800,
+        jurisdiction="state",
+    )
+    invalid_limit = tools.resolve_fiscal_reference(
+        consumer="renta-verificable",
+        tax_year=2025,
+        jurisdiction="state",
+        limit=0,
+    )
+
+    assert wrong_consumer["status"] == "unsupported_consumer"
+    assert wrong_consumer["supported_consumers"] == ["renta-verificable"]
+    assert invalid_year == {
+        "status": "invalid_request",
+        "message": "tax_year must be between 2000 and 2100",
+    }
+    assert invalid_limit == {
+        "status": "invalid_request",
+        "message": "limit must be between 1 and 20",
+    }
 
 
 def test_mcp_latest_discovery_entries_unknown_source_returns_safe_error(tmp_path):

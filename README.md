@@ -140,6 +140,8 @@ The consumer-aware MCP contract is documented in
 `docs/MCP_EDUAYUDAS_EVIDENCE_PACKET_PROFILE.md`.
 `la-ayuda` source-resolver planning is documented in
 `docs/MCP_LAAYUDA_SOURCE_RESOLVER_PROFILE.md`.
+`renta-verificable` fiscal-reference planning is documented in
+`docs/MCP_RENTA_FISCAL_REFERENCE_PROFILE.md`.
 
 Quick registry commands:
 

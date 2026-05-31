@@ -15,6 +15,9 @@ from official_sources.downstream_planners import (
     build_evidence_packet as planner_build_evidence_packet,
 )
 from official_sources.downstream_planners import (
+    resolve_fiscal_reference as planner_resolve_fiscal_reference,
+)
+from official_sources.downstream_planners import (
     resolve_normative_reference as planner_resolve_normative_reference,
 )
 from official_sources.html_monitor import (
@@ -672,6 +675,23 @@ def resolve_normative_reference(
         topic=topic,
         jurisdiction=jurisdiction,
         known_title=known_title,
+        limit=limit,
+    )
+
+
+def resolve_fiscal_reference(
+    *,
+    consumer: str,
+    tax_year: int,
+    jurisdiction: str,
+    deduction_key: str | None = None,
+    limit: int = 10,
+) -> dict:
+    return planner_resolve_fiscal_reference(
+        consumer=consumer,
+        tax_year=tax_year,
+        jurisdiction=jurisdiction,
+        deduction_key=deduction_key,
         limit=limit,
     )
 

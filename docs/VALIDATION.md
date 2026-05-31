@@ -1,5 +1,24 @@
 # Validation
 
+## 2026-05-31 - MCP fiscal reference planner
+
+Report:
+
+```text
+docs/VALIDATION_MCP_FISCAL_REFERENCE_2026-05-31.md
+```
+
+Scope:
+
+```text
+TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001
+read-only fiscal source-lead planning
+no tax advice
+no downstream writes
+no candidate/evidence-grade creation
+no live fetches
+```
+
 ## 2026-05-24 - External repository code review
 
 Report:

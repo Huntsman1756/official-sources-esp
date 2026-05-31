@@ -377,6 +377,35 @@ This tool does not fetch arbitrary URLs, invent URLs, create Markdown, rewrite p
 write downstream data, decide eligibility, decide amount/deadline, decide legal meaning, or cite
 generic/generated links as exact references.
 
+### resolve_fiscal_reference
+
+Inputs:
+
+- `consumer`: `renta-verificable`, `renta`, or `renta_verificable`.
+- `tax_year`: integer tax year.
+- `jurisdiction`: required free-text jurisdiction such as `state`, `Madrid`, `Comunidad de
+  Madrid`, `Navarra`, or `Euskadi`.
+- `deduction_key`: optional product-side key.
+- `limit`: integer, default `10`, maximum `20`.
+
+Output: manual-review fiscal source leads for `renta-verificable`.
+
+The tool is AEAT-first. For Renta 2025 it may return AEAT manual URLs as source leads, followed by
+registered BOE/autonomous/foral bulletin leads such as `BOE`, `BOCM`, `DOGV`, `DOGC`, `BON`, or
+`BOPV` depending on jurisdiction.
+
+Current output is:
+
+```text
+status=manual_review_required
+resolution_status=source_leads_only
+exact_reference_resolved=false
+```
+
+This tool does not provide tax advice, decide deduction applicability, resolve legal meaning, verify
+fiscal claims, fetch arbitrary URLs, invent URLs, download artifacts, create candidates, create
+evidence-grade records, write downstream data, or approve product publication.
+
 ### boe_consolidated_law_get
 
 Inputs:
@@ -466,7 +495,6 @@ Output: official BOE block citation metadata. The tool does not cite mirrors, su
 ## Future Tools
 
 - `discover_sources_for_case`
-- `resolve_fiscal_reference`
 - `boe_legislation_search`
 - `boe_legislation_structure_get`
 - `boe_consolidated_law_search`

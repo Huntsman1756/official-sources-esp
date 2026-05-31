@@ -31,6 +31,7 @@ MCP_TOOL_NAMES = (
     "list_case_taxonomy",
     "build_evidence_packet",
     "resolve_normative_reference",
+    "resolve_fiscal_reference",
     "boe_consolidated_law_get",
     "boe_consolidated_law_text_get",
     "boe_consolidated_law_citation_build",
@@ -208,6 +209,23 @@ def create_server(repository: OfficialSourcesRepository | None = None):
             topic=topic,
             jurisdiction=jurisdiction,
             known_title=known_title,
+            limit=limit,
+        )
+
+    @mcp.tool
+    def resolve_fiscal_reference(
+        consumer: str,
+        tax_year: int,
+        jurisdiction: str,
+        deduction_key: str | None = None,
+        limit: int = 10,
+    ) -> dict:
+        """Return fiscal source leads without tax advice or legal conclusions."""
+        return tools.resolve_fiscal_reference(
+            consumer=consumer,
+            tax_year=tax_year,
+            jurisdiction=jurisdiction,
+            deduction_key=deduction_key,
             limit=limit,
         )
 
