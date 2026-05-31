@@ -78,6 +78,8 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 | `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` | proposed | Generate safe sample discovery outputs only if needed; avoid live writes unless explicitly scoped. |
 | `TASK-SOURCE-PROVINCIAL-DISCOVERY-003` | proposed | Evaluate at most 2 more provincial sources using the pattern report and health-check criteria; no bulk monitoring and no generic framework unless evidence improves. |
 | `TASK-BOP-VALLADOLID-001` | implemented locally | Promotes `BOP_VALLADOLID` from inventory-only to metadata-only HTML monitor using the official date-scoped Liferay URL pattern confirmed by external repo review. No PDFs/artifacts, candidates, evidence-grade records, broad backfill, downstream writes, VPS, Hermes, systemd, or timer changes. |
+| `TASK-BOP-PONTEVEDRA-001` | implemented locally | Promotes `BOP_PONTEVEDRA` from inventory-only to metadata-only HTML monitor using the official date-scoped BOPPO detail URL. No PDFs/artifacts, candidates, evidence-grade records, broad backfill, downstream writes, VPS, Hermes, systemd, or timer changes. |
+| `TASK-AUTONOMIC-WAVE-001` | proposed | Implement the highest-confidence autonomous monitors from agent review in order: `BOR` XML API, then `DOCM` HTML summary, then `BON` calendar JSON plus summary HTML. Preview-only first; no PDF downloads, evidence-grade promotion, downstream writes, or live MCP fetches. |
 | `TASK-SOURCE-HTML-MONITOR-HELPERS-001` | deferred | Only extract additional shared helpers after another source proves repeated duplication; do not create a broad generic provincial framework yet. |
 
 ## Guardrails

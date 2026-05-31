@@ -16,6 +16,7 @@ from official_sources.html_monitor import (
     build_bop_bizkaia_html_url,
     build_bop_castellon_html_url,
     build_bop_malaga_html_url,
+    build_bop_pontevedra_html_url,
     build_bop_sevilla_html_url,
     build_bop_valencia_html_url,
     build_bop_valladolid_html_url,
@@ -29,6 +30,7 @@ from official_sources.html_monitor import (
     parse_bop_bizkaia_detail_html,
     parse_bop_castellon_html,
     parse_bop_malaga_html,
+    parse_bop_pontevedra_html,
     parse_bop_sevilla_html,
     parse_bop_valencia_html,
     parse_bop_valladolid_html,
@@ -67,6 +69,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_BIZKAIA",
         "BOP_CASTELLON",
         "BOP_MALAGA",
+        "BOP_PONTEVEDRA",
         "BOP_SEVILLA",
         "BOP_VALENCIA",
         "BOP_VALLADOLID",
@@ -141,6 +144,16 @@ def test_build_bop_malaga_html_url_is_one_date_request():
             target_date="2026-05-25",
         )
         == "https://www.bopmalaga.es/"
+    )
+
+
+def test_build_bop_pontevedra_html_url_is_one_date_request():
+    assert (
+        build_bop_pontevedra_html_url(
+            "https://boppo.depo.gal/detalle/-/boppo/{yyyy}/{mm}/{dd}",
+            target_date="2026-05-29",
+        )
+        == "https://boppo.depo.gal/detalle/-/boppo/2026/05/29"
     )
 
 
@@ -420,6 +433,44 @@ def test_parse_bop_malaga_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_pontevedra_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_pontevedra_detail.html")
+    page_url = "https://boppo.depo.gal/detalle/-/boppo/2026/05/29"
+
+    result = parse_bop_pontevedra_html(
+        raw,
+        source_code="BOP_PONTEVEDRA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-pontevedra",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_PONTEVEDRA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "2026043804"
+    assert record["document_id"] == "2026043804"
+    assert record["title"] == (
+        "DAR CONTA E ACEPTAR AS RENUNCIAS E LIBERAR O CREDITO DE ENTIDADES "
+        "COLABORADORAS DO PROXECTO +EMPREGA NOS CONCELLOS 2025 PARA FINANCIAR "
+        "CONTRATOS FORMATIVOS. (EXPTE. 2025050276)"
+    )
+    assert record["published_at"] == "2026-05-29"
+    assert record["official_url"] == (
+        "https://boppo.depo.gal/web/boppo/detalle/-/boppo/2026/05/29/2026043804"
+    )
+    assert record["summary"] == "Deputacion Provincial"
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
 def test_parse_bop_sevilla_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("bop_sevilla_latest.html")
     page_url = "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/buscador/BOP-28-05-2026/"
@@ -487,8 +538,7 @@ def test_parse_bop_valladolid_fixture_emits_metadata_only_records():
     )
     assert record["published_at"] == "2026-05-29"
     assert record["official_url"] == (
-        "https://bop.sede.diputaciondevalladolid.es/boletines/2026/mayo/29/"
-        "BOPVA-A-2026-01573.pdf"
+        "https://bop.sede.diputaciondevalladolid.es/boletines/2026/mayo/29/BOPVA-A-2026-01573.pdf"
     )
     assert record["summary"] == "AYUNTAMIENTO DE VALLADOLID"
     assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
@@ -582,6 +632,7 @@ def test_monitor_html_source_supports_selected_provincial_sources():
         "BOP_BARCELONA": "bop_barcelona_latest.html",
         "BOP_CASTELLON": "bop_castellon_latest.html",
         "BOP_MALAGA": "bop_malaga_latest.html",
+        "BOP_PONTEVEDRA": "bop_pontevedra_detail.html",
         "BOP_VALENCIA": "bop_valencia_latest.html",
         "BOP_VALLADOLID": "bop_valladolid_latest.html",
     }

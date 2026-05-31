@@ -107,6 +107,16 @@ def build_bop_malaga_html_url(template_url: str, *, target_date: str) -> str:
     return template_url
 
 
+def build_bop_pontevedra_html_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
+    return (
+        template_url.replace("{yyyy}", f"{parsed_date:%Y}")
+        .replace("{mm}", f"{parsed_date:%m}")
+        .replace("{dd}", f"{parsed_date:%d}")
+        .replace("{date}", parsed_date.isoformat())
+    )
+
+
 def build_bop_sevilla_html_url(template_url: str, *, target_date: str) -> str:
     validate_html_monitor_date(target_date)
     return template_url
@@ -453,6 +463,40 @@ def parse_bop_malaga_html(
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
+def parse_bop_pontevedra_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_bop_pontevedra_publication_date(text) or requested_date
+    records = [
+        _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at,
+            official_url=urljoin(page_url, href),
+            summary=issuer,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"],
+        )
+        for title, href, document_id, issuer in _iter_bop_pontevedra_announcements(text)
+    ]
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
 def parse_bop_sevilla_html(
     raw_page: bytes | str,
     *,
@@ -620,6 +664,8 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_castellon_html_url(template_url, target_date=target_date)
     if source_code == "BOP_MALAGA":
         return build_bop_malaga_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_PONTEVEDRA":
+        return build_bop_pontevedra_html_url(template_url, target_date=target_date)
     if source_code == "BOP_SEVILLA":
         return build_bop_sevilla_html_url(template_url, target_date=target_date)
     if source_code == "BOP_VALENCIA":
@@ -629,7 +675,7 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
     raise HTMLMonitorError(
         "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
         "BOP_BARCELONA, BOP_BIZKAIA, BOP_CASTELLON, BOP_MALAGA, BOP_SEVILLA, "
-        "BOP_VALENCIA, and BOP_VALLADOLID only"
+        "BOP_PONTEVEDRA, BOP_VALENCIA, and BOP_VALLADOLID only"
     )
 
 
@@ -698,6 +744,15 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_MALAGA":
         return parse_bop_malaga_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_PONTEVEDRA":
+        return parse_bop_pontevedra_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -1140,6 +1195,58 @@ def _iter_bop_valladolid_announcements(text: str) -> list[tuple[str, str, str, s
     return announcements
 
 
+def _extract_bop_pontevedra_publication_date(text: str) -> str | None:
+    match = re.search(
+        r'<span[^>]+class="[^"]*\bfecha\b[^"]*"[^>]*>.*?'
+        r"\b(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})\b",
+        text,
+        re.I | re.S,
+    )
+    if not match:
+        match = re.search(
+            r"\b(\d{1,2})\s+de\s+([a-z]+)\s+de\s+(\d{4})\b",
+            _strip_tags(text),
+            re.I,
+        )
+    if not match:
+        return None
+    month = _SPANISH_MONTHS.get(match.group(2).lower())
+    if not month:
+        return None
+    return date(int(match.group(3)), month, int(match.group(1))).isoformat()
+
+
+def _iter_bop_pontevedra_announcements(text: str) -> list[tuple[str, str, str, str | None]]:
+    item_pattern = re.compile(r"<li\b[^>]*>(?P<body>.*?)</li>", re.I | re.S)
+    announcements = []
+    for item in item_pattern.finditer(text):
+        body = item.group("body")
+        link = re.search(
+            r'<p[^>]+class="[^"]*\bsumario\b[^"]*"[^>]*>.*?'
+            r'<a[^>]+href="(?P<href>[^"]+)"[^>]*>(?P<title>.*?)</a>',
+            body,
+            re.I | re.S,
+        )
+        if not link:
+            continue
+        href = html.unescape(link.group("href"))
+        pdf_link = re.search(
+            r'<a[^>]+class="[^"]*\bbotDescPDF\b[^"]*"[^>]+href="(?P<href>[^"]+)"',
+            body,
+            re.I | re.S,
+        )
+        document_id = _bop_pontevedra_document_id_from_url(href)
+        if document_id is None and pdf_link:
+            document_id = _bop_pontevedra_document_id_from_url(
+                html.unescape(pdf_link.group("href"))
+            )
+        title = _normalize_text(_strip_tags(link.group("title")))
+        issuer = _first_class_block_text(body, "pub")
+        if title and href and document_id:
+            announcements.append((title, href, document_id, issuer))
+    return announcements
+
+
 def _extract_bop_malaga_publication_date(text: str) -> str | None:
     match = re.search(r"Bolet[ií]n\s+del\s+(\d{2}/\d{2}/\d{4})", text, re.I)
     if match:
@@ -1219,6 +1326,13 @@ def _bop_valladolid_document_id_from_url(value: str) -> str | None:
     return match.group(1).upper()
 
 
+def _bop_pontevedra_document_id_from_url(value: str) -> str | None:
+    match = re.search(r"/(\d{8,})(?:/|$|\.pdf\b)", value, re.I)
+    if not match:
+        return None
+    return match.group(1)
+
+
 def _first_register_number(text: str) -> str | None:
     match = re.search(r"\bRegistre\s*:?\s*(\d{6,})\b", _strip_tags(text), re.I)
     if match:
@@ -1265,7 +1379,7 @@ def _first_value(values: list[str | None]) -> str | None:
 def _first_class_block_text(text: str, class_name: str) -> str | None:
     match = re.search(
         rf'<[^>]+class="[^"]*\b{re.escape(class_name)}\b[^"]*"[^>]*>'
-        r"(?P<body>.*?)(?:<span\b|</p>|</div>)",
+        r"(?P<body>.*?)(?:<span\b|</span>|</p>|</div>)",
         text,
         re.I | re.S,
     )
@@ -1309,14 +1423,24 @@ _SPANISH_MONTHS = {
     "marzo": 3,
     "abril": 4,
     "mayo": 5,
+    "maio": 5,
     "junio": 6,
+    "xuno": 6,
+    "xu\u00f1o": 6,
     "julio": 7,
+    "xullo": 7,
     "agosto": 8,
     "septiembre": 9,
     "setiembre": 9,
+    "setembro": 9,
     "octubre": 10,
+    "outubro": 10,
     "noviembre": 11,
+    "novembro": 11,
     "diciembre": 12,
+    "decembro": 12,
+    "xaneiro": 1,
+    "febreiro": 2,
 }
 
 
