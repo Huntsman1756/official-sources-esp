@@ -6,6 +6,12 @@ Task: `TASK-SOURCE-PLATFORM-001`
 
 This document defines the cross-project boundary for `official-sources`.
 
+For downstream-demand prioritization and future MCP source planning, see:
+
+```text
+docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md
+```
+
 The decision:
 
 ```text

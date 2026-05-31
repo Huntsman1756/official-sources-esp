@@ -131,6 +131,10 @@ The official publication hierarchy is documented in `docs/decisions/ADR-001-offi
 
 The coverage platform is documented in `docs/SOURCE_COVERAGE_USAGE.md`.
 Source status semantics for downstream consumers are documented in `docs/SOURCE_STATUS_CONTRACT.md`.
+Downstream-demand prioritization for the shared MCP/upstream model is documented in
+`docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md`.
+The proposed consumer-aware MCP contract is documented in
+`docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md`.
 
 Quick registry commands:
 
@@ -159,7 +163,9 @@ official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BARCELONA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BIZKAIA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_CASTELLON --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_SEVILLA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 1
 ```
 

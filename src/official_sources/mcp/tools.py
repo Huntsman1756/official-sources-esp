@@ -166,6 +166,19 @@ def recommend_next_sources(*, limit: int = 5, output_root=None) -> dict:
     )
 
 
+def recommend_sources_for_consumer(
+    *,
+    consumer: str,
+    demand_class: str | None = None,
+    limit: int = 5,
+) -> dict:
+    return source_coverage.recommend_sources_for_consumer(
+        consumer=consumer,
+        demand_class=demand_class,
+        limit=limit,
+    )
+
+
 def boe_consolidated_law_get(
     repository: OfficialSourcesRepository,
     *,

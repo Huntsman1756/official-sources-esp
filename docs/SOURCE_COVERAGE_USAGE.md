@@ -26,12 +26,12 @@ Current source counts:
 ```text
 registered sources: 65
 metadata_adapter_validated: 9
-monitor_validated: 15
-inventory_only: 41
-provincial inventory-only sources: 34
+monitor_validated: 17
+inventory_only: 39
+provincial inventory-only sources: 32
 RSS/Atom discovery sources: BOC_CANARIAS, BOC_CANTABRIA, BOCM, BOCYL, BOE, BOIB, BOJA, BOP_BADAJOZ, BOP_LUGO, DOE, DOG
 API discovery sources: BOPV
-HTML discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_BARCELONA, BOP_BIZKAIA, BOP_MALAGA, BOP_VALENCIA
+HTML discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_BARCELONA, BOP_BIZKAIA, BOP_CASTELLON, BOP_MALAGA, BOP_SEVILLA, BOP_VALENCIA
 BOP_ALICANTE runtime health: degraded/manual-review
 candidate_creation_allowed=false: 65
 evidence_grade_allowed=false: 65
@@ -183,8 +183,9 @@ API monitor rules:
 ## HTML Discovery CLI
 
 HTML discovery is metadata-only. Current provincial HTML discovery supports `BOP_A_CORUNA`,
-`BOP_ALBACETE`, `BOP_ALICANTE`, `BOP_BARCELONA`, `BOP_BIZKAIA`, `BOP_MALAGA`, and
-`BOP_VALENCIA` through source-specific parsers. `BOP_ALICANTE` remains
+`BOP_ALBACETE`, `BOP_ALICANTE`, `BOP_BARCELONA`, `BOP_BIZKAIA`, `BOP_CASTELLON`,
+`BOP_MALAGA`, `BOP_SEVILLA`, and `BOP_VALENCIA` through source-specific parsers.
+`BOP_ALICANTE` remains
 `degraded/manual-review` for runtime health and must not be counted in all-green claims. PDF links
 may appear as official URLs in records, but the monitor does not download PDFs or artifacts.
 
@@ -196,7 +197,9 @@ official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BARCELONA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BIZKAIA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_CASTELLON --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_SEVILLA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 1
 ```
 
@@ -208,7 +211,9 @@ official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 10
 official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 10 --write
 official-sources html monitor --source BOP_BARCELONA --date YYYY-MM-DD --limit 10 --write
 official-sources html monitor --source BOP_BIZKAIA --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_CASTELLON --date YYYY-MM-DD --limit 10 --write
 official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_SEVILLA --date YYYY-MM-DD --limit 10 --write
 official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 10 --write
 ```
 
@@ -354,7 +359,7 @@ Runs a one-source metadata-only discovery preview through the MCP layer. The too
 ```text
 rss: validated RSS/Atom discovery sources
 api: BOPV
-html: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_BARCELONA, BOP_BIZKAIA, BOP_MALAGA, BOP_VALENCIA
+html: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_BARCELONA, BOP_BIZKAIA, BOP_CASTELLON, BOP_MALAGA, BOP_SEVILLA, BOP_VALENCIA
 ```
 
 The default `limit` is `1`; the maximum allowed limit is `10`. If `discovery_type` is omitted, the
@@ -393,8 +398,8 @@ provincial_html_discovery_pilot
 
 The tool scans the registry and recommends provincial `inventory_only` sources with official landing
 URLs and no validated monitor yet. It excludes already monitored sources such as `BOP_A_CORUNA`,
-`BOP_ALBACETE`, `BOP_ALICANTE`, `BOP_BARCELONA`, `BOP_BIZKAIA`, `BOP_MALAGA`, and
-`BOP_VALENCIA`.
+`BOP_ALBACETE`, `BOP_ALICANTE`, `BOP_BARCELONA`, `BOP_BIZKAIA`, `BOP_CASTELLON`,
+`BOP_MALAGA`, `BOP_SEVILLA`, and `BOP_VALENCIA`.
 
 Each recommendation includes:
 
@@ -459,7 +464,9 @@ official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BARCELONA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BIZKAIA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_CASTELLON --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_SEVILLA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 1
 ```
 

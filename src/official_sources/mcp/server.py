@@ -27,6 +27,7 @@ MCP_TOOL_NAMES = (
     "list_latest_discovery_entries",
     "preview_discovery",
     "recommend_next_sources",
+    "recommend_sources_for_consumer",
     "boe_consolidated_law_get",
     "boe_consolidated_law_text_get",
     "boe_consolidated_law_citation_build",
@@ -150,6 +151,19 @@ def create_server(repository: OfficialSourcesRepository | None = None):
     def recommend_next_sources(limit: int = 5) -> dict:
         """Recommend next source work deterministically without running monitors or writes."""
         return tools.recommend_next_sources(limit=limit)
+
+    @mcp.tool
+    def recommend_sources_for_consumer(
+        consumer: str,
+        demand_class: str | None = None,
+        limit: int = 5,
+    ) -> dict:
+        """Recommend read-only source work for a known downstream consumer."""
+        return tools.recommend_sources_for_consumer(
+            consumer=consumer,
+            demand_class=demand_class,
+            limit=limit,
+        )
 
     @mcp.tool
     def boe_consolidated_law_get(official_identifier: str) -> dict:

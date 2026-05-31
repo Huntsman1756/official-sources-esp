@@ -7,6 +7,8 @@ Server name: `official-sources`
 Protocol target: MCP `2025-11-25` through FastMCP.
 
 Future MCP development must follow `docs/MCP_OFFICIAL_COMPLIANCE_GUIDE.md`.
+Consumer-aware MCP planning must follow `docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md` and
+`docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md`.
 
 The MCP layer does not own storage, ingestion, normalization, citation, or integrity logic. Its
 coverage/cache-readback tools are read-only. Controlled discovery preview may fetch one explicit
@@ -190,7 +192,7 @@ Supported preview families:
 ```text
 rss: validated RSS/Atom discovery sources
 api: BOPV API discovery
-html: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE HTML discovery
+html: validated provincial HTML discovery sources
 ```
 
 The tool refuses broad/all-source requests, unknown sources, inventory-only sources without an
@@ -214,8 +216,10 @@ provincial_html_discovery_pilot
 
 The tool recommends provincial `inventory_only` sources with official landing URLs and no validated
 monitor yet. Already monitored sources such as `BOP_A_CORUNA`, `BOP_ALBACETE`, `BOP_ALICANTE`,
-and `BOP_LUGO` are excluded. Documented blocked/deferred sources such as `BOP_ALMERIA` are excluded
-from the normal ranking but remain visible through `list_sources` and `get_source_status`.
+`BOP_BARCELONA`, `BOP_BIZKAIA`, `BOP_CASTELLON`, `BOP_LUGO`, `BOP_MALAGA`, `BOP_SEVILLA`, and
+`BOP_VALENCIA` are excluded. Documented blocked/deferred sources such as `BOP_ALMERIA` are
+excluded from the normal ranking but remain visible through `list_sources` and
+`get_source_status`.
 
 The normal ranking prioritizes the documented provincial pilot waves before alphabetical fallback:
 
@@ -224,8 +228,6 @@ BOP_BARCELONA
 BOP_MALAGA
 BOP_BIZKAIA
 BOP_VALENCIA
-BOP_SEVILLA
-BOP_ZARAGOZA
 ```
 
 Each recommendation includes:
@@ -252,6 +254,37 @@ evidence_grade_allowed
 This is not an LLM tool. It does not execute previews, fetch live sources, write JSONL, create
 files, create candidates, create evidence-grade records, download PDFs/artifacts, run backfills,
 mutate the registry, or touch downstream repositories.
+
+### recommend_sources_for_consumer
+
+Inputs:
+
+- `consumer`: known downstream consumer such as `oposiciones2.0`, `eduayudas`, `la-ayuda`, or
+  `renta-verificable`.
+- `demand_class`: optional demand-class override; must match the registered consumer profile.
+- `limit`: integer, default `5`, maximum `20`.
+
+Output: deterministic downstream-demand source recommendations from the registered consumer
+profiles in `docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md`.
+
+Each response preserves the downstream-demand safety envelope:
+
+```text
+mode=read_only
+writes_performed=false
+candidate_creation_allowed=false
+evidence_grade_allowed=false
+product_automation_allowed=false
+human_review_required=true
+```
+
+Each returned source includes registry status, runtime-health interpretation, monitor support,
+evidence-adapter status, product-readiness status, safe downstream uses, and explicit
+`must_not_infer` warnings.
+
+This tool does not fetch live sources, run monitor previews, read discovery JSONL, write JSONL,
+mutate the registry, create candidates, create evidence-grade records, download artifacts, or touch
+downstream repositories.
 
 ### boe_consolidated_law_get
 
@@ -341,12 +374,21 @@ Output: official BOE block citation metadata. The tool does not cite mirrors, su
 
 ## Future Tools
 
+- `discover_sources_for_case`
+- `build_evidence_packet`
+- `resolve_normative_reference`
+- `resolve_fiscal_reference`
 - `boe_legislation_search`
 - `boe_legislation_structure_get`
 - `boe_consolidated_law_search`
 - `boe_consolidated_law_version_compare`
 
-The first two are not implemented because broad legislation tooling is outside the current scope. Consolidated search remains unimplemented because TASK-003B is limited to identifier, index, and block retrieval. Version comparison is not implemented because custom legal diffing would create misleading legal conclusions.
+The remaining downstream-demand tools are not implemented yet; their contract is defined in
+`docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md`. The first BOE legislation tools are not implemented
+because broad legislation tooling is outside the current scope. Consolidated search remains
+unimplemented because TASK-003B is limited to identifier, index, and block retrieval. Version
+comparison is not implemented because custom legal diffing would create misleading legal
+conclusions.
 
 ## Forbidden Tool Types
 

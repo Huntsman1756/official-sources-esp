@@ -4,6 +4,144 @@ Last updated: 2026-05-31
 
 ## Current Decision
 
+`TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001` is implemented locally as the first source expansion
+after the downstream-demand MCP matrix.
+
+This task adds metadata-only provincial HTML discovery monitors for:
+
+```text
+BOP_CASTELLON
+BOP_SEVILLA
+```
+
+Current executable registry counts:
+
+```text
+registered sources: 65
+metadata_adapter_validated: 9
+monitor_validated: 17
+inventory_only: 39
+monitor_support=available: 26
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
+```
+
+Report:
+
+```text
+docs/reports/source-coverage-reopen-oposiciones-001-2026-05-31.md
+```
+
+This expansion is scoped to `oposiciones2.0` public-employment alert demand. It remains
+metadata-only and did not create candidates, create evidence-grade records, download PDFs/artifacts,
+write discovery JSONL by default, write downstream repositories, run broad backfills, touch VPS,
+touch Hermes, or change systemd. `BOP_ALICANTE` remains `degraded/manual-review`.
+
+## Previous Decision
+
+`TASK-MCP-TOOLS-READONLY-SKELETON-001` is implemented locally with the first consumer-aware
+read-only MCP planning tool:
+
+```text
+recommend_sources_for_consumer
+```
+
+The tool ranks registered sources by downstream demand profile for:
+
+```text
+oposiciones2.0
+eduayudas
+la-ayuda
+renta-verificable
+```
+
+It does not fetch live sources, run monitor previews, read discovery JSONL, write JSONL, mutate the
+registry, create candidates, create evidence-grade records, download artifacts, or touch downstream
+repositories. Responses keep `mode=read_only`, `writes_performed=false`,
+`product_automation_allowed=false`, `candidate_creation_allowed=false`,
+`evidence_grade_allowed=false`, and `human_review_required=true`.
+
+## Previous Decision
+
+`TASK-MCP-OFFICIAL-SOURCES-CONTRACT-001` is implemented locally as a specification-only contract
+for consumer-aware MCP planning tools.
+
+Contract:
+
+```text
+docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md
+```
+
+The contract defines proposed read-only tool semantics for:
+
+```text
+recommend_sources_for_consumer
+discover_sources_for_case
+build_evidence_packet
+resolve_normative_reference
+resolve_fiscal_reference
+```
+
+The contract requires every downstream-demand MCP response to preserve read-only mode, no writes, no
+product automation, candidate creation disabled, evidence-grade creation disabled, and human review
+required unless a future explicit task says otherwise.
+
+No runtime behavior changed.
+
+## Previous Decision
+
+`TASK-MCP-DOWNSTREAM-SOURCE-NEEDS-MATRIX-001` is implemented locally as the first step toward
+turning `official-sources` into a shared read-only MCP/upstream for the current downstream projects:
+
+```text
+G:\_Proyectos\oposiciones2.0\
+G:\_Proyectos\eduayudas\
+G:\_Proyectos\la-ayuda\
+G:\_Proyectos\renta-verificable\
+```
+
+The downstream-demand matrix is:
+
+```text
+docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md
+```
+
+This task changes planning state only. It does not add sources, change parsers, change monitors,
+enable writes, create candidates, create evidence-grade records, download artifacts, touch
+downstream repositories, touch VPS, touch Hermes, or change systemd.
+
+The strategic decision is:
+
+```text
+official-sources MCP should be expanded by downstream demand, not by generic registry completion
+```
+
+Initial demand classes:
+
+```text
+public_employment_alerts: oposiciones2.0
+education_aid_evidence: eduayudas
+benefit_source_discovery: la-ayuda
+fiscal_reference_resolution: renta-verificable
+future_grants_registry: future grants/subsidy consumers
+```
+
+Coverage expansion remains closed by default, but it may be explicitly reopened by a future
+consumer-scoped task. The first recommended expansion target is public-employment alert coverage for
+`oposiciones2.0`, beginning with a small read-only source wave instead of a broad provincial sweep.
+
+Current safety state remains unchanged:
+
+```text
+writes: disabled
+candidate creation: disabled for 65/65
+evidence-grade creation: disabled for 65/65
+BOP_ALICANTE: degraded/manual-review
+runtime behavior changes: none
+```
+
+## Previous Decision
+
 `TASK-PROJECT-CLOSURE-READONLY-UPSTREAM-001` is implemented locally as the administrative closure
 after PR #21 merged the downstream-facing source status contract.
 
