@@ -131,6 +131,8 @@ The official publication hierarchy is documented in `docs/decisions/ADR-001-offi
 
 The coverage platform is documented in `docs/SOURCE_COVERAGE_USAGE.md`.
 Source status semantics for downstream consumers are documented in `docs/SOURCE_STATUS_CONTRACT.md`.
+Downstream-demand prioritization for the shared MCP/upstream model is documented in
+`docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md`.
 
 Quick registry commands:
 

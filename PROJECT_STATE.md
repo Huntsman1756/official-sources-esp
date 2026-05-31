@@ -4,6 +4,58 @@ Last updated: 2026-05-31
 
 ## Current Decision
 
+`TASK-MCP-DOWNSTREAM-SOURCE-NEEDS-MATRIX-001` is implemented locally as the first step toward
+turning `official-sources` into a shared read-only MCP/upstream for the current downstream projects:
+
+```text
+G:\_Proyectos\oposiciones2.0\
+G:\_Proyectos\eduayudas\
+G:\_Proyectos\la-ayuda\
+G:\_Proyectos\renta-verificable\
+```
+
+The downstream-demand matrix is:
+
+```text
+docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md
+```
+
+This task changes planning state only. It does not add sources, change parsers, change monitors,
+enable writes, create candidates, create evidence-grade records, download artifacts, touch
+downstream repositories, touch VPS, touch Hermes, or change systemd.
+
+The strategic decision is:
+
+```text
+official-sources MCP should be expanded by downstream demand, not by generic registry completion
+```
+
+Initial demand classes:
+
+```text
+public_employment_alerts: oposiciones2.0
+education_aid_evidence: eduayudas
+benefit_source_discovery: la-ayuda
+fiscal_reference_resolution: renta-verificable
+future_grants_registry: future grants/subsidy consumers
+```
+
+Coverage expansion remains closed by default, but it may be explicitly reopened by a future
+consumer-scoped task. The first recommended expansion target is public-employment alert coverage for
+`oposiciones2.0`, beginning with a small read-only source wave instead of a broad provincial sweep.
+
+Current safety state remains unchanged:
+
+```text
+writes: disabled
+candidate creation: disabled for 65/65
+evidence-grade creation: disabled for 65/65
+BOP_ALICANTE: degraded/manual-review
+runtime behavior changes: none
+```
+
+## Previous Decision
+
 `TASK-PROJECT-CLOSURE-READONLY-UPSTREAM-001` is implemented locally as the administrative closure
 after PR #21 merged the downstream-facing source status contract.
 
