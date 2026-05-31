@@ -4,6 +4,45 @@ Last updated: 2026-05-31
 
 ## Current Decision
 
+`TASK-MCP-READONLY-UPSTREAM-V1-FINAL-CLOSURE-001` closes `official-sources` as read-only upstream
+v1 for the current downstream consumers.
+
+Final closure:
+
+```text
+docs/MCP_READONLY_UPSTREAM_V1_FINAL_CLOSURE.md
+```
+
+Status:
+
+```text
+official-sources: CLOSED AS READ-ONLY UPSTREAM v1
+operational_status: GO
+downstream_acceptance: moves to consumer preview/import smokes
+writes: disabled
+candidate_creation_allowed=false for all registered sources
+evidence_grade_allowed=false for all registered sources
+source_expansion: frozen unless a downstream smoke proves a concrete source gap
+BOP_ALICANTE: degraded/manual-review
+```
+
+The current MCP closure surface is:
+
+```text
+recommend_sources_for_consumer
+list_case_taxonomy
+build_evidence_packet
+resolve_normative_reference
+resolve_fiscal_reference
+list_downstream_integration_smokes
+check_downstream_integration_smokes
+```
+
+No upstream task may claim product readiness, all-sources-green, evidence-grade readiness, candidate
+readiness, legal/fiscal meaning, eligibility, publication approval, or downstream automation.
+
+## Previous Decision
+
 `TASK-MCP-DOWNSTREAM-INTEGRATION-CLOSURE-001` is implemented locally as the read-only downstream
 integration closure for the current MCP consumers.
 

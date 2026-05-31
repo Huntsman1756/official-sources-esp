@@ -1,5 +1,23 @@
 # Validation
 
+## 2026-05-31 - MCP read-only upstream v1 final closure
+
+Report:
+
+```text
+docs/VALIDATION_MCP_READONLY_UPSTREAM_V1_FINAL_CLOSURE_2026-05-31.md
+```
+
+Scope:
+
+```text
+TASK-MCP-READONLY-UPSTREAM-V1-FINAL-CLOSURE-001
+final read-only upstream v1 closure
+no source expansion
+no downstream writes
+no candidate/evidence-grade creation
+```
+
 ## 2026-05-31 - MCP downstream integration closure
 
 Report:
