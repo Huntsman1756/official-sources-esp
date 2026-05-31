@@ -1384,6 +1384,8 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         "BOP_CASTELLON",
         "BOP_CORDOBA",
         "BOP_GRANADA",
+        "BOP_JAEN",
+        "BOP_LLEIDA",
         "BOP_MALAGA",
         "BOP_PALENCIA",
         "BOP_PONTEVEDRA",
@@ -1391,6 +1393,8 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         "BOP_SORIA",
         "BOP_VALENCIA",
         "BOP_VALLADOLID",
+        "BOP_ZAMORA",
+        "BOPA",
     } and any(
         method.get("type") == "html"
         and method.get("status") == "validated"

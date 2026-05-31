@@ -874,11 +874,14 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
         "BOP_CORDOBA",
         "BOP_GRANADA",
         "BOP_HUELVA",
+        "BOP_JAEN",
+        "BOP_LLEIDA",
         "BOP_LUGO",
         "BOP_MALAGA",
         "BOP_PALENCIA",
         "BOP_VALENCIA",
         "BOP_SORIA",
+        "BOP_ZAMORA",
     }.isdisjoint(source_codes)
     assert all(item["operational_status"] == "inventory_only" for item in result["recommendations"])
 

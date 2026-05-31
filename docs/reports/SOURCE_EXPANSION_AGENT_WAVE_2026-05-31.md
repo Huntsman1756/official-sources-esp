@@ -325,54 +325,104 @@ Parser scope:
 - record granularity is bulletin-level because the listing exposes bulletin/PDF entries, not granular announcements
 - `warnings=["pdf_endpoint_not_downloaded"]`
 
-## Next ranked source leads
+### BOPA
 
-These were found in the later read-only broad pass and remain candidates for a subsequent
-metadata-only batch after this one is validated locally and on the VPS.
+Status: implemented as a metadata-only HTML monitor.
 
-### 1. BOP_JAEN
+Validated URL pattern:
 
-Endpoint candidate:
+```text
+https://miprincipado.asturias.es/bopa-sumario?p_r_p_summaryDate={dd/mm/yyyy}&p_r_p_summaryIsSearch=false
+```
+
+Parser scope:
+
+- date-scoped official BOPA summary page
+- one record per disposition `dl`
+- document id from the visible `[Cod. yyyy-nnnnn]`
+- official text page URL is stored as metadata `official_url`
+- visible PDF links are not downloaded and add `warnings=["pdf_endpoint_not_downloaded"]`
+
+### BOP_JAEN
+
+Status: implemented as a metadata-only HTML monitor.
+
+Validated URL pattern:
 
 ```text
 https://bop.dipujaen.es/bop/{dd-mm-yyyy}
 ```
 
-Fast path: server-rendered date page with visible bulletin title and edict links. Treat PDF links
-as metadata only and mark `pdf_endpoint_not_downloaded`.
+Parser scope:
 
-### 2. BOPA
+- date-scoped official BOP page
+- one record per `article` in the summary
+- document id from `numeroEdicto` and `ejercicioBop`
+- official `descargarws.dip` URL is stored as metadata only
+- `warnings=["pdf_endpoint_not_downloaded"]`
 
-Endpoint candidate:
+### BOP_LLEIDA
 
-```text
-https://miprincipado.asturias.es/bopa-sumario
-```
+Status: implemented as a metadata-only HTML monitor with latest-date verification.
 
-Fast path: Liferay date-scoped summary with visible title/PDF metadata. Parser needs extra care
-because the HTML is large and noisy.
-
-### 3. BOP_LLEIDA
-
-Endpoint candidate:
+Validated URL pattern:
 
 ```text
 https://ebop.diputaciolleida.cat/bop/
 ```
 
-Fast path: latest server-rendered bulletin with announcement links. Date-scoped route was not
-confirmed in the quick pass.
+Parser scope:
 
-### 4. BOP_ZAMORA
+- latest official bulletin page
+- publication date from the `Bop numero` header
+- records are emitted only when latest date matches the requested date
+- one record per `li.edicte`
+- official PDF URL is stored as metadata only with `warnings=["pdf_endpoint_not_downloaded"]`
+
+### BOP_ZAMORA
+
+Status: implemented as a metadata-only two-step HTML monitor.
+
+Validated URL patterns:
+
+```text
+https://www.diputaciondezamora.es/opencms/servicios/BOP/bop/index.html
+https://www.diputaciondezamora.es/opencms/servicios/BOP/indice-bop/{uuid}/
+```
+
+Parser scope:
+
+- listing page resolves the requested-date bulletin detail URL
+- detail page emits one record per `div#anuncio`
+- document id from `Nº de referencia`
+- section/procedencia/organismo are preserved in `summary`
+- official PDF URL is stored as metadata only with `warnings=["pdf_endpoint_not_downloaded"]`
+
+## Next ranked source leads
+
+These remain candidates for a subsequent metadata-only batch after the implemented monitors above
+are validated locally and on the VPS.
+
+### 1. BOP_LEON
 
 Endpoint candidate:
 
 ```text
-https://www.diputaciondezamora.es/opencms/servicios/BOP/bop/index.html
+https://bop.dipuleon.es/publica/consulta-de-bops/buscador/BOP-{dd-mm-yyyy}/
 ```
 
-Fast path: landing page discovers an OpenCMS detail UUID for the current bulletin; parser can then
-read bulletin-level/announcement metadata without downloading PDFs.
+Risk: quick pass saw mainly summary/bulletin PDF surfaces, so granular metadata needs a tighter
+detail-page audit before promotion.
+
+### 2. BOP_SALAMANCA
+
+Endpoint candidate:
+
+```text
+https://salamanca.diputaciondesalamanca.es/boletin-oficial-de-la-provincia
+```
+
+Risk: calendar dates were visible but the summary endpoint needs discovery.
 
 ## Deferred
 

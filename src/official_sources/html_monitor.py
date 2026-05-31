@@ -142,6 +142,18 @@ def build_bop_granada_html_url(template_url: str, *, target_date: str) -> str:
     )
 
 
+def build_bop_jaen_html_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
+    return template_url.replace("{dd_mm_yyyy}", parsed_date.strftime("%d-%m-%Y")).replace(
+        "{date}", parsed_date.isoformat()
+    )
+
+
+def build_bop_lleida_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url
+
+
 def build_bop_malaga_html_url(template_url: str, *, target_date: str) -> str:
     validate_html_monitor_date(target_date)
     return template_url
@@ -182,6 +194,18 @@ def build_bop_valencia_html_url(template_url: str, *, target_date: str) -> str:
 def build_bop_valladolid_html_url(template_url: str, *, target_date: str) -> str:
     validate_html_monitor_date(target_date)
     return template_url.replace("{date}", target_date)
+
+
+def build_bop_zamora_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url
+
+
+def build_bopa_html_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
+    summary_date = parsed_date.strftime("%d/%m/%Y")
+    params = {"p_r_p_summaryDate": summary_date, "p_r_p_summaryIsSearch": "false"}
+    return f"{template_url}?{urlencode(params)}"
 
 
 def build_docm_html_url(template_url: str, *, target_date: str) -> str:
@@ -246,6 +270,15 @@ def monitor_html_source(
     elif source_code == "BON":
         landing_page = _coerce_page_bytes(fetch(page_url))
         detail_url = _extract_bon_issue_url(
+            landing_page.decode("utf-8", errors="replace"),
+            page_url,
+            target_date,
+        )
+        raw_page = _coerce_page_bytes(fetch(detail_url))
+        page_url = detail_url
+    elif source_code == "BOP_ZAMORA":
+        landing_page = _coerce_page_bytes(fetch(page_url))
+        detail_url = _extract_bop_zamora_detail_url(
             landing_page.decode("utf-8", errors="replace"),
             page_url,
             target_date,
@@ -610,6 +643,82 @@ def parse_bop_cordoba_html(
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
+def parse_bop_jaen_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("iso-8859-1", errors="replace")
+    published_at = _extract_bop_jaen_publication_date(text, page_url) or requested_date
+    issue_number = _extract_bop_jaen_issue_number(text)
+    records = []
+    for title, href, entry_id, document_id, summary in _iter_bop_jaen_announcements(text):
+        record = _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=entry_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at,
+            official_url=urljoin(page_url, href),
+            summary=summary,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"],
+        )
+        if issue_number:
+            record["issue_number"] = issue_number
+        records.append(record)
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
+def parse_bop_lleida_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_bop_lleida_publication_date(text)
+    if published_at != requested_date:
+        return HTMLParseResult(raw_page_hash=raw_page_hash, records=[])
+    issue_number = _extract_bop_lleida_issue_number(text)
+    records = []
+    for title, href, document_id, summary in _iter_bop_lleida_announcements(text):
+        record = _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at,
+            official_url=urljoin(page_url, href),
+            summary=summary,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"],
+        )
+        if issue_number:
+            record["issue_number"] = issue_number
+        records.append(record)
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
 def parse_bop_malaga_html(
     raw_page: bytes | str,
     *,
@@ -851,6 +960,78 @@ def parse_bop_valladolid_html(
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
+def parse_bop_zamora_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_bop_zamora_publication_date(text) or requested_date
+    if published_at != requested_date:
+        return HTMLParseResult(raw_page_hash=raw_page_hash, records=[])
+    issue_number = _extract_bop_zamora_issue_number(text)
+    records = []
+    for title, href, document_id, summary in _iter_bop_zamora_announcements(text):
+        record = _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at,
+            official_url=urljoin(page_url, href),
+            summary=summary,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"],
+        )
+        if issue_number:
+            record["issue_number"] = issue_number
+        records.append(record)
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
+def parse_bopa_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    records = [
+        _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=title,
+            published_at=requested_date,
+            official_url=urljoin(page_url, href),
+            summary=summary,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"] if has_pdf else [],
+        )
+        for title, href, document_id, summary, has_pdf in _iter_bopa_announcements(text)
+    ]
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
 def parse_docm_html(
     raw_page: bytes | str,
     *,
@@ -963,6 +1144,10 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_cordoba_html_url(template_url, target_date=target_date)
     if source_code == "BOP_GRANADA":
         return build_bop_granada_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_JAEN":
+        return build_bop_jaen_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_LLEIDA":
+        return build_bop_lleida_html_url(template_url, target_date=target_date)
     if source_code == "BOP_MALAGA":
         return build_bop_malaga_html_url(template_url, target_date=target_date)
     if source_code == "BOP_PONTEVEDRA":
@@ -977,13 +1162,18 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_valencia_html_url(template_url, target_date=target_date)
     if source_code == "BOP_VALLADOLID":
         return build_bop_valladolid_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_ZAMORA":
+        return build_bop_zamora_html_url(template_url, target_date=target_date)
+    if source_code == "BOPA":
+        return build_bopa_html_url(template_url, target_date=target_date)
     if source_code == "DOCM":
         return build_docm_html_url(template_url, target_date=target_date)
     raise HTMLMonitorError(
         "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
         "BOP_AVILA, BOP_BARCELONA, BON, BOP_BIZKAIA, BOP_CASTELLON, BOP_CORDOBA, "
-        "BOP_GRANADA, BOP_MALAGA, BOP_PALENCIA, BOP_SEVILLA, BOP_SORIA, "
-        "BOP_PONTEVEDRA, BOP_VALENCIA, BOP_VALLADOLID, and DOCM only"
+        "BOP_GRANADA, BOP_JAEN, BOP_LLEIDA, BOP_MALAGA, BOP_PALENCIA, "
+        "BOP_SEVILLA, BOP_SORIA, BOP_PONTEVEDRA, BOP_VALENCIA, BOP_VALLADOLID, "
+        "BOP_ZAMORA, BOPA, and DOCM only"
     )
 
 
@@ -1086,6 +1276,24 @@ def _parse_html_monitor_response(
             discovered_at=discovered_at,
             monitor_run_id=monitor_run_id,
         )
+    if source_code == "BOP_JAEN":
+        return parse_bop_jaen_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_LLEIDA":
+        return parse_bop_lleida_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
     if source_code == "BOP_MALAGA":
         return parse_bop_malaga_html(
             raw_page,
@@ -1142,6 +1350,24 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_VALLADOLID":
         return parse_bop_valladolid_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_ZAMORA":
+        return parse_bop_zamora_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOPA":
+        return parse_bopa_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -1765,6 +1991,114 @@ def _iter_bop_cordoba_announcements(text: str) -> list[tuple[str, str, str, str,
     return announcements
 
 
+def _extract_bop_jaen_publication_date(text: str, page_url: str) -> str | None:
+    match = re.search(r"/bop/(\d{2})-(\d{2})-(\d{4})", page_url)
+    if match:
+        return date(int(match.group(3)), int(match.group(2)), int(match.group(1))).isoformat()
+    return _long_spanish_date_to_iso(_strip_tags(text))
+
+
+def _extract_bop_jaen_issue_number(text: str) -> str | None:
+    match = re.search(r"Bolet[ií]n\s+N[ºo]\s+(\d+)", _strip_tags(text), re.I)
+    return match.group(1) if match else None
+
+
+def _iter_bop_jaen_announcements(text: str) -> list[tuple[str, str, str, str, str | None]]:
+    section_pattern = re.compile(r"<section\b[^>]*>(?P<body>.*?)</section>", re.I | re.S)
+    article_pattern = re.compile(r"<article\b[^>]*>(?P<body>.*?)</article>", re.I | re.S)
+    announcements = []
+    for section in section_pattern.finditer(text):
+        section_body = section.group("body")
+        section_label = _first_class_block_text(section_body, "seccion")
+        subsection = None
+        department = None
+        for match in re.finditer(
+            r"""<p[^>]+class=(?P<quote>["'])(?P<class>[^"']+)(?P=quote)[^>]*>(?P<body>.*?)</p>|"""
+            r"<article\b[^>]*>(?P<article>.*?)</article>",
+            section_body,
+            re.I | re.S,
+        ):
+            class_name = match.group("class") or ""
+            if "subseccion" in class_name:
+                subsection = _normalize_text(_strip_tags(match.group("body") or ""))
+                department = None
+                continue
+            if "departamento" in class_name:
+                department = _normalize_text(_strip_tags(match.group("body") or ""))
+                continue
+            article = match.group("article")
+            if article is None:
+                continue
+            title = _first_class_block_text(article, "edicto")
+            link = re.search(
+                r"""<a[^>]+href=(?P<quote>["'])(?P<href>(?:(?!\1).)*descargarws\.dip(?:(?!\1).)*numeroEdicto=(?P<id>\d+)(?:(?!\1).)*)(?P=quote)""",
+                article,
+                re.I | re.S,
+            )
+            if not (title and link):
+                continue
+            href = html.unescape(link.group("href"))
+            entry_id = link.group("id")
+            year = _query_param_value(href, "ejercicioBop") or _query_param_value(
+                href, "anioExpedienteEdicto"
+            )
+            document_id = f"BOP-{year}-{entry_id}" if year else entry_id
+            announcements.append(
+                (
+                    title,
+                    href,
+                    entry_id,
+                    document_id,
+                    _join_title_parts(section_label, subsection, department),
+                )
+            )
+    if announcements:
+        return announcements
+    for article in article_pattern.finditer(text):
+        title = _first_class_block_text(article.group("body"), "edicto")
+        if title:
+            continue
+    return announcements
+
+
+def _extract_bop_lleida_publication_date(text: str) -> str | None:
+    match = re.search(r"Bop\s+n[úu]mero:\s*[\d/]+\s*-\s*(\d{2}/\d{2}/\d{4})", text, re.I)
+    return _ddmmyyyy_to_iso(match.group(1)) if match else None
+
+
+def _extract_bop_lleida_issue_number(text: str) -> str | None:
+    match = re.search(r"Bop\s+n[úu]mero:\s*([\d/]+)\s*-", text, re.I)
+    return match.group(1) if match else None
+
+
+def _iter_bop_lleida_announcements(text: str) -> list[tuple[str, str, str, str | None]]:
+    section_pattern = re.compile(
+        r'<h2[^>]+class="[^"]*\bseccioTau\b[^"]*"[^>]*>(?P<section>.*?)</h2>'
+        r"(?P<body>.*?)(?=<h2[^>]+class=\"[^\"]*\bseccioTau\b|</body>)",
+        re.I | re.S,
+    )
+    announcements = []
+    for section in section_pattern.finditer(text):
+        summary = _normalize_text(_strip_tags(section.group("section")))
+        for item in re.finditer(
+            r'<li[^>]+class="[^"]*\bedicte\b[^"]*"[^>]*>.*?'
+            r'<a[^>]+href="(?P<href>[^"]+\.pdf)"[^>]*>(?P<title>.*?)</a>',
+            section.group("body"),
+            re.I | re.S,
+        ):
+            href = html.unescape(item.group("href"))
+            document_id = _bop_lleida_document_id_from_url(href)
+            title = _normalize_text(_strip_tags(item.group("title")))
+            if title and document_id:
+                announcements.append((title, href, document_id, summary))
+    return announcements
+
+
+def _bop_lleida_document_id_from_url(value: str) -> str | None:
+    match = re.search(r"/(\d+)\.pdf\b", value, re.I)
+    return match.group(1) if match else None
+
+
 def _last_bop_cordoba_issuer(text: str) -> str | None:
     pattern = re.compile(
         r'\\"className\\":\\"emisor\\".*?\\"h2\\",null,\{\\"children\\":\\"(?P<issuer>.*?)\\"\}',
@@ -1835,6 +2169,119 @@ def _iter_bop_valladolid_announcements(text: str) -> list[tuple[str, str, str, s
         issuer = _first_class_block_text(body, "bop_tit_articulo")
         if title and href and document_id:
             announcements.append((title, href, document_id, issuer))
+    return announcements
+
+
+def _extract_bop_zamora_detail_url(text: str, page_url: str, target_date: str) -> str:
+    date_pattern = _long_date_pattern(target_date)
+    item_pattern = re.compile(
+        r'<li[^>]+class="[^"]*\blist-entry\b[^"]*"[^>]*>(?P<body>.*?)</li>',
+        re.I | re.S,
+    )
+    for item in item_pattern.finditer(text):
+        body = item.group("body")
+        if not date_pattern.search(_strip_tags(body)):
+            continue
+        link = re.search(
+            r'<a[^>]+href="(?P<href>[^"]*/opencms/servicios/BOP/indice-bop/[^"]+)"',
+            body,
+            re.I | re.S,
+        )
+        if link:
+            return urljoin(page_url, html.unescape(link.group("href")))
+    raise HTMLMonitorError("BOP_ZAMORA landing page did not expose a detail URL for requested date")
+
+
+def _extract_bop_zamora_publication_date(text: str) -> str | None:
+    return _long_spanish_date_to_iso(_strip_tags(text))
+
+
+def _extract_bop_zamora_issue_number(text: str) -> str | None:
+    match = re.search(r"\bBOP\s+(\d+)\b", _strip_tags(text), re.I)
+    return match.group(1) if match else None
+
+
+def _iter_bop_zamora_announcements(text: str) -> list[tuple[str, str, str, str | None]]:
+    block_pattern = re.compile(
+        r'<div[^>]+id="anuncio"[^>]*>(?P<body>.*?)(?=<div[^>]+id="anuncio"|</body>)',
+        re.I | re.S,
+    )
+    announcements = []
+    for block in block_pattern.finditer(text):
+        body = block.group("body")
+        section = _first_class_block_text(body, "sub-header")
+        procedencia = _label_value(body, "Procedencia")
+        organismo = _label_value(body, "Organismo")
+        title = _label_value(body, "Extracto")
+        document_id = _bop_zamora_reference(body)
+        link = re.search(r'<a[^>]+href="(?P<href>[^"]+\.pdf)"', body, re.I | re.S)
+        if title and document_id and link:
+            announcements.append(
+                (
+                    title,
+                    html.unescape(link.group("href")),
+                    document_id,
+                    _join_title_parts(section, procedencia, organismo),
+                )
+            )
+    return announcements
+
+
+def _bop_zamora_reference(text: str) -> str | None:
+    match = re.search(r"N[ºo]\s+de\s+referencia\s*:\s*(\d+)", _strip_tags(text), re.I)
+    return match.group(1) if match else None
+
+
+def _iter_bopa_announcements(text: str) -> list[tuple[str, str, str, str | None, bool]]:
+    container = _first_id_container(text, "bopa-boletin") or text
+    tokens = re.finditer(
+        r"<h4\b[^>]*>(?P<h4>.*?)</h4>|<h5\b[^>]*>(?P<h5>.*?)</h5>|"
+        r"<h6\b[^>]*>(?P<h6>.*?)</h6>|<dl\b[^>]*>(?P<dl>.*?)</dl>",
+        container,
+        re.I | re.S,
+    )
+    context: dict[str, str | None] = {"h4": None, "h5": None, "h6": None}
+    announcements = []
+    for token in tokens:
+        if token.group("h4") is not None:
+            context = {
+                "h4": _normalize_text(_strip_tags(token.group("h4"))),
+                "h5": None,
+                "h6": None,
+            }
+            continue
+        if token.group("h5") is not None:
+            context["h5"] = _normalize_text(_strip_tags(token.group("h5")))
+            context["h6"] = None
+            continue
+        if token.group("h6") is not None:
+            context["h6"] = _normalize_text(_strip_tags(token.group("h6")))
+            continue
+        dl = token.group("dl") or ""
+        dt_match = re.search(r"<dt\b[^>]*>(?P<title>.*?)</dt>", dl, re.I | re.S)
+        link = re.search(
+            r'<a[^>]+title="[^"]*Texto[^"]*"[^>]+href="(?P<href>[^"]+)"',
+            dl,
+            re.I | re.S,
+        )
+        code = re.search(r"\[\s*C[oó]d\.?\s*(?P<id>\d{4}-\d+)\s*\]", _strip_tags(dl), re.I)
+        if not (dt_match and link and code):
+            continue
+        title = re.sub(
+            r"\s*\[\s*C[oó]d\.?\s*\d{4}-\d+\s*\]\s*$",
+            "",
+            _normalize_text(_strip_tags(dt_match.group("title"))),
+            flags=re.I,
+        )
+        announcements.append(
+            (
+                title,
+                html.unescape(link.group("href")),
+                code.group("id"),
+                _join_title_parts(context["h4"], context["h5"], context["h6"]),
+                ".pdf" in dl.lower(),
+            )
+        )
     return announcements
 
 
@@ -2067,6 +2514,11 @@ def _first_json_value(item: dict[str, Any], key: str) -> str | None:
     return None
 
 
+def _query_param_value(url: str, key: str) -> str | None:
+    match = re.search(rf"[?&]{re.escape(key)}=([^&#]+)", html.unescape(url))
+    return html.unescape(match.group(1)) if match else None
+
+
 def _ddmmyyyy_to_iso(value: str | None) -> str | None:
     if not value:
         return None
@@ -2176,7 +2628,7 @@ def _first_value(values: list[str | None]) -> str | None:
 
 def _first_class_block_text(text: str, class_name: str) -> str | None:
     match = re.search(
-        rf'<[^>]+class\s*=\s*"[^"]*\b{re.escape(class_name)}\b[^"]*"[^>]*>'
+        rf"""<[^>]+class\s*=\s*["'][^"']*\b{re.escape(class_name)}\b[^"']*["'][^>]*>"""
         r"(?P<body>.*?)(?:<span\b|</span>|</p>|</div>)",
         text,
         re.I | re.S,
@@ -2188,7 +2640,7 @@ def _first_class_block_text(text: str, class_name: str) -> str | None:
 
 def _class_texts(text: str, class_name: str) -> list[str]:
     pattern = re.compile(
-        rf'<[^>]+class\s*=\s*"[^"]*\b{re.escape(class_name)}\b[^"]*"[^>]*>'
+        rf"""<[^>]+class\s*=\s*["'][^"']*\b{re.escape(class_name)}\b[^"']*["'][^>]*>"""
         r"(?P<body>.*?)</[^>]+>",
         re.I | re.S,
     )
@@ -2206,6 +2658,22 @@ def _first_id_block_text(text: str, id_prefix: str) -> str | None:
     return _normalize_text(_strip_tags(match.group("body")))
 
 
+def _first_id_container(text: str, element_id: str) -> str | None:
+    match = re.search(
+        rf'<div[^>]+id="{re.escape(element_id)}"[^>]*>(?P<body>.*?)</body>',
+        text,
+        re.I | re.S,
+    )
+    if match:
+        return match.group("body")
+    match = re.search(
+        rf'<div[^>]+id="{re.escape(element_id)}"[^>]*>(?P<body>.*)',
+        text,
+        re.I | re.S,
+    )
+    return match.group("body") if match else None
+
+
 def _first_heading_text(text: str) -> str | None:
     match = re.search(r"<h[1-6]\b[^>]*>(?P<title>.*?)</h[1-6]>", text, re.I | re.S)
     if not match:
@@ -2218,6 +2686,38 @@ def _join_title_parts(*parts: str | None) -> str | None:
     if not normalized_parts:
         return None
     return " - ".join(normalized_parts)
+
+
+def _label_value(text: str, label: str) -> str | None:
+    plain = _strip_tags(text)
+    label_pattern = re.escape(label).replace("º", r"(?:º|o)")
+    match = re.search(
+        rf"{label_pattern}\s*:\s*(?P<value>.*?)(?=(?:Procedencia|Organismo|Extracto|N[ºo]\s+de\s+referencia)\s*:|$)",
+        plain,
+        re.I | re.S,
+    )
+    return _normalize_text(match.group("value")) if match else None
+
+
+def _long_spanish_date_to_iso(text: str) -> str | None:
+    match = re.search(
+        r"\b(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})\b",
+        text,
+        re.I,
+    )
+    if not match:
+        return None
+    month = _SPANISH_MONTHS.get(match.group(2).lower())
+    if not month:
+        return None
+    return date(int(match.group(3)), month, int(match.group(1))).isoformat()
+
+
+def _long_date_pattern(target_date: str) -> re.Pattern[str]:
+    parsed = date.fromisoformat(validate_html_monitor_date(target_date))
+    month_names = [name for name, number in _SPANISH_MONTHS.items() if number == parsed.month]
+    month_pattern = "|".join(re.escape(name) for name in month_names)
+    return re.compile(rf"\b{parsed.day}\s+de\s+(?:{month_pattern})\s+de\s+{parsed.year}\b", re.I)
 
 
 def _strip_tags(value: str) -> str:

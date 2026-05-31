@@ -19,6 +19,8 @@ from official_sources.html_monitor import (
     build_bop_castellon_html_url,
     build_bop_cordoba_html_url,
     build_bop_granada_html_url,
+    build_bop_jaen_html_url,
+    build_bop_lleida_html_url,
     build_bop_malaga_html_url,
     build_bop_palencia_html_url,
     build_bop_pontevedra_html_url,
@@ -26,6 +28,8 @@ from official_sources.html_monitor import (
     build_bop_soria_html_url,
     build_bop_valencia_html_url,
     build_bop_valladolid_html_url,
+    build_bop_zamora_html_url,
+    build_bopa_html_url,
     build_docm_html_url,
     build_html_entry_hash,
     build_html_monitor_output_path,
@@ -39,6 +43,8 @@ from official_sources.html_monitor import (
     parse_bop_bizkaia_detail_html,
     parse_bop_castellon_html,
     parse_bop_cordoba_html,
+    parse_bop_jaen_html,
+    parse_bop_lleida_html,
     parse_bop_malaga_html,
     parse_bop_palencia_html,
     parse_bop_pontevedra_html,
@@ -46,6 +52,8 @@ from official_sources.html_monitor import (
     parse_bop_soria_html,
     parse_bop_valencia_html,
     parse_bop_valladolid_html,
+    parse_bop_zamora_html,
+    parse_bopa_html,
     parse_docm_html,
     select_html_access_method,
 )
@@ -85,6 +93,8 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_CASTELLON",
         "BOP_CORDOBA",
         "BOP_GRANADA",
+        "BOP_JAEN",
+        "BOP_LLEIDA",
         "BOP_MALAGA",
         "BOP_PALENCIA",
         "BOP_PONTEVEDRA",
@@ -92,6 +102,8 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_SORIA",
         "BOP_VALENCIA",
         "BOP_VALLADOLID",
+        "BOP_ZAMORA",
+        "BOPA",
         "DOCM",
     ):
         source = get_source(source_code)
@@ -208,6 +220,25 @@ def test_build_bop_granada_html_url_is_one_date_request():
     )
 
 
+def test_build_bop_jaen_html_url_is_one_date_request():
+    assert (
+        build_bop_jaen_html_url(
+            "https://bop.dipujaen.es/bop/{dd_mm_yyyy}", target_date="2026-05-29"
+        )
+        == "https://bop.dipujaen.es/bop/29-05-2026"
+    )
+
+
+def test_build_bop_lleida_html_url_is_latest_landing_request():
+    assert (
+        build_bop_lleida_html_url(
+            "https://ebop.diputaciolleida.cat/bop/",
+            target_date="2026-05-29",
+        )
+        == "https://ebop.diputaciolleida.cat/bop/"
+    )
+
+
 def test_build_bop_pontevedra_html_url_is_one_date_request():
     assert (
         build_bop_pontevedra_html_url(
@@ -272,6 +303,26 @@ def test_build_bop_valladolid_html_url_is_one_date_request():
         "p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&"
         "p_p_col_id=column-1&p_p_col_count=3&"
         "_BOPVisualizaBoletin_WAR_BOPVisualizaBoletin_fecha=2026-05-29"
+    )
+
+
+def test_build_bop_zamora_html_url_is_latest_landing_request():
+    assert (
+        build_bop_zamora_html_url(
+            "https://www.diputaciondezamora.es/opencms/servicios/BOP/bop/index.html",
+            target_date="2026-05-29",
+        )
+        == "https://www.diputaciondezamora.es/opencms/servicios/BOP/bop/index.html"
+    )
+
+
+def test_build_bopa_html_url_is_one_date_request():
+    assert build_bopa_html_url(
+        "https://miprincipado.asturias.es/bopa-sumario",
+        target_date="2026-05-29",
+    ) == (
+        "https://miprincipado.asturias.es/bopa-sumario?"
+        "p_r_p_summaryDate=29%2F05%2F2026&p_r_p_summaryIsSearch=false"
     )
 
 
@@ -707,6 +758,71 @@ def test_parse_bop_cordoba_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_jaen_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_jaen_detail.html")
+    page_url = "https://bop.dipujaen.es/bop/29-05-2026"
+
+    result = parse_bop_jaen_html(
+        raw,
+        source_code="BOP_JAEN",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-jaen",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_JAEN"
+    assert record["entry_id"] == "2553"
+    assert record["document_id"] == "BOP-2026-2553"
+    assert record["title"] == (
+        "Convocatoria de Subvenciones del Area de Agricultura a favor de entidades "
+        "sin animo de lucro."
+    )
+    assert record["published_at"] == "2026-05-29"
+    assert record["issue_number"] == "103"
+    assert record["summary"] == (
+        "Administracion Local - DIPUTACION PROVINCIAL DE JAEN - Area de Agricultura"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_lleida_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_lleida_latest.html")
+    page_url = "https://ebop.diputaciolleida.cat/bop/"
+
+    result = parse_bop_lleida_html(
+        raw,
+        source_code="BOP_LLEIDA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-lleida",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_LLEIDA"
+    assert record["entry_id"] == "202610104236"
+    assert record["document_id"] == "202610104236"
+    assert record["title"] == (
+        "4236 - AJUNTAMENT D'ALBESA (ALBESA) - Nomenament funcionaria de carrera"
+    )
+    assert record["published_at"] == "2026-05-29"
+    assert record["issue_number"] == "101/0"
+    assert record["summary"] == "Administracio Local - Ajuntaments"
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert "pdf_url" not in record
+
+
 def test_parse_bop_soria_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("bop_soria_detail.html")
     page_url = (
@@ -901,6 +1017,77 @@ def test_parse_bop_valladolid_fixture_emits_metadata_only_records():
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"
     assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_zamora_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_zamora_detail.html")
+    page_url = (
+        "https://www.diputaciondezamora.es/opencms/servicios/BOP/indice-bop/"
+        "6256e9b6-5a81-11f1-9953-e5884f57ec76/"
+    )
+
+    result = parse_bop_zamora_html(
+        raw,
+        source_code="BOP_ZAMORA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-zamora",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_ZAMORA"
+    assert record["entry_id"] == "202601351"
+    assert record["document_id"] == "202601351"
+    assert record["title"] == (
+        "Informacion publica relativa a la solicitud de autorizacion administrativa previa."
+    )
+    assert record["published_at"] == "2026-05-29"
+    assert record["issue_number"] == "63"
+    assert record["summary"] == (
+        "II. ADMINISTRACION AUTONOMICA - JUNTA DE CASTILLA Y LEON - "
+        "Servicio Territorial de Industria"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert "pdf_url" not in record
+
+
+def test_parse_bopa_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bopa_summary_2026_05_29.html")
+    page_url = (
+        "https://miprincipado.asturias.es/bopa-sumario?"
+        "p_r_p_summaryDate=29%2F05%2F2026&p_r_p_summaryIsSearch=false"
+    )
+
+    result = parse_bopa_html(
+        raw,
+        source_code="BOPA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-bopa",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOPA"
+    assert record["entry_id"] == "2026-04395"
+    assert record["document_id"] == "2026-04395"
+    assert record["title"] == "Ley del Principado de Asturias 3/2026, de Colegios Profesionales."
+    assert record["published_at"] == "2026-05-29"
+    assert record["summary"] == (
+        "I. Principado de Asturias - DISPOSICIONES GENERALES - "
+        "PRESIDENCIA DEL PRINCIPADO DE ASTURIAS"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
     assert "pdf_url" not in record
 
 
@@ -1147,6 +1334,39 @@ def test_monitor_bon_fetches_month_index_then_issue_summary():
     assert result.records[0]["classification_status"] == "unclassified"
 
 
+def test_monitor_new_single_fetch_sources_emit_metadata_only_records():
+    cases = {
+        "BOP_JAEN": ("2026-05-29", "bop_jaen_detail.html"),
+        "BOP_LLEIDA": ("2026-05-29", "bop_lleida_latest.html"),
+        "BOPA": ("2026-05-29", "bopa_summary_2026_05_29.html"),
+    }
+
+    for source_code, (target_date, fixture_name) in cases.items():
+        requested_urls = []
+
+        def fetcher(
+            url: str,
+            *,
+            fixture_name: str = fixture_name,
+            requested_urls: list[str] = requested_urls,
+        ) -> bytes:
+            requested_urls.append(url)
+            return _fixture_bytes(fixture_name)
+
+        result = monitor_html_source(
+            get_source(source_code),
+            fetcher=fetcher,
+            target_date=target_date,
+            limit=1,
+        )
+
+        assert len(requested_urls) == 1
+        assert len(result.records) == 1
+        assert result.records[0]["source_code"] == source_code
+        assert result.records[0]["candidate_status"] == "not_candidate"
+        assert result.records[0]["evidence_status"] == "not_evidence"
+
+
 def test_monitor_bop_palencia_returns_latest_only_when_date_matches():
     requested_urls = []
     landing_url = "https://www.diputaciondepalencia.es/servicios/boletin-oficial-provincia"
@@ -1166,6 +1386,36 @@ def test_monitor_bop_palencia_returns_latest_only_when_date_matches():
     assert len(result.records) == 1
     assert result.records[0]["source_code"] == "BOP_PALENCIA"
     assert result.records[0]["published_at"] == "2026-05-29"
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
+
+
+def test_monitor_bop_zamora_fetches_landing_then_matching_issue_detail():
+    requested_urls = []
+    landing_url = "https://www.diputaciondezamora.es/opencms/servicios/BOP/bop/index.html"
+    detail_url = (
+        "https://www.diputaciondezamora.es/opencms/servicios/BOP/indice-bop/"
+        "6256e9b6-5a81-11f1-9953-e5884f57ec76/"
+    )
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        if url == landing_url:
+            return _fixture_bytes("bop_zamora_landing.html")
+        if url == detail_url:
+            return _fixture_bytes("bop_zamora_detail.html")
+        raise AssertionError(f"unexpected URL: {url}")
+
+    result = monitor_html_source(
+        get_source("BOP_ZAMORA"),
+        fetcher=fetcher,
+        target_date="2026-05-29",
+        limit=1,
+    )
+
+    assert requested_urls == [landing_url, detail_url]
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == "BOP_ZAMORA"
     assert result.records[0]["candidate_status"] == "not_candidate"
     assert result.records[0]["evidence_status"] == "not_evidence"
 

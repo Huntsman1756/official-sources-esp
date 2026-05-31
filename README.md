@@ -174,6 +174,7 @@ official-sources api monitor --source BOR --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOP_HUELVA --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BON --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOPA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source DOCM --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 1
@@ -184,6 +185,8 @@ official-sources html monitor --source BOP_BIZKAIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_CASTELLON --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_CORDOBA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GRANADA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_JAEN --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_LLEIDA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_PALENCIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_PONTEVEDRA --date YYYY-MM-DD --limit 1
@@ -191,6 +194,7 @@ official-sources html monitor --source BOP_SEVILLA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SORIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALLADOLID --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_ZAMORA --date YYYY-MM-DD --limit 1
 ```
 
 Monitor output writes require explicit `--write`. RSS/API/HTML discovery records are not

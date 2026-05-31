@@ -140,19 +140,24 @@ sources:
     name: Boletin Oficial del Principado de Asturias
     jurisdiction: ES-AS
     jurisdiction_level: autonómica
-    official_landing_url: https://sede.asturias.es/servicios-del-bopa
-    access_methods: []
-    operational_status: inventory_only
+    official_landing_url: https://miprincipado.asturias.es/bopa-sumario
+    access_methods:
+      - type: html
+        url: https://miprincipado.asturias.es/bopa-sumario
+        status: validated
+        notes: Official date-scoped BOPA summary page used by metadata-only HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-22"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Access method not validated yet.
-    notes: Registry entry only.
+      - Metadata-only HTML discovery; does not download PDFs or artifacts.
+      - Preview one requested date only; historical backfill remains disabled.
+    notes: Official BOPA HTML discovery monitor.
 
   - source_code: BOIB
     name: Boletin Oficial de las Illes Balears
@@ -1058,21 +1063,22 @@ sources:
     official_landing_url: http://bop.dipujaen.es/
     access_methods:
       - type: html
-        url: http://bop.dipujaen.es/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bop.dipujaen.es/bop/{dd_mm_yyyy}
+        status: validated
+        notes: Official date-scoped bulletin page used by metadata-only HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Jaen.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Date page exposes official PDF endpoints; monitor stores URLs only.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin HTML discovery monitor for Jaen.
 
   - source_code: BOP_LAS_PALMAS
     name: Boletin Oficial de la Provincia de Las Palmas
@@ -1128,20 +1134,21 @@ sources:
     access_methods:
       - type: html
         url: https://ebop.diputaciolleida.cat/bop/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        status: validated
+        notes: Official latest bulletin page used by metadata-only HTML monitor when latest date matches requested date.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Lleida.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Date-scoped URL was not confirmed; monitor uses latest listing and returns no records on date mismatch.
+      - Historical backfill disabled; preview current/latest bulletin only.
+    notes: Official provincial bulletin HTML discovery monitor for Lleida.
 
   - source_code: BOP_LUGO
     name: Boletin Oficial da Provincia de Lugo
@@ -1505,20 +1512,21 @@ sources:
     access_methods:
       - type: html
         url: https://www.diputaciondezamora.es/opencms/servicios/BOP/bop/index.html
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        status: validated
+        notes: Official listing page used to discover the requested-date bulletin detail URL.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Zamora.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Landing page must expose the requested date in its current listing; otherwise monitor returns no records.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin HTML discovery monitor for Zamora.
 
   - source_code: BOP_ZARAGOZA
     name: Boletin Oficial de la Provincia de Zaragoza
