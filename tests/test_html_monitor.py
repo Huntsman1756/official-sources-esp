@@ -13,12 +13,17 @@ from official_sources.html_monitor import (
     build_bon_html_url,
     build_bop_a_coruna_html_url,
     build_bop_alicante_html_url,
+    build_bop_araba_alava_html_url,
     build_bop_avila_html_url,
     build_bop_barcelona_html_url,
     build_bop_bizkaia_html_url,
     build_bop_burgos_html_url,
+    build_bop_cadiz_html_url,
     build_bop_castellon_html_url,
+    build_bop_ciudad_real_html_url,
     build_bop_cordoba_html_url,
+    build_bop_cuenca_html_url,
+    build_bop_gipuzkoa_html_url,
     build_bop_granada_html_url,
     build_bop_jaen_html_url,
     build_bop_leon_html_url,
@@ -42,12 +47,17 @@ from official_sources.html_monitor import (
     parse_bop_a_coruna_html,
     parse_bop_albacete_html,
     parse_bop_alicante_response,
+    parse_bop_araba_alava_html,
     parse_bop_avila_html,
     parse_bop_barcelona_html,
     parse_bop_bizkaia_detail_html,
     parse_bop_burgos_html,
+    parse_bop_cadiz_html,
     parse_bop_castellon_html,
+    parse_bop_ciudad_real_html,
     parse_bop_cordoba_html,
+    parse_bop_cuenca_html,
+    parse_bop_gipuzkoa_html,
     parse_bop_jaen_html,
     parse_bop_leon_html,
     parse_bop_lleida_html,
@@ -94,6 +104,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
     for source_code in (
         "BOP_ALBACETE",
         "BOP_ALICANTE",
+        "BOP_ARABA_ALAVA",
         "BOP_AVILA",
         "BOP_BARCELONA",
         "BON",
@@ -101,6 +112,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_BURGOS",
         "BOP_CASTELLON",
         "BOP_CORDOBA",
+        "BOP_GIPUZKOA",
         "BOP_GRANADA",
         "BOP_JAEN",
         "BOP_LEON",
@@ -151,6 +163,13 @@ def test_build_bop_alicante_html_url_is_one_date_request():
     assert "%3CfechaPub%3E25%2F05%2F2026%3C%2FfechaPub%3E" in url
 
 
+def test_build_bop_araba_alava_html_url_is_one_date_request():
+    assert build_bop_araba_alava_html_url(
+        "http://www.araba.eus/botha/Inicio/SGBO5001.aspx?FechaBotha={date_ddmmyyyy}",
+        target_date="2026-05-29",
+    ) == "http://www.araba.eus/botha/Inicio/SGBO5001.aspx?FechaBotha=29%2F05%2F2026"
+
+
 def test_build_bop_avila_html_url_is_one_date_request():
     assert (
         build_bop_avila_html_url(
@@ -199,6 +218,13 @@ def test_build_bop_burgos_html_url_is_one_date_request():
     ) == "http://bopbur.diputaciondeburgos.es/hemeroteca/2026-05-29?mostrar-anuncio=1"
 
 
+def test_build_bop_cadiz_html_url_is_landing_request():
+    assert (
+        build_bop_cadiz_html_url("https://www.bopcadiz.es/boletin/", target_date="2026-05-29")
+        == "https://www.bopcadiz.es/boletin/"
+    )
+
+
 def test_build_bop_castellon_html_url_is_one_landing_request():
     assert (
         build_bop_castellon_html_url(
@@ -227,6 +253,31 @@ def test_build_bop_cordoba_html_url_is_one_date_request():
         )
         == "https://bop.dipucordoba.es/dia/28-05-2026"
     )
+
+
+def test_build_bop_ciudad_real_html_url_is_one_date_request():
+    assert build_bop_ciudad_real_html_url(
+        "https://bop.dipucr.es/bop/{yyyy}/{mm}/{dd}",
+        target_date="2026-05-29",
+    ) == "https://bop.dipucr.es/bop/2026/05/29"
+
+
+def test_build_bop_cuenca_html_url_is_one_date_request():
+    assert build_bop_cuenca_html_url(
+        "https://www.dipucuenca.es/boletin-oficial-de-la-provincia?"
+        "p_r_p_startDate={date_ddmmyyyy}&p_r_p_endDate={date_ddmmyyyy}",
+        target_date="2026-05-29",
+    ) == (
+        "https://www.dipucuenca.es/boletin-oficial-de-la-provincia?"
+        "p_r_p_startDate=29%2F05%2F2026&p_r_p_endDate=29%2F05%2F2026"
+    )
+
+
+def test_build_bop_gipuzkoa_html_url_is_one_date_request():
+    assert build_bop_gipuzkoa_html_url(
+        "https://egoitza.gipuzkoa.eus/gao-bog/castell/bog/{yyyy}/{mm}/{dd}/bc{yymmdd}.htm",
+        target_date="2026-05-29",
+    ) == "https://egoitza.gipuzkoa.eus/gao-bog/castell/bog/2026/05/29/bc260529.htm"
 
 
 def test_build_bop_granada_html_url_is_one_date_request():
@@ -880,6 +931,132 @@ def test_parse_bop_burgos_html_emits_announcement_metadata():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_araba_alava_html_emits_announcement_metadata():
+    raw = b"""
+    <a title='Boletin N61' href='../Inicio/SGBO5001.aspx?FechaBotha=29/05/2026'>29</a>
+    <div class='titulo_bloque_resultados' id='TitSeccion2'>Municipios</div>
+    <div class='titulo_bloque_resultados' id='TitSeccion3'>AYUNTAMIENTO DE ALEGRIA-DULANTZI</div>
+    <div class="datos_anuncio">
+      <a id="grdAnuncios__ctl9_Hyperlink1"
+         href="../Busquedas/Resultado.aspx?File=Boletines/2026/061/2026_061_01490_C.xml&amp;hl="
+         target="_blank">Cobro del Impuesto sobre Bienes Inmuebles de naturaleza urbana</a>
+      <a class="icono" href="../Boletines/2026/061/2026_061_01490_C.pdf">PDF</a>
+    </div>
+    """
+    page_url = "http://www.araba.eus/botha/Inicio/SGBO5001.aspx?FechaBotha=29%2F05%2F2026"
+
+    result = parse_bop_araba_alava_html(
+        raw,
+        source_code="BOP_ARABA_ALAVA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-araba",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_ARABA_ALAVA"
+    assert record["entry_id"] == "01490"
+    assert record["document_id"] == "2026_061_01490_C"
+    assert record["title"] == "Cobro del Impuesto sobre Bienes Inmuebles de naturaleza urbana"
+    assert record["published_at"] == "2026-05-29"
+    assert record["issue_number"] == "61"
+    assert record["official_url"] == (
+        "http://www.araba.eus/botha/Busquedas/Resultado.aspx?"
+        "File=Boletines/2026/061/2026_061_01490_C.xml&hl="
+    )
+    assert record["summary"] == "Municipios - AYUNTAMIENTO DE ALEGRIA-DULANTZI"
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_cadiz_html_emits_announcement_metadata():
+    raw = b"""
+    <p class="fecha"> Fri May 29 08:00:00 CEST 2026
+      <a href="/.boletines_pdf/2026/05_mayo/SU-101_29-05-26.pdf">Sumario PDF</a>
+    </p>
+    <h2>Boletin numero 101 del ano 2026</h2>
+    <div>
+      <h3>ADMINISTRACION LOCAL</h3>
+      <p><a href="/export/sites/default/.boletines_pdf/2026/05_mayo/BOP101_29-05-26.pdf#page=6">
+        <strong>127.737.- Ayuntamiento de Vejer de la Frontera.</strong>
+        Delegacion de la autorizacion de matrimonio civil.
+      </a></p>
+    </div>
+    """
+    page_url = "https://www.bopcadiz.es/boletin/Boletin-numero-101-del-ano-2026"
+
+    result = parse_bop_cadiz_html(
+        raw,
+        source_code="BOP_CADIZ",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-cadiz",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_CADIZ"
+    assert record["entry_id"] == "127.737"
+    assert record["document_id"] == "127.737"
+    assert record["title"] == "Delegacion de la autorizacion de matrimonio civil."
+    assert record["published_at"] == "2026-05-29"
+    assert record["issue_number"] == "101"
+    assert record["summary"] == "ADMINISTRACION LOCAL - Ayuntamiento de Vejer de la Frontera."
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_ciudad_real_html_emits_announcement_metadata():
+    raw = b"""
+    <h2>Ultimo Boletin publicado: 29-05-2026</h2>
+    <div class="cabecera_bop"><span>Numero 101 - Viernes 29 de Mayo de 2026</span></div>
+    <h3 class="admons">DIPUTACION PROVINCIAL</h3><div>
+      <p class="clasificaciones">SERVICIO DE PERSONAL</p>
+      <ul class="anuncios">
+        <li id="1666">
+          <p><a href="https://se1.dipucr.es:4443/SIGEM_BuscadorDocsWeb/getDocument.do?entidad=005&amp;doc=7567560">
+            Nombramiento de Maestro/a de Albanileria.
+          </a><br><span class="nAnuncio">Anuncio N 1666</span>
+          - <span class="nPagina">Pag. 4946</span></p>
+        </li>
+      </ul>
+    </div>
+    """
+    page_url = "https://bop.dipucr.es/bop/2026/05/29"
+
+    result = parse_bop_ciudad_real_html(
+        raw,
+        source_code="BOP_CIUDAD_REAL",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-ciudad-real",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_CIUDAD_REAL"
+    assert record["entry_id"] == "1666"
+    assert record["document_id"] == "7567560"
+    assert record["title"] == "Nombramiento de Maestro/a de Albanileria."
+    assert record["published_at"] == "2026-05-29"
+    assert record["issue_number"] == "101"
+    assert record["summary"] == "DIPUTACION PROVINCIAL - SERVICIO DE PERSONAL"
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert "pdf_url" not in record
+
+
 def test_parse_bop_leon_html_emits_bulletin_metadata_only():
     raw = b"""
     <h1><strong>BOP n&uacute;m. 101</strong> del 29/05/2026</h1>
@@ -1132,6 +1309,98 @@ def test_parse_bop_segovia_html_emits_matching_date_card_metadata():
     assert record["title"] == "viernes, 29 de mayo 2026"
     assert record["published_at"] == "2026-05-29"
     assert record["official_url"].endswith("articleId=17714746")
+    assert record["warnings"] == ["bulletin_level_only"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+
+
+def test_parse_bop_gipuzkoa_html_emits_announcement_metadata():
+    raw = b"""
+    <title>Boletin Oficial de Gipuzkoa Numero 99 Fecha 29-05-2026</title>
+    <div id="sumario"><h2>Boletin 29-05-2026, Numero 99</h2>
+    <ul id="secciones">
+      <li class="seccion">
+        <p>2. ADMINISTRACION DEL TERRITORIO HISTORICO DE GIPUZKOA</p>
+        <ul class="organismos">
+          <li class="organismo">
+            <a name="6212">DEPARTAMENTO DE GOBERNANZA</a>
+            <ul class="anuncios">
+              <li>
+                <div class="titulo_anuncio">Declarar desierto el proceso selectivo.</div>
+                <div class="enlace_html"><a class="descarga_html" href="c2603368.htm">HTML</a></div>
+                <div class="enlace_pdf"><a class="descarga_pdf" href="c2603368.pdf">PDF</a></div>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+    """
+    page_url = "https://egoitza.gipuzkoa.eus/gao-bog/castell/bog/2026/05/29/bc260529.htm"
+
+    result = parse_bop_gipuzkoa_html(
+        raw,
+        source_code="BOP_GIPUZKOA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-gipuzkoa",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_GIPUZKOA"
+    assert record["entry_id"] == "c2603368"
+    assert record["document_id"] == "c2603368"
+    assert record["title"] == "Declarar desierto el proceso selectivo."
+    assert record["published_at"] == "2026-05-29"
+    assert record["issue_number"] == "99"
+    assert record["summary"] == (
+        "2. ADMINISTRACION DEL TERRITORIO HISTORICO DE GIPUZKOA - "
+        "DEPARTAMENTO DE GOBERNANZA"
+    )
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_cuenca_html_emits_matching_date_card_metadata():
+    raw = b"""
+    <a href="https://www.dipucuenca.es/boletin-oficial-de-la-provincia?p_p_id=as_asac_bulletins_web_BulletinsWebPortlet_INSTANCE_LuthFM11tPwH&amp;p_p_lifecycle=0&amp;_as_asac_bulletins_web_BulletinsWebPortlet_INSTANCE_LuthFM11tPwH_mvcPath=%2Fpublisher%2Fdetail.jsp&amp;_as_asac_bulletins_web_BulletinsWebPortlet_INSTANCE_LuthFM11tPwH_articleId=2102048"
+       title="Ir a viernes, 29 de mayo 2026" rel="nofollow">
+      <span class="hide-accessible">viernes, 29 de mayo 2026</span>
+    </a>
+    <div class="card-body">
+      <span class="card-text">61</span>
+      <a href="https://www.dipucuenca.es/boletin-oficial-de-la-provincia?articleId=2102048">
+        <span class="card-subtitle">viernes, 29 de mayo 2026</span>
+      </a>
+    </div>
+    """
+    page_url = (
+        "https://www.dipucuenca.es/boletin-oficial-de-la-provincia?"
+        "p_r_p_startDate=29%2F05%2F2026&p_r_p_endDate=29%2F05%2F2026"
+    )
+
+    result = parse_bop_cuenca_html(
+        raw,
+        source_code="BOP_CUENCA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-cuenca",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_CUENCA"
+    assert record["entry_id"] == "2102048"
+    assert record["document_id"] == "2102048"
+    assert record["title"] == "viernes, 29 de mayo 2026"
+    assert record["published_at"] == "2026-05-29"
+    assert record["issue_number"] == "61"
     assert record["warnings"] == ["bulletin_level_only"]
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"

@@ -1,0 +1,24 @@
+{
+  "data": [
+    {
+      "fechaPublicacion": 1779919200000,
+      "fechaAnuncio": 1779919200000,
+      "idboletin": null,
+      "idTipoEntidad": 1,
+      "idGrupoEntidad": 2,
+      "idEntidad": 230,
+      "idAnuncio": 147605,
+      "nombreTipoEntidad": "Seccion I - Administracion Local",
+      "nombreGrupoEntidad": "Provincia",
+      "nombreEntidad": "Diputacion Provincial de Caceres",
+      "tituloAnuncio": "BOP-2026-2386 Convocatoria para la constitucion de una Bolsa de Trabajo Temporal",
+      "contenidoHtml": "<p>No downloaded by metadata-only monitor.</p>",
+      "csv": "BOP-2026-2386",
+      "urlPdf": "services/anuncios/contenidoPdfIdAnuncio?csv=BOP-2026-2386",
+      "csvFasciculo": null,
+      "total": null,
+      "numBop": 100
+    }
+  ],
+  "total": 1
+}

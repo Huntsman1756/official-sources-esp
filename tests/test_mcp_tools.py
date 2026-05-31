@@ -840,11 +840,11 @@ def test_mcp_recommend_next_sources_returns_ranked_viable_provincial_inventory_s
     assert result["count"] == 6
     assert [item["source_code"] for item in result["recommendations"]] == [
         "BOP_ZARAGOZA",
-        "BOP_ARABA_ALAVA",
-        "BOP_CACERES",
-        "BOP_CADIZ",
         "BOP_CIUDAD_REAL",
         "BOP_CUENCA",
+        "BOP_GIRONA",
+        "BOP_GUADALAJARA",
+        "BOP_HUESCA",
     ]
     first = result["recommendations"][0]
     assert first["recommended_task"] == "provincial_html_discovery_pilot"
@@ -868,11 +868,14 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
         "BOP_A_CORUNA",
         "BOP_ALBACETE",
         "BOP_ALICANTE",
+        "BOP_ARABA_ALAVA",
         "BOP_AVILA",
         "BOP_BARCELONA",
         "BOP_BIZKAIA",
         "BOP_BURGOS",
+        "BOP_CACERES",
         "BOP_CORDOBA",
+        "BOP_GIPUZKOA",
         "BOP_GRANADA",
         "BOP_HUELVA",
         "BOP_JAEN",

@@ -410,6 +410,24 @@ Validated locally on 2026-05-31 as metadata-only monitors:
 Local live preview evidence for `2026-05-29`: all four returned `records=1`,
 `candidate_status=not_candidate`, and `evidence_status=not_evidence`.
 
+## Follow-up batch: Araba/Alava, Gipuzkoa, Caceres
+
+Validated locally on 2026-05-31 as metadata-only monitors:
+
+- `BOP_ARABA_ALAVA`: official date-scoped BOTHA page using `FechaBotha={dd/mm/yyyy}`; emits announcement metadata and official XML/detail URLs.
+- `BOP_GIPUZKOA`: official date-scoped BOG summary page under `/gao-bog/castell/bog/{yyyy}/{mm}/{dd}/`; emits announcement metadata and public detail URLs.
+- `BOP_CACERES`: official JSON service flow; calendar endpoint resolves the requested date to `idBoletin`, then `anunciosAnunciantes` returns announcement metadata. PDF endpoints are recorded only as `pdf_endpoint_not_downloaded` warnings.
+
+Local live preview evidence:
+
+- `BOP_ARABA_ALAVA` on `2026-05-29`: `records=1`, `candidate_status=not_candidate`, `evidence_status=not_evidence`.
+- `BOP_GIPUZKOA` on `2026-05-29`: `records=1`, `candidate_status=not_candidate`, `evidence_status=not_evidence`.
+- `BOP_CACERES` on `2026-05-28`: `records=1`, `candidate_status=not_candidate`, `evidence_status=not_evidence`.
+
+Deferred after live probing:
+
+- `BOP_CADIZ`, `BOP_CIUDAD_REAL`, and `BOP_CUENCA` exposed plausible public HTML surfaces, but standard monitor execution failed local TLS certificate validation. They remain inventory-only / blocked until a validated fetch path exists without weakening TLS verification.
+
 ### BOP_SALAMANCA
 
 Endpoint candidate:

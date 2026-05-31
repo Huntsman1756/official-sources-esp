@@ -17,6 +17,8 @@ from official_sources.source_registry import get_source
 APIFetcher = Callable[[str], bytes | str]
 BOPV_API_ENDPOINT = "/bopv/administrative-acts/{year}/{month}"
 BOR_API_ENDPOINT = "/boletin/ExportarBoletinServlet"
+BOP_CACERES_CALENDAR_API_ENDPOINT = "/boletines/bopMesCalendario"
+BOP_CACERES_ANNOUNCEMENTS_API_ENDPOINT = "/anuncios/anunciosAnunciantes"
 BOP_HUELVA_API_ENDPOINT = "/lib/bope/anuncios_bop/ajaxAnuncios.php"
 
 
@@ -96,6 +98,17 @@ def build_bor_announcement_api_url(template_url: str, *, published_at: str, html
 def build_bop_huelva_api_url(template_url: str, *, target_date: str) -> str:
     params = {"tipo": 2, "fecha": validate_api_monitor_date(target_date)}
     return f"{template_url}?{urlencode(params)}"
+
+
+def build_bop_caceres_calendar_api_url(base_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_api_monitor_date(target_date))
+    params = {"mes": parsed_date.month, "anio": parsed_date.year}
+    return f"{base_url.rstrip('/')}{BOP_CACERES_CALENDAR_API_ENDPOINT}?{urlencode(params)}"
+
+
+def build_bop_caceres_announcements_api_url(base_url: str, *, issue_id: str) -> str:
+    params = {"idBoletin": issue_id}
+    return f"{base_url.rstrip('/')}{BOP_CACERES_ANNOUNCEMENTS_API_ENDPOINT}?{urlencode(params)}"
 
 
 def monitor_api_source(
@@ -179,7 +192,38 @@ def monitor_api_source(
             monitor_run_id=monitor_run_id,
         )
         return APIParseResult(raw_response_hash=raw_response_hash, records=result.records[:limit])
-    raise APIMonitorError("api monitor currently supports BOPV, BOR, and BOP_HUELVA only")
+    if source_code == "BOP_CACERES":
+        calendar_url = build_bop_caceres_calendar_api_url(
+            access_method["url"], target_date=target_date
+        )
+        raw_calendar = _coerce_response_bytes(fetch(calendar_url))
+        issue_id = parse_bop_caceres_calendar_issue_id(raw_calendar, target_date=target_date)
+        if not issue_id:
+            raw_response_hash = hashlib.sha256(raw_calendar).hexdigest()
+            return APIParseResult(raw_response_hash=raw_response_hash, records=[])
+        announcements_url = build_bop_caceres_announcements_api_url(
+            access_method["url"], issue_id=issue_id
+        )
+        raw_announcements = _coerce_response_bytes(fetch(announcements_url))
+        raw_response_hash = hashlib.sha256(
+            raw_calendar + b"\n---BOP-CACERES-ANNOUNCEMENTS---\n" + raw_announcements
+        ).hexdigest()
+        monitor_run_id = hashlib.sha256(
+            f"{source_code}{announcements_url}{target_date}{raw_response_hash}".encode()
+        ).hexdigest()[:16]
+        result = parse_bop_caceres_announcements_response(
+            raw_announcements,
+            source_code=source_code,
+            api_url=announcements_url,
+            api_endpoint=BOP_CACERES_ANNOUNCEMENTS_API_ENDPOINT,
+            requested_date=target_date,
+            discovered_at=f"{target_date}T00:00:00Z",
+            monitor_run_id=monitor_run_id,
+        )
+        return APIParseResult(raw_response_hash=raw_response_hash, records=result.records[:limit])
+    raise APIMonitorError(
+        "api monitor currently supports BOPV, BOR, BOP_CACERES, and BOP_HUELVA only"
+    )
 
 
 def monitor_api_source_code(
@@ -347,6 +391,69 @@ def parse_bop_huelva_api_response(
     )
 
 
+def parse_bop_caceres_calendar_issue_id(
+    raw_response: bytes | str, *, target_date: str
+) -> str | None:
+    raw_bytes = _coerce_response_bytes(raw_response)
+    try:
+        payload = json.loads(raw_bytes.decode("utf-8"))
+    except json.JSONDecodeError as exc:
+        raise APIMonitorError(f"BOP_CACERES calendar response is not valid JSON: {exc}") from exc
+    data = payload.get("data", [])
+    if not isinstance(data, list):
+        raise APIMonitorError("BOP_CACERES calendar response field data must be a list")
+    parsed_date = date.fromisoformat(validate_api_monitor_date(target_date))
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        if item.get("diaBop") != parsed_date.day:
+            continue
+        issue_id = _string_or_none(item.get("idBoletin"))
+        if issue_id:
+            return issue_id
+    return None
+
+
+def parse_bop_caceres_announcements_response(
+    raw_response: bytes | str,
+    *,
+    source_code: str,
+    api_url: str,
+    api_endpoint: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> APIParseResult:
+    raw_bytes = _coerce_response_bytes(raw_response)
+    raw_response_hash = hashlib.sha256(raw_bytes).hexdigest()
+    try:
+        payload = json.loads(raw_bytes.decode("utf-8"))
+    except json.JSONDecodeError as exc:
+        raise APIMonitorError(
+            f"BOP_CACERES announcements response is not valid JSON: {exc}"
+        ) from exc
+    data = payload.get("data", [])
+    if not isinstance(data, list):
+        raise APIMonitorError("BOP_CACERES announcements response field data must be a list")
+    return APIParseResult(
+        raw_response_hash=raw_response_hash,
+        records=[
+            _build_bop_caceres_record(
+                item=item,
+                source_code=source_code,
+                api_url=api_url,
+                api_endpoint=api_endpoint,
+                requested_date=requested_date,
+                raw_response_hash=raw_response_hash,
+                discovered_at=discovered_at,
+                monitor_run_id=monitor_run_id,
+            )
+            for item in data
+            if isinstance(item, dict)
+        ],
+    )
+
+
 def write_api_jsonl(records: list[dict[str, Any]], output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = "".join(
@@ -487,6 +594,60 @@ def _build_bop_huelva_record(
         "entry_hash": build_api_entry_hash(
             source_code=source_code,
             published_at=effective_published_at,
+            official_url=official_url,
+            api_id=api_id,
+        ),
+        "discovered_at": discovered_at,
+        "monitor_run_id": monitor_run_id,
+        "classification_status": "unclassified",
+        "evidence_status": "not_evidence",
+        "candidate_status": "not_candidate",
+        "warnings": warnings,
+    }
+
+
+def _build_bop_caceres_record(
+    *,
+    item: dict[str, Any],
+    source_code: str,
+    api_url: str,
+    api_endpoint: str,
+    requested_date: str,
+    raw_response_hash: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> dict[str, Any]:
+    api_id = _string_or_none(item.get("idAnuncio"))
+    document_id = _string_or_none(item.get("csv")) or api_id
+    official_url = (
+        f"https://bop.dip-caceres.es/bop/anuncio.html?{urlencode({'csv': document_id})}"
+        if document_id and document_id.startswith("BOP-")
+        else None
+    )
+    warnings = []
+    if _string_or_none(item.get("urlPdf")):
+        warnings.append("pdf_endpoint_not_downloaded")
+    if not official_url:
+        warnings.append("entry_hash_fallback_missing_official_url")
+    return {
+        "source_code": source_code,
+        "api_url": api_url,
+        "api_endpoint": api_endpoint,
+        "title": _string_or_none(item.get("tituloAnuncio")),
+        "published_at": requested_date,
+        "official_url": official_url,
+        "document_id": document_id,
+        "api_id": api_id,
+        "issue_number": _string_or_none(item.get("numBop")),
+        "summary": _join_summary_parts(
+            _string_or_none(item.get("nombreTipoEntidad")),
+            _string_or_none(item.get("nombreGrupoEntidad")),
+            _string_or_none(item.get("nombreEntidad")),
+        ),
+        "raw_response_hash": raw_response_hash,
+        "entry_hash": build_api_entry_hash(
+            source_code=source_code,
+            published_at=requested_date,
             official_url=official_url,
             api_id=api_id,
         ),

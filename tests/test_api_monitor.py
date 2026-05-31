@@ -12,12 +12,16 @@ from official_sources.api_monitor import (
     APIMonitorError,
     build_api_entry_hash,
     build_api_monitor_output_path,
+    build_bop_caceres_announcements_api_url,
+    build_bop_caceres_calendar_api_url,
     build_bop_huelva_api_url,
     build_bopv_api_url,
     build_bor_announcement_api_url,
     build_bor_calendar_api_url,
     build_bor_issue_api_url,
     monitor_api_source,
+    parse_bop_caceres_announcements_response,
+    parse_bop_caceres_calendar_issue_id,
     parse_bop_huelva_api_response,
     parse_bopv_api_response,
     parse_bor_calendar_issue_number,
@@ -65,6 +69,19 @@ def test_bop_huelva_api_access_method_exists_in_registry():
     assert source["evidence_grade_allowed"] is False
 
 
+def test_bop_caceres_api_access_method_exists_in_registry():
+    source = get_source("BOP_CACERES")
+    method = select_api_access_method(source)
+
+    assert source["operational_status"] == "monitor_validated"
+    assert source["monitor_support"] == "available"
+    assert method["type"] == "api"
+    assert method["status"] == "validated"
+    assert method["url"] == "https://bop.dip-caceres.es/bop/services"
+    assert source["candidate_creation_allowed"] is False
+    assert source["evidence_grade_allowed"] is False
+
+
 def test_build_bor_api_urls_are_single_date_requests():
     base_url = "https://ias1.larioja.org/boletin/ExportarBoletinServlet"
 
@@ -92,6 +109,17 @@ def test_build_bop_huelva_api_url_is_one_date_request():
     ) == ("https://s2.diphuelva.es/lib/bope/anuncios_bop/ajaxAnuncios.php?tipo=2&fecha=2026-05-29")
 
 
+def test_build_bop_caceres_api_urls_are_date_and_issue_scoped():
+    base_url = "https://bop.dip-caceres.es/bop/services"
+
+    assert build_bop_caceres_calendar_api_url(base_url, target_date="2026-05-28") == (
+        "https://bop.dip-caceres.es/bop/services/boletines/bopMesCalendario?mes=5&anio=2026"
+    )
+    assert build_bop_caceres_announcements_api_url(base_url, issue_id="6072") == (
+        "https://bop.dip-caceres.es/bop/services/anuncios/anunciosAnunciantes?idBoletin=6072"
+    )
+
+
 def test_parse_bor_calendar_fixture_resolves_issue_number_for_date():
     assert (
         parse_bor_calendar_issue_number(
@@ -104,6 +132,23 @@ def test_parse_bor_calendar_fixture_resolves_issue_number_for_date():
         parse_bor_calendar_issue_number(
             _fixture_bytes("bor_calendar_may_2026.xml"),
             target_date="2026-05-30",
+        )
+        is None
+    )
+
+
+def test_parse_bop_caceres_calendar_fixture_resolves_issue_id_for_date():
+    assert (
+        parse_bop_caceres_calendar_issue_id(
+            _fixture_bytes("bop_caceres_calendar_may_2026.json"),
+            target_date="2026-05-28",
+        )
+        == "6072"
+    )
+    assert (
+        parse_bop_caceres_calendar_issue_id(
+            _fixture_bytes("bop_caceres_calendar_may_2026.json"),
+            target_date="2026-05-29",
         )
         is None
     )
@@ -228,6 +273,47 @@ def test_parse_bop_huelva_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_caceres_announcements_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_caceres_announcements_6072.json")
+    base_url = "https://bop.dip-caceres.es/bop/services"
+    api_url = build_bop_caceres_announcements_api_url(base_url, issue_id="6072")
+
+    result = parse_bop_caceres_announcements_response(
+        raw,
+        source_code="BOP_CACERES",
+        api_url=api_url,
+        api_endpoint="/anuncios/anunciosAnunciantes",
+        requested_date="2026-05-28",
+        discovered_at="2026-05-28T00:00:00Z",
+        monitor_run_id="run-caceres",
+    )
+
+    assert result.raw_response_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_CACERES"
+    assert record["api_url"] == api_url
+    assert record["api_endpoint"] == "/anuncios/anunciosAnunciantes"
+    assert record["title"] == (
+        "BOP-2026-2386 Convocatoria para la constitucion de una Bolsa de Trabajo Temporal"
+    )
+    assert record["published_at"] == "2026-05-28"
+    assert record["document_id"] == "BOP-2026-2386"
+    assert record["api_id"] == "147605"
+    assert record["issue_number"] == "100"
+    assert record["official_url"] == (
+        "https://bop.dip-caceres.es/bop/anuncio.html?csv=BOP-2026-2386"
+    )
+    assert record["summary"] == (
+        "Seccion I - Administracion Local - Provincia - Diputacion Provincial de Caceres"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["classification_status"] == "unclassified"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["candidate_status"] == "not_candidate"
+    assert "contenidoHtml" not in record
+
+
 def test_api_entry_hash_prefers_source_published_at_and_official_url():
     assert (
         build_api_entry_hash(
@@ -321,6 +407,32 @@ def test_monitor_api_source_fetches_one_bounded_bop_huelva_request():
 
     assert requested_urls == [
         "https://s2.diphuelva.es/lib/bope/anuncios_bop/ajaxAnuncios.php?tipo=2&fecha=2026-05-29"
+    ]
+    assert len(result.records) == 1
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
+
+
+def test_monitor_api_source_fetches_bounded_bop_caceres_calendar_then_announcements():
+    requested_urls = []
+    base_url = "https://bop.dip-caceres.es/bop/services"
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        if "bopMesCalendario" in url:
+            return _fixture_bytes("bop_caceres_calendar_may_2026.json")
+        return _fixture_bytes("bop_caceres_announcements_6072.json")
+
+    result = monitor_api_source(
+        get_source("BOP_CACERES"),
+        fetcher=fetcher,
+        target_date="2026-05-28",
+        limit=1,
+    )
+
+    assert requested_urls == [
+        build_bop_caceres_calendar_api_url(base_url, target_date="2026-05-28"),
+        build_bop_caceres_announcements_api_url(base_url, issue_id="6072"),
     ]
     assert len(result.records) == 1
     assert result.records[0]["candidate_status"] == "not_candidate"
@@ -445,4 +557,5 @@ def test_mcp_source_coverage_sees_api_sources_as_monitorable():
 
     assert "api" in {method["type"] for method in sources["BOPV"]["access_methods"]}
     assert "api" in {method["type"] for method in sources["BOR"]["access_methods"]}
+    assert "api" in {method["type"] for method in sources["BOP_CACERES"]["access_methods"]}
     assert "api" in {method["type"] for method in sources["BOP_HUELVA"]["access_methods"]}

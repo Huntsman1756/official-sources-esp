@@ -1,0 +1,19 @@
+{
+  "data": [
+    {
+      "idBoletin": 6071,
+      "diaBop": 27,
+      "mesBop": 0,
+      "anyoBop": 0,
+      "fecha": null
+    },
+    {
+      "idBoletin": 6072,
+      "diaBop": 28,
+      "mesBop": 0,
+      "anyoBop": 0,
+      "fecha": null
+    }
+  ],
+  "total": 2
+}
