@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
@@ -34,6 +35,7 @@ from official_sources.rss_monitor import (
     write_jsonl,
 )
 from official_sources.source_registry import SourceRegistryError, get_source, list_sources
+from official_sources.sources.bdns.business import filter_bdns_business_grants
 from official_sources.sources.bdns.client import (
     BDNS_DEFAULT_PAGE_SIZE,
     build_bdns_catalog_url,
@@ -1213,6 +1215,47 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         help="Optional maximum number of BDNS grant calls to export.",
     )
+    export_bdns_business_grants = subparsers.add_parser(
+        "export-bdns-business-grants",
+        help="Export ranked BDNS business-grants profile records as JSONL.",
+    )
+    export_bdns_business_grants.add_argument(
+        "--output",
+        required=True,
+        help="JSONL output path.",
+    )
+    export_bdns_business_grants.add_argument(
+        "--min-score",
+        type=float,
+        default=0.35,
+        help="Minimum business relevance score. Default: 0.35.",
+    )
+    export_bdns_business_grants.add_argument(
+        "--limit",
+        type=int,
+        help="Optional maximum number of records to export.",
+    )
+    export_bdns_business_dashboard = subparsers.add_parser(
+        "export-bdns-business-dashboard",
+        help="Export a static HTML BDNS business-grants radar dashboard.",
+    )
+    export_bdns_business_dashboard.add_argument(
+        "--output",
+        required=True,
+        help="HTML output path.",
+    )
+    export_bdns_business_dashboard.add_argument(
+        "--min-score",
+        type=float,
+        default=0.35,
+        help="Minimum business relevance score. Default: 0.35.",
+    )
+    export_bdns_business_dashboard.add_argument(
+        "--limit",
+        type=int,
+        default=200,
+        help="Maximum records to render. Default: 200.",
+    )
     export_bdns_concessions = subparsers.add_parser(
         "export-bdns-concessions",
         help="Export sanitized stored BDNS concessions as JSONL for downstream staging.",
@@ -1715,6 +1758,10 @@ def run(
         return _run_ingest_bdns_catalog(repository, args, bdns_catalog_fetcher, stdout, stderr)
     if args.command == "export-bdns-grants":
         return _run_export_bdns_grants(repository, args, stdout, stderr)
+    if args.command == "export-bdns-business-grants":
+        return _run_export_bdns_business_grants(repository, args, stdout, stderr)
+    if args.command == "export-bdns-business-dashboard":
+        return _run_export_bdns_business_dashboard(repository, args, stdout, stderr)
     if args.command == "export-bdns-concessions":
         return _run_export_bdns_concessions(repository, args, stdout, stderr)
     if args.command == "preview-bdns-concesiones":
@@ -2727,6 +2774,78 @@ def _run_export_bdns_grants(
     return 0
 
 
+def _run_export_bdns_business_grants(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    validation_error = _validate_business_export_args(args.min_score, args.limit)
+    if validation_error:
+        print(validation_error, file=stderr)
+        return 2
+    output_path = Path(args.output)
+    print(
+        (
+            "command_started=export-bdns-business-grants source_code=BDNS "
+            f"min_score={args.min_score}"
+        ),
+        file=stdout,
+    )
+    try:
+        records = _bdns_business_grant_records(
+            repository,
+            min_score=args.min_score,
+            limit=args.limit,
+        )
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with output_path.open("w", encoding="utf-8", newline="\n") as handle:
+            for record in records:
+                handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+    except Exception as exc:
+        print(f"export-bdns-business-grants failed: {exc}", file=stderr)
+        return 1
+    print(f"output_path={output_path} records_exported={len(records)}", file=stdout)
+    return 0
+
+
+def _run_export_bdns_business_dashboard(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    validation_error = _validate_business_export_args(args.min_score, args.limit)
+    if validation_error:
+        print(validation_error, file=stderr)
+        return 2
+    output_path = Path(args.output)
+    print(
+        (
+            "command_started=export-bdns-business-dashboard source_code=BDNS "
+            f"min_score={args.min_score}"
+        ),
+        file=stdout,
+    )
+    try:
+        records = _bdns_business_grant_records(
+            repository,
+            min_score=args.min_score,
+            limit=args.limit,
+        )
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(
+            _render_bdns_business_dashboard(records, min_score=args.min_score),
+            encoding="utf-8",
+            newline="\n",
+        )
+    except Exception as exc:
+        print(f"export-bdns-business-dashboard failed: {exc}", file=stderr)
+        return 1
+    print(f"output_path={output_path} records_rendered={len(records)}", file=stdout)
+    return 0
+
+
 def _run_export_bdns_concessions(
     repository: OfficialSourcesRepository,
     args: argparse.Namespace,
@@ -2882,6 +3001,93 @@ def _bdns_grant_export_record(document: dict[str, Any]) -> dict[str, Any]:
         "source_snapshot_hash": raw_metadata.get("detail_api_sha256"),
         "export_schema": "bdns_grant_call_v1",
     }
+
+
+def _bdns_business_grant_records(
+    repository: OfficialSourcesRepository,
+    *,
+    min_score: float,
+    limit: int | None,
+) -> list[dict[str, Any]]:
+    documents = repository.list_bdns_grant_call_documents(limit=None)
+    return filter_bdns_business_grants(documents, min_score=min_score, limit=limit)
+
+
+def _validate_business_export_args(min_score: float, limit: int | None) -> str | None:
+    if min_score < 0 or min_score > 1:
+        return "min-score must be between 0 and 1."
+    if limit is not None and limit < 1:
+        return "limit must be at least 1."
+    return None
+
+
+def _render_bdns_business_dashboard(records: list[dict[str, Any]], *, min_score: float) -> str:
+    rows = "\n".join(_render_bdns_business_row(record) for record in records)
+    data_json = html.escape(json.dumps(records, ensure_ascii=False), quote=False)
+    if records:
+        content = (
+            "<table><thead><tr><th>Score</th><th>Convocatoria</th><th>Plazo</th>"
+            "<th>Presupuesto</th><th>Razones</th></tr></thead><tbody>"
+            f"{rows}</tbody></table>"
+        )
+    else:
+        content = (
+            '<div class="empty">No hay convocatorias BDNS por encima del umbral.</div>'
+        )
+    return f"""<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BDNS Business Grants Radar</title>
+  <style>
+    body {{
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      margin: 32px;
+      color: #17202a;
+    }}
+    header {{ border-bottom: 1px solid #ccd3dc; margin-bottom: 24px; padding-bottom: 16px; }}
+    h1 {{ font-size: 28px; margin: 0 0 8px; }}
+    table {{ border-collapse: collapse; width: 100%; }}
+    th, td {{
+      border-bottom: 1px solid #e2e6ea;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }}
+    th {{ font-size: 12px; text-transform: uppercase; color: #52606d; }}
+    .score {{ font-weight: 700; }}
+    .reasons {{ font-size: 12px; color: #52606d; }}
+    .empty {{ padding: 24px; background: #f6f8fa; border: 1px solid #e2e6ea; }}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>BDNS Business Grants Radar</h1>
+    <div>Perfil: business_grants · umbral minimo: {min_score:.2f} · registros: {len(records)}</div>
+  </header>
+  <main>
+    {content}
+  </main>
+  <script type="application/json" id="bdns-business-grants-data">{data_json}</script>
+</body>
+</html>
+"""
+
+
+def _render_bdns_business_row(record: dict[str, Any]) -> str:
+    reasons = ", ".join(record["business_relevance_reasons"])
+    url = record["official_url"] or "#"
+    return (
+        "<tr>"
+        f"<td class=\"score\">{record['business_relevance_score']:.2f}</td>"
+        f"<td><a href=\"{html.escape(url)}\">{html.escape(record['official_identifier'])}</a><br>"
+        f"{html.escape(record['title'])}</td>"
+        f"<td>{html.escape(str(record['application_end_date'] or ''))}</td>"
+        f"<td>{html.escape(str(record['budget'] or ''))}</td>"
+        f"<td class=\"reasons\">{html.escape(reasons)}</td>"
+        "</tr>"
+    )
 
 
 def _bdns_concession_export_record(entry: dict[str, Any]) -> dict[str, Any]:

@@ -212,6 +212,20 @@ official-sources --db-path official-sources.sqlite \
 The export is JSONL over stored local BDNS grant-call records. It is a staging input only and must
 remain behind product-side review before publication or candidate creation.
 
+Business grants radar export and static dashboard:
+
+```bash
+official-sources --db-path official-sources.sqlite \
+  export-bdns-business-grants --output data/exports/bdns-business-grants.jsonl --min-score 0.35
+
+official-sources --db-path official-sources.sqlite \
+  export-bdns-business-dashboard --output data/exports/bdns-business-radar.html --min-score 0.35
+```
+
+These commands rank stored BDNS grant calls for companies, SMEs, self-employed workers, and related
+economic-activity topics. The score is an auditable review aid, not an eligibility decision or
+automatic product import.
+
 Concesiones are scoped to one convocatoria:
 
 ```bash
@@ -233,8 +247,9 @@ Global concesiones ingestion is disabled: `ingest-bdns-concesiones` requires `--
 Beneficiary name and person-id fields are redacted by default in concesiones parsing/storage. Use
 `--include-beneficiary-fields` only for an explicit privacy-reviewed operation.
 
-The private MCP server exposes read-only cache views for stored BDNS grant calls, catalog entries,
-and scoped concesiones. MCP does not run BDNS live fetches or write downstream records.
+The private MCP server exposes read-only cache views for stored BDNS grant calls, business-grants
+ranking, catalog entries, and scoped concesiones. MCP does not run BDNS live fetches or write
+downstream records.
 
 BDNS final verification checklist:
 

@@ -508,6 +508,22 @@ and announcement metadata.
 This tool does not fetch live BDNS data, run ingestion, export JSONL, create candidates, download
 artifacts, write downstream records, or approve product publication.
 
+### bdns_business_grants_list
+
+Inputs:
+
+- `min_score`: number from `0` to `1`, default `0.35`.
+- `limit`: integer, default `20`, maximum `100`.
+
+Output: stored BDNS grant calls ranked with the `business_grants` profile. The profile scores
+company/SME/self-employed beneficiary language, business-relevant topics, grant instruments, budget,
+and deadline presence. The tool returns `resource_type=bdns_business_grants`, `mode=read_only`,
+`writes_performed=false`, and review-only items with `business_relevance_score` and
+`business_relevance_reasons`.
+
+This tool is a radar/review aid. It does not infer eligibility, decide grant fit, create product
+records, fetch live BDNS data, write exports, or approve publication.
+
 ### bdns_catalog_entries_list
 
 Inputs:

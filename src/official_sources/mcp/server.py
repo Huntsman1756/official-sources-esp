@@ -35,6 +35,7 @@ MCP_TOOL_NAMES = (
     "resolve_normative_reference",
     "resolve_fiscal_reference",
     "bdns_grant_calls_list",
+    "bdns_business_grants_list",
     "bdns_catalog_entries_list",
     "bdns_concessions_list",
     "boe_consolidated_law_get",
@@ -248,6 +249,15 @@ def create_server(repository: OfficialSourcesRepository | None = None):
     def bdns_grant_calls_list(limit: int = 20) -> dict:
         """List stored BDNS grant-call metadata without fetching live data."""
         return tools.bdns_grant_calls_list(repository, limit=limit)
+
+    @mcp.tool
+    def bdns_business_grants_list(min_score: float = 0.35, limit: int = 20) -> dict:
+        """List ranked stored BDNS grant calls for business-grants review."""
+        return tools.bdns_business_grants_list(
+            repository,
+            min_score=min_score,
+            limit=limit,
+        )
 
     @mcp.tool
     def bdns_catalog_entries_list(catalog_name: str | None = None, limit: int = 50) -> dict:

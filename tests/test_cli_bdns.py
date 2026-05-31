@@ -283,6 +283,82 @@ def test_export_bdns_grants_cli_writes_enriched_jsonl(tmp_path, capsys):
     assert records[0]["source_snapshot_hash"]
 
 
+def test_export_bdns_business_grants_cli_writes_ranked_profile_jsonl(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    output_path = tmp_path / "bdns-business-grants.jsonl"
+
+    assert (
+        run(
+            ["--db-path", str(db_path), "ingest-bdns-call", "--num-conv", "907042"],
+            bdns_call_fetcher=lambda _num_conv: _fixture_bytes("bdns_convocatoria_detail.json"),
+        )
+        == 0
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "export-bdns-business-grants",
+            "--output",
+            str(output_path),
+            "--min-score",
+            "0.7",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    records = [json.loads(line) for line in output_path.read_text(encoding="utf-8").splitlines()]
+
+    assert exit_code == 0
+    assert "command_started=export-bdns-business-grants source_code=BDNS" in captured.out
+    assert "records_exported=1" in captured.out
+    assert records[0]["profile"] == "business_grants"
+    assert records[0]["official_identifier"] == "BDNS:907042"
+    assert records[0]["business_relevance_score"] >= 0.75
+    assert "beneficiary:pyme" in records[0]["business_relevance_reasons"]
+    assert records[0]["review_status"] == "manual_review_required"
+
+
+def test_export_bdns_business_dashboard_cli_writes_static_html(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    output_path = tmp_path / "bdns-business-radar.html"
+
+    assert (
+        run(
+            ["--db-path", str(db_path), "ingest-bdns-call", "--num-conv", "907042"],
+            bdns_call_fetcher=lambda _num_conv: _fixture_bytes("bdns_convocatoria_detail.json"),
+        )
+        == 0
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "export-bdns-business-dashboard",
+            "--output",
+            str(output_path),
+            "--min-score",
+            "0.7",
+        ]
+    )
+
+    html = output_path.read_text(encoding="utf-8")
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "command_started=export-bdns-business-dashboard source_code=BDNS" in captured.out
+    assert "records_rendered=1" in captured.out
+    assert "BDNS Business Grants Radar" in html
+    assert "BDNS:907042" in html
+    assert "business_grants" in html
+
+
 def test_ingest_bdns_concesiones_cli_is_blocked_by_privacy_guardrail(tmp_path, capsys):
     from official_sources.cli import run
 

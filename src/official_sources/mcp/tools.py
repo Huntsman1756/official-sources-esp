@@ -5,6 +5,7 @@ import json
 from official_sources import source_coverage
 from official_sources.api import queries
 from official_sources.citation.builder import build_consolidated_law_citation
+from official_sources.sources.bdns.business import filter_bdns_business_grants
 from official_sources.sources.bdns.client import validate_bdns_catalog_name, validate_bdns_num_conv
 from official_sources.sources.boe.consolidated import (
     validate_consolidated_block_id,
@@ -265,6 +266,33 @@ def bdns_grant_calls_list(
         "writes_performed": False,
         "count": len(documents),
         "items": [_bdns_grant_call_record(document) for document in documents],
+    }
+
+
+def bdns_business_grants_list(
+    repository: OfficialSourcesRepository,
+    *,
+    min_score: float = 0.35,
+    limit: int = 20,
+) -> dict:
+    if min_score < 0 or min_score > 1:
+        raise ValueError("min_score must be between 0 and 1.")
+    bounded_limit = _bounded_limit(limit)
+    documents = repository.list_bdns_grant_call_documents(limit=None)
+    records = filter_bdns_business_grants(
+        documents,
+        min_score=min_score,
+        limit=bounded_limit,
+    )
+    return {
+        "status": "ok",
+        "resource_type": "bdns_business_grants",
+        "source_code": "BDNS",
+        "mode": "read_only",
+        "writes_performed": False,
+        "min_score": min_score,
+        "count": len(records),
+        "items": records,
     }
 
 

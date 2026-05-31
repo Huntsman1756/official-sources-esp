@@ -69,6 +69,7 @@ def test_mcp_tool_names_use_compatible_snake_case_names():
         "resolve_normative_reference",
         "resolve_fiscal_reference",
         "bdns_grant_calls_list",
+        "bdns_business_grants_list",
         "bdns_catalog_entries_list",
         "bdns_concessions_list",
         "boe_consolidated_law_get",
@@ -216,6 +217,25 @@ def test_mcp_bdns_grant_calls_list_returns_stored_enriched_calls(repository):
     assert result["items"][0]["official_identifier"] == "BDNS:907042"
     assert result["items"][0]["document_type"] == "grant_call"
     assert "document_metadata" in result["items"][0]
+
+
+def test_mcp_bdns_business_grants_list_returns_ranked_readonly_profile(repository):
+    ingest_bdns_call(
+        repository,
+        num_conv="907042",
+        detail_payload=_fixture_bytes("bdns_convocatoria_detail.json"),
+    )
+
+    result = tools.bdns_business_grants_list(repository, min_score=0.7, limit=5)
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "bdns_business_grants"
+    assert result["mode"] == "read_only"
+    assert result["writes_performed"] is False
+    assert result["count"] == 1
+    assert result["items"][0]["official_identifier"] == "BDNS:907042"
+    assert result["items"][0]["business_relevance_score"] >= 0.75
+    assert "beneficiary:pyme" in result["items"][0]["business_relevance_reasons"]
 
 
 def test_mcp_bdns_catalog_entries_list_reads_local_catalog_cache(repository):

@@ -9,6 +9,7 @@ Implemented scope:
 - BDNS safe metadata catalog preview and ingestion.
 - BDNS grant-call metadata enrichment from local catalogs.
 - BDNS grant-call JSONL export for downstream staging.
+- BDNS business-grants radar scoring, JSONL export, static HTML dashboard, and MCP read-only view.
 - Scoped BDNS concesiones preview and ingestion by `--num-conv`.
 - Sanitized BDNS concesiones JSONL export.
 - Private MCP read-only cache views for stored BDNS grant calls, catalog entries, and scoped
@@ -119,6 +120,18 @@ Grant-call export:
 ```bash
 official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
   export-bdns-grants --output /opt/official-sources/data/exports/bdns_grants_enriched.jsonl
+```
+
+Business-grants radar:
+
+```bash
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
+  export-bdns-business-grants \
+  --output /opt/official-sources/data/exports/bdns_business_grants.jsonl --min-score 0.35
+
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
+  export-bdns-business-dashboard \
+  --output /opt/official-sources/data/exports/bdns_business_radar.html --min-score 0.35
 ```
 
 Scoped concesiones ingest:

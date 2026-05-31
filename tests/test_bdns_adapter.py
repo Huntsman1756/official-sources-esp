@@ -7,6 +7,7 @@ import pytest
 
 from official_sources.citation.builder import build_citation
 from official_sources.integrity.hashing import sha256_bytes
+from official_sources.sources.bdns.business import build_bdns_business_grant_record
 from official_sources.sources.bdns.client import (
     build_bdns_call_detail_url,
     build_bdns_catalog_url,
@@ -652,6 +653,25 @@ def test_bdns_call_ingestion_enriches_catalog_codes_from_local_catalogs(reposito
             "external_id": "BDNS:catalog:sectores:94",
         }
     ]
+
+
+def test_bdns_business_grant_profile_scores_company_aids(repository):
+    ingest_bdns_call(
+        repository,
+        num_conv="907042",
+        detail_payload=_fixture_bytes("bdns_convocatoria_detail.json"),
+    )
+    document = repository.get_document_by_external_id("BDNS:907042")
+
+    record = build_bdns_business_grant_record(document)
+
+    assert record["profile"] == "business_grants"
+    assert record["official_identifier"] == "BDNS:907042"
+    assert record["business_relevance_score"] >= 0.75
+    assert "beneficiary:pyme" in record["business_relevance_reasons"]
+    assert "topic:turismo" in record["business_relevance_reasons"]
+    assert record["review_status"] == "manual_review_required"
+    assert record["product_automation_allowed"] is False
 
 
 def test_bdns_search_ingestion_enriches_catalog_codes_from_local_catalogs(repository):
