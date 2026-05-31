@@ -4,7 +4,7 @@
 reporting coverage for official public-source documents.
 
 The first ingestion tier covers Spanish BOE state-level sources. The source-coverage tier also
-maintains an executable registry of official sources and metadata-only RSS/API discovery monitors.
+maintains an executable registry of official sources and metadata-only RSS/API/HTML discovery monitors.
 This is not a public product and does not approve, publish, summarize with LLMs, or integrate with
 downstream projects automatically.
 
@@ -23,7 +23,7 @@ This repository provides the source and audit layer. Human review remains mandat
 - Tier 1 BOE state-level official source support only.
 - BOE daily summary ingestion from the official BOE open-data API.
 - Executable source registry at `config/sources.yaml`.
-- Metadata-only source discovery monitors for selected official RSS/Atom/API access methods.
+- Metadata-only source discovery monitors for selected official RSS/Atom/API/HTML access methods.
 - Read-only MCP source coverage tools.
 - SQLite storage for sources, documents, files, texts, candidates, ingestion runs, and integrity checks.
 - Raw-source traceability through official URLs and source snapshot hashes.
@@ -130,6 +130,7 @@ The official publication hierarchy is documented in `docs/decisions/ADR-001-offi
 ## Source Coverage Usage
 
 The coverage platform is documented in `docs/SOURCE_COVERAGE_USAGE.md`.
+Source status semantics for downstream consumers are documented in `docs/SOURCE_STATUS_CONTRACT.md`.
 
 Quick registry commands:
 
@@ -154,10 +155,18 @@ official-sources rss monitor --source BOCM --date YYYY-MM-DD --limit 1
 official-sources rss monitor --source BOP_BADAJOZ --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_BARCELONA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_BIZKAIA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 1
 ```
 
 Monitor output writes require explicit `--write`. RSS/API/HTML discovery records are not
-candidates and are not evidence-grade records.
+candidates and are not evidence-grade records. Registry presence, monitor validation, and monitor
+health do not mean product readiness; `BOP_ALICANTE` remains degraded/manual-review and must not be
+counted in all-green source claims.
 
 ## Ingest A BOE Summary
 

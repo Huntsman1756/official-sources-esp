@@ -1,6 +1,6 @@
 # Task Queue
 
-Last updated: 2026-05-29
+Last updated: 2026-05-31
 
 This file was absent at the start of `TASK-SOURCE-REGISTRY-001`. It is now the local task queue
 for source-platform work in this repository.
@@ -53,12 +53,14 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 | `TASK-PROVINCIAL-MONITORS-HEALTH-001` | implemented locally | Documentation-only combined live preview health check for monitored provincial sources. Seven sources returned `records=1` in preview mode; `BOP_ALICANTE` failed twice with `httpx.ConnectError: [Errno 11002] getaddrinfo failed` for `sede.diputacionalicante.es`. Overall health decision is NO-GO until Alicante endpoint/DNS is reviewed. No writes, candidates, evidence-grade records, PDFs/artifacts, downstream, VPS, Hermes, systemd, or timer changes. |
 | `TASK-BOP-ALICANTE-HEALTH-REGRESSION-001` | implemented locally | Read-only diagnostic found resolver-dependent DNS instability for `diputacionalicante.es`: normal monitor execution still fails with `getaddrinfo failed`, Cloudflare DNS-over-HTTPS returns `SERVFAIL`, Google DNS-over-HTTPS resolves `sede.diputacionalicante.es` to `195.53.69.137`, and the configured endpoint returns parser-compatible JSON when that official hostname is resolved to the Google DNS address. No safe monitor code fix was applied; `BOP_ALICANTE` remains degraded/manual-review for the combined healthy set. No registry status changes, writes, PDFs/artifacts, candidates, evidence-grade records, downstream, VPS, Hermes, systemd, or timer changes. |
 | `TASK-BOP-ALICANTE-DEGRADED-DNS-001` | implemented locally | Formalizes `BOP_ALICANTE` as degraded/manual-review for provincial monitor health reporting due resolver-dependent DNS instability. The healthy monitored provincial set is now the seven passing sources; `BOP_ALICANTE` remains in registry as a monitored source but is excluded from healthy-set claims until normal DNS/live preview recovers. No `config/sources.yaml`, monitor code, registry status, writes, PDFs/artifacts, candidates, evidence-grade records, downstream, VPS, Hermes, systemd, or timer changes. |
+| `TASK-SOURCE-COVERAGE-STATUS-CONTRACT-001` | implemented locally | Adds `docs/SOURCE_STATUS_CONTRACT.md` as the downstream-facing contract for registry, monitor, discovery, candidate, evidence, and runtime-health states. Project operational status remains GO, downstream/product closure is pending until this contract is merged, no new source expansion is planned, writes remain disabled, and `candidate_creation_allowed=false` plus `evidence_grade_allowed=false` remain true for all 65 sources. `BOP_ALICANTE` remains degraded/manual-review; no runtime, parser, monitor, registry, VPS, Hermes, systemd, write, candidate, or evidence changes. |
 
 ## Next
 
 | Task | Status | Boundary |
 | --- | --- | --- |
-| `TASK-PROVINCIAL-MONITORS-WAVE-003` | proposed | May proceed only under the partial-health contract: seven monitored provincial sources are healthy, `BOP_ALICANTE` is explicitly degraded/manual-review and excluded from healthy-set claims, and no PR may claim all eight monitored provincial sources are healthy. `BOP_SEVILLA` remains the next prior audit candidate. Keep source-specific parsers, fixtures/fetchers, preview validation, and no publication/candidate/evidence/PDF/downstream writes. |
+| `TASK-DOWNSTREAM-PRODUCT-CLOSURE-STATUS-CONTRACT-001` | pending | Product/downstream closure remains pending until `docs/SOURCE_STATUS_CONTRACT.md` is merged and downstream consumers apply its non-inference rules. |
+| `TASK-PROVINCIAL-MONITORS-WAVE-003` | deferred | No new source expansion is currently planned. May proceed only if a future task explicitly reopens source expansion under the partial-health contract: seven monitored provincial sources are healthy, `BOP_ALICANTE` is explicitly degraded/manual-review and excluded from healthy-set claims, and no PR may claim all eight monitored provincial sources are healthy. |
 | `TASK-SOURCE-PROVINCIAL-URL-DIFF-AUDIT-001` | proposed | Compare BOE and PAG provincial URLs source by source; documentation-only unless a URL correction is verified. |
 | `TASK-SOURCE-HTML-MONITOR-PILOT-001` | proposed | Only for sources without RSS/API, after source-specific endpoint/robots/fixture audit. |
 | `TASK-SOURCE-COVERAGE-RUN-REPORT-001` | proposed | Only if actual metadata-only JSONL writes are run; document source, date, output path, row count, and guardrails. |
@@ -78,3 +80,5 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 - Do not write to downstream product repositories.
 - Do not run VPS or production DB operations unless a separate task explicitly authorizes them.
 - Do not expand candidates or evidence-grade workflows without explicit approval.
+- Do not claim all sources are green while any registered source is degraded/manual-review.
+- Do not treat registry presence, `monitor_validated`, or `monitor_support=available` as product readiness.

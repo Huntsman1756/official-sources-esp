@@ -6,6 +6,13 @@ The coverage layer is an executable registry plus metadata-only discovery monito
 MCP reporting. It is not candidate creation, evidence-grade ingestion, artifact download, backfill,
 or downstream publication.
 
+For the downstream-facing semantics of registry, monitor, discovery, candidate, evidence, and
+runtime-health states, see:
+
+```text
+docs/SOURCE_STATUS_CONTRACT.md
+```
+
 ## Current Coverage
 
 Executable registry:
@@ -18,10 +25,16 @@ Current source counts:
 
 ```text
 registered sources: 65
-provincial inventory-only sources: 39
-RSS/Atom discovery sources: BOC_CANARIAS, BOC_CANTABRIA, BOCYL, BOE, BOIB, BOJA, BOP_LUGO, DOE, DOG
+metadata_adapter_validated: 9
+monitor_validated: 15
+inventory_only: 41
+provincial inventory-only sources: 34
+RSS/Atom discovery sources: BOC_CANARIAS, BOC_CANTABRIA, BOCM, BOCYL, BOE, BOIB, BOJA, BOP_BADAJOZ, BOP_LUGO, DOE, DOG
 API discovery sources: BOPV
-HTML discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE
+HTML discovery sources: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_BARCELONA, BOP_BIZKAIA, BOP_MALAGA, BOP_VALENCIA
+BOP_ALICANTE runtime health: degraded/manual-review
+candidate_creation_allowed=false: 65
+evidence_grade_allowed=false: 65
 candidate_creation_allowed=true: 0
 evidence_grade_allowed=true: 0
 ```
@@ -170,8 +183,10 @@ API monitor rules:
 ## HTML Discovery CLI
 
 HTML discovery is metadata-only. Current provincial HTML discovery supports `BOP_A_CORUNA`,
-`BOP_ALBACETE`, and `BOP_ALICANTE` through source-specific parsers. PDF links may appear as
-official URLs in records, but the monitor does not download PDFs or artifacts.
+`BOP_ALBACETE`, `BOP_ALICANTE`, `BOP_BARCELONA`, `BOP_BIZKAIA`, `BOP_MALAGA`, and
+`BOP_VALENCIA` through source-specific parsers. `BOP_ALICANTE` remains
+`degraded/manual-review` for runtime health and must not be counted in all-green claims. PDF links
+may appear as official URLs in records, but the monitor does not download PDFs or artifacts.
 
 Preview BOP_A_CORUNA without writing JSONL:
 
@@ -179,6 +194,10 @@ Preview BOP_A_CORUNA without writing JSONL:
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_BARCELONA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_BIZKAIA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 1
 ```
 
 Write JSONL only when explicitly requested:
@@ -187,6 +206,10 @@ Write JSONL only when explicitly requested:
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 10 --write
 official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 10 --write
 official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_BARCELONA --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_BIZKAIA --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 10 --write
+official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 10 --write
 ```
 
 HTML monitor rules:
@@ -264,11 +287,18 @@ BOJA: Atom/API access methods declared
 BOCYL: RSS access method declared
 BOIB: RSS access method declared
 BOC_CANTABRIA: RSS access method declared; category-scoped feed
+BOCM: RSS access method declared
 DOE: RSS access method declared
+BOP_BADAJOZ: Atom access method declared
+BOP_LUGO: RSS access method declared
 BOPV: API/XML/HTML access methods declared
 BOP_A_CORUNA: HTML access method declared
 BOP_ALBACETE: HTML access method declared
-BOP_ALICANTE: HTML access method declared
+BOP_ALICANTE: HTML access method declared; runtime health degraded/manual-review
+BOP_BARCELONA: HTML access method declared
+BOP_BIZKAIA: HTML access method declared
+BOP_MALAGA: HTML access method declared
+BOP_VALENCIA: HTML access method declared
 ```
 
 ### list_latest_discovery_entries
@@ -324,7 +354,7 @@ Runs a one-source metadata-only discovery preview through the MCP layer. The too
 ```text
 rss: validated RSS/Atom discovery sources
 api: BOPV
-html: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE
+html: BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_BARCELONA, BOP_BIZKAIA, BOP_MALAGA, BOP_VALENCIA
 ```
 
 The default `limit` is `1`; the maximum allowed limit is `10`. If `discovery_type` is omitted, the
@@ -363,7 +393,8 @@ provincial_html_discovery_pilot
 
 The tool scans the registry and recommends provincial `inventory_only` sources with official landing
 URLs and no validated monitor yet. It excludes already monitored sources such as `BOP_A_CORUNA`,
-`BOP_ALBACETE`, and `BOP_ALICANTE`.
+`BOP_ALBACETE`, `BOP_ALICANTE`, `BOP_BARCELONA`, `BOP_BIZKAIA`, `BOP_MALAGA`, and
+`BOP_VALENCIA`.
 
 Each recommendation includes:
 
@@ -401,6 +432,9 @@ The coverage surface must preserve these boundaries:
 - No backfills from coverage commands.
 - No VPS or production DB operation from coverage commands.
 - No LLM classification.
+- No all-sources-green claim while any registered source is `degraded/manual-review`.
+- No product-readiness inference from registry presence, `monitor_validated`, or
+  `monitor_support=available`.
 
 Use candidates, evidence-grade records, artifact downloads, backfills, downstream writes, or
 production operations only through separate explicit tasks.
@@ -423,6 +457,10 @@ official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_A_CORUNA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALBACETE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_ALICANTE --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_BARCELONA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_BIZKAIA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 1
 ```
 
 If `official-sources` does not reflect the current source tree, use the module entrypoint shown in
