@@ -17,9 +17,10 @@ New MCP tool:
 
 ```text
 list_downstream_integration_smokes
+check_downstream_integration_smokes
 ```
 
-The tool returns the current smoke matrix for:
+The tools return and check the current smoke matrix for:
 
 ```text
 oposiciones2.0
@@ -28,13 +29,18 @@ la-ayuda
 renta-verificable
 ```
 
-It identifies each consumer's current MCP entrypoint, smoke-call arguments, downstream preview
-command shape where one exists, required source families, required fields, known risks, and
-`must_not_do` constraints.
+`list_downstream_integration_smokes` identifies each consumer's current MCP entrypoint, smoke-call
+arguments, downstream preview command shape where one exists, required source families, required
+fields, known risks, and `must_not_do` constraints.
 
-This closure does not run the smokes, run downstream preview/import commands, fetch live sources,
-write JSONL, mutate the registry, create candidates, create evidence-grade records, publish product
-content, send notifications, or write to downstream repositories.
+`check_downstream_integration_smokes` executes only the hardcoded in-process `official-sources`
+MCP/planner calls from that matrix and checks expected status, expected output fields, and the
+shared read-only safety envelope.
+
+This closure does not run downstream preview/import commands, execute shell commands, fetch live
+sources, run monitor previews, write JSONL, mutate the registry, create candidates, create
+evidence-grade records, publish product content, send notifications, or write to downstream
+repositories.
 
 Responses preserve:
 

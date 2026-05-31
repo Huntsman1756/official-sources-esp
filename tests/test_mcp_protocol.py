@@ -122,6 +122,45 @@ async def test_mcp_downstream_integration_smokes_call_returns_readonly_matrix_wi
 
 
 @pytest.mark.asyncio
+async def test_mcp_check_downstream_integration_smokes_call_returns_readonly_results_without_writes(
+    tmp_path,
+    monkeypatch,
+):
+    database_path = tmp_path / "mcp.sqlite"
+    monkeypatch.setenv("OFFICIAL_SOURCES_DB_PATH", str(database_path))
+
+    async with Client(create_server()) as client:
+        result = await client.call_tool(
+            "check_downstream_integration_smokes",
+            {"consumer": "renta"},
+        )
+
+    assert result.structured_content["status"] == "ok"
+    assert result.structured_content["resource_type"] == "downstream_integration_smoke_run"
+    assert result.structured_content["writes_performed"] is False
+    assert result.structured_content["candidate_creation_allowed"] is False
+    assert result.structured_content["evidence_grade_allowed"] is False
+    assert result.structured_content["product_automation_allowed"] is False
+    assert result.structured_content["downstream_commands_executed"] is False
+    assert result.structured_content["monitor_previews_executed"] is False
+    assert result.structured_content["results"][0]["consumer"] == "renta-verificable"
+    assert result.structured_content["results"][0]["passed"] is True
+    with sqlite3.connect(database_path) as connection:
+        after_candidates = connection.execute("SELECT COUNT(*) FROM source_candidates").fetchone()[
+            0
+        ]
+        document_files = connection.execute("SELECT COUNT(*) FROM document_files").fetchone()[0]
+        artifact_attempts = connection.execute(
+            "SELECT COUNT(*) FROM artifact_download_attempts"
+        ).fetchone()[0]
+        ingestion_runs = connection.execute("SELECT COUNT(*) FROM ingestion_runs").fetchone()[0]
+    assert after_candidates == 0
+    assert document_files == 0
+    assert artifact_attempts == 0
+    assert ingestion_runs == 0
+
+
+@pytest.mark.asyncio
 async def test_mcp_downstream_planner_calls_return_readonly_envelopes_without_writes(
     tmp_path,
     monkeypatch,

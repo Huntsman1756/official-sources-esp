@@ -268,9 +268,9 @@ DOWNSTREAM_INTEGRATION_SMOKE_PROFILES = {
             "resource_type=downstream_source_recommendations",
             "consumer=oposiciones2.0",
             "demand_class=public_employment_alerts",
-            "source_status.product_ready=false",
-            "source_status.candidate_creation_allowed=false",
-            "source_status.evidence_grade_allowed=false",
+            "recommendations[0].source_status.product_ready=false",
+            "recommendations[0].source_status.candidate_creation_allowed=false",
+            "recommendations[0].source_status.evidence_grade_allowed=false",
         ],
         "downstream_preview_command": (
             "npm run import:strict-alerts:preview -- --file <strict_alerts.sample.jsonl>"
@@ -382,7 +382,7 @@ DOWNSTREAM_INTEGRATION_SMOKE_PROFILES = {
             "consumer=la-ayuda",
             "resolution_status=source_leads_only",
             "exact_reference_resolved=false",
-            "manual_review_required=true",
+            "human_review_required=true",
         ],
         "downstream_preview_command": (
             "npm run official-sources:preview -- --file <evidence.json>"
@@ -862,23 +862,9 @@ def recommend_sources_for_consumer(
 
 
 def list_downstream_integration_smokes(*, consumer: str | None = None) -> dict:
-    if consumer is not None:
-        normalized_consumer = _normalize_downstream_consumer(consumer)
-        if normalized_consumer is None:
-            return {
-                "status": "unsupported_consumer",
-                "consumer": consumer,
-                "supported_consumers": sorted(DOWNSTREAM_INTEGRATION_SMOKE_PROFILES),
-                "message": (
-                    "Unknown downstream consumer; add an explicit integration smoke profile first."
-                ),
-            }
-        profiles = [DOWNSTREAM_INTEGRATION_SMOKE_PROFILES[normalized_consumer]]
-    else:
-        profiles = [
-            DOWNSTREAM_INTEGRATION_SMOKE_PROFILES[key]
-            for key in sorted(DOWNSTREAM_INTEGRATION_SMOKE_PROFILES)
-        ]
+    profiles = _select_downstream_integration_smoke_profiles(consumer)
+    if isinstance(profiles, dict):
+        return profiles
 
     return {
         "status": "ok",
@@ -907,6 +893,53 @@ def list_downstream_integration_smokes(*, consumer: str | None = None) -> dict:
             "no product publication",
             "no legal, fiscal, eligibility, ranking, or approval conclusions",
             "manual review required before product automation",
+        ],
+    }
+
+
+def check_downstream_integration_smokes(*, consumer: str | None = None) -> dict:
+    profiles = _select_downstream_integration_smoke_profiles(consumer)
+    if isinstance(profiles, dict):
+        return profiles
+
+    results = [_run_downstream_integration_smoke(profile) for profile in profiles]
+    passed_count = sum(1 for result in results if result["passed"] is True)
+    return {
+        "status": "ok" if passed_count == len(results) else "failed",
+        "resource_type": "downstream_integration_smoke_run",
+        "version": "read-only-upstream-v1",
+        "mode": "read_only",
+        "writes_performed": False,
+        "candidate_creation_allowed": False,
+        "evidence_grade_allowed": False,
+        "product_automation_allowed": False,
+        "human_review_required": True,
+        "execution_scope": "official_sources_internal_mcp_calls_only",
+        "downstream_commands_executed": False,
+        "monitor_previews_executed": False,
+        "live_fetches_performed": False,
+        "jsonl_written": False,
+        "registry_mutated": False,
+        "contract_refs": [
+            "docs/SOURCE_STATUS_CONTRACT.md",
+            "docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md",
+            "docs/MCP_DOWNSTREAM_INTEGRATION_CLOSURE.md",
+            "docs/MCP_TOOLS.md",
+        ],
+        "count": len(results),
+        "passed_count": passed_count,
+        "failed_count": len(results) - passed_count,
+        "results": results,
+        "rules": [
+            "execute only deterministic in-process official-sources MCP/planner calls",
+            "do not run downstream preview/import commands",
+            "do not run monitor previews",
+            "do not fetch live sources",
+            "do not write JSONL",
+            "do not mutate registry",
+            "do not create candidates",
+            "do not create evidence-grade records",
+            "do not publish product content",
         ],
     }
 
@@ -971,6 +1004,27 @@ def resolve_fiscal_reference(
     )
 
 
+def _select_downstream_integration_smoke_profiles(
+    consumer: str | None,
+) -> list[dict[str, Any]] | dict[str, Any]:
+    if consumer is not None:
+        normalized_consumer = _normalize_downstream_consumer(consumer)
+        if normalized_consumer is None:
+            return {
+                "status": "unsupported_consumer",
+                "consumer": consumer,
+                "supported_consumers": sorted(DOWNSTREAM_INTEGRATION_SMOKE_PROFILES),
+                "message": (
+                    "Unknown downstream consumer; add an explicit integration smoke profile first."
+                ),
+            }
+        return [DOWNSTREAM_INTEGRATION_SMOKE_PROFILES[normalized_consumer]]
+    return [
+        DOWNSTREAM_INTEGRATION_SMOKE_PROFILES[key]
+        for key in sorted(DOWNSTREAM_INTEGRATION_SMOKE_PROFILES)
+    ]
+
+
 def _integration_smoke_profile(profile: dict[str, Any]) -> dict[str, Any]:
     return {
         **profile,
@@ -986,6 +1040,163 @@ def _integration_smoke_profile(profile: dict[str, Any]) -> dict[str, Any]:
             "review before any product write or publication."
         ),
     }
+
+
+def _run_downstream_integration_smoke(profile: dict[str, Any]) -> dict[str, Any]:
+    smoke_call = profile["smoke_call"]
+    tool_name = smoke_call["tool"]
+    arguments = smoke_call["arguments"]
+    try:
+        output = _call_downstream_integration_smoke_tool(tool_name, arguments)
+    except Exception as exc:
+        output = {
+            "status": "failed",
+            "resource_type": "downstream_integration_smoke_error",
+            "message": str(exc),
+            "error_type": type(exc).__name__,
+        }
+
+    status_check = {
+        "name": "expected_status",
+        "expected": profile["expected_status"],
+        "actual": output.get("status"),
+        "passed": output.get("status") == profile["expected_status"],
+    }
+    safety_checks = _downstream_smoke_safety_checks(output)
+    contract_checks = [
+        _evaluate_expected_output_contract(output, expectation)
+        for expectation in profile["expected_output_contract"]
+    ]
+    all_checks = [status_check, *safety_checks, *contract_checks]
+    return {
+        "consumer": profile["consumer"],
+        "demand_class": profile["demand_class"],
+        "integration_mode": profile["integration_mode"],
+        "smoke_call": smoke_call,
+        "expected_status": profile["expected_status"],
+        "actual_status": output.get("status"),
+        "passed": all(check["passed"] is True for check in all_checks),
+        "checks": all_checks,
+        "output_summary": _downstream_smoke_output_summary(output),
+        "downstream_command_executed": False,
+        "monitor_preview_executed": False,
+        "live_fetch_performed": False,
+        "writes_performed": False,
+        "candidate_creation_allowed": False,
+        "evidence_grade_allowed": False,
+        "product_automation_allowed": False,
+        "human_review_required": True,
+    }
+
+
+def _call_downstream_integration_smoke_tool(
+    tool_name: str,
+    arguments: dict[str, Any],
+) -> dict[str, Any]:
+    if tool_name == "recommend_sources_for_consumer":
+        return recommend_sources_for_consumer(**arguments)
+    if tool_name == "build_evidence_packet":
+        return build_evidence_packet(**arguments)
+    if tool_name == "resolve_normative_reference":
+        return resolve_normative_reference(**arguments)
+    if tool_name == "resolve_fiscal_reference":
+        return resolve_fiscal_reference(**arguments)
+    raise ValueError(f"Unsupported internal smoke tool: {tool_name}")
+
+
+def _downstream_smoke_safety_checks(output: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        _check_output_value(output, "mode", "read_only"),
+        _check_output_value(output, "writes_performed", False),
+        _check_output_value(output, "candidate_creation_allowed", False),
+        _check_output_value(output, "evidence_grade_allowed", False),
+        _check_output_value(output, "product_automation_allowed", False),
+        _check_output_value(output, "human_review_required", True),
+    ]
+
+
+def _evaluate_expected_output_contract(
+    output: dict[str, Any],
+    expectation: str,
+) -> dict[str, Any]:
+    if "=" not in expectation:
+        return {
+            "name": expectation,
+            "expected": None,
+            "actual": None,
+            "passed": False,
+            "message": "Expected contract item must use path=value syntax.",
+        }
+    path, expected_value = expectation.split("=", 1)
+    return _check_output_value(output, path, _parse_expected_value(expected_value))
+
+
+def _check_output_value(output: dict[str, Any], path: str, expected: Any) -> dict[str, Any]:
+    found, actual = _get_path_value(output, path)
+    return {
+        "name": path,
+        "expected": expected,
+        "actual": actual if found else None,
+        "passed": found and actual == expected,
+    }
+
+
+def _parse_expected_value(value: str) -> Any:
+    normalized = value.strip()
+    if normalized == "true":
+        return True
+    if normalized == "false":
+        return False
+    if normalized == "null":
+        return None
+    if normalized.isdigit():
+        return int(normalized)
+    return normalized
+
+
+def _get_path_value(data: Any, path: str) -> tuple[bool, Any]:
+    current = data
+    for part in path.split("."):
+        key, index = _parse_path_part(part)
+        if isinstance(current, dict) and key in current:
+            current = current[key]
+        else:
+            return False, None
+        if index is not None:
+            if isinstance(current, list) and 0 <= index < len(current):
+                current = current[index]
+            else:
+                return False, None
+    return True, current
+
+
+def _parse_path_part(part: str) -> tuple[str, int | None]:
+    if part.endswith("]") and "[" in part:
+        key, raw_index = part[:-1].split("[", 1)
+        return key, int(raw_index)
+    return part, None
+
+
+def _downstream_smoke_output_summary(output: dict[str, Any]) -> dict[str, Any]:
+    summary = {
+        "status": output.get("status"),
+        "resource_type": output.get("resource_type"),
+        "consumer": output.get("consumer"),
+        "demand_class": output.get("demand_class"),
+        "mode": output.get("mode"),
+        "writes_performed": output.get("writes_performed"),
+        "candidate_creation_allowed": output.get("candidate_creation_allowed"),
+        "evidence_grade_allowed": output.get("evidence_grade_allowed"),
+        "product_automation_allowed": output.get("product_automation_allowed"),
+        "human_review_required": output.get("human_review_required"),
+    }
+    if "count" in output:
+        summary["count"] = output["count"]
+    if "resolution_status" in output:
+        summary["resolution_status"] = output["resolution_status"]
+    if "exact_reference_resolved" in output:
+        summary["exact_reference_resolved"] = output["exact_reference_resolved"]
+    return summary
 
 
 def _source_safety(source: dict[str, Any]) -> dict:

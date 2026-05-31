@@ -29,6 +29,7 @@ MCP_TOOL_NAMES = (
     "recommend_next_sources",
     "recommend_sources_for_consumer",
     "list_downstream_integration_smokes",
+    "check_downstream_integration_smokes",
     "list_case_taxonomy",
     "build_evidence_packet",
     "resolve_normative_reference",
@@ -174,6 +175,11 @@ def create_server(repository: OfficialSourcesRepository | None = None):
     def list_downstream_integration_smokes(consumer: str | None = None) -> dict:
         """List read-only downstream integration smoke profiles for known consumers."""
         return tools.list_downstream_integration_smokes(consumer=consumer)
+
+    @mcp.tool
+    def check_downstream_integration_smokes(consumer: str | None = None) -> dict:
+        """Run in-process read-only downstream smoke calls without product-side commands."""
+        return tools.check_downstream_integration_smokes(consumer=consumer)
 
     @mcp.tool
     def list_case_taxonomy(

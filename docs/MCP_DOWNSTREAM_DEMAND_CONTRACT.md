@@ -285,6 +285,50 @@ Must not:
 - write downstream records;
 - approve product automation or publication.
 
+### `check_downstream_integration_smokes`
+
+Status:
+
+```text
+implemented
+```
+
+Purpose:
+
+```text
+Run deterministic in-process checks for the current downstream integration smoke matrix.
+```
+
+Inputs:
+
+```json
+{
+  "consumer": "optional known consumer or alias"
+}
+```
+
+Required behavior:
+
+- call only hardcoded internal `official-sources` MCP/planner functions;
+- compare actual status with `expected_status`;
+- compare actual output fields with `expected_output_contract`;
+- verify the shared read-only safety envelope;
+- return structured per-consumer failures without crashing the whole check;
+- refuse unknown consumers.
+
+Must not:
+
+- run downstream preview/import commands;
+- execute shell commands;
+- accept arbitrary tool names, commands, URLs, file paths, or source lists;
+- run monitor previews;
+- fetch live sources;
+- write JSONL;
+- mutate `config/sources.yaml`;
+- create candidates or evidence-grade records;
+- write downstream records;
+- approve product automation or publication.
+
 ### `build_evidence_packet`
 
 Status:

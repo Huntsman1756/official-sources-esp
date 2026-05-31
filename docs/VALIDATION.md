@@ -19,6 +19,25 @@ no live fetches
 no product automation
 ```
 
+## 2026-05-31 - MCP downstream smoke checker
+
+Report:
+
+```text
+docs/VALIDATION_MCP_DOWNSTREAM_SMOKE_CHECKER_2026-05-31.md
+```
+
+Scope:
+
+```text
+TASK-MCP-DOWNSTREAM-SMOKE-CHECKER-001
+read-only in-process MCP smoke checks
+no downstream preview/import execution
+no monitor previews
+no live fetches
+no candidate/evidence-grade creation
+```
+
 ## 2026-05-31 - MCP fiscal reference planner
 
 Report:

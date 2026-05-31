@@ -49,6 +49,12 @@ The closure matrix is exposed by:
 list_downstream_integration_smokes
 ```
 
+The closure checks are exposed by:
+
+```text
+check_downstream_integration_smokes
+```
+
 Inputs:
 
 ```json
@@ -71,6 +77,11 @@ human_review_required=true
 The tool returns the smoke call each consumer should run against the current MCP surface, the
 downstream preview command shape when one exists, required source families, required fields,
 known risks, and explicit `must_not_do` constraints.
+
+`check_downstream_integration_smokes` executes only hardcoded in-process `official-sources`
+MCP/planner calls. It does not run downstream preview commands, shell commands, monitor previews,
+live source fetches, JSONL writes, registry mutations, candidates, evidence-grade promotion, or
+product writes.
 
 ## Consumer Smokes
 
@@ -239,6 +250,8 @@ its own preview/import check and explicit review gate.
 The upstream closure is acceptable when:
 
 - `list_downstream_integration_smokes` returns one profile for each current consumer;
+- `check_downstream_integration_smokes` returns a passing internal contract check for each current
+  consumer;
 - each profile contains the shared read-only safety envelope;
 - each smoke points to an implemented MCP entrypoint or an explicit downstream preview contract;
 - tests prove the smoke matrix does not write source candidates;
