@@ -456,6 +456,25 @@ This tool does not execute previews, fetch live sources, write JSONL, create can
 evidence-grade records, mutate registry state, decide eligibility, decide fiscal or legal meaning,
 approve publication, or touch downstream repositories.
 
+### build_evidence_packet
+
+Returns a review-only `eduayudas` education-aid evidence packet profile. It supports `BDNS`, `BOE`,
+`BOJA`, `BOCYL`, `BOCM`, and `DOGV` as source requirements and returns required packet fields plus
+manual-review rules.
+
+The tool does not fetch live sources, download artifacts, create aids, create candidates, create
+evidence-grade records, decide eligibility, approve publication, or write downstream records.
+
+### resolve_normative_reference
+
+Returns manual-review `la-ayuda` source leads for topics such as housing, family, dependency,
+disability, social services, and benefits. It distinguishes source leads from exact references and
+keeps `exact_reference_resolved=false` until a future resolver can prove a specific official
+reference.
+
+The tool does not fetch arbitrary URLs, invent URLs, create Markdown, rewrite product claims,
+decide eligibility, decide amount/deadline, decide legal meaning, or write downstream records.
+
 ## Safety Boundaries
 
 The coverage surface must preserve these boundaries:
@@ -465,6 +484,8 @@ The coverage surface must preserve these boundaries:
 - MCP `preview_discovery` may fetch one explicit source in preview mode only.
 - MCP `recommend_next_sources` is deterministic and does not execute previews or live fetches.
 - MCP `list_case_taxonomy` is deterministic and does not execute previews or live fetches.
+- MCP `build_evidence_packet` is review-only profile planning, not evidence generation.
+- MCP `resolve_normative_reference` returns source leads, not legal conclusions.
 - MCP does not write JSONL.
 - MCP does not create files.
 - `--write` is explicit for CLI monitor output.

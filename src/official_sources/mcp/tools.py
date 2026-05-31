@@ -190,6 +190,38 @@ def list_case_taxonomy(
     )
 
 
+def build_evidence_packet(
+    *,
+    consumer: str,
+    source_code: str | None = None,
+    official_identifier: str | None = None,
+    profile: str | None = None,
+) -> dict:
+    return source_coverage.build_evidence_packet(
+        consumer=consumer,
+        source_code=source_code,
+        official_identifier=official_identifier,
+        profile=profile,
+    )
+
+
+def resolve_normative_reference(
+    *,
+    consumer: str,
+    topic: str,
+    jurisdiction: str,
+    known_title: str | None = None,
+    limit: int = 10,
+) -> dict:
+    return source_coverage.resolve_normative_reference(
+        consumer=consumer,
+        topic=topic,
+        jurisdiction=jurisdiction,
+        known_title=known_title,
+        limit=limit,
+    )
+
+
 def boe_consolidated_law_get(
     repository: OfficialSourcesRepository,
     *,

@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "resource_type": "evidence_packet_profile",
+  "consumer": "eduayudas",
+  "demand_class": "education_aid_evidence",
+  "profile": "education_aid",
+  "mode": "read_only",
+  "writes_performed": false,
+  "candidate_creation_allowed": false,
+  "evidence_grade_allowed": false,
+  "product_automation_allowed": false,
+  "human_review_required": true,
+  "staging_only": true,
+  "packet_status": "profile_only",
+  "source_requirements": [
+    {
+      "source_code": "BDNS",
+      "source_family": "grants_registry",
+      "review_status": "manual_review_required",
+      "product_ready": false
+    }
+  ],
+  "must_not_infer": [
+    "aid_created",
+    "aid_published",
+    "eligibility_decided",
+    "evidence_grade",
+    "product_acceptance_allowed"
+  ]
+}

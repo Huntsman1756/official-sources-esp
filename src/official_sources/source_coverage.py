@@ -11,6 +11,12 @@ from official_sources.api_monitor import (
     monitor_api_source,
 )
 from official_sources.case_taxonomy import list_case_taxonomy as taxonomy_list_case_taxonomy
+from official_sources.downstream_planners import (
+    build_evidence_packet as planner_build_evidence_packet,
+)
+from official_sources.downstream_planners import (
+    resolve_normative_reference as planner_resolve_normative_reference,
+)
 from official_sources.html_monitor import (
     HTMLFetcher,
     HTMLMonitorError,
@@ -635,6 +641,38 @@ def list_case_taxonomy(
     return taxonomy_list_case_taxonomy(
         consumer=consumer,
         demand_class=demand_class,
+    )
+
+
+def build_evidence_packet(
+    *,
+    consumer: str,
+    source_code: str | None = None,
+    official_identifier: str | None = None,
+    profile: str | None = None,
+) -> dict:
+    return planner_build_evidence_packet(
+        consumer=consumer,
+        source_code=source_code,
+        official_identifier=official_identifier,
+        profile=profile,
+    )
+
+
+def resolve_normative_reference(
+    *,
+    consumer: str,
+    topic: str,
+    jurisdiction: str,
+    known_title: str | None = None,
+    limit: int = 10,
+) -> dict:
+    return planner_resolve_normative_reference(
+        consumer=consumer,
+        topic=topic,
+        jurisdiction=jurisdiction,
+        known_title=known_title,
+        limit=limit,
     )
 
 

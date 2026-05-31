@@ -323,6 +323,60 @@ structured refusal objects. This tool does not fetch live sources, run monitor p
 write discovery JSONL, mutate the registry, create candidates, create evidence-grade records,
 download artifacts, perform product automation, or touch downstream repositories.
 
+### build_evidence_packet
+
+Inputs:
+
+- `consumer`: currently `eduayudas`.
+- `source_code`: optional source code. Supported education-aid sources are `BDNS`, `BOE`, `BOJA`,
+  `BOCYL`, `BOCM`, and `DOGV`.
+- `official_identifier`: optional review target such as a BDNS convocatoria id or BOE identifier.
+- `profile`: optional profile. Currently `education_aid`.
+
+Output: a review-only education-aid evidence packet profile for `eduayudas`.
+
+The tool returns source requirements, required packet fields, missing source families, and optional
+review target metadata. It does not claim that a packet exists, does not load missing evidence, and
+does not promote anything to evidence-grade.
+
+Each response preserves:
+
+```text
+mode=read_only
+writes_performed=false
+candidate_creation_allowed=false
+evidence_grade_allowed=false
+product_automation_allowed=false
+human_review_required=true
+```
+
+This tool does not fetch live sources, run monitor previews, download artifacts, write JSONL, create
+aid records, create candidates, create evidence-grade records, decide eligibility, approve
+publication, or touch downstream repositories.
+
+### resolve_normative_reference
+
+Inputs:
+
+- `consumer`: currently `la-ayuda`.
+- `topic`: one of `benefits`, `housing`, `family`, `dependency`, `disability`, or
+  `social_services`.
+- `jurisdiction`: required free-text jurisdiction for planning, such as `state` or
+  `Comunidad de Madrid`.
+- `known_title`: optional existing benefit/card title.
+- `limit`: integer, default `10`, maximum `20`.
+
+Output: manual-review source leads for benefit/source discovery and normative-reference planning.
+
+The tool distinguishes source leads from exact references. Current output is
+`manual_review_required` and `exact_reference_resolved=false`; it returns registered source leads
+such as `BOE`, `BDNS`, `BOCM`, `BOJA`, `DOGV`, and `BOCYL`, plus missing official portal/sede
+families that still need source mapping.
+
+This tool does not fetch arbitrary URLs, invent URLs, create Markdown, rewrite product claims,
+write downstream data, decide eligibility, decide amount/deadline, decide legal meaning, or cite
+generic/generated links as exact references.
+
 ### boe_consolidated_law_get
 
 Inputs:
@@ -412,8 +466,6 @@ Output: official BOE block citation metadata. The tool does not cite mirrors, su
 ## Future Tools
 
 - `discover_sources_for_case`
-- `build_evidence_packet`
-- `resolve_normative_reference`
 - `resolve_fiscal_reference`
 - `boe_legislation_search`
 - `boe_legislation_structure_get`
