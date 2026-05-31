@@ -65,6 +65,25 @@ Parser scope:
 - PDF URL stored only as metadata `official_url`
 - `warnings=["pdf_endpoint_not_downloaded"]`
 
+### BOP_CORDOBA
+
+Status: implemented as a metadata-only HTML monitor.
+
+Validated URL pattern:
+
+```text
+https://bop.dipucordoba.es/dia/{dd_mm_yyyy}
+```
+
+Parser scope:
+
+- publication date from the date-scoped URL
+- one record per server-returned Next.js/RSC `announcement` payload item
+- title from the announcement text payload
+- issuer from the nearest preceding `emisor` payload item
+- PDF viewer URL stored only as metadata `official_url`
+- `warnings=["pdf_endpoint_not_downloaded"]`
+
 ### DOCM
 
 Status: implemented as a metadata-only HTML monitor.
@@ -101,6 +120,11 @@ candidate_status=not_candidate
 evidence_status=not_evidence
 
 python -m official_sources.cli html monitor --source BOP_AVILA --date 2026-05-29 --limit 1
+records=1
+candidate_status=not_candidate
+evidence_status=not_evidence
+
+python -m official_sources.cli html monitor --source BOP_CORDOBA --date 2026-05-28 --limit 1
 records=1
 candidate_status=not_candidate
 evidence_status=not_evidence
@@ -143,6 +167,17 @@ candidate_creation_allowed=False
 evidence_grade_allowed=False
 
 official-sources html monitor --source BOP_AVILA --date 2026-05-29 --limit 1
+records=1
+candidate_status=not_candidate
+evidence_status=not_evidence
+
+official-sources sources status --source BOP_CORDOBA
+operational_status=monitor_validated
+monitor_support=available
+candidate_creation_allowed=False
+evidence_grade_allowed=False
+
+official-sources html monitor --source BOP_CORDOBA --date 2026-05-28 --limit 1
 records=1
 candidate_status=not_candidate
 evidence_status=not_evidence

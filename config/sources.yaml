@@ -868,21 +868,22 @@ sources:
     official_landing_url: https://bop.dipucordoba.es/
     access_methods:
       - type: html
-        url: https://bop.dipucordoba.es/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bop.dipucordoba.es/dia/{dd_mm_yyyy}
+        status: validated
+        notes: Official date-scoped Next.js page used by the metadata-only HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Cordoba.
+      - Metadata-only HTML monitor over server-returned Next.js payload; does not download PDFs or artifacts.
+      - Date page may return a 200 not-found payload for non-publication dates.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin HTML discovery monitor for Cordoba.
 
   - source_code: BOP_CUENCA
     name: Boletin Oficial de la Provincia de Cuenca

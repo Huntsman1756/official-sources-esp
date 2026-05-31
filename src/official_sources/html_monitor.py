@@ -111,6 +111,13 @@ def build_bop_castellon_html_url(template_url: str, *, target_date: str) -> str:
     return template_url
 
 
+def build_bop_cordoba_html_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
+    return template_url.replace("{dd_mm_yyyy}", parsed_date.strftime("%d-%m-%Y")).replace(
+        "{date}", parsed_date.isoformat()
+    )
+
+
 def build_bop_malaga_html_url(template_url: str, *, target_date: str) -> str:
     validate_html_monitor_date(target_date)
     return template_url
@@ -479,6 +486,40 @@ def parse_bop_castellon_html(
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
+def parse_bop_cordoba_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_bop_cordoba_publication_date(page_url) or requested_date
+    records = [
+        _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="nextjs-rsc-html",
+            entry_id=entry_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at,
+            official_url=urljoin(page_url, href),
+            summary=issuer,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"],
+        )
+        for entry_id, title, href, document_id, issuer in _iter_bop_cordoba_announcements(text)
+    ]
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
 def parse_bop_malaga_html(
     raw_page: bytes | str,
     *,
@@ -753,6 +794,8 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_bizkaia_html_url(template_url, target_date=target_date)
     if source_code == "BOP_CASTELLON":
         return build_bop_castellon_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_CORDOBA":
+        return build_bop_cordoba_html_url(template_url, target_date=target_date)
     if source_code == "BOP_MALAGA":
         return build_bop_malaga_html_url(template_url, target_date=target_date)
     if source_code == "BOP_PONTEVEDRA":
@@ -767,8 +810,9 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_docm_html_url(template_url, target_date=target_date)
     raise HTMLMonitorError(
         "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
-        "BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_CASTELLON, BOP_MALAGA, "
-        "BOP_SEVILLA, BOP_PONTEVEDRA, BOP_VALENCIA, BOP_VALLADOLID, and DOCM only"
+        "BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_CASTELLON, BOP_CORDOBA, "
+        "BOP_MALAGA, BOP_SEVILLA, BOP_PONTEVEDRA, BOP_VALENCIA, "
+        "BOP_VALLADOLID, and DOCM only"
     )
 
 
@@ -837,6 +881,15 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_CASTELLON":
         return parse_bop_castellon_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_CORDOBA":
+        return parse_bop_cordoba_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -1275,6 +1328,52 @@ def _iter_bop_avila_announcements(text: str) -> list[tuple[str, str, str]]:
         if title and document_id:
             announcements.append((title, href, document_id))
     return announcements
+
+
+def _extract_bop_cordoba_publication_date(page_url: str) -> str | None:
+    match = re.search(r"/dia/(\d{2})-(\d{2})-(\d{4})(?:\b|$)", page_url)
+    if not match:
+        return None
+    return date(int(match.group(3)), int(match.group(2)), int(match.group(1))).isoformat()
+
+
+def _iter_bop_cordoba_announcements(text: str) -> list[tuple[str, str, str, str, str | None]]:
+    pattern = re.compile(
+        r'\\"li\\",\\"(?P<entry_id>\d+)\\",\{\\"className\\":\\"announcement[^"]*\\"'
+        r'.*?\\"children\\":\[\\" \\",\\"(?P<title>.*?)\\"\]\}'
+        r'.*?\\"href\\":\\"(?P<href>/visor-pdf/[^"]+?/(?P<document_id>BOP-A-\d{4}-\d+)\.pdf)\\"',
+        re.I | re.S,
+    )
+    announcements = []
+    for match in pattern.finditer(text):
+        title = _decode_nextjs_text(match.group("title"))
+        href = _decode_nextjs_text(match.group("href"))
+        document_id = match.group("document_id")
+        issuer = _last_bop_cordoba_issuer(text[: match.start()])
+        if title and href and document_id:
+            announcements.append((match.group("entry_id"), title, href, document_id, issuer))
+    return announcements
+
+
+def _last_bop_cordoba_issuer(text: str) -> str | None:
+    pattern = re.compile(
+        r'\\"className\\":\\"emisor\\".*?\\"h2\\",null,\{\\"children\\":\\"(?P<issuer>.*?)\\"\}',
+        re.I | re.S,
+    )
+    matches = list(pattern.finditer(text))
+    if not matches:
+        return None
+    return _decode_nextjs_text(matches[-1].group("issuer"))
+
+
+def _decode_nextjs_text(value: str | None) -> str | None:
+    if value is None:
+        return None
+    try:
+        decoded = json.loads(f'"{value}"')
+    except json.JSONDecodeError:
+        decoded = value
+    return _normalize_text(decoded)
 
 
 def _extract_bop_valladolid_publication_date(text: str) -> str | None:

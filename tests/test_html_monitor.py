@@ -16,6 +16,7 @@ from official_sources.html_monitor import (
     build_bop_barcelona_html_url,
     build_bop_bizkaia_html_url,
     build_bop_castellon_html_url,
+    build_bop_cordoba_html_url,
     build_bop_malaga_html_url,
     build_bop_pontevedra_html_url,
     build_bop_sevilla_html_url,
@@ -32,6 +33,7 @@ from official_sources.html_monitor import (
     parse_bop_barcelona_html,
     parse_bop_bizkaia_detail_html,
     parse_bop_castellon_html,
+    parse_bop_cordoba_html,
     parse_bop_malaga_html,
     parse_bop_pontevedra_html,
     parse_bop_sevilla_html,
@@ -73,6 +75,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_BARCELONA",
         "BOP_BIZKAIA",
         "BOP_CASTELLON",
+        "BOP_CORDOBA",
         "BOP_MALAGA",
         "BOP_PONTEVEDRA",
         "BOP_SEVILLA",
@@ -160,6 +163,16 @@ def test_build_bop_malaga_html_url_is_one_date_request():
             target_date="2026-05-25",
         )
         == "https://www.bopmalaga.es/"
+    )
+
+
+def test_build_bop_cordoba_html_url_is_one_date_request():
+    assert (
+        build_bop_cordoba_html_url(
+            "https://bop.dipucordoba.es/dia/{dd_mm_yyyy}",
+            target_date="2026-05-28",
+        )
+        == "https://bop.dipucordoba.es/dia/28-05-2026"
     )
 
 
@@ -533,6 +546,43 @@ def test_parse_bop_avila_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_cordoba_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_cordoba_next_payload.html")
+    page_url = "https://bop.dipucordoba.es/dia/28-05-2026"
+
+    result = parse_bop_cordoba_html(
+        raw,
+        source_code="BOP_CORDOBA",
+        page_url=page_url,
+        requested_date="2026-05-28",
+        discovered_at="2026-05-28T00:00:00Z",
+        monitor_run_id="run-cordoba",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_CORDOBA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "nextjs-rsc-html"
+    assert record["entry_id"] == "119762"
+    assert record["document_id"] == "BOP-A-2026-1795"
+    assert (
+        record["title"]
+        == "Bases de la convocatoria para cubrir 19 plazas de Auxiliar Administrativo"
+    )
+    assert record["published_at"] == "2026-05-28"
+    assert record["official_url"] == (
+        "https://bop.dipucordoba.es/visor-pdf/28-05-2026/BOP-A-2026-1795.pdf"
+    )
+    assert record["summary"] == "Diputación de Córdoba"
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
 def test_parse_docm_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("docm_summary_2026_05_29.html")
     page_url = "https://docm.jccm.es/docm/cambiarBoletin.do?fecha=20260529"
@@ -734,6 +784,7 @@ def test_monitor_html_source_supports_selected_provincial_sources():
         "BOP_AVILA": "bop_avila_detail.html",
         "BOP_BARCELONA": "bop_barcelona_latest.html",
         "BOP_CASTELLON": "bop_castellon_latest.html",
+        "BOP_CORDOBA": "bop_cordoba_next_payload.html",
         "BOP_MALAGA": "bop_malaga_latest.html",
         "BOP_PONTEVEDRA": "bop_pontevedra_detail.html",
         "BOP_VALENCIA": "bop_valencia_latest.html",
