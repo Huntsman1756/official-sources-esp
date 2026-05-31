@@ -1,5 +1,24 @@
 # Validation
 
+## 2026-05-31 - MCP downstream integration closure
+
+Report:
+
+```text
+docs/VALIDATION_MCP_DOWNSTREAM_INTEGRATION_CLOSURE_2026-05-31.md
+```
+
+Scope:
+
+```text
+TASK-MCP-DOWNSTREAM-INTEGRATION-CLOSURE-001
+read-only downstream integration smoke matrix
+no downstream writes
+no candidate/evidence-grade creation
+no live fetches
+no product automation
+```
+
 ## 2026-05-31 - MCP fiscal reference planner
 
 Report:

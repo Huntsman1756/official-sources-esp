@@ -253,6 +253,231 @@ DOWNSTREAM_CONSUMER_ALIASES = {
     "renta-verificable": "renta-verificable",
     "renta_verificable": "renta-verificable",
 }
+DOWNSTREAM_INTEGRATION_SMOKE_PROFILES = {
+    "oposiciones2.0": {
+        "consumer": "oposiciones2.0",
+        "demand_class": "public_employment_alerts",
+        "integration_mode": "json_export_preview_then_reviewed_import",
+        "current_mcp_entrypoint": "recommend_sources_for_consumer",
+        "smoke_call": {
+            "tool": "recommend_sources_for_consumer",
+            "arguments": {"consumer": "oposiciones2.0", "limit": 3},
+        },
+        "expected_status": "ok",
+        "expected_output_contract": [
+            "resource_type=downstream_source_recommendations",
+            "consumer=oposiciones2.0",
+            "demand_class=public_employment_alerts",
+            "source_status.product_ready=false",
+            "source_status.candidate_creation_allowed=false",
+            "source_status.evidence_grade_allowed=false",
+        ],
+        "downstream_preview_command": (
+            "npm run import:strict-alerts:preview -- --file <strict_alerts.sample.jsonl>"
+        ),
+        "required_source_families": [
+            "state_bulletin",
+            "autonomous_bulletin",
+            "provincial_bulletin",
+        ],
+        "required_fields": [
+            "source_code",
+            "source_name",
+            "territory_code",
+            "territory_name",
+            "publication_date",
+            "title",
+            "normalized_title",
+            "official_url",
+            "alert_type",
+            "alert_scope",
+            "confidence",
+            "matched_terms",
+            "matched_rules",
+            "dedupe_key",
+            "review_status",
+            "evidence_grade_status",
+        ],
+        "must_not_do": [
+            "do not auto-create public employment processes",
+            "do not send notifications",
+            "do not treat alert-grade as evidence-grade",
+            "do not import broad or review-only alerts through the strict path",
+            "do not count BOP_ALICANTE as green while degraded/manual-review",
+        ],
+        "known_risks": [
+            "existing BOE helper is REST-shaped and needs an adapter for true MCP",
+            "strict import source-code allowlists must remain aligned",
+            "DOGV and provincial alerts may require manual review",
+        ],
+    },
+    "eduayudas": {
+        "consumer": "eduayudas",
+        "demand_class": "education_aid_evidence",
+        "integration_mode": "evidence_json_preview_then_private_staging",
+        "current_mcp_entrypoint": "build_evidence_packet",
+        "smoke_call": {
+            "tool": "build_evidence_packet",
+            "arguments": {"consumer": "eduayudas", "source_code": "BOE"},
+        },
+        "expected_status": "ok",
+        "expected_output_contract": [
+            "resource_type=evidence_packet_profile",
+            "consumer=eduayudas",
+            "profile=education_aid",
+            "packet_status=profile_only",
+            "staging_only=true",
+        ],
+        "downstream_preview_command": (
+            "npm run official-sources:preview -- --file <evidence.json>"
+        ),
+        "required_source_families": [
+            "state_bulletin",
+            "grants_registry",
+            "autonomous_bulletin",
+            "education_portals",
+        ],
+        "required_fields": [
+            "source_code",
+            "resource_type",
+            "official_identifier",
+            "title",
+            "publication_date",
+            "version_date",
+            "official_url",
+            "citation",
+            "integrity",
+            "artifacts",
+            "official_sources_candidate",
+        ],
+        "must_not_do": [
+            "do not write to eduayudas database",
+            "do not create source_candidates",
+            "do not create or publish aid_programs",
+            "do not treat likely_relevant as approval",
+            "do not use records with integrity warnings for automatic use",
+        ],
+        "known_risks": [
+            "downstream schema currently accepts BOE before broader source-code expansion",
+            "BDNS and autonomous bulletin use requires separate evidence-model review",
+        ],
+    },
+    "la-ayuda": {
+        "consumer": "la-ayuda",
+        "demand_class": "benefit_source_discovery",
+        "integration_mode": "evidence_json_preview_then_pending_review_candidate",
+        "current_mcp_entrypoint": "resolve_normative_reference",
+        "smoke_call": {
+            "tool": "resolve_normative_reference",
+            "arguments": {
+                "consumer": "la-ayuda",
+                "topic": "housing",
+                "jurisdiction": "state",
+                "limit": 3,
+            },
+        },
+        "expected_status": "manual_review_required",
+        "expected_output_contract": [
+            "resource_type=normative_reference_resolution",
+            "consumer=la-ayuda",
+            "resolution_status=source_leads_only",
+            "exact_reference_resolved=false",
+            "manual_review_required=true",
+        ],
+        "downstream_preview_command": (
+            "npm run official-sources:preview -- --file <evidence.json>"
+        ),
+        "required_source_families": [
+            "state_bulletin",
+            "grants_registry",
+            "autonomous_bulletin",
+            "official_portals",
+            "sede_electronica",
+        ],
+        "required_fields": [
+            "source_code",
+            "resource_type",
+            "official_identifier",
+            "title",
+            "publication_date",
+            "version_date",
+            "official_url",
+            "citation",
+            "integrity",
+            "artifacts",
+            "official_sources_candidate",
+        ],
+        "must_not_do": [
+            "do not create active Markdown benefit pages automatically",
+            "do not mark reviewStatus as revisada",
+            "do not treat accept_for_downstream_pilot as approval",
+            "do not treat PDF availability as approval",
+            "do not decide eligibility, amount, deadline, or legal meaning",
+        ],
+        "known_risks": [
+            "regional source authority is easy to overstate",
+            "BDNS extracts may not contain full requirements or incompatibilities",
+            "candidate staging must remain pending_review",
+        ],
+    },
+    "renta-verificable": {
+        "consumer": "renta-verificable",
+        "demand_class": "fiscal_reference_resolution",
+        "integration_mode": "build_time_reference_review_before_seed_import",
+        "current_mcp_entrypoint": "resolve_fiscal_reference",
+        "smoke_call": {
+            "tool": "resolve_fiscal_reference",
+            "arguments": {
+                "consumer": "renta-verificable",
+                "tax_year": 2025,
+                "jurisdiction": "Madrid",
+                "deduction_key": "madrid-alquiler-vivienda-habitual-joven",
+                "limit": 3,
+            },
+        },
+        "expected_status": "manual_review_required",
+        "expected_output_contract": [
+            "resource_type=fiscal_reference_resolution",
+            "consumer=renta-verificable",
+            "resolution_status=source_leads_only",
+            "exact_reference_resolved=false",
+            "source_leads[0].source_code=AEAT",
+        ],
+        "downstream_preview_command": (
+            "python src/scripts/python/importers/import_json_to_sqlite.py --check"
+        ),
+        "required_source_families": [
+            "AEAT",
+            "state_legal_reference",
+            "autonomous_bulletin",
+            "foral_or_autonomous_bulletin",
+        ],
+        "required_fields": [
+            "slug",
+            "references",
+            "type",
+            "name",
+            "url",
+            "section",
+            "jurisdiction",
+            "status",
+            "retrieved_at",
+            "last_reviewed_at",
+        ],
+        "must_not_do": [
+            "do not make MCP or AI a fiscal source of truth",
+            "do not auto-promote records to verified",
+            "do not fabricate fiscal facts, amounts, URLs, or applicability",
+            "do not return definitive entitlement language",
+            "do not make the live app depend on MCP availability",
+        ],
+        "known_risks": [
+            "downstream fiscal enums and importer expectations need alignment before automation",
+            "generic BOE URLs are not exact legal references",
+            "project status is not official certification",
+        ],
+    },
+}
 
 
 def list_source_coverage() -> dict:
@@ -636,6 +861,56 @@ def recommend_sources_for_consumer(
     }
 
 
+def list_downstream_integration_smokes(*, consumer: str | None = None) -> dict:
+    if consumer is not None:
+        normalized_consumer = _normalize_downstream_consumer(consumer)
+        if normalized_consumer is None:
+            return {
+                "status": "unsupported_consumer",
+                "consumer": consumer,
+                "supported_consumers": sorted(DOWNSTREAM_INTEGRATION_SMOKE_PROFILES),
+                "message": (
+                    "Unknown downstream consumer; add an explicit integration smoke profile first."
+                ),
+            }
+        profiles = [DOWNSTREAM_INTEGRATION_SMOKE_PROFILES[normalized_consumer]]
+    else:
+        profiles = [
+            DOWNSTREAM_INTEGRATION_SMOKE_PROFILES[key]
+            for key in sorted(DOWNSTREAM_INTEGRATION_SMOKE_PROFILES)
+        ]
+
+    return {
+        "status": "ok",
+        "resource_type": "downstream_integration_smoke_matrix",
+        "version": "read-only-upstream-v1",
+        "mode": "read_only",
+        "writes_performed": False,
+        "candidate_creation_allowed": False,
+        "evidence_grade_allowed": False,
+        "product_automation_allowed": False,
+        "human_review_required": True,
+        "contract_refs": [
+            "docs/SOURCE_STATUS_CONTRACT.md",
+            "docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md",
+            "docs/MCP_DOWNSTREAM_INTEGRATION_CLOSURE.md",
+            "docs/MCP_TOOLS.md",
+        ],
+        "count": len(profiles),
+        "smokes": [_integration_smoke_profile(profile) for profile in profiles],
+        "rules": [
+            "read-only upstream only",
+            "consumer preview before import",
+            "no downstream writes from MCP",
+            "no candidate creation",
+            "no evidence-grade promotion",
+            "no product publication",
+            "no legal, fiscal, eligibility, ranking, or approval conclusions",
+            "manual review required before product automation",
+        ],
+    }
+
+
 def list_case_taxonomy(
     *,
     consumer: str | None = None,
@@ -694,6 +969,23 @@ def resolve_fiscal_reference(
         deduction_key=deduction_key,
         limit=limit,
     )
+
+
+def _integration_smoke_profile(profile: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **profile,
+        "mode": "read_only",
+        "writes_performed": False,
+        "candidate_creation_allowed": False,
+        "evidence_grade_allowed": False,
+        "product_automation_allowed": False,
+        "human_review_required": True,
+        "closure_status": "ready_for_product_side_preview",
+        "acceptance_gate": (
+            "Downstream product must run its preview/import check and keep records in manual "
+            "review before any product write or publication."
+        ),
+    }
 
 
 def _source_safety(source: dict[str, Any]) -> dict:

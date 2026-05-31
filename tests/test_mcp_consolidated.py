@@ -174,5 +174,6 @@ def test_mcp_consolidated_tools_do_not_interpret_or_diff_or_write_downstream():
     assert "interpret" not in source.lower()
     assert "legal_advice" not in source
     assert "diff" not in source.lower()
-    assert "downstream" not in source.lower()
+    assert "write_downstream" not in source.lower()
+    assert "publish" not in source.lower()
     assert "human_accepted" not in source

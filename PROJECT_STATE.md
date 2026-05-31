@@ -4,6 +4,56 @@ Last updated: 2026-05-31
 
 ## Current Decision
 
+`TASK-MCP-DOWNSTREAM-INTEGRATION-CLOSURE-001` is implemented locally as the read-only downstream
+integration closure for the current MCP consumers.
+
+New contract:
+
+```text
+docs/MCP_DOWNSTREAM_INTEGRATION_CLOSURE.md
+```
+
+New MCP tool:
+
+```text
+list_downstream_integration_smokes
+```
+
+The tool returns the current smoke matrix for:
+
+```text
+oposiciones2.0
+eduayudas
+la-ayuda
+renta-verificable
+```
+
+It identifies each consumer's current MCP entrypoint, smoke-call arguments, downstream preview
+command shape where one exists, required source families, required fields, known risks, and
+`must_not_do` constraints.
+
+This closure does not run the smokes, run downstream preview/import commands, fetch live sources,
+write JSONL, mutate the registry, create candidates, create evidence-grade records, publish product
+content, send notifications, or write to downstream repositories.
+
+Responses preserve:
+
+```text
+mode=read_only
+writes_performed=false
+candidate_creation_allowed=false
+evidence_grade_allowed=false
+product_automation_allowed=false
+human_review_required=true
+```
+
+`official-sources` remains closed as read-only upstream v1. Downstream product automation remains
+blocked until each product runs its own preview/import check and explicit review gate.
+
+`BOP_ALICANTE` remains `degraded/manual-review`; no all-sources-green claim is allowed.
+
+## Previous Decision
+
 `TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001` is implemented locally as read-only fiscal
 source-lead planning for `renta-verificable`.
 
