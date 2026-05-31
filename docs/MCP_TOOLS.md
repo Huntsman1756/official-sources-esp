@@ -26,6 +26,11 @@ perform arbitrary downloads, write downstream records, approve candidates, or pu
 Discovery preview is limited to one explicit source, small limits, metadata-only records, and no
 JSONL writes.
 
+BDNS catalog ingestion, BDNS grant JSONL export, and scoped BDNS concesiones ingestion are private
+CLI operations, not MCP write or live-fetch tools. MCP exposes only read-only cache views over
+stored BDNS data. MCP consumers must not infer that BDNS exports or concesiones records have been
+published, approved, or imported downstream.
+
 ## Official MCP Compliance Boundary
 
 The supported MCP deployment mode is private stdio/local operation.
@@ -488,6 +493,52 @@ exact_reference_resolved=false
 This tool does not provide tax advice, decide deduction applicability, resolve legal meaning, verify
 fiscal claims, fetch arbitrary URLs, invent URLs, download artifacts, create candidates, create
 evidence-grade records, write downstream data, or approve product publication.
+
+### bdns_grant_calls_list
+
+Inputs:
+
+- `limit`: integer, default `20`, maximum `100`.
+
+Output: stored BDNS grant-call metadata from local SQLite only. The tool returns
+`resource_type=bdns_grant_calls`, `mode=read_only`, `writes_performed=false`, and items containing
+convocatoria identifiers, dates, title, department, budget, catalog enrichment, document metadata,
+and announcement metadata.
+
+This tool does not fetch live BDNS data, run ingestion, export JSONL, create candidates, download
+artifacts, write downstream records, or approve product publication.
+
+### bdns_catalog_entries_list
+
+Inputs:
+
+- `catalog_name`: optional BDNS metadata catalog such as `sectores`, `finalidades`, `organos`, or
+  `regiones`.
+- `limit`: integer, default `50`, maximum `100`.
+
+Output: stored reusable BDNS catalog cache entries from local SQLite only. The tool returns
+`resource_type=bdns_catalog_entries`, `mode=read_only`, `writes_performed=false`, and items with
+catalog name, code, name, source URL, source snapshot hash, and first/last seen timestamps.
+
+This tool does not fetch catalog endpoints or write catalog rows. Use the private CLI commands
+`preview-bdns-catalog` and `ingest-bdns-catalog` for operator-controlled catalog refreshes.
+
+### bdns_concessions_list
+
+Inputs:
+
+- `num_conv`: optional BDNS convocatoria number used to filter stored concessions.
+- `call_identifier`: optional `BDNS:<num_conv>` equivalent filter.
+- `limit`: integer, default `50`, maximum `100`.
+
+Output: stored scoped BDNS concessions from local SQLite only. The tool returns
+`resource_type=bdns_concessions`, `mode=read_only`, `writes_performed=false`, and items with
+concession code, convocatoria identifier, dates, amount, instrument, department, source URL, and
+source snapshot hash.
+
+The MCP output does not include `beneficiary_name` or `beneficiary_person_id`. It does not perform
+global concessions ingestion, live BDNS fetches, exports, downstream writes, or product publication.
+Use `ingest-bdns-concesiones --num-conv ...` as a private bounded operator action.
 
 ### boe_consolidated_law_get
 

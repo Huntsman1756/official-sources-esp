@@ -356,6 +356,318 @@ class OfficialSourcesRepository:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    def upsert_bdns_catalog_entry(
+        self,
+        *,
+        catalog_name: str,
+        code: str,
+        name: str,
+        source_url: str,
+        raw_metadata: dict[str, Any],
+        source_snapshot_hash: str,
+        ingestion_run_id: int | None = None,
+    ) -> dict[str, Any]:
+        now = utc_now()
+        external_id = f"BDNS:catalog:{catalog_name}:{code}"
+        raw_metadata_json = json.dumps(raw_metadata, sort_keys=True)
+        content_hash = sha256_text(
+            json.dumps(
+                {
+                    "catalog_name": catalog_name,
+                    "code": code,
+                    "name": name,
+                    "raw_metadata": raw_metadata,
+                },
+                sort_keys=True,
+            )
+        )
+        existing = self.get_bdns_catalog_entry(catalog_name, code)
+        if existing is None:
+            self.connection.execute(
+                """
+                INSERT INTO bdns_catalog_entries (
+                    catalog_name, code, external_id, name, source_url, raw_metadata_json,
+                    source_snapshot_hash, content_hash, first_seen_at, last_seen_at,
+                    created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    catalog_name,
+                    code,
+                    external_id,
+                    name,
+                    source_url,
+                    raw_metadata_json,
+                    source_snapshot_hash,
+                    content_hash,
+                    now,
+                    now,
+                    now,
+                    now,
+                ),
+            )
+        else:
+            changed = existing["content_hash"] != content_hash
+            previous_hash = existing["content_hash"] if changed else existing["previous_hash"]
+            content_changed_at = now if changed else existing["content_changed_at"]
+            change_detected_by = ingestion_run_id if changed else existing["change_detected_by"]
+            self.connection.execute(
+                """
+                UPDATE bdns_catalog_entries
+                SET external_id = ?, name = ?, source_url = ?, raw_metadata_json = ?,
+                    source_snapshot_hash = ?, content_hash = ?, previous_hash = ?,
+                    last_seen_at = ?, content_changed_at = ?, change_detected_by = ?,
+                    updated_at = ?
+                WHERE catalog_name = ? AND code = ?
+                """,
+                (
+                    external_id,
+                    name,
+                    source_url,
+                    raw_metadata_json,
+                    source_snapshot_hash,
+                    content_hash,
+                    previous_hash,
+                    now,
+                    content_changed_at,
+                    change_detected_by,
+                    now,
+                    catalog_name,
+                    code,
+                ),
+            )
+        self.connection.commit()
+        entry = self.get_bdns_catalog_entry(catalog_name, code)
+        assert entry is not None
+        return entry
+
+    def get_bdns_catalog_entry(self, catalog_name: str, code: str) -> dict[str, Any] | None:
+        return row_to_dict(
+            self.connection.execute(
+                """
+                SELECT * FROM bdns_catalog_entries
+                WHERE catalog_name = ? AND code = ?
+                """,
+                (catalog_name, code),
+            ).fetchone()
+        )
+
+    def list_bdns_catalog_entries(
+        self,
+        *,
+        catalog_name: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        clauses: list[str] = []
+        values: list[Any] = []
+        if catalog_name is not None:
+            clauses.append("catalog_name = ?")
+            values.append(catalog_name)
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        limit_clause = ""
+        if limit is not None:
+            limit_clause = "LIMIT ?"
+            values.append(limit)
+        rows = self.connection.execute(
+            f"""
+            SELECT * FROM bdns_catalog_entries
+            {where}
+            ORDER BY catalog_name ASC, code ASC
+            {limit_clause}
+            """,
+            values,
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def upsert_bdns_concession_entry(
+        self,
+        *,
+        concession_code: str,
+        external_id: str,
+        call_identifier: str | None,
+        source_url: str,
+        source_snapshot_hash: str,
+        raw_metadata: dict[str, Any],
+        ingestion_run_id: int | None = None,
+    ) -> dict[str, Any]:
+        now = utc_now()
+        raw_metadata_json = json.dumps(raw_metadata, sort_keys=True)
+        content_hash = sha256_text(
+            json.dumps(
+                {
+                    "concession_code": concession_code,
+                    "external_id": external_id,
+                    "call_identifier": call_identifier,
+                    "raw_metadata": raw_metadata,
+                },
+                sort_keys=True,
+            )
+        )
+        values = {
+            "call_code": raw_metadata.get("bdns_call_code"),
+            "call_internal_id": raw_metadata.get("bdns_call_internal_id"),
+            "concession_date": raw_metadata.get("concession_date"),
+            "registration_date": raw_metadata.get("registration_date"),
+            "amount": raw_metadata.get("amount"),
+            "aid_equivalent": raw_metadata.get("aid_equivalent"),
+            "instrument": raw_metadata.get("instrument"),
+            "department": raw_metadata.get("department"),
+            "section": raw_metadata.get("section"),
+            "beneficiary_name": raw_metadata.get("beneficiary_name"),
+            "beneficiary_person_id": raw_metadata.get("beneficiary_person_id"),
+            "base_regulation_url": raw_metadata.get("base_regulation_url"),
+        }
+        existing = self.get_bdns_concession_entry(concession_code)
+        if existing is None:
+            self.connection.execute(
+                """
+                INSERT INTO bdns_concession_entries (
+                    concession_code, external_id, call_identifier, call_code,
+                    call_internal_id, concession_date, registration_date, amount,
+                    aid_equivalent, instrument, department, section, beneficiary_name,
+                    beneficiary_person_id, base_regulation_url, raw_metadata_json,
+                    source_url, source_snapshot_hash, content_hash, first_seen_at,
+                    last_seen_at, created_at, updated_at
+                )
+                VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                )
+                """,
+                (
+                    concession_code,
+                    external_id,
+                    call_identifier,
+                    values["call_code"],
+                    values["call_internal_id"],
+                    values["concession_date"],
+                    values["registration_date"],
+                    values["amount"],
+                    values["aid_equivalent"],
+                    values["instrument"],
+                    values["department"],
+                    values["section"],
+                    values["beneficiary_name"],
+                    values["beneficiary_person_id"],
+                    values["base_regulation_url"],
+                    raw_metadata_json,
+                    source_url,
+                    source_snapshot_hash,
+                    content_hash,
+                    now,
+                    now,
+                    now,
+                    now,
+                ),
+            )
+        else:
+            changed = existing["content_hash"] != content_hash
+            previous_hash = existing["content_hash"] if changed else existing["previous_hash"]
+            content_changed_at = now if changed else existing["content_changed_at"]
+            change_detected_by = ingestion_run_id if changed else existing["change_detected_by"]
+            self.connection.execute(
+                """
+                UPDATE bdns_concession_entries
+                SET external_id = ?, call_identifier = ?, call_code = ?,
+                    call_internal_id = ?, concession_date = ?, registration_date = ?,
+                    amount = ?, aid_equivalent = ?, instrument = ?, department = ?,
+                    section = ?, beneficiary_name = ?, beneficiary_person_id = ?,
+                    base_regulation_url = ?, raw_metadata_json = ?, source_url = ?,
+                    source_snapshot_hash = ?, content_hash = ?, previous_hash = ?,
+                    last_seen_at = ?, content_changed_at = ?, change_detected_by = ?,
+                    updated_at = ?
+                WHERE concession_code = ?
+                """,
+                (
+                    external_id,
+                    call_identifier,
+                    values["call_code"],
+                    values["call_internal_id"],
+                    values["concession_date"],
+                    values["registration_date"],
+                    values["amount"],
+                    values["aid_equivalent"],
+                    values["instrument"],
+                    values["department"],
+                    values["section"],
+                    values["beneficiary_name"],
+                    values["beneficiary_person_id"],
+                    values["base_regulation_url"],
+                    raw_metadata_json,
+                    source_url,
+                    source_snapshot_hash,
+                    content_hash,
+                    previous_hash,
+                    now,
+                    content_changed_at,
+                    change_detected_by,
+                    now,
+                    concession_code,
+                ),
+            )
+        self.connection.commit()
+        entry = self.get_bdns_concession_entry(concession_code)
+        assert entry is not None
+        return entry
+
+    def get_bdns_concession_entry(self, concession_code: str) -> dict[str, Any] | None:
+        return row_to_dict(
+            self.connection.execute(
+                """
+                SELECT * FROM bdns_concession_entries
+                WHERE concession_code = ?
+                """,
+                (concession_code,),
+            ).fetchone()
+        )
+
+    def list_bdns_concession_entries(
+        self,
+        *,
+        call_identifier: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        clauses: list[str] = []
+        values: list[Any] = []
+        if call_identifier is not None:
+            clauses.append("call_identifier = ?")
+            values.append(call_identifier)
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        limit_clause = ""
+        if limit is not None:
+            limit_clause = "LIMIT ?"
+            values.append(limit)
+        rows = self.connection.execute(
+            f"""
+            SELECT * FROM bdns_concession_entries
+            {where}
+            ORDER BY concession_date DESC, concession_code ASC
+            {limit_clause}
+            """,
+            values,
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def list_bdns_grant_call_documents(self, *, limit: int | None = None) -> list[dict[str, Any]]:
+        values: list[Any] = []
+        limit_clause = ""
+        if limit is not None:
+            limit_clause = "LIMIT ?"
+            values.append(limit)
+        rows = self.connection.execute(
+            f"""
+            SELECT d.*, s.code AS source_code
+            FROM official_documents d
+            JOIN official_sources s ON s.id = d.source_id
+            WHERE s.code = 'BDNS'
+              AND d.document_type = 'grant_call'
+            ORDER BY d.publication_date DESC, d.external_id ASC
+            {limit_clause}
+            """,
+            values,
+        ).fetchall()
+        return [dict(row) for row in rows]
+
     def list_documents_by_candidate_ids(self, candidate_ids: list[int]) -> list[dict[str, Any]]:
         if not candidate_ids:
             return []

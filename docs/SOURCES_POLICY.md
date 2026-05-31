@@ -54,9 +54,11 @@ BDNS should be modeled as a primary grants/subsidies source family. It may suppo
 projects such as EduAyudas, `la-ayuda`, and subsidy-focused products more directly than bulletin
 metadata alone.
 
-Initial BDNS implementation is metadata-only and focused on convocatorias. Concesiones may include
-beneficiary data and retention/privacy constraints, so they require a separate privacy-aware design
-step.
+BDNS implementation remains metadata-first. Convocatorias are the primary grant-call surface.
+Concesiones are allowed only as scoped operations for one convocatoria at a time; global
+concesiones ingestion is disabled. Concesiones may include beneficiary data and retention/privacy
+constraints, so beneficiary name and person-id fields are redacted by default. Including those fields
+requires an explicit privacy-reviewed operation.
 
 Identifier policy:
 
@@ -70,6 +72,8 @@ format required by the official API (`DD/MM/YYYY`). Pagination must be capped an
 early pilots.
 
 BDNS records must not imply approval, eligibility, legal interpretation, or downstream publication.
+`export-bdns-grants` is a local JSONL staging export over stored BDNS grant-call metadata only; it is
+not publication, candidate creation, or downstream product automation.
 
 ## BOE MVP Source
 

@@ -121,7 +121,7 @@ not verified evidence and it must not be stored as `source_candidates` by defaul
 | `EduAyudas` | Evidence-grade | Aid/scholarship official evidence consumer | `official_source_evidence` exists; `source_candidates` conversion exists; local/dev fallback exists; no automatic `aid_program` creation or publication. | BOE/BOJA-style evidence staging and downstream review pattern. | Clean product state before more imports; production-safe import path; small preview/import batches. | Reviewed evidence exports, official identifiers, citations, integrity, artifact availability, manual decisions. | Create `aid_programs` directly, publish aids, decide eligibility, or bypass EduAyudas review/admin flow. | Resume only after current EduAyudas product fixes are clean; then preview/import small batches, not bulk. |
 | `la-ayuda` | Evidence-grade | File-based/Astro aid staging consumer | Evidence staging exists; candidate staging exists; BOE candidate 69 flow validated to draft/internal review; DOGV candidate 117 evidence staging exists; no public page unless draft/review process explicitly allows. | Downstream-ready evidence JSON preview/write pattern and local staging gates. | Continue explicit staging/candidate/draft steps; avoid public route creation without review approval. | Downstream-ready evidence JSON, citation/integrity, artifact availability, routing suggestions. | Create benefit markdown directly, publish pages, invent missing fields, or skip local preview/staging gates. | Continue only with explicit staging/candidate/draft steps. |
 | `renta-verificable` | Evidence-grade, secondary | Fiscal/legal reference consumer | Not materially integrated with `official-sources`; BOE may be useful for legal/versioned evidence; AEAT remains primary for fiscal guidance. | No material integration. | Exact source-needs audit before any integration; AEAT-first contract. | BOE/legal reference evidence, versioned official source metadata, possibly autonomous legal references. | Replace AEAT, generate tax conclusions alone, act as fiscal product backend, or treat alert-grade as tax evidence. | Audit exact `renta-verificable` source needs before integration. |
-| `subvenciones` / future grants project | Evidence-grade | Grants registry and subsidy review consumer | BDNS adapter MVP exists for `convocatorias` only; `concesiones` deferred; no downstream bulk import. | BDNS metadata-only source family, raw JSON hash, official identifiers, controlled profile design. | Grants-specific staging model; privacy/retention policy before concessions; controlled dry-runs before imports. | BDNS convocatoria metadata, official identifiers, raw JSON hash, citation/integrity where applicable, controlled exports. | Treat concessions casually, ignore privacy/retention, or bulk-publish grants without review. | Design grants-specific staging/review before any bulk import; keep concessions deferred until privacy review. |
+| `subvenciones` / future grants project | Evidence-grade | Grants registry and subsidy review consumer | BDNS adapter supports `convocatorias`, safe metadata catalogs, local grant-call JSONL export, and scoped `concesiones` by `--num-conv`; no downstream bulk import. | BDNS metadata-only source family, raw JSON hash, official identifiers, controlled profile design, privacy-first concesiones handling. | Grants-specific staging model; controlled dry-runs before imports; privacy approval before beneficiary field exposure. | BDNS convocatoria metadata, catalog enrichment, official identifiers, raw JSON hash, citation/integrity where applicable, controlled exports, scoped redacted concession metadata. | Treat concessions casually, run global concessions ingestion, include beneficiary fields by default, ignore privacy/retention, or bulk-publish grants without review. | Use `export-bdns-grants` only as staging input; keep concesiones scoped to one convocatoria and redacted by default. |
 
 ## Project-Specific Boundaries
 
@@ -331,9 +331,10 @@ BDNS = grants_registry / primary grants source
 Current status:
 
 ```text
-BDNS adapter MVP exists
-convocatorias only
-concesiones deferred
+BDNS adapter supports convocatorias and safe metadata catalogs
+export-bdns-grants creates local JSONL staging output
+concesiones are scoped to one convocatoria with --num-conv
+beneficiary fields are redacted by default
 no downstream bulk import
 ```
 
@@ -341,16 +342,20 @@ no downstream bulk import
 
 ```text
 BDNS convocatoria metadata
+BDNS catalog enrichment
 official identifiers
 raw JSON hash
 citation/integrity where applicable
 controlled exports
+scoped redacted concession metadata when explicitly requested
 ```
 
 `official-sources` must not:
 
 ```text
 treat concessions casually
+run global concessions ingestion
+include beneficiary fields by default
 ignore privacy/retention
 bulk-publish grants without review
 ```

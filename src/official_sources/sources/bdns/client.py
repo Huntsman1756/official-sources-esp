@@ -16,6 +16,29 @@ BDNS_DEFAULT_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=30.0, pool=1
 BDNS_HARD_MAX_PAGES = 10
 BDNS_DEFAULT_PAGE_SIZE = 10
 BDNS_HARD_MAX_PAGE_SIZE = 100
+BDNS_ALLOWED_CATALOGS = {
+    "actividades": "actividades",
+    "beneficiarios": "beneficiarios",
+    "finalidades": "finalidades",
+    "instrumentos": "instrumentos",
+    "objetivos": "objetivos",
+    "organos": "organos",
+    "regiones": "regiones",
+    "reglamentos": "reglamentos",
+    "sectores": "sectores",
+}
+BDNS_CATALOGS_WITH_VPD = {
+    "actividades",
+    "beneficiarios",
+    "finalidades",
+    "instrumentos",
+    "objetivos",
+    "organos",
+    "regiones",
+    "reglamentos",
+}
+BDNS_ORGANOS_ID_ADMON_VALUES = {"A", "C", "L", "O"}
+BDNS_REGLAMENTOS_AMBITO_VALUES = {"A", "C", "G", "M", "P", "S"}
 
 
 @dataclass(frozen=True)
@@ -66,6 +89,40 @@ class BDNSClient:
         )
         return self._get(url)
 
+    def fetch_catalog(
+        self,
+        catalog_name: str,
+        *,
+        vpd: str = "GE",
+        id_admon: str | None = None,
+        ambito: str | None = None,
+    ) -> BDNSHTTPResponse:
+        url = build_bdns_catalog_url(
+            catalog_name,
+            base_url=self.base_url,
+            vpd=vpd,
+            id_admon=id_admon,
+            ambito=ambito,
+        )
+        return self._get(url)
+
+    def fetch_concessions_search(
+        self,
+        *,
+        num_conv: str,
+        page: int,
+        page_size: int,
+        vpd: str = "GE",
+    ) -> BDNSHTTPResponse:
+        url = build_bdns_concessions_search_url(
+            num_conv=num_conv,
+            page=page,
+            page_size=page_size,
+            vpd=vpd,
+            base_url=self.base_url,
+        )
+        return self._get(url)
+
     def _get(self, url: str) -> BDNSHTTPResponse:
         with self._build_client() as client:
             response = self._request_policy.get(
@@ -92,6 +149,30 @@ def validate_bdns_num_conv(value: str) -> str:
     cleaned = str(value).strip()
     if not re.fullmatch(r"\d{1,12}", cleaned):
         raise ValueError(f"Invalid BDNS numConv: {value}. Expected digits only.")
+    return cleaned
+
+
+def validate_bdns_catalog_name(value: str) -> str:
+    cleaned = str(value).strip().lower()
+    if cleaned not in BDNS_ALLOWED_CATALOGS:
+        allowed = ", ".join(sorted(BDNS_ALLOWED_CATALOGS))
+        raise ValueError(f"Invalid BDNS catalog: {value}. Allowed catalogs: {allowed}.")
+    return cleaned
+
+
+def validate_bdns_id_admon(value: str) -> str:
+    cleaned = str(value).strip().upper()
+    if cleaned not in BDNS_ORGANOS_ID_ADMON_VALUES:
+        allowed = ", ".join(sorted(BDNS_ORGANOS_ID_ADMON_VALUES))
+        raise ValueError(f"Invalid BDNS id-admon: {value}. Allowed values: {allowed}.")
+    return cleaned
+
+
+def validate_bdns_ambito(value: str) -> str:
+    cleaned = str(value).strip().upper()
+    if cleaned not in BDNS_REGLAMENTOS_AMBITO_VALUES:
+        allowed = ", ".join(sorted(BDNS_REGLAMENTOS_AMBITO_VALUES))
+        raise ValueError(f"Invalid BDNS ambito: {value}. Allowed values: {allowed}.")
     return cleaned
 
 
@@ -147,6 +228,26 @@ def build_bdns_search_url(
     return f"{base_url.rstrip()}/convocatorias/busqueda?{urlencode(params)}"
 
 
+def build_bdns_concessions_search_url(
+    *,
+    num_conv: str,
+    page: int = 1,
+    page_size: int = BDNS_DEFAULT_PAGE_SIZE,
+    vpd: str = "GE",
+    base_url: str = BDNS_API_BASE_URL,
+) -> str:
+    if page < 1:
+        raise ValueError("page must be at least 1.")
+    validate_bdns_limit(page_size, option_name="page-size")
+    params: dict[str, str | int] = {
+        "page": page,
+        "pageSize": page_size,
+        "vpd": str(vpd).strip() or "GE",
+        "numeroConvocatoria": validate_bdns_num_conv(num_conv),
+    }
+    return f"{base_url.rstrip()}/concesiones/busqueda?{urlencode(params)}"
+
+
 def build_bdns_call_detail_api_url(
     num_conv: str,
     *,
@@ -154,6 +255,29 @@ def build_bdns_call_detail_api_url(
 ) -> str:
     query = urlencode({"numConv": validate_bdns_num_conv(num_conv)})
     return f"{base_url.rstrip()}/convocatorias?{query}"
+
+
+def build_bdns_catalog_url(
+    catalog_name: str,
+    *,
+    base_url: str = BDNS_API_BASE_URL,
+    vpd: str = "GE",
+    id_admon: str | None = None,
+    ambito: str | None = None,
+) -> str:
+    catalog_name = validate_bdns_catalog_name(catalog_name)
+    path = BDNS_ALLOWED_CATALOGS[catalog_name]
+    params: dict[str, str] = {}
+    if catalog_name in BDNS_CATALOGS_WITH_VPD:
+        params["vpd"] = str(vpd).strip() or "GE"
+    if catalog_name == "organos":
+        if id_admon is None:
+            raise ValueError("id-admon is required for BDNS organos catalog.")
+        params["idAdmon"] = validate_bdns_id_admon(id_admon)
+    if catalog_name == "reglamentos" and ambito:
+        params["ambito"] = validate_bdns_ambito(ambito)
+    query = f"?{urlencode(params)}" if params else ""
+    return f"{base_url.rstrip('/')}/{path}{query}"
 
 
 def build_bdns_call_detail_url(

@@ -36,14 +36,21 @@ from official_sources.rss_monitor import (
 from official_sources.source_registry import SourceRegistryError, get_source, list_sources
 from official_sources.sources.bdns.client import (
     BDNS_DEFAULT_PAGE_SIZE,
+    build_bdns_catalog_url,
+    build_bdns_concessions_search_url,
     parse_bdns_date_filter,
+    validate_bdns_catalog_name,
     validate_bdns_limit,
     validate_bdns_max_pages,
     validate_bdns_num_conv,
 )
 from official_sources.sources.bdns.ingestion import (
     ingest_bdns_call,
+    ingest_bdns_catalog,
+    ingest_bdns_concessions,
     ingest_bdns_latest,
+    preview_bdns_catalog,
+    preview_bdns_concessions,
     search_bdns_calls,
 )
 from official_sources.sources.boa.client import validate_boa_date
@@ -1148,6 +1155,137 @@ def build_parser() -> argparse.ArgumentParser:
         default=1,
         help="Maximum pages to fetch. Default: 1. Hard max: 10.",
     )
+    preview_bdns_catalog = subparsers.add_parser(
+        "preview-bdns-catalog",
+        help="Preview a safe BDNS metadata catalog without ingesting documents.",
+    )
+    preview_bdns_catalog.add_argument(
+        "--catalog",
+        required=True,
+        help="BDNS metadata catalog name, for example organos, sectores, or regiones.",
+    )
+    preview_bdns_catalog.add_argument(
+        "--vpd",
+        default="GE",
+        help="BDNS portal ID for catalogs that require it. Default: GE.",
+    )
+    preview_bdns_catalog.add_argument(
+        "--id-admon",
+        help="Administrative body type for organos: C, A, L, or O.",
+    )
+    preview_bdns_catalog.add_argument(
+        "--ambito",
+        help="Scope for reglamentos catalogs when needed.",
+    )
+    ingest_bdns_catalog = subparsers.add_parser(
+        "ingest-bdns-catalog",
+        help="Ingest a safe BDNS metadata catalog into reusable local evidence.",
+    )
+    ingest_bdns_catalog.add_argument(
+        "--catalog",
+        required=True,
+        help="BDNS metadata catalog name, for example sectores, finalidades, or organos.",
+    )
+    ingest_bdns_catalog.add_argument(
+        "--vpd",
+        default="GE",
+        help="BDNS portal ID for catalogs that require it. Default: GE.",
+    )
+    ingest_bdns_catalog.add_argument(
+        "--id-admon",
+        help="Administrative body type for organos: C, A, L, or O.",
+    )
+    ingest_bdns_catalog.add_argument(
+        "--ambito",
+        help="Scope for reglamentos catalogs when needed.",
+    )
+    export_bdns_grants = subparsers.add_parser(
+        "export-bdns-grants",
+        help="Export enriched BDNS grant-call metadata as JSONL for downstream staging.",
+    )
+    export_bdns_grants.add_argument(
+        "--output",
+        required=True,
+        help="JSONL output path.",
+    )
+    export_bdns_grants.add_argument(
+        "--limit",
+        type=int,
+        help="Optional maximum number of BDNS grant calls to export.",
+    )
+    export_bdns_concessions = subparsers.add_parser(
+        "export-bdns-concessions",
+        help="Export sanitized stored BDNS concessions as JSONL for downstream staging.",
+    )
+    export_bdns_concessions.add_argument(
+        "--output",
+        required=True,
+        help="JSONL output path.",
+    )
+    export_bdns_concessions.add_argument(
+        "--num-conv",
+        help="Optional BDNS convocatoria number / codigoBDNS to filter concessions.",
+    )
+    export_bdns_concessions.add_argument(
+        "--limit",
+        type=int,
+        help="Optional maximum number of BDNS concessions to export.",
+    )
+    preview_bdns_concesiones = subparsers.add_parser(
+        "preview-bdns-concesiones",
+        help="Preview BDNS concesiones for one convocatoria without storing entries.",
+    )
+    preview_bdns_concesiones.add_argument(
+        "--num-conv",
+        required=True,
+        help="BDNS convocatoria number / codigoBDNS to scope the concessions search.",
+    )
+    preview_bdns_concesiones.add_argument(
+        "--page-size",
+        type=int,
+        default=BDNS_DEFAULT_PAGE_SIZE,
+        help="Page size for BDNS concessions preview. Default: 10. Hard max: 100.",
+    )
+    preview_bdns_concesiones.add_argument(
+        "--vpd",
+        default="GE",
+        help="BDNS portal ID. Default: GE.",
+    )
+    preview_bdns_concesiones.add_argument(
+        "--include-beneficiary-fields",
+        action="store_true",
+        help="Store beneficiary name/person ID in the preview metadata.",
+    )
+    ingest_bdns_concesiones = subparsers.add_parser(
+        "ingest-bdns-concesiones",
+        help="Ingest BDNS concesiones for one convocatoria with strict pagination limits.",
+    )
+    ingest_bdns_concesiones.add_argument(
+        "--num-conv",
+        help="BDNS convocatoria number / codigoBDNS to scope the concessions search.",
+    )
+    ingest_bdns_concesiones.add_argument(
+        "--page-size",
+        type=int,
+        default=BDNS_DEFAULT_PAGE_SIZE,
+        help="Page size for BDNS concessions ingestion. Default: 10. Hard max: 100.",
+    )
+    ingest_bdns_concesiones.add_argument(
+        "--max-pages",
+        type=int,
+        default=1,
+        help="Maximum pages to fetch. Default: 1. Hard max: 10.",
+    )
+    ingest_bdns_concesiones.add_argument(
+        "--vpd",
+        default="GE",
+        help="BDNS portal ID. Default: GE.",
+    )
+    ingest_bdns_concesiones.add_argument(
+        "--include-beneficiary-fields",
+        action="store_true",
+        help="Store beneficiary name/person ID. Default redacts these fields.",
+    )
     enrich_boja = subparsers.add_parser(
         "enrich-boja-evidence-urls",
         help="Enrich stored BOJA documents with official evidence URLs for explicit IDs.",
@@ -1517,6 +1655,8 @@ def run(
     bdns_latest_fetcher=None,
     bdns_call_fetcher=None,
     bdns_search_fetcher=None,
+    bdns_catalog_fetcher=None,
+    bdns_concessions_fetcher=None,
     rss_fetcher=None,
     api_fetcher=None,
     html_fetcher=None,
@@ -1569,6 +1709,22 @@ def run(
         return _run_ingest_bdns_call(repository, args, bdns_call_fetcher, stdout, stderr)
     if args.command == "search-bdns-calls":
         return _run_search_bdns_calls(repository, args, bdns_search_fetcher, stdout, stderr)
+    if args.command == "preview-bdns-catalog":
+        return _run_preview_bdns_catalog(repository, args, bdns_catalog_fetcher, stdout, stderr)
+    if args.command == "ingest-bdns-catalog":
+        return _run_ingest_bdns_catalog(repository, args, bdns_catalog_fetcher, stdout, stderr)
+    if args.command == "export-bdns-grants":
+        return _run_export_bdns_grants(repository, args, stdout, stderr)
+    if args.command == "export-bdns-concessions":
+        return _run_export_bdns_concessions(repository, args, stdout, stderr)
+    if args.command == "preview-bdns-concesiones":
+        return _run_preview_bdns_concesiones(
+            repository, args, bdns_concessions_fetcher, stdout, stderr
+        )
+    if args.command == "ingest-bdns-concesiones":
+        return _run_ingest_bdns_concesiones(
+            repository, args, bdns_concessions_fetcher, stdout, stderr
+        )
     if args.command == "enrich-boja-evidence-urls":
         return _run_enrich_boja_evidence_urls(repository, args, boja_detail_fetcher, stdout, stderr)
     if args.command == "ingest-boe-range":
@@ -2477,6 +2633,284 @@ def _run_search_bdns_calls(
     return 0 if run_record["status"] == "success" else 1
 
 
+def _run_preview_bdns_catalog(
+    _repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        catalog_name = validate_bdns_catalog_name(args.catalog)
+        build_bdns_catalog_url(
+            catalog_name,
+            vpd=args.vpd,
+            id_admon=args.id_admon,
+            ambito=args.ambito,
+        )
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        f"command_started={args.command} source_code=BDNS catalog={catalog_name}",
+        file=stdout,
+    )
+    run_record = preview_bdns_catalog(
+        catalog_name,
+        fetcher=fetcher,
+        vpd=args.vpd,
+        id_admon=args.id_admon,
+        ambito=args.ambito,
+    )
+    _print_bdns_run_record(run_record, stdout)
+    return 0 if run_record["status"] == "success" else 1
+
+
+def _run_ingest_bdns_catalog(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        catalog_name = validate_bdns_catalog_name(args.catalog)
+        build_bdns_catalog_url(
+            catalog_name,
+            vpd=args.vpd,
+            id_admon=args.id_admon,
+            ambito=args.ambito,
+        )
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        f"command_started={args.command} source_code=BDNS catalog={catalog_name}",
+        file=stdout,
+    )
+    run_record = ingest_bdns_catalog(
+        repository,
+        catalog_name,
+        fetcher=fetcher,
+        vpd=args.vpd,
+        id_admon=args.id_admon,
+        ambito=args.ambito,
+    )
+    _print_bdns_run_record(run_record, stdout)
+    return 0 if run_record["status"] == "success" else 1
+
+
+def _run_export_bdns_grants(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    if args.limit is not None and args.limit < 1:
+        print("limit must be at least 1.", file=stderr)
+        return 2
+    output_path = Path(args.output)
+    print("command_started=export-bdns-grants source_code=BDNS", file=stdout)
+    try:
+        records = [
+            _bdns_grant_export_record(document)
+            for document in repository.list_bdns_grant_call_documents(limit=args.limit)
+        ]
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with output_path.open("w", encoding="utf-8", newline="\n") as handle:
+            for record in records:
+                handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+    except Exception as exc:
+        print(f"export-bdns-grants failed: {exc}", file=stderr)
+        return 1
+    print(f"output_path={output_path} records_exported={len(records)}", file=stdout)
+    return 0
+
+
+def _run_export_bdns_concessions(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    if args.limit is not None and args.limit < 1:
+        print("limit must be at least 1.", file=stderr)
+        return 2
+    call_identifier = None
+    if args.num_conv:
+        try:
+            call_identifier = f"BDNS:{validate_bdns_num_conv(args.num_conv)}"
+        except ValueError as exc:
+            print(str(exc), file=stderr)
+            return 2
+    output_path = Path(args.output)
+    print(
+        (
+            "command_started=export-bdns-concessions source_code=BDNS "
+            f"num_conv={args.num_conv or 'all'}"
+        ),
+        file=stdout,
+    )
+    try:
+        records = [
+            _bdns_concession_export_record(entry)
+            for entry in repository.list_bdns_concession_entries(
+                call_identifier=call_identifier,
+                limit=args.limit,
+            )
+        ]
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with output_path.open("w", encoding="utf-8", newline="\n") as handle:
+            for record in records:
+                handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+    except Exception as exc:
+        print(f"export-bdns-concessions failed: {exc}", file=stderr)
+        return 1
+    print(f"output_path={output_path} records_exported={len(records)}", file=stdout)
+    return 0
+
+
+def _run_preview_bdns_concesiones(
+    _repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        num_conv = validate_bdns_num_conv(args.num_conv)
+        page_size = validate_bdns_limit(args.page_size, option_name="page-size")
+        build_bdns_concessions_search_url(
+            num_conv=num_conv,
+            page_size=page_size,
+            vpd=args.vpd,
+        )
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        (
+            f"command_started={args.command} source_code=BDNS num_conv={num_conv} "
+            f"page_size={page_size}"
+        ),
+        file=stdout,
+    )
+    run_record = preview_bdns_concessions(
+        num_conv=num_conv,
+        page_size=page_size,
+        fetcher=fetcher,
+        vpd=args.vpd,
+        include_beneficiary_fields=args.include_beneficiary_fields,
+    )
+    _print_bdns_run_record(run_record, stdout)
+    return 0 if run_record["status"] == "success" else 1
+
+
+def _run_ingest_bdns_concesiones(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    if not args.num_conv:
+        print(
+            "num-conv is required; global BDNS concesiones ingestion is disabled.",
+            file=stderr,
+        )
+        return 2
+    try:
+        num_conv = validate_bdns_num_conv(args.num_conv)
+        page_size = validate_bdns_limit(args.page_size, option_name="page-size")
+        max_pages = validate_bdns_max_pages(args.max_pages)
+        build_bdns_concessions_search_url(
+            num_conv=num_conv,
+            page_size=page_size,
+            vpd=args.vpd,
+        )
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        (
+            f"command_started={args.command} source_code=BDNS num_conv={num_conv} "
+            f"page_size={page_size} max_pages={max_pages} "
+            f"include_beneficiary_fields={_bool_token(args.include_beneficiary_fields)}"
+        ),
+        file=stdout,
+    )
+    run_record = ingest_bdns_concessions(
+        repository,
+        num_conv=num_conv,
+        page_size=page_size,
+        max_pages=max_pages,
+        fetcher=fetcher,
+        vpd=args.vpd,
+        include_beneficiary_fields=args.include_beneficiary_fields,
+    )
+    _print_bdns_run_record(run_record, stdout)
+    return 0 if run_record["status"] == "success" else 1
+
+
+def _bdns_grant_export_record(document: dict[str, Any]) -> dict[str, Any]:
+    raw_metadata = json.loads(document["raw_metadata_json"] or "{}")
+    return {
+        "source_code": "BDNS",
+        "external_id": document["external_id"],
+        "official_identifier": document["external_id"],
+        "publication_date": document["publication_date"],
+        "title": document["title"],
+        "department": document["department"],
+        "section": document["section"],
+        "document_type": document["document_type"],
+        "official_url": document["url_html"],
+        "bdns_code": raw_metadata.get("bdns_code"),
+        "bdns_internal_id": raw_metadata.get("bdns_internal_id"),
+        "registration_date": raw_metadata.get("registration_date"),
+        "application_start_date": raw_metadata.get("application_start_date"),
+        "application_end_date": raw_metadata.get("application_end_date"),
+        "budget": raw_metadata.get("budget"),
+        "beneficiary_type": raw_metadata.get("beneficiary_type") or [],
+        "instrument_type": raw_metadata.get("instrument_type") or [],
+        "sector_activity": raw_metadata.get("sector_activity") or [],
+        "territorial_scope": raw_metadata.get("territorial_scope") or [],
+        "catalog_enrichment": raw_metadata.get("catalog_enrichment") or {},
+        "document_metadata": raw_metadata.get("document_metadata") or [],
+        "announcement_metadata": raw_metadata.get("announcement_metadata") or [],
+        "application_url": raw_metadata.get("application_url"),
+        "base_regulation_url": raw_metadata.get("base_regulation_url"),
+        "source_snapshot_hash": raw_metadata.get("detail_api_sha256"),
+        "export_schema": "bdns_grant_call_v1",
+    }
+
+
+def _bdns_concession_export_record(entry: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "source_code": "BDNS",
+        "external_id": entry["external_id"],
+        "concession_code": entry["concession_code"],
+        "call_identifier": entry["call_identifier"],
+        "call_code": entry["call_code"],
+        "call_internal_id": entry["call_internal_id"],
+        "concession_date": entry["concession_date"],
+        "registration_date": entry["registration_date"],
+        "amount": entry["amount"],
+        "aid_equivalent": entry["aid_equivalent"],
+        "instrument": entry["instrument"],
+        "department": entry["department"],
+        "section": entry["section"],
+        "beneficiary_name": entry["beneficiary_name"],
+        "beneficiary_person_id": entry["beneficiary_person_id"],
+        "base_regulation_url": entry["base_regulation_url"],
+        "source_url": entry["source_url"],
+        "source_snapshot_hash": entry["source_snapshot_hash"],
+        "content_hash": entry["content_hash"],
+        "first_seen_at": entry["first_seen_at"],
+        "last_seen_at": entry["last_seen_at"],
+        "export_schema": "bdns_concession_v1",
+    }
+
+
 def _print_bdns_run_record(run_record: dict, stdout: TextIO) -> None:
     sample_identifiers = run_record.get("sample_identifiers") or []
     print(
@@ -2485,6 +2919,8 @@ def _print_bdns_run_record(run_record: dict, stdout: TextIO) -> None:
                 f"status={run_record['status']}",
                 f"bdns_result={run_record.get('bdns_result') or run_record['status']}",
                 f"official_identifier={run_record.get('official_identifier') or 'none'}",
+                f"catalog_name={run_record.get('catalog_name') or 'none'}",
+                f"entry_count={run_record.get('entry_count', 0)}",
                 f"documents_fetched={run_record['documents_fetched']}",
                 f"documents_new={run_record['documents_new']}",
                 f"documents_updated={run_record['documents_updated']}",

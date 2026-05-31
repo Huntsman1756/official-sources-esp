@@ -22,8 +22,9 @@ promote records to evidence-grade, download artifacts, fetch live sources, write
 | `DOGV` | autonomous bulletin | Valencian education-aid evidence source. |
 
 Education portals and sedes remain missing source families until mapped through explicit
-source-specific work. BDNS concessions/awards remain out of scope until privacy and retention rules
-are reviewed.
+source-specific work. BDNS concessions/awards are not global evidence inputs: they may be previewed
+or ingested only for one `--num-conv` at a time, with beneficiary fields redacted by default unless
+an explicit privacy-reviewed operation approves including them.
 
 ## Required Packet Fields
 

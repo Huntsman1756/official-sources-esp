@@ -9,18 +9,27 @@ from official_sources.citation.builder import build_citation
 from official_sources.integrity.hashing import sha256_bytes
 from official_sources.sources.bdns.client import (
     build_bdns_call_detail_url,
+    build_bdns_catalog_url,
+    build_bdns_concessions_search_url,
     build_bdns_latest_url,
     build_bdns_search_url,
     parse_bdns_date_filter,
+    validate_bdns_catalog_name,
 )
 from official_sources.sources.bdns.ingestion import (
     ingest_bdns_call,
+    ingest_bdns_catalog,
+    ingest_bdns_concessions,
     ingest_bdns_latest,
+    preview_bdns_catalog,
+    preview_bdns_concessions,
     search_bdns_calls,
 )
 from official_sources.sources.bdns.parser import (
     parse_bdns_call_detail,
     parse_bdns_call_page,
+    parse_bdns_catalog,
+    parse_bdns_concession_page,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -50,6 +59,301 @@ def test_bdns_date_filter_accepts_spanish_dates_only():
 
     with pytest.raises(ValueError):
         parse_bdns_date_filter("2026-05-20")
+
+
+def test_bdns_concessions_search_url_requires_scoped_call_filter():
+    assert build_bdns_concessions_search_url(num_conv="877699", page_size=2) == (
+        "https://www.infosubvenciones.es/bdnstrans/api/concesiones/busqueda"
+        "?page=1&pageSize=2&vpd=GE&numeroConvocatoria=877699"
+    )
+
+    with pytest.raises(ValueError):
+        build_bdns_concessions_search_url(num_conv="", page_size=2)
+
+
+def test_bdns_concession_parsing_redacts_beneficiary_by_default():
+    payload = _payload(
+        {
+            "content": [
+                {
+                    "id": 152503815,
+                    "codConcesion": "SB152503815",
+                    "numeroConvocatoria": "877699",
+                    "idConvocatoria": 1079260,
+                    "fechaConcesion": "2026-05-29",
+                    "fechaAlta": "2026-05-31",
+                    "importe": 17243.86,
+                    "ayudaEquivalente": 17243.86,
+                    "instrumento": "SUBVENCION",
+                    "nivel1": "AUTONOMICA",
+                    "nivel2": "ILLES BALEARS",
+                    "nivel3": "DIRECCION GENERAL",
+                    "convocatoria": "Convocatoria de prueba",
+                    "urlBR": "https://example.test/bases",
+                    "beneficiario": "Persona Fisica",
+                    "idPersona": 22127337,
+                }
+            ],
+            "totalElements": 1,
+            "totalPages": 1,
+            "number": 0,
+            "last": True,
+        }
+    )
+
+    page = parse_bdns_concession_page(
+        payload,
+        source_url=build_bdns_concessions_search_url(num_conv="877699", page_size=2),
+    )
+
+    assert page.status == "success"
+    assert page.source_snapshot_hash == sha256_bytes(payload)
+    assert page.concessions[0].external_id == "BDNS:concesion:SB152503815"
+    assert page.concessions[0].call_identifier == "BDNS:877699"
+    assert page.concessions[0].raw_metadata["beneficiary_name"] is None
+    assert page.concessions[0].raw_metadata["beneficiary_person_id"] is None
+    assert page.concessions[0].raw_metadata["source_metadata"]["beneficiario"] == "<redacted>"
+
+
+def test_bdns_concession_parsing_can_include_beneficiary_fields_explicitly():
+    payload = _payload(
+        {
+            "content": [
+                {
+                    "id": 152503815,
+                    "codConcesion": "SB152503815",
+                    "numeroConvocatoria": "877699",
+                    "fechaConcesion": "2026-05-29",
+                    "beneficiario": "Entidad Beneficiaria",
+                    "idPersona": 22127337,
+                }
+            ]
+        }
+    )
+
+    page = parse_bdns_concession_page(
+        payload,
+        source_url=build_bdns_concessions_search_url(num_conv="877699", page_size=2),
+        include_beneficiary_fields=True,
+    )
+
+    assert page.concessions[0].raw_metadata["beneficiary_name"] == "Entidad Beneficiaria"
+    assert page.concessions[0].raw_metadata["beneficiary_person_id"] == 22127337
+
+
+def test_bdns_concessions_preview_does_not_store_entries():
+    payload = _payload(
+        {
+            "content": [
+                {
+                    "id": 152503815,
+                    "codConcesion": "SB152503815",
+                    "numeroConvocatoria": "877699",
+                    "fechaConcesion": "2026-05-29",
+                    "beneficiario": "Persona Fisica",
+                    "idPersona": 22127337,
+                }
+            ]
+        }
+    )
+
+    result = preview_bdns_concessions(
+        num_conv="877699",
+        page_size=1,
+        concessions_payload=payload,
+    )
+
+    assert result["status"] == "success"
+    assert result["documents_fetched"] == 0
+    assert result["entry_count"] == 1
+    assert result["sample_identifiers"] == ["BDNS:concesion:SB152503815"]
+
+
+def test_bdns_concessions_ingestion_stores_sanitized_entries_by_default(repository):
+    payload = _payload(
+        {
+            "content": [
+                {
+                    "id": 152503815,
+                    "codConcesion": "SB152503815",
+                    "numeroConvocatoria": "877699",
+                    "fechaConcesion": "2026-05-29",
+                    "fechaAlta": "2026-05-31",
+                    "importe": 17243.86,
+                    "ayudaEquivalente": 17243.86,
+                    "beneficiario": "Persona Fisica",
+                    "idPersona": 22127337,
+                }
+            ],
+            "last": True,
+        }
+    )
+
+    run = ingest_bdns_concessions(
+        repository,
+        num_conv="877699",
+        page_size=1,
+        max_pages=1,
+        fetcher=lambda **_kwargs: payload,
+    )
+
+    entry = repository.get_bdns_concession_entry("SB152503815")
+
+    assert run["status"] == "success"
+    assert run["documents_fetched"] == 1
+    assert run["documents_new"] == 1
+    assert entry["external_id"] == "BDNS:concesion:SB152503815"
+    assert entry["call_identifier"] == "BDNS:877699"
+    assert entry["beneficiary_name"] is None
+    assert entry["beneficiary_person_id"] is None
+
+
+def test_bdns_catalog_urls_are_limited_to_safe_metadata_endpoints():
+    assert validate_bdns_catalog_name("organos") == "organos"
+    assert build_bdns_catalog_url("sectores") == (
+        "https://www.infosubvenciones.es/bdnstrans/api/sectores"
+    )
+    assert build_bdns_catalog_url("finalidades") == (
+        "https://www.infosubvenciones.es/bdnstrans/api/finalidades?vpd=GE"
+    )
+    assert build_bdns_catalog_url("organos", id_admon="L") == (
+        "https://www.infosubvenciones.es/bdnstrans/api/organos?vpd=GE&idAdmon=L"
+    )
+
+    with pytest.raises(ValueError):
+        validate_bdns_catalog_name("concesiones")
+
+    with pytest.raises(ValueError):
+        build_bdns_catalog_url("organos")
+
+
+def test_bdns_catalog_parsing_preserves_identifier_and_hash():
+    payload = _payload(
+        [
+            {
+                "codigo": "EA0042931",
+                "descripcion": "Direccion General de Politica Energetica y Minas",
+                "nivel": 3,
+            }
+        ]
+    )
+
+    catalog = parse_bdns_catalog(
+        payload,
+        catalog_name="organos",
+        source_url=build_bdns_catalog_url("organos", id_admon="C"),
+    )
+
+    assert catalog.status == "success"
+    assert catalog.catalog_name == "organos"
+    assert catalog.source_snapshot_hash == sha256_bytes(payload)
+    assert catalog.entry_count == 1
+    assert catalog.entries[0].external_id == "BDNS:catalog:organos:EA0042931"
+    assert catalog.entries[0].name == "Direccion General de Politica Energetica y Minas"
+    assert catalog.entries[0].raw_metadata["nivel"] == 3
+
+
+def test_bdns_catalog_preview_does_not_store_documents():
+    payload = _payload(
+        {
+            "content": [
+                {
+                    "id": 11,
+                    "descripcion": "Comercio",
+                }
+            ]
+        }
+    )
+
+    result = preview_bdns_catalog(
+        "sectores",
+        catalog_payload=payload,
+    )
+
+    assert result["status"] == "success"
+    assert result["bdns_result"] == "success"
+    assert result["catalog_name"] == "sectores"
+    assert result["entry_count"] == 1
+    assert result["sample_identifiers"] == ["BDNS:catalog:sectores:11"]
+    assert result["documents_fetched"] == 0
+
+
+def test_bdns_catalog_ingestion_stores_reusable_entries(repository):
+    payload = _payload(
+        [
+            {
+                "codigo": "S01",
+                "descripcion": "Agricultura",
+            },
+            {
+                "codigo": "S02",
+                "descripcion": "Industria",
+            },
+        ]
+    )
+
+    run = ingest_bdns_catalog(
+        repository,
+        "sectores",
+        catalog_payload=payload,
+    )
+
+    first_entry = repository.get_bdns_catalog_entry("sectores", "S01")
+    entries = repository.list_bdns_catalog_entries(catalog_name="sectores")
+
+    assert run["status"] == "success"
+    assert run["bdns_result"] == "success"
+    assert run["documents_fetched"] == 2
+    assert run["documents_new"] == 2
+    assert run["documents_updated"] == 0
+    assert run["catalog_name"] == "sectores"
+    assert run["entry_count"] == 2
+    assert run["source_snapshot_hash"] == sha256_bytes(payload)
+    assert run["sample_identifiers"] == [
+        "BDNS:catalog:sectores:S01",
+        "BDNS:catalog:sectores:S02",
+    ]
+    assert len(entries) == 2
+    assert first_entry["external_id"] == "BDNS:catalog:sectores:S01"
+    assert first_entry["name"] == "Agricultura"
+    assert first_entry["source_snapshot_hash"] == sha256_bytes(payload)
+    assert first_entry["content_changed_at"] is None
+
+
+def test_bdns_catalog_ingestion_tracks_changed_entries(repository):
+    original_payload = _payload([{"codigo": "S01", "descripcion": "Agricultura"}])
+    changed_payload = _payload([{"codigo": "S01", "descripcion": "Sector agrario"}])
+
+    ingest_bdns_catalog(repository, "sectores", catalog_payload=original_payload)
+    run = ingest_bdns_catalog(repository, "sectores", catalog_payload=changed_payload)
+
+    entry = repository.get_bdns_catalog_entry("sectores", "S01")
+
+    assert run["status"] == "success"
+    assert run["documents_fetched"] == 1
+    assert run["documents_new"] == 0
+    assert run["documents_updated"] == 1
+    assert entry["name"] == "Sector agrario"
+    assert entry["previous_hash"] is not None
+    assert entry["content_changed_at"] is not None
+
+
+def test_bdns_organos_catalog_ingestion_scopes_codes_by_id_admon(repository):
+    payload = _payload([{"codigo": "12", "descripcion": "Organo estatal"}])
+
+    run = ingest_bdns_catalog(
+        repository,
+        "organos",
+        catalog_payload=payload,
+        id_admon="C",
+    )
+
+    entry = repository.get_bdns_catalog_entry("organos", "C:12")
+
+    assert run["status"] == "success"
+    assert run["sample_identifiers"] == ["BDNS:catalog:organos:C:12"]
+    assert entry["external_id"] == "BDNS:catalog:organos:C:12"
+    assert entry["name"] == "Organo estatal"
 
 
 def test_latest_calls_parsing_preserves_identifier_and_hash():
@@ -152,6 +456,53 @@ def test_detail_by_num_conv_parsing_preserves_fields_and_urls():
         "https://www.euskadi.eus/ayuda_subvencion/2026/ctp-2026/web01-tramite/es/"
     )
     assert detail.raw_metadata["base_regulation_url"] == "https://www.euskadi.eus/bases-reguladoras"
+
+
+def test_detail_parsing_structures_document_metadata_without_downloading():
+    payload = _payload(
+        {
+            "codigoBDNS": "907781",
+            "descripcion": "Convocatoria con documentos",
+            "fechaPublicacion": "2026-05-18",
+            "documentos": [
+                {
+                    "idDocumento": 123,
+                    "descripcion": "Bases reguladoras",
+                    "nombreFichero": "bases.pdf",
+                }
+            ],
+            "anuncios": [
+                {
+                    "id": 456,
+                    "descripcion": "Extracto publicado",
+                    "url": "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-1",
+                }
+            ],
+        }
+    )
+
+    detail = parse_bdns_call_detail(payload, num_conv="907781")
+
+    assert detail.raw_metadata["document_metadata"] == [
+        {
+            "document_id": "123",
+            "title": "Bases reguladoras",
+            "file_name": "bases.pdf",
+            "official_url": (
+                "https://www.infosubvenciones.es/bdnstrans/api/convocatorias/documentos"
+                "?idDocumento=123"
+            ),
+            "source_type": "documentos",
+        }
+    ]
+    assert detail.raw_metadata["announcement_metadata"] == [
+        {
+            "announcement_id": "456",
+            "title": "Extracto publicado",
+            "official_url": "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-1",
+            "source_type": "anuncios",
+        }
+    ]
 
 
 @pytest.mark.parametrize(
@@ -266,6 +617,81 @@ def test_bdns_call_ingestion_supports_citation_generation(repository):
     assert citation["source_code"] == "BDNS"
     assert citation["external_id"] == "BDNS:907042"
     assert citation["official_url"] == build_bdns_call_detail_url("907042")
+
+
+def test_bdns_call_ingestion_enriches_catalog_codes_from_local_catalogs(repository):
+    ingest_bdns_catalog(
+        repository,
+        "sectores",
+        catalog_payload=_payload(
+            [
+                {
+                    "codigo": "94",
+                    "descripcion": "Actividades asociativas normalizadas",
+                }
+            ]
+        ),
+    )
+
+    run = ingest_bdns_call(
+        repository,
+        num_conv="907042",
+        detail_payload=_fixture_bytes("bdns_convocatoria_detail.json"),
+    )
+
+    document = repository.get_document_by_external_id("BDNS:907042")
+    raw_metadata = json.loads(document["raw_metadata_json"])
+
+    assert run["status"] == "success"
+    assert raw_metadata["sector_activity"] == ["Actividades asociativas"]
+    assert raw_metadata["catalog_enrichment"]["sectores"] == [
+        {
+            "catalog_name": "sectores",
+            "code": "94",
+            "name": "Actividades asociativas normalizadas",
+            "external_id": "BDNS:catalog:sectores:94",
+        }
+    ]
+
+
+def test_bdns_search_ingestion_enriches_catalog_codes_from_local_catalogs(repository):
+    ingest_bdns_catalog(
+        repository,
+        "sectores",
+        catalog_payload=_payload([{"codigo": "94", "descripcion": "Actividades asociativas"}]),
+    )
+    search_payload = _payload(
+        {
+            "content": [
+                {
+                    "codigoBDNS": "907780",
+                    "descripcion": "Convocatoria con sector",
+                    "fechaPublicacion": "2026-05-16",
+                    "sectores": [{"codigo": "94", "descripcion": "Sector original"}],
+                }
+            ],
+            "totalElements": 1,
+            "totalPages": 1,
+            "number": 0,
+            "last": True,
+        }
+    )
+
+    run = search_bdns_calls(
+        repository,
+        date_from=None,
+        date_to=None,
+        page_size=1,
+        max_pages=1,
+        fetcher=lambda **_kwargs: search_payload,
+    )
+
+    document = repository.get_document_by_external_id("BDNS:907780")
+    raw_metadata = json.loads(document["raw_metadata_json"])
+
+    assert run["status"] == "success"
+    assert raw_metadata["catalog_enrichment"]["sectores"][0]["code"] == "94"
+    assert raw_metadata["catalog_enrichment"]["sectores"][0]["name"] == "Actividades asociativas"
 
 
 def test_bdns_search_enforces_pagination_limit(repository):

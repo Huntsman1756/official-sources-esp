@@ -10,6 +10,9 @@ import pytest
 from fastmcp import Client
 
 from official_sources.mcp.server import MCP_TOOL_NAMES, create_server
+from official_sources.sources.bdns.ingestion import ingest_bdns_concessions
+from official_sources.storage.database import connect, initialize_database
+from official_sources.storage.repository import OfficialSourcesRepository
 
 
 @pytest.mark.asyncio
@@ -60,6 +63,59 @@ async def test_mcp_tools_call_returns_structured_cache_miss_without_writes(tmp_p
             0
         ]
     assert after_candidates == 0
+
+
+@pytest.mark.asyncio
+async def test_mcp_bdns_concessions_call_returns_sanitized_cache_without_writes(
+    tmp_path,
+    monkeypatch,
+):
+    database_path = tmp_path / "mcp.sqlite"
+    monkeypatch.setenv("OFFICIAL_SOURCES_DB_PATH", str(database_path))
+    seed_connection = connect(str(database_path))
+    initialize_database(seed_connection)
+    seed_repository = OfficialSourcesRepository(seed_connection)
+    payload = json.dumps(
+        {
+            "content": [
+                {
+                    "codConcesion": "SB152503815",
+                    "numeroConvocatoria": "877699",
+                    "fechaConcesion": "2026-05-29",
+                    "importe": 17243.86,
+                    "beneficiario": "Persona Fisica",
+                    "idPersona": 22127337,
+                }
+            ],
+            "last": True,
+        }
+    ).encode()
+    ingest_bdns_concessions(
+        seed_repository,
+        num_conv="877699",
+        page_size=1,
+        max_pages=1,
+        fetcher=lambda **_kwargs: payload,
+    )
+    seed_connection.close()
+    with sqlite3.connect(database_path) as connection:
+        before_runs = connection.execute("SELECT COUNT(*) FROM ingestion_runs").fetchone()[0]
+
+    async with Client(create_server()) as client:
+        result = await client.call_tool(
+            "bdns_concessions_list",
+            {"num_conv": "877699", "limit": 5},
+        )
+
+    with sqlite3.connect(database_path) as connection:
+        after_runs = connection.execute("SELECT COUNT(*) FROM ingestion_runs").fetchone()[0]
+    assert result.structured_content["status"] == "ok"
+    assert result.structured_content["resource_type"] == "bdns_concessions"
+    assert result.structured_content["writes_performed"] is False
+    assert result.structured_content["items"][0]["external_id"] == "BDNS:concesion:SB152503815"
+    assert "beneficiary_name" not in result.structured_content["items"][0]
+    assert "Persona Fisica" not in json.dumps(result.structured_content)
+    assert after_runs == before_runs
 
 
 @pytest.mark.asyncio

@@ -20,6 +20,8 @@ MIGRATION_MODULE_NAMES = [
     "0006_ingestion_no_publication_status",
     "0007_candidate_evidence_reviews",
     "0008_candidate_manual_review_fields",
+    "0009_bdns_catalog_entries",
+    "0010_bdns_concession_entries",
 ]
 
 SCHEMA_MIGRATIONS_SQL = """

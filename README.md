@@ -187,6 +187,66 @@ candidates and are not evidence-grade records. Registry presence, monitor valida
 health do not mean product readiness; `BOP_ALICANTE` remains degraded/manual-review and must not be
 counted in all-green source claims.
 
+## BDNS Grants Operations
+
+BDNS / SNPSAP is treated as a grants registry source family, not as a bulletin. BDNS operations are
+CLI-only; they are not MCP write tools and they do not create downstream records, approve grants, or
+publish product content.
+
+Safe metadata catalog previews and ingestion:
+
+```bash
+official-sources --db-path official-sources.sqlite preview-bdns-catalog --catalog sectores
+official-sources --db-path official-sources.sqlite ingest-bdns-catalog --catalog sectores
+official-sources --db-path official-sources.sqlite preview-bdns-catalog --catalog organos --id-admon C
+official-sources --db-path official-sources.sqlite ingest-bdns-catalog --catalog organos --id-admon C
+```
+
+Grant-call export for downstream staging:
+
+```bash
+official-sources --db-path official-sources.sqlite \
+  export-bdns-grants --output data/exports/bdns-grants.jsonl --limit 100
+```
+
+The export is JSONL over stored local BDNS grant-call records. It is a staging input only and must
+remain behind product-side review before publication or candidate creation.
+
+Concesiones are scoped to one convocatoria:
+
+```bash
+official-sources --db-path official-sources.sqlite \
+  preview-bdns-concesiones --num-conv CODIGO_BDNS --page-size 10
+
+official-sources --db-path official-sources.sqlite \
+  ingest-bdns-concesiones --num-conv CODIGO_BDNS --page-size 10 --max-pages 1
+```
+
+Stored concesiones can be exported as sanitized JSONL:
+
+```bash
+official-sources --db-path official-sources.sqlite \
+  export-bdns-concessions --num-conv CODIGO_BDNS --output data/exports/bdns-concessions.jsonl
+```
+
+Global concesiones ingestion is disabled: `ingest-bdns-concesiones` requires `--num-conv`.
+Beneficiary name and person-id fields are redacted by default in concesiones parsing/storage. Use
+`--include-beneficiary-fields` only for an explicit privacy-reviewed operation.
+
+The private MCP server exposes read-only cache views for stored BDNS grant calls, catalog entries,
+and scoped concesiones. MCP does not run BDNS live fetches or write downstream records.
+
+BDNS final verification checklist:
+
+- run `db validate` after migrations and after any BDNS write command;
+- confirm BDNS catalog/concesiones commands report `status=success`;
+- confirm no source candidates, product records, or downstream writes were created;
+- confirm no artifact downloads were triggered by BDNS catalog/export/concesiones commands;
+- confirm concesiones runs were scoped with `--num-conv` and beneficiary fields stayed redacted
+  unless explicitly approved;
+- confirm `export-bdns-grants` output path and record count before handing the file to a downstream
+  staging workflow.
+
 ## Ingest A BOE Summary
 
 ```bash

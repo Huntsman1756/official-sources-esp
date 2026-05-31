@@ -182,8 +182,8 @@ def test_empty_database_migrates_to_latest_schema():
 
     result = migrate_database(connection)
 
-    assert result.current_version == 8
-    assert result.applied_versions == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert result.current_version == 10
+    assert result.applied_versions == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     assert validate_database(connection).valid is True
 
 
@@ -202,7 +202,7 @@ def test_migrations_and_validation_work_with_wal_enabled_database(tmp_path):
 
     result = migrate_database(connection)
 
-    assert result.current_version == 8
+    assert result.current_version == 10
     assert connection.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
     assert validate_database(connection).valid is True
 
@@ -222,7 +222,7 @@ def test_older_database_states_upgrade_to_latest_and_preserve_data(builder):
 
     result = migrate_database(connection)
 
-    assert result.current_version == 8
+    assert result.current_version == 10
     assert (
         connection.execute("SELECT COUNT(*) AS count FROM official_documents").fetchone()["count"]
         == 1
@@ -259,7 +259,35 @@ def test_request_audit_fields_are_added_by_latest_migration():
     assert "retry_count" in columns["ingestion_runs"]
     assert "last_http_status" in columns["ingestion_runs"]
     assert "throttle_triggered" in columns["artifact_download_attempts"]
+
+
+def test_bdns_catalog_entries_table_is_added_by_latest_migration():
+    connection = connect(":memory:")
+    _build_before_block_fields_database(connection)
+
+    migrate_database(connection)
+
+    columns = _table_columns(connection)
+    assert "bdns_catalog_entries" in columns
+    assert "catalog_name" in columns["bdns_catalog_entries"]
+    assert "source_snapshot_hash" in columns["bdns_catalog_entries"]
+    assert "content_hash" in columns["bdns_catalog_entries"]
     assert "retry_count" in columns["artifact_download_attempts"]
+
+
+def test_bdns_concession_entries_table_is_added_by_latest_migration():
+    connection = connect(":memory:")
+    _build_before_block_fields_database(connection)
+
+    migrate_database(connection)
+
+    columns = _table_columns(connection)
+    assert "bdns_concession_entries" in columns
+    assert "concession_code" in columns["bdns_concession_entries"]
+    assert "call_identifier" in columns["bdns_concession_entries"]
+    assert "beneficiary_name" in columns["bdns_concession_entries"]
+    assert "source_snapshot_hash" in columns["bdns_concession_entries"]
+    assert "content_hash" in columns["bdns_concession_entries"]
 
 
 def test_ingestion_no_publication_status_is_allowed_by_latest_migration():

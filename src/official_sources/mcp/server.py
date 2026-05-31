@@ -34,6 +34,9 @@ MCP_TOOL_NAMES = (
     "build_evidence_packet",
     "resolve_normative_reference",
     "resolve_fiscal_reference",
+    "bdns_grant_calls_list",
+    "bdns_catalog_entries_list",
+    "bdns_concessions_list",
     "boe_consolidated_law_get",
     "boe_consolidated_law_text_get",
     "boe_consolidated_law_citation_build",
@@ -238,6 +241,34 @@ def create_server(repository: OfficialSourcesRepository | None = None):
             tax_year=tax_year,
             jurisdiction=jurisdiction,
             deduction_key=deduction_key,
+            limit=limit,
+        )
+
+    @mcp.tool
+    def bdns_grant_calls_list(limit: int = 20) -> dict:
+        """List stored BDNS grant-call metadata without fetching live data."""
+        return tools.bdns_grant_calls_list(repository, limit=limit)
+
+    @mcp.tool
+    def bdns_catalog_entries_list(catalog_name: str | None = None, limit: int = 50) -> dict:
+        """List stored BDNS catalog cache entries without fetching live data."""
+        return tools.bdns_catalog_entries_list(
+            repository,
+            catalog_name=catalog_name,
+            limit=limit,
+        )
+
+    @mcp.tool
+    def bdns_concessions_list(
+        num_conv: str | None = None,
+        call_identifier: str | None = None,
+        limit: int = 50,
+    ) -> dict:
+        """List stored, scoped BDNS concessions without live/global fetching."""
+        return tools.bdns_concessions_list(
+            repository,
+            num_conv=num_conv,
+            call_identifier=call_identifier,
             limit=limit,
         )
 

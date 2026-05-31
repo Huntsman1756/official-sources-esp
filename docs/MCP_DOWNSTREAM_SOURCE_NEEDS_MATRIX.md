@@ -90,7 +90,7 @@ docs/MCP_CASE_TAXONOMY.md
 | `education_aid_evidence` | `eduayudas` | reviewed evidence packet, citation, integrity, source URL | evidence staging is not aid creation or publication |
 | `benefit_source_discovery` | `la-ayuda` | official source discovery, normative reference, evidence packet | source match is not benefit-page approval |
 | `fiscal_reference_resolution` | `renta-verificable` | AEAT/BOE/autonomous legal reference resolution | source reference is not fiscal advice |
-| `future_grants_registry` | future grants/subsidy products | BDNS convocatoria metadata, identifiers, hashes, controlled exports | BDNS data is not automatic product publication |
+| `future_grants_registry` | future grants/subsidy products | BDNS convocatoria metadata, catalog enrichment, identifiers, hashes, controlled exports | BDNS data is not automatic product publication |
 
 ## Downstream Matrix
 
@@ -100,7 +100,7 @@ docs/MCP_CASE_TAXONOMY.md
 | `eduayudas` | Verified education-aid evidence with official URL and verification date. | Evidence staging, preview, explicit evidence writes, explicit candidate conversion, and explicit draft pilot exist product-side. | BOE, BOJA, BOCYL, BOCM, DOGV, BDNS, autonomous bulletins. | Fresh reviewable evidence packets for education-aid searches; BDNS/education portal prioritization; product-scoped evidence exports, not global candidate creation. | High | `TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001` |
 | `la-ayuda` | Official source discovery and evidence for benefits/prestations catalog cards. | Static catalog; staging-first official-sources integration exists; many cards still require review or exact normative source discovery. | BOE, consolidated law tools, autonomous bulletins, selected evidence exports. | Normative source resolver for pending cards; official portal/sede source discovery; autonomous social-services, housing, family, dependency, disability, and benefit sources. | High | `TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001` |
 | `renta-verificable` | Exact fiscal/legal references for IRPF deductions. | Pre-beta local release candidate; production remains NO-GO pending infrastructure; fiscal/legal data is protected from casual edits. | BOE consolidated law tools, future autonomous legal reference support; AEAT remains primary outside current registry. | AEAT manual/reference source support; exact BOE/autonomous legal references; audit of generated or generic BOE links before integration. | Medium | `TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001` |
-| future grants/subsidy products | Grants and subsidy discovery. | No named current product dependency in this task. | BDNS convocatorias adapter family, BOE/autonomous evidence. | Grants-specific staging model; concessions privacy/retention review before use. | Medium | `TASK-MCP-BDNS-GRANTS-DEMAND-001` |
+| future grants/subsidy products | Grants and subsidy discovery. | No named current product dependency in this task. | BDNS convocatorias adapter family, safe BDNS catalogs, scoped redacted concesiones, BOE/autonomous evidence. | Grants-specific staging model; no global concesiones ingestion; privacy approval before beneficiary field exposure. | Medium | `TASK-MCP-BDNS-GRANTS-DEMAND-001` |
 
 ## Source Expansion Priority
 

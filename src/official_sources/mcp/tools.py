@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
+
 from official_sources import source_coverage
 from official_sources.api import queries
 from official_sources.citation.builder import build_consolidated_law_citation
+from official_sources.sources.bdns.client import validate_bdns_catalog_name, validate_bdns_num_conv
 from official_sources.sources.boe.consolidated import (
     validate_consolidated_block_id,
     validate_consolidated_identifier,
@@ -247,6 +250,76 @@ def resolve_fiscal_reference(
     )
 
 
+def bdns_grant_calls_list(
+    repository: OfficialSourcesRepository,
+    *,
+    limit: int = 20,
+) -> dict:
+    bounded_limit = _bounded_limit(limit)
+    documents = repository.list_bdns_grant_call_documents(limit=bounded_limit)
+    return {
+        "status": "ok",
+        "resource_type": "bdns_grant_calls",
+        "source_code": "BDNS",
+        "mode": "read_only",
+        "writes_performed": False,
+        "count": len(documents),
+        "items": [_bdns_grant_call_record(document) for document in documents],
+    }
+
+
+def bdns_catalog_entries_list(
+    repository: OfficialSourcesRepository,
+    *,
+    catalog_name: str | None = None,
+    limit: int = 50,
+) -> dict:
+    validated_catalog = validate_bdns_catalog_name(catalog_name) if catalog_name else None
+    bounded_limit = _bounded_limit(limit, default=50)
+    entries = repository.list_bdns_catalog_entries(
+        catalog_name=validated_catalog,
+        limit=bounded_limit,
+    )
+    return {
+        "status": "ok",
+        "resource_type": "bdns_catalog_entries",
+        "source_code": "BDNS",
+        "mode": "read_only",
+        "writes_performed": False,
+        "catalog_name": validated_catalog,
+        "count": len(entries),
+        "items": [_bdns_catalog_entry_record(entry) for entry in entries],
+    }
+
+
+def bdns_concessions_list(
+    repository: OfficialSourcesRepository,
+    *,
+    num_conv: str | None = None,
+    call_identifier: str | None = None,
+    limit: int = 50,
+) -> dict:
+    normalized_call_identifier = _bdns_call_identifier(
+        num_conv=num_conv,
+        call_identifier=call_identifier,
+    )
+    bounded_limit = _bounded_limit(limit, default=50)
+    entries = repository.list_bdns_concession_entries(
+        call_identifier=normalized_call_identifier,
+        limit=bounded_limit,
+    )
+    return {
+        "status": "ok",
+        "resource_type": "bdns_concessions",
+        "source_code": "BDNS",
+        "mode": "read_only",
+        "writes_performed": False,
+        "call_identifier": normalized_call_identifier,
+        "count": len(entries),
+        "items": [_bdns_concession_record(entry) for entry in entries],
+    }
+
+
 def boe_consolidated_law_get(
     repository: OfficialSourcesRepository,
     *,
@@ -428,3 +501,96 @@ def _version_by_id(
         if version["id"] == version_id:
             return version
     return None
+
+
+def _bounded_limit(value: int | None, *, default: int = 20, hard_max: int = 100) -> int:
+    if value is None:
+        return default
+    if value < 1:
+        raise ValueError("limit must be at least 1.")
+    return min(value, hard_max)
+
+
+def _bdns_call_identifier(
+    *,
+    num_conv: str | None,
+    call_identifier: str | None,
+) -> str | None:
+    if num_conv:
+        return f"BDNS:{validate_bdns_num_conv(num_conv)}"
+    if not call_identifier:
+        return None
+    cleaned = call_identifier.strip()
+    if cleaned.startswith("BDNS:"):
+        validate_bdns_num_conv(cleaned.removeprefix("BDNS:"))
+        return cleaned
+    return f"BDNS:{validate_bdns_num_conv(cleaned)}"
+
+
+def _bdns_grant_call_record(document: dict) -> dict:
+    raw_metadata = json.loads(document["raw_metadata_json"] or "{}")
+    return {
+        "external_id": document["external_id"],
+        "official_identifier": document["external_id"],
+        "publication_date": document["publication_date"],
+        "title": document["title"],
+        "department": document["department"],
+        "section": document["section"],
+        "document_type": document["document_type"],
+        "source_url": document["url_html"],
+        "bdns_code": _dict_value(raw_metadata, "bdns_code"),
+        "bdns_internal_id": _dict_value(raw_metadata, "bdns_internal_id"),
+        "registration_date": _dict_value(raw_metadata, "registration_date"),
+        "application_start_date": _dict_value(raw_metadata, "application_start_date"),
+        "application_end_date": _dict_value(raw_metadata, "application_end_date"),
+        "budget": _dict_value(raw_metadata, "budget"),
+        "beneficiary_type": _dict_value(raw_metadata, "beneficiary_type") or [],
+        "instrument_type": _dict_value(raw_metadata, "instrument_type") or [],
+        "sector_activity": _dict_value(raw_metadata, "sector_activity") or [],
+        "territorial_scope": _dict_value(raw_metadata, "territorial_scope") or [],
+        "catalog_enrichment": _dict_value(raw_metadata, "catalog_enrichment") or {},
+        "document_metadata": _dict_value(raw_metadata, "document_metadata") or [],
+        "announcement_metadata": _dict_value(raw_metadata, "announcement_metadata") or [],
+    }
+
+
+def _bdns_catalog_entry_record(entry: dict) -> dict:
+    return {
+        "external_id": entry["external_id"],
+        "catalog_name": entry["catalog_name"],
+        "code": entry["code"],
+        "name": entry["name"],
+        "source_url": entry["source_url"],
+        "source_snapshot_hash": entry["source_snapshot_hash"],
+        "first_seen_at": entry["first_seen_at"],
+        "last_seen_at": entry["last_seen_at"],
+    }
+
+
+def _bdns_concession_record(entry: dict) -> dict:
+    return {
+        "external_id": entry["external_id"],
+        "concession_code": entry["concession_code"],
+        "call_identifier": entry["call_identifier"],
+        "call_code": entry["call_code"],
+        "call_internal_id": entry["call_internal_id"],
+        "concession_date": entry["concession_date"],
+        "registration_date": entry["registration_date"],
+        "amount": entry["amount"],
+        "aid_equivalent": entry["aid_equivalent"],
+        "instrument": entry["instrument"],
+        "department": entry["department"],
+        "section": entry["section"],
+        "base_regulation_url": entry["base_regulation_url"],
+        "source_url": entry["source_url"],
+        "source_snapshot_hash": entry["source_snapshot_hash"],
+        "first_seen_at": entry["first_seen_at"],
+        "last_seen_at": entry["last_seen_at"],
+    }
+
+
+def _dict_value(data: dict, key: str):
+    try:
+        return data[key]
+    except KeyError:
+        return None

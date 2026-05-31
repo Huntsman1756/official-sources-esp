@@ -222,6 +222,49 @@ Do not run a broad historical backfill without a fresh verified backup, estimate
 count, explicit date range, artifact policy, and written report. XML/HTML/PDF downloads remain
 separate explicit steps, and PDF is never a default backfill artifact.
 
+BDNS catalog and grants checks are optional live-network checks for grants workflows. Run them only
+after backup, migration, and `db validate` have passed, and keep them bounded:
+
+```bash
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
+  preview-bdns-catalog --catalog sectores
+
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
+  ingest-bdns-catalog --catalog sectores
+
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
+  export-bdns-grants --output /opt/official-sources/data/bdns-grants-preview.jsonl --limit 100
+```
+
+BDNS concesiones must remain scoped to one convocatoria. There is no approved global concessions
+operation:
+
+```bash
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
+  preview-bdns-concesiones --num-conv CODIGO_BDNS --page-size 10
+
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
+  ingest-bdns-concesiones --num-conv CODIGO_BDNS --page-size 10 --max-pages 1
+
+official-sources --db-path /opt/official-sources/data/official_sources.sqlite \
+  export-bdns-concessions --num-conv CODIGO_BDNS \
+  --output /opt/official-sources/data/bdns-concessions-preview.jsonl
+```
+
+Default concesiones behavior redacts beneficiary name and person-id fields. Do not add
+`--include-beneficiary-fields` unless the run has an explicit privacy/retention approval.
+
+BDNS post-run checks:
+
+- `db validate` still passes;
+- BDNS command output reports `status=success`;
+- source candidate counts did not change;
+- artifact download attempt counts did not change;
+- downstream repositories were not touched;
+- concesiones runs used `--num-conv` and did not use `--include-beneficiary-fields` without
+  approval;
+- exported JSONL path and record count are recorded in the deployment report.
+
 ## 9. Systemd Installation
 
 Templates live in `deploy/systemd/` and assume:
@@ -279,6 +322,9 @@ Do not enable broken timers.
 - MCP tools must not write to downstream projects.
 - MCP tools must not perform arbitrary downloads.
 - MCP tools must not execute shell commands.
+- BDNS catalog refresh, grant export, and scoped concesiones ingestion/export are CLI operations,
+  not public MCP live-fetch/write tools. MCP exposes only read-only cache views.
+- BDNS concesiones must not be ingested globally; beneficiary fields are redacted by default.
 
 Start MCP only in a private operator session or private process manager:
 

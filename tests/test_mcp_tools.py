@@ -7,6 +7,11 @@ from pathlib import Path
 from official_sources import source_coverage
 from official_sources.mcp import tools
 from official_sources.mcp.server import MCP_TOOL_NAMES, create_repository_from_env
+from official_sources.sources.bdns.ingestion import (
+    ingest_bdns_call,
+    ingest_bdns_catalog,
+    ingest_bdns_concessions,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -63,6 +68,9 @@ def test_mcp_tool_names_use_compatible_snake_case_names():
         "build_evidence_packet",
         "resolve_normative_reference",
         "resolve_fiscal_reference",
+        "bdns_grant_calls_list",
+        "bdns_catalog_entries_list",
+        "bdns_concessions_list",
         "boe_consolidated_law_get",
         "boe_consolidated_law_text_get",
         "boe_consolidated_law_index_get",
@@ -174,6 +182,8 @@ def test_missing_document_text_returns_cache_miss_without_live_fetch(repository)
 def test_no_mcp_tool_can_write_to_protected_tables():
     protected_names = {
         "upsert_document",
+        "upsert_bdns_catalog_entry",
+        "upsert_bdns_concession_entry",
         "create_source_candidate",
         "upsert_document_file",
         "create_integrity_check",
@@ -187,6 +197,92 @@ def test_no_mcp_tool_can_write_to_protected_tables():
         assert f".{name}(" not in source
     assert "create_candidate" not in source.lower()
     assert "write_downstream" not in source.lower()
+
+
+def test_mcp_bdns_grant_calls_list_returns_stored_enriched_calls(repository):
+    ingest_bdns_call(
+        repository,
+        num_conv="907042",
+        detail_payload=_fixture_bytes("bdns_convocatoria_detail.json"),
+    )
+
+    result = tools.bdns_grant_calls_list(repository, limit=5)
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "bdns_grant_calls"
+    assert result["mode"] == "read_only"
+    assert result["writes_performed"] is False
+    assert result["count"] == 1
+    assert result["items"][0]["official_identifier"] == "BDNS:907042"
+    assert result["items"][0]["document_type"] == "grant_call"
+    assert "document_metadata" in result["items"][0]
+
+
+def test_mcp_bdns_catalog_entries_list_reads_local_catalog_cache(repository):
+    ingest_bdns_catalog(
+        repository,
+        "sectores",
+        catalog_payload=b'[{"codigo":"S01","descripcion":"Sector"}]',
+    )
+
+    result = tools.bdns_catalog_entries_list(repository, catalog_name="sectores", limit=5)
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "bdns_catalog_entries"
+    assert result["catalog_name"] == "sectores"
+    assert result["count"] == 1
+    assert result["items"][0] == {
+        "external_id": "BDNS:catalog:sectores:S01",
+        "catalog_name": "sectores",
+        "code": "S01",
+        "name": "Sector",
+        "source_url": "https://www.infosubvenciones.es/bdnstrans/api/sectores",
+        "source_snapshot_hash": result["items"][0]["source_snapshot_hash"],
+        "first_seen_at": result["items"][0]["first_seen_at"],
+        "last_seen_at": result["items"][0]["last_seen_at"],
+    }
+
+
+def test_mcp_bdns_concessions_list_is_readonly_and_sanitized(repository):
+    payload = json.dumps(
+        {
+            "content": [
+                {
+                    "codConcesion": "SB152503815",
+                    "numeroConvocatoria": "877699",
+                    "fechaConcesion": "2026-05-29",
+                    "fechaAlta": "2026-05-31",
+                    "importe": 17243.86,
+                    "ayudaEquivalente": 17243.86,
+                    "instrumento": "SUBVENCION",
+                    "beneficiario": "Persona Fisica",
+                    "idPersona": 22127337,
+                }
+            ],
+            "last": True,
+        }
+    ).encode()
+    ingest_bdns_concessions(
+        repository,
+        num_conv="877699",
+        page_size=1,
+        max_pages=1,
+        fetcher=lambda **_kwargs: payload,
+    )
+
+    result = tools.bdns_concessions_list(repository, num_conv="877699", limit=5)
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "bdns_concessions"
+    assert result["mode"] == "read_only"
+    assert result["writes_performed"] is False
+    assert result["call_identifier"] == "BDNS:877699"
+    assert result["count"] == 1
+    item = result["items"][0]
+    assert item["external_id"] == "BDNS:concesion:SB152503815"
+    assert "beneficiary_name" not in item
+    assert "beneficiary_person_id" not in item
+    assert "Persona Fisica" not in json.dumps(result)
 
 
 def test_mcp_source_coverage_list_returns_registered_sources():
