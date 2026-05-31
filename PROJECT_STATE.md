@@ -4,6 +4,34 @@ Last updated: 2026-05-31
 
 ## Current Decision
 
+`TASK-MCP-OFFICIAL-SOURCES-CONTRACT-001` is implemented locally as a specification-only contract
+for consumer-aware MCP planning tools.
+
+Contract:
+
+```text
+docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md
+```
+
+The contract defines proposed read-only tool semantics for:
+
+```text
+recommend_sources_for_consumer
+discover_sources_for_case
+build_evidence_packet
+resolve_normative_reference
+resolve_fiscal_reference
+```
+
+These tools are not implemented by this task. The contract requires every downstream-demand MCP
+response to preserve read-only mode, no writes, no product automation, candidate creation disabled,
+evidence-grade creation disabled, and human review required unless a future explicit task says
+otherwise.
+
+No runtime behavior changed.
+
+## Previous Decision
+
 `TASK-MCP-DOWNSTREAM-SOURCE-NEEDS-MATRIX-001` is implemented locally as the first step toward
 turning `official-sources` into a shared read-only MCP/upstream for the current downstream projects:
 

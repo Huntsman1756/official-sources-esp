@@ -7,6 +7,8 @@ Server name: `official-sources`
 Protocol target: MCP `2025-11-25` through FastMCP.
 
 Future MCP development must follow `docs/MCP_OFFICIAL_COMPLIANCE_GUIDE.md`.
+Consumer-aware MCP planning must follow `docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md` and
+`docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md`.
 
 The MCP layer does not own storage, ingestion, normalization, citation, or integrity logic. Its
 coverage/cache-readback tools are read-only. Controlled discovery preview may fetch one explicit
@@ -341,12 +343,22 @@ Output: official BOE block citation metadata. The tool does not cite mirrors, su
 
 ## Future Tools
 
+- `recommend_sources_for_consumer`
+- `discover_sources_for_case`
+- `build_evidence_packet`
+- `resolve_normative_reference`
+- `resolve_fiscal_reference`
 - `boe_legislation_search`
 - `boe_legislation_structure_get`
 - `boe_consolidated_law_search`
 - `boe_consolidated_law_version_compare`
 
-The first two are not implemented because broad legislation tooling is outside the current scope. Consolidated search remains unimplemented because TASK-003B is limited to identifier, index, and block retrieval. Version comparison is not implemented because custom legal diffing would create misleading legal conclusions.
+The downstream-demand tools are not implemented yet; their contract is defined in
+`docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md`. The first BOE legislation tools are not implemented
+because broad legislation tooling is outside the current scope. Consolidated search remains
+unimplemented because TASK-003B is limited to identifier, index, and block retrieval. Version
+comparison is not implemented because custom legal diffing would create misleading legal
+conclusions.
 
 ## Forbidden Tool Types
 
