@@ -4,7 +4,25 @@ Last updated: 2026-05-31
 
 ## Current Decision
 
-`TASK-SOURCE-COVERAGE-STATUS-CONTRACT-001` is implemented locally as a downstream-facing
+`TASK-PROJECT-CLOSURE-READONLY-UPSTREAM-001` is implemented locally as the administrative closure
+after PR #21 merged the downstream-facing source status contract.
+
+Final closure status:
+
+```text
+official-sources: CLOSED AS READ-ONLY UPSTREAM v1
+operational status: GO
+control-plane status contract: GO
+downstream semantic ambiguity: CLOSED
+writes: disabled
+candidate creation: disabled for 65/65
+evidence-grade creation: disabled for 65/65
+BOP_ALICANTE: degraded/manual-review
+coverage expansion: frozen
+old conflicting PRs: superseded/closed (#3, #7, #16)
+```
+
+`TASK-SOURCE-COVERAGE-STATUS-CONTRACT-001` is merged through PR #21 as a downstream-facing
 documentation/control-plane contract.
 
 Project operational status remains `GO`:
@@ -26,8 +44,9 @@ data/rss_monitor present: false
 data/html_monitor present: false
 ```
 
-Downstream/product closure remains pending until this contract is merged and consumers update their
-interpretation of registry, monitor, discovery, candidate, and evidence states.
+Downstream/product closure is no longer blocked by ambiguous source status semantics. Consumers must
+follow the merged contract before interpreting registry, monitor, discovery, candidate, evidence, or
+runtime-health states.
 
 Contract:
 
@@ -52,9 +71,9 @@ No new source expansion is planned from this task. Future source work remains pr
 separate task explicitly authorizes it. Writes, candidate creation, and evidence-grade creation
 remain disabled for all registered sources.
 
-This task did not add sources, change parsers, change monitors, create candidates, create
-evidence-grade records, download PDFs/artifacts, write downstream data, run backfills, touch VPS,
-touch Hermes, touch systemd, or attempt a `BOP_ALICANTE` DNS/runtime fix.
+This closure did not add sources, change parsers, change monitors, create candidates, create
+evidence-grade records, download PDFs/artifacts, write downstream data, run backfills, change
+Hermes/systemd behavior, or attempt a `BOP_ALICANTE` DNS/runtime fix.
 
 ## Previous Decision
 
@@ -1767,17 +1786,17 @@ Hard guardrails:
 | `TASK-HERMES-AUDITOR-SCHEDULED-VALIDATION-001` | Completed | `docs/reports/hermes-auditor-scheduled-validation-2026-05-28.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Confirms the VPS automatic Hermes run and later scheduled validation report returned operational `GO` without changing timers, services, source logic, downstream writes, or the VPS checkout. |
 | `TASK-SOURCE-RSS-MONITOR-005` | Implemented locally | `config/sources.yaml`, `src/official_sources/rss_monitor.py`, `tests/test_rss_monitor.py`, `docs/reports/rss-monitor-005-2026-05-29.md` | Adds BOCM and BOP_BADAJOZ as validated metadata-only RSS/Atom discovery sources without candidates, evidence-grade records, writes, VPS, Hermes, or systemd changes. |
 | `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-6-snapshot-2026-05-29.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Documents the post-RSS-005 coverage baseline: 65 sources, 11 RSS/Atom, 1 API discovery monitor, 7 HTML provincial discovery sources, 34 provincial inventory-only sources, and BOP_ALICANTE degraded/manual-review. |
+| `TASK-SOURCE-COVERAGE-STATUS-CONTRACT-001` | Merged | `docs/SOURCE_STATUS_CONTRACT.md`, PR #21 | Defines downstream-facing status semantics and separates registry presence, monitor capability, runtime health, metadata-only discovery, inventory-only status, candidate permission, evidence-grade permission, and product readiness. |
+| `TASK-PROJECT-CLOSURE-READONLY-UPSTREAM-001` | Implemented locally | `PROJECT_STATE.md`, `TASK_QUEUE.md` | Marks `official-sources` closed as read-only upstream v1 after PR #21 merged, VPS fast-forwarded, timers remained healthy, and old conflicting PRs #3, #7, and #16 were closed as superseded. |
 
 ## Next Allowed Work
 
 Allowed next work:
 
 1. `TASK-BOP-ALICANTE-DEGRADED-FOLLOWUP-001` to decide whether to resolve or further document the degraded/manual-review state.
-2. `TASK-SOURCE-COVERAGE-RUN-REPORT-001` if actual metadata-only JSONL writes are explicitly approved and run.
-3. `TASK-MCP-DISCOVERY-OUTPUT-SAMPLES-001` if sample discovery outputs are needed.
-4. Product-local design/preview for draft process creation in `oposiciones2.0`.
-5. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean and this status contract is merged.
-6. A source-needs audit for `renta-verificable` before any integration.
+2. Product-local design/preview for draft process creation in `oposiciones2.0`.
+3. Evidence-grade staging work in `EduAyudas` or `la-ayuda` only after their local states are clean and product-side review gates are explicit.
+4. A source-needs audit for `renta-verificable` before any integration.
 
 No new source expansion is planned from the current operational baseline. `TASK-PROVINCIAL-MONITORS-WAVE-003`
 and other source expansion work should remain out of scope unless a new task explicitly reopens
