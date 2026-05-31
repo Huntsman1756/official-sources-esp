@@ -106,11 +106,18 @@ Whenever a tool returns a source, it should include:
 `BOP_ALICANTE` must be returned as `degraded/manual-review` until a later recovery task documents
 normal runtime recovery.
 
-## Proposed Tools
+## Tool Contracts
 
-The following tools are proposed. They are not implemented by this contract.
+The following tools define the downstream-demand MCP surface. Implementation status is tracked in
+`docs/MCP_TOOLS.md`.
 
 ### `recommend_sources_for_consumer`
+
+Status:
+
+```text
+implemented
+```
 
 Purpose:
 
@@ -148,6 +155,12 @@ Must not:
 
 ### `discover_sources_for_case`
 
+Status:
+
+```text
+proposed
+```
+
 Purpose:
 
 ```text
@@ -182,6 +195,12 @@ Must not:
 
 ### `build_evidence_packet`
 
+Status:
+
+```text
+proposed
+```
+
 Purpose:
 
 ```text
@@ -215,6 +234,12 @@ Must not:
 
 ### `resolve_normative_reference`
 
+Status:
+
+```text
+proposed
+```
+
 Purpose:
 
 ```text
@@ -247,6 +272,12 @@ Must not:
 - cite generated or generic links as exact references.
 
 ### `resolve_fiscal_reference`
+
+Status:
+
+```text
+proposed
+```
 
 Purpose:
 

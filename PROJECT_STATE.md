@@ -4,6 +4,30 @@ Last updated: 2026-05-31
 
 ## Current Decision
 
+`TASK-MCP-TOOLS-READONLY-SKELETON-001` is implemented locally with the first consumer-aware
+read-only MCP planning tool:
+
+```text
+recommend_sources_for_consumer
+```
+
+The tool ranks registered sources by downstream demand profile for:
+
+```text
+oposiciones2.0
+eduayudas
+la-ayuda
+renta-verificable
+```
+
+It does not fetch live sources, run monitor previews, read discovery JSONL, write JSONL, mutate the
+registry, create candidates, create evidence-grade records, download artifacts, or touch downstream
+repositories. Responses keep `mode=read_only`, `writes_performed=false`,
+`product_automation_allowed=false`, `candidate_creation_allowed=false`,
+`evidence_grade_allowed=false`, and `human_review_required=true`.
+
+## Previous Decision
+
 `TASK-MCP-OFFICIAL-SOURCES-CONTRACT-001` is implemented locally as a specification-only contract
 for consumer-aware MCP planning tools.
 
@@ -23,10 +47,9 @@ resolve_normative_reference
 resolve_fiscal_reference
 ```
 
-These tools are not implemented by this task. The contract requires every downstream-demand MCP
-response to preserve read-only mode, no writes, no product automation, candidate creation disabled,
-evidence-grade creation disabled, and human review required unless a future explicit task says
-otherwise.
+The contract requires every downstream-demand MCP response to preserve read-only mode, no writes, no
+product automation, candidate creation disabled, evidence-grade creation disabled, and human review
+required unless a future explicit task says otherwise.
 
 No runtime behavior changed.
 

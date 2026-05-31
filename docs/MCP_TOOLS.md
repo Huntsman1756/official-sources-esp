@@ -255,6 +255,37 @@ This is not an LLM tool. It does not execute previews, fetch live sources, write
 files, create candidates, create evidence-grade records, download PDFs/artifacts, run backfills,
 mutate the registry, or touch downstream repositories.
 
+### recommend_sources_for_consumer
+
+Inputs:
+
+- `consumer`: known downstream consumer such as `oposiciones2.0`, `eduayudas`, `la-ayuda`, or
+  `renta-verificable`.
+- `demand_class`: optional demand-class override; must match the registered consumer profile.
+- `limit`: integer, default `5`, maximum `20`.
+
+Output: deterministic downstream-demand source recommendations from the registered consumer
+profiles in `docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md`.
+
+Each response preserves the downstream-demand safety envelope:
+
+```text
+mode=read_only
+writes_performed=false
+candidate_creation_allowed=false
+evidence_grade_allowed=false
+product_automation_allowed=false
+human_review_required=true
+```
+
+Each returned source includes registry status, runtime-health interpretation, monitor support,
+evidence-adapter status, product-readiness status, safe downstream uses, and explicit
+`must_not_infer` warnings.
+
+This tool does not fetch live sources, run monitor previews, read discovery JSONL, write JSONL,
+mutate the registry, create candidates, create evidence-grade records, download artifacts, or touch
+downstream repositories.
+
 ### boe_consolidated_law_get
 
 Inputs:
@@ -343,7 +374,6 @@ Output: official BOE block citation metadata. The tool does not cite mirrors, su
 
 ## Future Tools
 
-- `recommend_sources_for_consumer`
 - `discover_sources_for_case`
 - `build_evidence_packet`
 - `resolve_normative_reference`
@@ -353,7 +383,7 @@ Output: official BOE block citation metadata. The tool does not cite mirrors, su
 - `boe_consolidated_law_search`
 - `boe_consolidated_law_version_compare`
 
-The downstream-demand tools are not implemented yet; their contract is defined in
+The remaining downstream-demand tools are not implemented yet; their contract is defined in
 `docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md`. The first BOE legislation tools are not implemented
 because broad legislation tooling is outside the current scope. Consolidated search remains
 unimplemented because TASK-003B is limited to identifier, index, and block retrieval. Version

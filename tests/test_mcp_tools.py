@@ -56,6 +56,7 @@ def test_mcp_tool_names_use_compatible_snake_case_names():
         "list_latest_discovery_entries",
         "preview_discovery",
         "recommend_next_sources",
+        "recommend_sources_for_consumer",
         "boe_consolidated_law_get",
         "boe_consolidated_law_text_get",
         "boe_consolidated_law_index_get",
@@ -750,9 +751,7 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
         "BOP_MALAGA",
         "BOP_VALENCIA",
     }.isdisjoint(source_codes)
-    assert all(
-        item["operational_status"] == "inventory_only" for item in result["recommendations"]
-    )
+    assert all(item["operational_status"] == "inventory_only" for item in result["recommendations"])
 
 
 def test_mcp_recommend_next_sources_excludes_documented_blocked_or_deferred_source(tmp_path):
@@ -817,6 +816,75 @@ def test_mcp_recommend_next_sources_does_not_execute_previews_or_write(tmp_path,
     assert result["status"] == "ok"
     assert result["count"] == 2
     assert not list(tmp_path.rglob("*.jsonl"))
+
+
+def test_mcp_recommend_sources_for_consumer_prioritizes_downstream_need():
+    result = tools.recommend_sources_for_consumer(consumer="oposiciones2.0", limit=3)
+
+    assert result["status"] == "ok"
+    assert result["resource_type"] == "downstream_source_recommendations"
+    assert result["consumer"] == "oposiciones2.0"
+    assert result["demand_class"] == "public_employment_alerts"
+    assert result["mode"] == "read_only"
+    assert result["writes_performed"] is False
+    assert result["candidate_creation_allowed"] is False
+    assert result["evidence_grade_allowed"] is False
+    assert result["product_automation_allowed"] is False
+    assert result["human_review_required"] is True
+    assert [item["source_code"] for item in result["recommendations"]] == [
+        "BOP_CASTELLON",
+        "BOP_SEVILLA",
+        "BOP_AVILA",
+    ]
+    first_status = result["recommendations"][0]["source_status"]
+    assert first_status["registered"] is True
+    assert first_status["registry_operational_status"] == "inventory_only"
+    assert first_status["product_ready"] is False
+    assert first_status["candidate_creation_allowed"] is False
+    assert first_status["evidence_grade_allowed"] is False
+    assert "publication_ready" in first_status["must_not_infer"]
+
+
+def test_mcp_recommend_sources_for_consumer_supports_product_alias():
+    result = tools.recommend_sources_for_consumer(consumer="renta", limit=1)
+
+    assert result["status"] == "ok"
+    assert result["consumer"] == "renta-verificable"
+    assert result["demand_class"] == "fiscal_reference_resolution"
+    assert result["recommendations"][0]["source_code"] == "BOE"
+    assert "AEAT-first fiscal reference model" in result["missing_capabilities"]
+
+
+def test_mcp_recommend_sources_for_consumer_refuses_unknown_consumer():
+    result = tools.recommend_sources_for_consumer(consumer="unknown-product")
+
+    assert result["status"] == "unsupported_consumer"
+    assert result["consumer"] == "unknown-product"
+    assert "oposiciones2.0" in result["supported_consumers"]
+
+
+def test_mcp_recommend_sources_for_consumer_refuses_wrong_demand_class():
+    result = tools.recommend_sources_for_consumer(
+        consumer="eduayudas",
+        demand_class="public_employment_alerts",
+    )
+
+    assert result == {
+        "status": "unsupported_demand_class",
+        "consumer": "eduayudas",
+        "demand_class": "public_employment_alerts",
+        "supported_demand_class": "education_aid_evidence",
+        "message": "Demand class does not match the registered downstream profile.",
+    }
+
+
+def test_mcp_recommend_sources_for_consumer_refuses_invalid_limit():
+    result = tools.recommend_sources_for_consumer(consumer="oposiciones2.0", limit=0)
+
+    assert result == {
+        "status": "invalid_request",
+        "message": "limit must be between 1 and 20",
+    }
 
 
 def test_mcp_latest_discovery_entries_unknown_source_returns_safe_error(tmp_path):

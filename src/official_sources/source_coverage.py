@@ -56,6 +56,204 @@ DOCUMENTED_DEFER_MARKERS = (
     "deferred until",
     "manual-only",
 )
+DOWNSTREAM_DEMAND_PROFILES = {
+    "oposiciones2.0": {
+        "consumer": "oposiciones2.0",
+        "demand_class": "public_employment_alerts",
+        "recommended_sources": (
+            (
+                "BOP_CASTELLON",
+                "Product-side public-employment ingestion already exists; reconcile into "
+                "shared MCP metadata coverage.",
+                "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
+            ),
+            (
+                "BOP_SEVILLA",
+                "High-value provincial public-employment source and prior read-only audit "
+                "candidate.",
+                "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
+            ),
+            (
+                "BOP_AVILA",
+                "Low-friction provincial RSS/API signal for public-employment alert coverage.",
+                "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
+            ),
+            (
+                "BOP_PONTEVEDRA",
+                "Low-friction provincial RSS/API signal for public-employment alert coverage.",
+                "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
+            ),
+            (
+                "BOP_SORIA",
+                "Low-friction provincial RSS/API signal for public-employment alert coverage.",
+                "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
+            ),
+            (
+                "BOP_CORDOBA",
+                "Open-data signal for provincial public-employment alert coverage.",
+                "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
+            ),
+            (
+                "BOP_GRANADA",
+                "Open-data signal for provincial public-employment alert coverage.",
+                "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
+            ),
+            (
+                "BOP_LEON",
+                "Open-data signal for provincial public-employment alert coverage.",
+                "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
+            ),
+            (
+                "BOP_PALENCIA",
+                "Open-data signal for provincial public-employment alert coverage.",
+                "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
+            ),
+            (
+                "BOP_SALAMANCA",
+                "Open-data signal for provincial public-employment alert coverage.",
+                "TASK-SOURCE-COVERAGE-REOPEN-OPOSICIONES-001",
+            ),
+        ),
+        "missing_capabilities": (
+            "source-specific metadata-only monitors for selected provincial BOPs",
+            "consumer-aware alert-grade export ranking",
+            "explicit exclusion of BOP_ALICANTE from all-green claims while degraded/manual-review",
+        ),
+    },
+    "eduayudas": {
+        "consumer": "eduayudas",
+        "demand_class": "education_aid_evidence",
+        "recommended_sources": (
+            (
+                "BDNS",
+                "Primary grants registry family for convocatorias and education-aid discovery.",
+                "TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001",
+            ),
+            (
+                "BOE",
+                "State-level official evidence and citation source for education-aid records.",
+                "TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001",
+            ),
+            (
+                "BOJA",
+                "Autonomous education-aid bulletin source with existing adapter history.",
+                "TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001",
+            ),
+            (
+                "BOCYL",
+                "Autonomous education-aid bulletin source with existing adapter history.",
+                "TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001",
+            ),
+            (
+                "BOCM",
+                "Autonomous education-aid bulletin source with RSS monitor support.",
+                "TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001",
+            ),
+            (
+                "DOGV",
+                "Autonomous education-aid bulletin source with existing adapter history.",
+                "TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001",
+            ),
+        ),
+        "missing_capabilities": (
+            "consumer-scoped education-aid evidence packet profile",
+            "BDNS education-aid query profile",
+            "product-side staging import remains explicit and reviewed",
+        ),
+    },
+    "la-ayuda": {
+        "consumer": "la-ayuda",
+        "demand_class": "benefit_source_discovery",
+        "recommended_sources": (
+            (
+                "BOE",
+                "State-level legal and consolidated-law reference source for benefit cards.",
+                "TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001",
+            ),
+            (
+                "BDNS",
+                "Grants registry family that may support aid and subsidy source discovery.",
+                "TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001",
+            ),
+            (
+                "BOCM",
+                "Autonomous bulletin source for benefit/social-aid source discovery.",
+                "TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001",
+            ),
+            (
+                "BOJA",
+                "Autonomous bulletin source for benefit/social-aid source discovery.",
+                "TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001",
+            ),
+            (
+                "DOGV",
+                "Autonomous bulletin source for benefit/social-aid source discovery.",
+                "TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001",
+            ),
+            (
+                "BOCYL",
+                "Autonomous bulletin source for benefit/social-aid source discovery.",
+                "TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001",
+            ),
+        ),
+        "missing_capabilities": (
+            "official portal/sede source resolver",
+            "normative reference matching for pending cards",
+            "manual-review uncertainty state for ambiguous matches",
+        ),
+    },
+    "renta-verificable": {
+        "consumer": "renta-verificable",
+        "demand_class": "fiscal_reference_resolution",
+        "recommended_sources": (
+            (
+                "BOE",
+                "Exact legal-reference source for state-level and consolidated legal citations.",
+                "TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001",
+            ),
+            (
+                "BOCM",
+                "Autonomous legal-reference source family for Madrid fiscal rules.",
+                "TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001",
+            ),
+            (
+                "DOGV",
+                "Autonomous legal-reference source family for Valencian fiscal rules.",
+                "TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001",
+            ),
+            (
+                "DOGC",
+                "Autonomous legal-reference source family for Catalan fiscal rules.",
+                "TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001",
+            ),
+            (
+                "BON",
+                "Foral/autonomous legal-reference source family for Navarra fiscal rules.",
+                "TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001",
+            ),
+            (
+                "BOPV",
+                "Autonomous legal-reference source family for Basque fiscal rules.",
+                "TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001",
+            ),
+        ),
+        "missing_capabilities": (
+            "AEAT-first fiscal reference model",
+            "exact BOE/autonomous legal reference audit",
+            "foral and Ceuta/Melilla fiscal source inventory",
+        ),
+    },
+}
+DOWNSTREAM_CONSUMER_ALIASES = {
+    "eduayudas": "eduayudas",
+    "la-ayuda": "la-ayuda",
+    "la_ayuda": "la-ayuda",
+    "oposiciones": "oposiciones2.0",
+    "oposiciones2.0": "oposiciones2.0",
+    "renta": "renta-verificable",
+    "renta-verificable": "renta-verificable",
+    "renta_verificable": "renta-verificable",
+}
 
 
 def list_source_coverage() -> dict:
@@ -96,8 +294,7 @@ def list_monitorable_sources() -> dict:
         methods = [
             _coverage_access_method(method)
             for method in source["access_methods"]
-            if method["type"] in MONITOR_CAPABLE_METHOD_TYPES
-            and method["status"] != "deprecated"
+            if method["type"] in MONITOR_CAPABLE_METHOD_TYPES and method["status"] != "deprecated"
         ]
         if not methods or source["operational_status"] == "inventory_only":
             continue
@@ -362,6 +559,84 @@ def recommend_next_sources(
     }
 
 
+def recommend_sources_for_consumer(
+    *,
+    consumer: str,
+    demand_class: str | None = None,
+    limit: int = 5,
+) -> dict:
+    if limit < 1 or limit > 20:
+        return {
+            "status": "invalid_request",
+            "message": "limit must be between 1 and 20",
+        }
+    normalized_consumer = _normalize_downstream_consumer(consumer)
+    if normalized_consumer is None:
+        return {
+            "status": "unsupported_consumer",
+            "consumer": consumer,
+            "supported_consumers": sorted(
+                profile["consumer"] for profile in DOWNSTREAM_DEMAND_PROFILES.values()
+            ),
+            "message": (
+                "Unknown downstream consumer; add an explicit profile before recommending "
+                "source work."
+            ),
+        }
+
+    profile = DOWNSTREAM_DEMAND_PROFILES[normalized_consumer]
+    expected_demand_class = profile["demand_class"]
+    requested_demand_class = demand_class.strip() if demand_class else expected_demand_class
+    if requested_demand_class != expected_demand_class:
+        return {
+            "status": "unsupported_demand_class",
+            "consumer": profile["consumer"],
+            "demand_class": requested_demand_class,
+            "supported_demand_class": expected_demand_class,
+            "message": "Demand class does not match the registered downstream profile.",
+        }
+
+    recommendations = [
+        _build_downstream_source_recommendation(
+            source_code,
+            reason,
+            next_task,
+            demand_class=expected_demand_class,
+        )
+        for source_code, reason, next_task in profile["recommended_sources"][:limit]
+    ]
+    return {
+        "status": "ok",
+        "resource_type": "downstream_source_recommendations",
+        "consumer": profile["consumer"],
+        "demand_class": expected_demand_class,
+        "mode": "read_only",
+        "writes_performed": False,
+        "candidate_creation_allowed": False,
+        "evidence_grade_allowed": False,
+        "product_automation_allowed": False,
+        "human_review_required": True,
+        "contract_refs": [
+            "docs/SOURCE_STATUS_CONTRACT.md",
+            "docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md",
+            "docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md",
+        ],
+        "count": len(recommendations),
+        "recommendations": recommendations,
+        "missing_capabilities": list(profile["missing_capabilities"]),
+        "rules": [
+            "deterministic downstream-demand profile",
+            "registry read only",
+            "no monitor execution",
+            "no live fetches",
+            "no writes",
+            "no candidates",
+            "no evidence-grade records",
+            "no downstream mutation",
+        ],
+    }
+
+
 def _source_safety(source: dict[str, Any]) -> dict:
     return {
         "candidate_creation_allowed": source["candidate_creation_allowed"],
@@ -372,6 +647,70 @@ def _source_safety(source: dict[str, Any]) -> dict:
         "api_discovery_is_candidate": False,
         "html_discovery_is_evidence": False,
         "html_discovery_is_candidate": False,
+    }
+
+
+def _normalize_downstream_consumer(value: str) -> str | None:
+    normalized = value.strip().lower()
+    return DOWNSTREAM_CONSUMER_ALIASES.get(normalized)
+
+
+def _build_downstream_source_recommendation(
+    source_code: str,
+    reason: str,
+    next_task: str,
+    *,
+    demand_class: str,
+) -> dict:
+    try:
+        source = registry_get_source(source_code)
+    except SourceRegistryError:
+        return {
+            "source_code": source_code,
+            "registered": False,
+            "demand_class": demand_class,
+            "reason": reason,
+            "next_task": next_task,
+            "status": "missing_registry_entry",
+            "human_review_required": True,
+            "product_ready": False,
+        }
+    return {
+        "source_code": source["source_code"],
+        "name": source["name"],
+        "demand_class": demand_class,
+        "reason": reason,
+        "next_task": next_task,
+        "source_status": _downstream_source_status(source),
+    }
+
+
+def _downstream_source_status(source: dict[str, Any]) -> dict:
+    runtime_health = (
+        "degraded/manual-review" if source["source_code"] == "BOP_ALICANTE" else "unknown"
+    )
+    safe_uses = ["inventory_awareness", "manual_review"]
+    if source["operational_status"] == "monitor_validated":
+        safe_uses.insert(0, "metadata_discovery")
+    elif source["operational_status"] == "metadata_adapter_validated":
+        safe_uses.insert(0, "upstream_metadata")
+    return {
+        "registered": True,
+        "registry_operational_status": source["operational_status"],
+        "runtime_health": runtime_health,
+        "monitor_support": source["monitor_support"],
+        "evidence_adapter": source["evidence_adapter"],
+        "candidate_creation_allowed": source["candidate_creation_allowed"],
+        "evidence_grade_allowed": source["evidence_grade_allowed"],
+        "product_ready": False,
+        "safe_downstream_uses": safe_uses,
+        "must_not_infer": [
+            "candidate_ready",
+            "evidence_grade",
+            "publication_ready",
+            "runtime_healthy",
+            "product_automation_allowed",
+        ],
     }
 
 
@@ -570,10 +909,10 @@ def _resolve_discovery_date(
             return validate_monitor_date(value)
         except RSSMonitorError:
             return value
-    candidates = _dated_output_candidates(rss_root, source_code, "rss") + _dated_output_candidates(
-        api_root, source_code, "api"
-    ) + _dated_output_candidates(
-        html_root, source_code, "html"
+    candidates = (
+        _dated_output_candidates(rss_root, source_code, "rss")
+        + _dated_output_candidates(api_root, source_code, "api")
+        + _dated_output_candidates(html_root, source_code, "html")
     )
     return sorted(candidates, reverse=True)[0] if candidates else None
 
