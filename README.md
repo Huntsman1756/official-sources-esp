@@ -184,6 +184,7 @@ official-sources html monitor --source BOP_CORDOBA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_PONTEVEDRA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SEVILLA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_SORIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALENCIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_VALLADOLID --date YYYY-MM-DD --limit 1
 ```

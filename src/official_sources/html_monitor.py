@@ -138,6 +138,13 @@ def build_bop_sevilla_html_url(template_url: str, *, target_date: str) -> str:
     return template_url
 
 
+def build_bop_soria_html_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
+    return template_url.replace("{dd_mm_yyyy}", parsed_date.strftime("%d-%m-%Y")).replace(
+        "{date}", parsed_date.isoformat()
+    )
+
+
 def build_bop_valencia_html_url(template_url: str, *, target_date: str) -> str:
     validate_html_monitor_date(target_date)
     return template_url
@@ -194,6 +201,14 @@ def monitor_html_source(
     elif source_code == "BOP_SEVILLA":
         landing_page = _coerce_page_bytes(fetch(page_url))
         detail_url = _extract_bop_sevilla_latest_detail_url(
+            landing_page.decode("utf-8", errors="replace"),
+            page_url,
+        )
+        raw_page = _coerce_page_bytes(fetch(detail_url))
+        page_url = detail_url
+    elif source_code == "BOP_SORIA":
+        landing_page = _coerce_page_bytes(fetch(page_url))
+        detail_url = _extract_bop_soria_detail_url(
             landing_page.decode("utf-8", errors="replace"),
             page_url,
         )
@@ -621,6 +636,40 @@ def parse_bop_sevilla_html(
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
+def parse_bop_soria_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_bop_soria_publication_date(text) or requested_date
+    records = [
+        _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at,
+            official_url=urljoin(page_url, href),
+            summary=summary,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"],
+        )
+        for title, href, document_id, summary in _iter_bop_soria_announcements(text)
+    ]
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
 def parse_bop_valencia_html(
     raw_page: bytes | str,
     *,
@@ -802,6 +851,8 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_pontevedra_html_url(template_url, target_date=target_date)
     if source_code == "BOP_SEVILLA":
         return build_bop_sevilla_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_SORIA":
+        return build_bop_soria_html_url(template_url, target_date=target_date)
     if source_code == "BOP_VALENCIA":
         return build_bop_valencia_html_url(template_url, target_date=target_date)
     if source_code == "BOP_VALLADOLID":
@@ -811,7 +862,7 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
     raise HTMLMonitorError(
         "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
         "BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_CASTELLON, BOP_CORDOBA, "
-        "BOP_MALAGA, BOP_SEVILLA, BOP_PONTEVEDRA, BOP_VALENCIA, "
+        "BOP_MALAGA, BOP_SEVILLA, BOP_SORIA, BOP_PONTEVEDRA, BOP_VALENCIA, "
         "BOP_VALLADOLID, and DOCM only"
     )
 
@@ -917,6 +968,15 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_SEVILLA":
         return parse_bop_sevilla_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_SORIA":
+        return parse_bop_soria_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -1282,6 +1342,71 @@ def _iter_bop_sevilla_announcements(
         if title and href and document_id:
             announcements.append((title, href, document_id, published_at, summary))
     return announcements
+
+
+def _extract_bop_soria_detail_url(text: str, page_url: str) -> str:
+    for tag in re.finditer(r"<a\b(?P<attrs>[^>]+)>", text, re.I | re.S):
+        attrs = tag.group("attrs")
+        href_match = re.search(r'href="(?P<href>[^"]+)"', attrs, re.I)
+        if not href_match:
+            continue
+        href = html.unescape(href_match.group("href"))
+        if "/mod.boloficial/mem.detalle/" in href:
+            return urljoin(page_url, href)
+    raise HTMLMonitorError("BOP_SORIA date page did not expose bulletin detail URL")
+
+
+def _extract_bop_soria_publication_date(text: str) -> str | None:
+    match = re.search(
+        r"\b(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})\b",
+        _strip_tags(text),
+        re.I,
+    )
+    if not match:
+        return None
+    month = _SPANISH_MONTHS.get(match.group(2).lower())
+    if not month:
+        return None
+    return date(int(match.group(3)), month, int(match.group(1))).isoformat()
+
+
+def _iter_bop_soria_announcements(text: str) -> list[tuple[str, str, str, str | None]]:
+    item_pattern = re.compile(r"<li>(?P<body>.*?)</li>", re.I | re.S)
+    context: list[str | None] = [None, None, None]
+    announcements = []
+    summary_start = text.lower().find("<h3>sumario</h3>")
+    for item in item_pattern.finditer(text):
+        if summary_start < 0 or item.start() < summary_start:
+            continue
+        body = item.group("body")
+        link = re.search(
+            r'<a[^>]+href="(?P<href>[^"]+/mod\.documentos/mem\.descargar/[^"]+)"[^>]*>',
+            body,
+            re.I | re.S,
+        )
+        if not link:
+            continue
+        parts = [_normalize_soria_context(part) for part in _class_texts(body, "fec-f1")]
+        non_empty_parts = [part for part in parts if part]
+        if not non_empty_parts:
+            continue
+        for index, part in enumerate(parts[:3]):
+            if part:
+                context[index] = part
+        title = non_empty_parts[-1]
+        href = html.unescape(link.group("href"))
+        document_id = _bop_soria_document_id_from_url(href)
+        summary = _join_title_parts(*context)
+        if title and href and document_id:
+            announcements.append((title, href, document_id, summary))
+    return announcements
+
+
+def _normalize_soria_context(value: str | None) -> str | None:
+    normalized = _normalize_text(value)
+    if not normalized:
+        return None
+    return normalized.lstrip("- ").strip() or None
 
 
 def _iter_bop_valencia_announcements(text: str) -> list[tuple[str, str, str | None]]:
@@ -1663,6 +1788,13 @@ def _bop_pontevedra_document_id_from_url(value: str) -> str | None:
     return match.group(1)
 
 
+def _bop_soria_document_id_from_url(value: str) -> str | None:
+    match = re.search(r"fichero\.documentos_(\d+)", value, re.I)
+    if not match:
+        return None
+    return html.unescape(match.group(1))
+
+
 def _first_register_number(text: str) -> str | None:
     match = re.search(r"\bRegistre\s*:?\s*(\d{6,})\b", _strip_tags(text), re.I)
     if match:
@@ -1716,6 +1848,15 @@ def _first_class_block_text(text: str, class_name: str) -> str | None:
     if not match:
         return None
     return _normalize_text(_strip_tags(match.group("body")))
+
+
+def _class_texts(text: str, class_name: str) -> list[str]:
+    pattern = re.compile(
+        rf'<[^>]+class\s*=\s*"[^"]*\b{re.escape(class_name)}\b[^"]*"[^>]*>'
+        r"(?P<body>.*?)</[^>]+>",
+        re.I | re.S,
+    )
+    return [_normalize_text(_strip_tags(match.group("body"))) for match in pattern.finditer(text)]
 
 
 def _first_id_block_text(text: str, id_prefix: str) -> str | None:

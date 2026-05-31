@@ -1385,6 +1385,7 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         "BOP_MALAGA",
         "BOP_PONTEVEDRA",
         "BOP_SEVILLA",
+        "BOP_SORIA",
         "BOP_VALENCIA",
         "BOP_VALLADOLID",
     } and any(

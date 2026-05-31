@@ -84,6 +84,27 @@ Parser scope:
 - PDF viewer URL stored only as metadata `official_url`
 - `warnings=["pdf_endpoint_not_downloaded"]`
 
+### BOP_SORIA
+
+Status: implemented as a metadata-only HTML monitor.
+
+Validated URL pattern:
+
+```text
+https://bop.dipsoria.es/index.php/mod.boloficial/mem.listadodia/fecha.{dd_mm_yyyy}
+```
+
+Parser scope:
+
+- date-scoped bulletin page exposes the official public detail URL
+- monitor follows only that detail URL for the requested date
+- publication date from the detail header/body
+- one record per summary item with a document download link
+- document id from the official download URL numeric segment
+- hierarchy stored as `summary`
+- download URL stored only as metadata `official_url`
+- `warnings=["pdf_endpoint_not_downloaded"]`
+
 ### DOCM
 
 Status: implemented as a metadata-only HTML monitor.
@@ -125,6 +146,11 @@ candidate_status=not_candidate
 evidence_status=not_evidence
 
 python -m official_sources.cli html monitor --source BOP_CORDOBA --date 2026-05-28 --limit 1
+records=1
+candidate_status=not_candidate
+evidence_status=not_evidence
+
+python -m official_sources.cli html monitor --source BOP_SORIA --date 2026-05-29 --limit 1
 records=1
 candidate_status=not_candidate
 evidence_status=not_evidence
@@ -178,6 +204,17 @@ candidate_creation_allowed=False
 evidence_grade_allowed=False
 
 official-sources html monitor --source BOP_CORDOBA --date 2026-05-28 --limit 1
+records=1
+candidate_status=not_candidate
+evidence_status=not_evidence
+
+official-sources sources status --source BOP_SORIA
+operational_status=monitor_validated
+monitor_support=available
+candidate_creation_allowed=False
+evidence_grade_allowed=False
+
+official-sources html monitor --source BOP_SORIA --date 2026-05-29 --limit 1
 records=1
 candidate_status=not_candidate
 evidence_status=not_evidence
@@ -257,4 +294,3 @@ Fast path: server-rendered current issue and announcement rows. Fixture will be 
 
 - BOP_ZARAGOZA: previous priority is stale; current evidence remains unknown/high friction.
 - BORME: defer for this project unless scoped to a metadata-only spike. External parsers are not a direct fit for the current licensing and artifact-boundary constraints.
-- BOP_SORIA: promising HTML route exists, but sampled RSS was effectively empty; validate date-page HTML first.

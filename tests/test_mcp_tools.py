@@ -875,6 +875,7 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
         "BOP_LUGO",
         "BOP_MALAGA",
         "BOP_VALENCIA",
+        "BOP_SORIA",
     }.isdisjoint(source_codes)
     assert all(item["operational_status"] == "inventory_only" for item in result["recommendations"])
 

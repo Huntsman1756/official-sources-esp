@@ -20,6 +20,7 @@ from official_sources.html_monitor import (
     build_bop_malaga_html_url,
     build_bop_pontevedra_html_url,
     build_bop_sevilla_html_url,
+    build_bop_soria_html_url,
     build_bop_valencia_html_url,
     build_bop_valladolid_html_url,
     build_docm_html_url,
@@ -37,6 +38,7 @@ from official_sources.html_monitor import (
     parse_bop_malaga_html,
     parse_bop_pontevedra_html,
     parse_bop_sevilla_html,
+    parse_bop_soria_html,
     parse_bop_valencia_html,
     parse_bop_valladolid_html,
     parse_docm_html,
@@ -79,6 +81,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_MALAGA",
         "BOP_PONTEVEDRA",
         "BOP_SEVILLA",
+        "BOP_SORIA",
         "BOP_VALENCIA",
         "BOP_VALLADOLID",
         "DOCM",
@@ -193,6 +196,16 @@ def test_build_bop_sevilla_html_url_is_one_landing_request():
             target_date="2026-05-25",
         )
         == "https://bopsevilla.dipusevilla.es/publica/consulta-de-bops/"
+    )
+
+
+def test_build_bop_soria_html_url_is_one_date_request():
+    assert (
+        build_bop_soria_html_url(
+            "https://bop.dipsoria.es/index.php/mod.boloficial/mem.listadodia/fecha.{dd_mm_yyyy}",
+            target_date="2026-05-29",
+        )
+        == "https://bop.dipsoria.es/index.php/mod.boloficial/mem.listadodia/fecha.29-05-2026"
     )
 
 
@@ -583,6 +596,46 @@ def test_parse_bop_cordoba_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_soria_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bop_soria_detail.html")
+    page_url = (
+        "https://bop.dipsoria.es/index.php/mod.boloficial/mem.detalle/id.54776/relcategoria.210"
+    )
+
+    result = parse_bop_soria_html(
+        raw,
+        source_code="BOP_SORIA",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-soria",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_SORIA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "1018"
+    assert record["document_id"] == "1018"
+    assert record["title"] == "Proyecto OPDE Trevago 1 hibridacion"
+    assert record["published_at"] == "2026-05-29"
+    assert record["official_url"] == (
+        "http://bop.dipsoria.es/index.php/mod.documentos/mem.descargar/"
+        "fichero.documentos_1018_f741c556%232E%23pdf"
+    )
+    assert record["summary"] == (
+        "I. ADMINISTRACION DEL ESTADO - SUBDELEGACION DEL GOBIERNO EN SORIA - "
+        "AREA FUNCIONAL DE INDUSTRIA Y ENERGIA"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
 def test_parse_docm_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("docm_summary_2026_05_29.html")
     page_url = "https://docm.jccm.es/docm/cambiarBoletin.do?fecha=20260529"
@@ -876,6 +929,36 @@ def test_monitor_bop_sevilla_fetches_landing_then_public_detail():
     assert requested_urls == [landing_url, detail_url]
     assert len(result.records) == 1
     assert result.records[0]["source_code"] == "BOP_SEVILLA"
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
+    assert result.records[0]["classification_status"] == "unclassified"
+
+
+def test_monitor_bop_soria_fetches_date_page_then_public_detail():
+    requested_urls = []
+    date_url = "https://bop.dipsoria.es/index.php/mod.boloficial/mem.listadodia/fecha.29-05-2026"
+    detail_url = (
+        "https://bop.dipsoria.es/index.php/mod.boloficial/mem.detalle/id.54776/relcategoria.210"
+    )
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        if url == date_url:
+            return _fixture_bytes("bop_soria_date.html")
+        if url == detail_url:
+            return _fixture_bytes("bop_soria_detail.html")
+        raise AssertionError(f"unexpected URL: {url}")
+
+    result = monitor_html_source(
+        get_source("BOP_SORIA"),
+        fetcher=fetcher,
+        target_date="2026-05-29",
+        limit=1,
+    )
+
+    assert requested_urls == [date_url, detail_url]
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == "BOP_SORIA"
     assert result.records[0]["candidate_status"] == "not_candidate"
     assert result.records[0]["evidence_status"] == "not_evidence"
     assert result.records[0]["classification_status"] == "unclassified"

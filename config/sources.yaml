@@ -1354,24 +1354,25 @@ sources:
     name: Boletin Oficial de la Provincia de Soria
     jurisdiction: ES-SO
     jurisdiction_level: provincial
-    official_landing_url: http://bop.dipsoria.es/
+    official_landing_url: https://bop.dipsoria.es/
     access_methods:
       - type: html
-        url: http://bop.dipsoria.es/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bop.dipsoria.es/index.php/mod.boloficial/mem.listadodia/fecha.{dd_mm_yyyy}
+        status: validated
+        notes: Official date-scoped bulletin page used by metadata-only HTML monitor; the monitor follows its official detail link and does not download PDFs or artifacts.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-05-31"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Soria.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Date page exposes a public detail page; monitor follows only that official detail URL for the requested date.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin HTML discovery monitor for Soria.
 
   - source_code: BOP_TARRAGONA
     name: Butlleti Oficial de la Provincia de Tarragona
