@@ -520,10 +520,37 @@ Registry impact after this batch:
 Still deferred after this batch:
 
 - `BOP_ALMERIA`: official surface remains ZK/JavaScript; plain GET does not expose deterministic bulletin records.
-- `BOP_CUENCA`: public surface returned a page but no deterministic validated records were confirmed.
 - `BOP_OURENSE`: portal request succeeds with system trust, but a deterministic bulletin-record path still needs source-specific probing.
 - `BOP_SALAMANCA`: local parse succeeds, but the project VPS still times out at 60 seconds, so promotion remains blocked.
 - `BOP_ZARAGOZA`: local parser succeeds, but the project VPS cannot connect to `boletin.dpz.es:443`.
+
+## Follow-up batch: Ourense API and Cuenca WAF diagnosis
+
+Validated locally and on the project VPS on 2026-06-01 as metadata-only API monitor:
+
+- `BOP_OURENSE`: official Angular portal backing endpoint at `https://bop.depourense.es/portalapi/api/boletin/getFecha/{yyyymmdd}`. The endpoint returns bulletin and edict metadata as JSON. Edict HTML endpoints are stored as official metadata only.
+
+Diagnosed but not promoted:
+
+- `BOP_CUENCA`: official date-scoped Liferay BOP page parses locally with browser-compatible headers, but the project VPS is rejected by the official `volt-adc` WAF with `403 Forbidden`. Registry status remains `inventory_only`.
+
+Live preview evidence for `2026-06-01`:
+
+- `BOP_OURENSE`: `records=1`, `candidate_status=not_candidate`, `evidence_status=not_evidence`, first `document_id=351132`, `issue_number=101`.
+
+Registry impact after this batch:
+
+- `monitor_validated`: 49
+- `inventory_only`: 7
+- provincial `inventory_only`: 4
+- normal next-source ranking: `BOP_ZARAGOZA`, `BOP_CUENCA`, `BOP_SALAMANCA`.
+
+Still deferred after this batch:
+
+- `BOP_ALMERIA`: official surface remains ZK/JavaScript; plain GET does not expose deterministic bulletin records.
+- `BOP_CUENCA`: local parser succeeds, but the project VPS is rejected by the official WAF.
+- `BOP_SALAMANCA`: local parse succeeds, but the project VPS still times out at TCP/TLS connection to the official sede.
+- `BOP_ZARAGOZA`: local parser succeeds, but the project VPS times out at TCP connection to `boletin.dpz.es:443`.
 
 ## Deferred
 

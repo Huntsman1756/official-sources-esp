@@ -2460,7 +2460,9 @@ def test_fetch_html_sends_read_only_user_agent(monkeypatch):
     monkeypatch.setattr(html_monitor.httpx, "Client", FakeClient)
 
     assert html_monitor.fetch_html("https://example.test") == b"<html></html>"
-    assert requested_headers[0]["User-Agent"] == "official-sources-html-monitor/0.1"
+    assert "Mozilla/5.0" in requested_headers[0]["User-Agent"]
+    assert "official-sources-html-monitor/0.1" in requested_headers[0]["User-Agent"]
+    assert requested_headers[0]["Accept-Language"].startswith("es-ES")
     assert client_options[0]["verify"] is not False
     assert client_options[0]["verify"] is not True
 

@@ -26,11 +26,11 @@ Current source counts:
 ```text
 registered sources: 65
 metadata_adapter_validated: 9
-monitor_validated: 48
-inventory_only: 8
-provincial inventory-only sources: 5
+monitor_validated: 49
+inventory_only: 7
+provincial inventory-only sources: 4
 RSS/Atom discovery sources: BOC_CANARIAS, BOC_CANTABRIA, BOCM, BOCYL, BOE, BOIB, BOJA, BOP_BADAJOZ, BOP_GUADALAJARA, BOP_LUGO, DOE, DOG
-API discovery sources: BOPV, BOR, BOP_CACERES, BOP_HUELVA
+API discovery sources: BOPV, BOR, BOP_CACERES, BOP_HUELVA, BOP_OURENSE
 HTML discovery sources: BON, BOPA, DOCM, BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_BURGOS, BOP_CADIZ, BOP_CASTELLON, BOP_CIUDAD_REAL, BOP_CORDOBA, BOP_GIRONA, BOP_GIPUZKOA, BOP_GRANADA, BOP_HUESCA, BOP_JAEN, BOP_LAS_PALMAS, BOP_LEON, BOP_LLEIDA, BOP_MALAGA, BOP_PALENCIA, BOP_PONTEVEDRA, BOP_SEGOVIA, BOP_SEVILLA, BOP_SANTA_CRUZ_TENERIFE, BOP_SORIA, BOP_TARRAGONA, BOP_TERUEL, BOP_TOLEDO, BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA
 BOP_ALICANTE runtime health: degraded/manual-review
 candidate_creation_allowed=false: 65
@@ -157,7 +157,7 @@ RSS/Atom monitor rules:
 
 ## API Discovery CLI
 
-API discovery is metadata-only. BOPV, BOR, BOP_CACERES, and BOP_HUELVA use the official API access
+API discovery is metadata-only. BOPV, BOR, BOP_CACERES, BOP_HUELVA, and BOP_OURENSE use the official API access
 methods declared in the registry.
 
 Preview BOPV without writing JSONL:
@@ -167,6 +167,7 @@ official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOR --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOP_CACERES --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOP_HUELVA --date YYYY-MM-DD --limit 1
+official-sources api monitor --source BOP_OURENSE --date YYYY-MM-DD --limit 1
 ```
 
 Write JSONL only when explicitly requested:
@@ -591,6 +592,7 @@ official-sources rss monitor --source DOE --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOR --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOP_HUELVA --date YYYY-MM-DD --limit 1
+official-sources api monitor --source BOP_OURENSE --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BON --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOPA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source DOCM --date YYYY-MM-DD --limit 1
@@ -602,7 +604,9 @@ official-sources html monitor --source BOP_AVILA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BARCELONA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BIZKAIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BURGOS --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_CADIZ --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_CASTELLON --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_CIUDAD_REAL --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_CORDOBA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GIRONA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GIPUZKOA --date YYYY-MM-DD --limit 1

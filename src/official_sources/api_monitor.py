@@ -20,6 +20,7 @@ BOR_API_ENDPOINT = "/boletin/ExportarBoletinServlet"
 BOP_CACERES_CALENDAR_API_ENDPOINT = "/boletines/bopMesCalendario"
 BOP_CACERES_ANNOUNCEMENTS_API_ENDPOINT = "/anuncios/anunciosAnunciantes"
 BOP_HUELVA_API_ENDPOINT = "/lib/bope/anuncios_bop/ajaxAnuncios.php"
+BOP_OURENSE_API_ENDPOINT = "/portalapi/api/boletin/getFecha/{yyyymmdd}"
 
 
 class APIMonitorError(ValueError):
@@ -109,6 +110,13 @@ def build_bop_caceres_calendar_api_url(base_url: str, *, target_date: str) -> st
 def build_bop_caceres_announcements_api_url(base_url: str, *, issue_id: str) -> str:
     params = {"idBoletin": issue_id}
     return f"{base_url.rstrip('/')}{BOP_CACERES_ANNOUNCEMENTS_API_ENDPOINT}?{urlencode(params)}"
+
+
+def build_bop_ourense_api_url(template_url: str, *, target_date: str) -> str:
+    parsed_date = date.fromisoformat(validate_api_monitor_date(target_date))
+    return template_url.replace("{yyyymmdd}", parsed_date.strftime("%Y%m%d")).replace(
+        "{date}", parsed_date.isoformat()
+    )
 
 
 def monitor_api_source(
@@ -221,8 +229,29 @@ def monitor_api_source(
             monitor_run_id=monitor_run_id,
         )
         return APIParseResult(raw_response_hash=raw_response_hash, records=result.records[:limit])
+    if source_code == "BOP_OURENSE":
+        api_url = build_bop_ourense_api_url(access_method["url"], target_date=target_date)
+        raw_response = (
+            _coerce_response_bytes(fetch(api_url))
+            if fetcher
+            else fetch_bop_ourense_api(api_url)
+        )
+        raw_response_hash = hashlib.sha256(raw_response).hexdigest()
+        monitor_run_id = hashlib.sha256(
+            f"{source_code}{api_url}{target_date}{raw_response_hash}".encode()
+        ).hexdigest()[:16]
+        result = parse_bop_ourense_api_response(
+            raw_response,
+            source_code=source_code,
+            api_url=api_url,
+            api_endpoint=BOP_OURENSE_API_ENDPOINT,
+            requested_date=target_date,
+            discovered_at=f"{target_date}T00:00:00Z",
+            monitor_run_id=monitor_run_id,
+        )
+        return APIParseResult(raw_response_hash=raw_response_hash, records=result.records[:limit])
     raise APIMonitorError(
-        "api monitor currently supports BOPV, BOR, BOP_CACERES, and BOP_HUELVA only"
+        "api monitor currently supports BOPV, BOR, BOP_CACERES, BOP_HUELVA, and BOP_OURENSE only"
     )
 
 
@@ -454,6 +483,53 @@ def parse_bop_caceres_announcements_response(
     )
 
 
+def parse_bop_ourense_api_response(
+    raw_response: bytes | str,
+    *,
+    source_code: str,
+    api_url: str,
+    api_endpoint: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> APIParseResult:
+    raw_bytes = _coerce_response_bytes(raw_response)
+    raw_response_hash = hashlib.sha256(raw_bytes).hexdigest()
+    try:
+        payload = json.loads(raw_bytes.decode("utf-8"))
+    except json.JSONDecodeError as exc:
+        raise APIMonitorError(f"BOP_OURENSE API response is not valid JSON: {exc}") from exc
+    if not isinstance(payload, list):
+        raise APIMonitorError("BOP_OURENSE API response must be a list")
+    records = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        boletin = item.get("boletin")
+        if not isinstance(boletin, dict):
+            continue
+        published_at = _yyyymmdd_to_iso(_string_or_none(boletin.get("fechaPublicacion")))
+        if published_at != requested_date:
+            continue
+        issue_number = _string_or_none(boletin.get("numeroBop"))
+        for edicto in boletin.get("edictos", []):
+            if isinstance(edicto, dict):
+                records.append(
+                    _build_bop_ourense_record(
+                        item=edicto,
+                        source_code=source_code,
+                        api_url=api_url,
+                        api_endpoint=api_endpoint,
+                        published_at=published_at,
+                        issue_number=issue_number,
+                        raw_response_hash=raw_response_hash,
+                        discovered_at=discovered_at,
+                        monitor_run_id=monitor_run_id,
+                    )
+                )
+    return APIParseResult(raw_response_hash=raw_response_hash, records=records)
+
+
 def write_api_jsonl(records: list[dict[str, Any]], output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = "".join(
@@ -481,6 +557,22 @@ def fetch_bop_huelva_api(url: str, *, target_date: str) -> bytes:
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            },
+        )
+        response.raise_for_status()
+        return response.content
+
+
+def fetch_bop_ourense_api(url: str) -> bytes:
+    from official_sources.html_monitor import _html_ssl_context
+
+    with httpx.Client(follow_redirects=True, timeout=30.0, verify=_html_ssl_context()) as client:
+        response = client.get(
+            url,
+            headers={
+                "Accept": "application/json,text/plain,*/*",
+                "Referer": "https://bop.depourense.es/portal/",
+                "User-Agent": "Mozilla/5.0 official-sources-api-monitor/0.1",
             },
         )
         response.raise_for_status()
@@ -660,6 +752,55 @@ def _build_bop_caceres_record(
     }
 
 
+def _build_bop_ourense_record(
+    *,
+    item: dict[str, Any],
+    source_code: str,
+    api_url: str,
+    api_endpoint: str,
+    published_at: str,
+    issue_number: str | None,
+    raw_response_hash: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> dict[str, Any]:
+    api_id = _string_or_none(item.get("id"))
+    title = _string_or_none(item.get("sumarioCas")) or _string_or_none(item.get("sumarioGal"))
+    official_url = (
+        f"https://bop.depourense.es/portalapi/api/edicto/descargar/html/{api_id}/es"
+        if api_id
+        else None
+    )
+    warnings = [] if official_url else ["entry_hash_fallback_missing_official_url"]
+    seccion = item.get("seccion")
+    section_name = _string_or_none(seccion.get("nombre")) if isinstance(seccion, dict) else None
+    return {
+        "source_code": source_code,
+        "api_url": api_url,
+        "api_endpoint": api_endpoint,
+        "title": title,
+        "published_at": published_at,
+        "official_url": official_url,
+        "document_id": api_id,
+        "api_id": api_id,
+        "issue_number": issue_number,
+        "summary": _join_summary_parts(section_name, _string_or_none(item.get("sumario"))),
+        "raw_response_hash": raw_response_hash,
+        "entry_hash": build_api_entry_hash(
+            source_code=source_code,
+            published_at=published_at,
+            official_url=official_url,
+            api_id=api_id,
+        ),
+        "discovered_at": discovered_at,
+        "monitor_run_id": monitor_run_id,
+        "classification_status": "unclassified",
+        "evidence_status": "not_evidence",
+        "candidate_status": "not_candidate",
+        "warnings": warnings,
+    }
+
+
 def _parse_bor_xml(raw_response: bytes, *, context: str) -> ET.Element:
     try:
         root = ET.fromstring(raw_response)
@@ -730,6 +871,15 @@ def _ddmmyyyy_dash_to_iso(value: str | None) -> str | None:
     try:
         day, month, year = value.split("-")
         return date(int(year), int(month), int(day)).isoformat()
+    except ValueError:
+        return None
+
+
+def _yyyymmdd_to_iso(value: str | None) -> str | None:
+    if not value:
+        return None
+    try:
+        return date(int(value[:4]), int(value[4:6]), int(value[6:8])).isoformat()
     except ValueError:
         return None
 

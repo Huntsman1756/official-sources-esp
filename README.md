@@ -174,6 +174,7 @@ official-sources rss monitor --source BOP_GUADALAJARA --date YYYY-MM-DD --limit 
 official-sources api monitor --source BOR --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOP_CACERES --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOP_HUELVA --date YYYY-MM-DD --limit 1
+official-sources api monitor --source BOP_OURENSE --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOPV --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BON --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOPA --date YYYY-MM-DD --limit 1

@@ -837,11 +837,10 @@ def test_mcp_recommend_next_sources_returns_ranked_viable_provincial_inventory_s
     assert result["status"] == "ok"
     assert result["resource_type"] == "source_recommendations"
     assert result["strategy"] == "provincial_html_discovery_pilot"
-    assert result["count"] == 4
+    assert result["count"] == 3
     assert [item["source_code"] for item in result["recommendations"]] == [
         "BOP_ZARAGOZA",
         "BOP_CUENCA",
-        "BOP_OURENSE",
         "BOP_SALAMANCA",
     ]
     first = result["recommendations"][0]
@@ -887,6 +886,7 @@ def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_p
         "BOP_LLEIDA",
         "BOP_LUGO",
         "BOP_MALAGA",
+        "BOP_OURENSE",
         "BOP_PALENCIA",
         "BOP_SEGOVIA",
         "BOP_SANTA_CRUZ_TENERIFE",

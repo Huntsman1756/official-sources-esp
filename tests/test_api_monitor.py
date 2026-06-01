@@ -15,6 +15,7 @@ from official_sources.api_monitor import (
     build_bop_caceres_announcements_api_url,
     build_bop_caceres_calendar_api_url,
     build_bop_huelva_api_url,
+    build_bop_ourense_api_url,
     build_bopv_api_url,
     build_bor_announcement_api_url,
     build_bor_calendar_api_url,
@@ -23,6 +24,7 @@ from official_sources.api_monitor import (
     parse_bop_caceres_announcements_response,
     parse_bop_caceres_calendar_issue_id,
     parse_bop_huelva_api_response,
+    parse_bop_ourense_api_response,
     parse_bopv_api_response,
     parse_bor_calendar_issue_number,
     parse_bor_issue_response,
@@ -82,6 +84,19 @@ def test_bop_caceres_api_access_method_exists_in_registry():
     assert source["evidence_grade_allowed"] is False
 
 
+def test_bop_ourense_api_access_method_exists_in_registry():
+    source = get_source("BOP_OURENSE")
+    method = select_api_access_method(source)
+
+    assert source["operational_status"] == "monitor_validated"
+    assert source["monitor_support"] == "available"
+    assert method["type"] == "api"
+    assert method["status"] == "validated"
+    assert method["url"] == "https://bop.depourense.es/portalapi/api/boletin/getFecha/{yyyymmdd}"
+    assert source["candidate_creation_allowed"] is False
+    assert source["evidence_grade_allowed"] is False
+
+
 def test_build_bor_api_urls_are_single_date_requests():
     base_url = "https://ias1.larioja.org/boletin/ExportarBoletinServlet"
 
@@ -118,6 +133,13 @@ def test_build_bop_caceres_api_urls_are_date_and_issue_scoped():
     assert build_bop_caceres_announcements_api_url(base_url, issue_id="6072") == (
         "https://bop.dip-caceres.es/bop/services/anuncios/anunciosAnunciantes?idBoletin=6072"
     )
+
+
+def test_build_bop_ourense_api_url_is_single_date_request():
+    assert build_bop_ourense_api_url(
+        "https://bop.depourense.es/portalapi/api/boletin/getFecha/{yyyymmdd}",
+        target_date="2026-06-01",
+    ) == "https://bop.depourense.es/portalapi/api/boletin/getFecha/20260601"
 
 
 def test_parse_bor_calendar_fixture_resolves_issue_number_for_date():
@@ -312,6 +334,67 @@ def test_parse_bop_caceres_announcements_fixture_emits_metadata_only_records():
     assert record["evidence_status"] == "not_evidence"
     assert record["candidate_status"] == "not_candidate"
     assert "contenidoHtml" not in record
+
+
+def test_parse_bop_ourense_api_response_emits_metadata_only_records():
+    raw = json.dumps(
+        [
+            {
+                "boletin": {
+                    "id": 89476,
+                    "numeroBop": 101,
+                    "fechaPublicacion": "20260601",
+                    "edictos": [
+                        {
+                            "id": 351132,
+                            "sumarioCas": (
+                                "Anuncio de cobranza del IBI rustica de 2026 "
+                                "del Ayuntamiento de Nogueira de Ramuin."
+                            ),
+                            "sumario": "Cargo general cobranza remesa IBI rustica.",
+                            "seccion": {"nombre": "I. DIPUTACION PROVINCIAL DE OURENSE"},
+                        }
+                    ],
+                }
+            }
+        ]
+    ).encode()
+    api_url = "https://bop.depourense.es/portalapi/api/boletin/getFecha/20260601"
+
+    result = parse_bop_ourense_api_response(
+        raw,
+        source_code="BOP_OURENSE",
+        api_url=api_url,
+        api_endpoint="/portalapi/api/boletin/getFecha/{yyyymmdd}",
+        requested_date="2026-06-01",
+        discovered_at="2026-06-01T00:00:00Z",
+        monitor_run_id="run-ourense",
+    )
+
+    assert result.raw_response_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_OURENSE"
+    assert record["api_url"] == api_url
+    assert record["api_endpoint"] == "/portalapi/api/boletin/getFecha/{yyyymmdd}"
+    assert record["title"] == (
+        "Anuncio de cobranza del IBI rustica de 2026 "
+        "del Ayuntamiento de Nogueira de Ramuin."
+    )
+    assert record["published_at"] == "2026-06-01"
+    assert record["document_id"] == "351132"
+    assert record["api_id"] == "351132"
+    assert record["issue_number"] == "101"
+    assert record["official_url"] == (
+        "https://bop.depourense.es/portalapi/api/edicto/descargar/html/351132/es"
+    )
+    assert record["summary"] == (
+        "I. DIPUTACION PROVINCIAL DE OURENSE - Cargo general cobranza remesa IBI rustica."
+    )
+    assert record["warnings"] == []
+    assert record["classification_status"] == "unclassified"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["candidate_status"] == "not_candidate"
 
 
 def test_api_entry_hash_prefers_source_published_at_and_official_url():
@@ -559,3 +642,4 @@ def test_mcp_source_coverage_sees_api_sources_as_monitorable():
     assert "api" in {method["type"] for method in sources["BOR"]["access_methods"]}
     assert "api" in {method["type"] for method in sources["BOP_CACERES"]["access_methods"]}
     assert "api" in {method["type"] for method in sources["BOP_HUELVA"]["access_methods"]}
+    assert "api" in {method["type"] for method in sources["BOP_OURENSE"]["access_methods"]}

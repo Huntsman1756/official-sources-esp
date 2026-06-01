@@ -921,7 +921,7 @@ sources:
     limitations:
       - Provincial bulletin inventory only; access method not validated for monitoring.
       - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-      - Date-filtered HTML was found, but standard monitor fetch failed local TLS certificate validation.
+      - Date-scoped HTML parses locally, but project VPS requests are rejected by the official WAF with 403.
     notes: Official provincial bulletin inventory entry for Cuenca.
 
   - source_code: BOP_GIPUZKOA
@@ -1218,22 +1218,27 @@ sources:
     jurisdiction_level: provincial
     official_landing_url: https://bop.depourense.es/portal/
     access_methods:
+      - type: api
+        url: https://bop.depourense.es/portalapi/api/boletin/getFecha/{yyyymmdd}
+        status: validated
+        notes: Official Angular portal backing endpoint used by metadata-only API monitor.
       - type: html
         url: https://bop.depourense.es/portal/
         status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        notes: Official SPA landing URL; API endpoint is used for monitoring.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-06-01"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-    notes: Official provincial bulletin inventory entry for Ourense.
+      - Provincial API discovery is metadata-only and does not download PDFs or artifacts.
+      - Edict HTML download endpoints are stored as official metadata only.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin API discovery monitor for Ourense.
 
   - source_code: BOP_PALENCIA
     name: Boletin Oficial de la Provincia de Palencia
