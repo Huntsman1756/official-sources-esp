@@ -109,13 +109,35 @@ public listener check: no matching official/mcp/python/uvicorn/fastmcp listener
 `official-sources-hermes-scheduled-validation.timer` is a completed one-shot validation timer;
 `elapsed` is expected and is not a failure.
 
-Deployment caveat at validation time:
+Deployment alignment:
 
 ```text
-The VPS runtime was smoke-tested successfully after syncing the closeout MCP preview patch, but the
-VPS checkout was not a clean git fast-forward at the time of this validation. Treat the runtime as
-validated and the deployment checkout as pending git alignment until the local commits are pushed and
-the VPS app tree is fast-forwarded cleanly.
+origin/main: b0c3805
+VPS /opt/official-sources/app HEAD: b0c3805
+VPS git status --short: clean
+previous hot-patch worktree state preserved in stash@{0}: pre-closeout-hotpatch-2026-06-01
+editable install refreshed with .venv/bin/python -m pip install -e .
+```
+
+Post-fast-forward VPS MCP validation repeated successfully with the same representative sample:
+
+```text
+tools_count 29
+preview BOE ok 1 None not_candidate not_evidence
+preview BOPV ok 1 2026/05/1813 not_candidate not_evidence
+preview BOP_CADIZ ok 1 128.091 not_candidate not_evidence
+preview BOP_ALMERIA ok 1 1488-2026 not_candidate not_evidence
+blocked_preview not_monitorable True True inventory_only none False False
+```
+
+Post-fast-forward MCP stdio smoke:
+
+```text
+returncode 0
+initialize official-sources 2025-11-25
+tools_list_count 29
+first_tool boe_summary_search
+stderr_has_traceback False
 ```
 
 ## Local Validation
