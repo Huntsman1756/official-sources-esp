@@ -552,6 +552,19 @@ Still deferred after this batch:
 - `BOP_SALAMANCA`: local parse succeeds, but the project VPS still times out at TCP/TLS connection to the official sede.
 - `BOP_ZARAGOZA`: local parser succeeds, but the project VPS times out at TCP connection to `boletin.dpz.es:443`.
 
+## Follow-up probe: alternate feed and sitemap routes for VPS-blocked sources
+
+Checked from the project VPS on 2026-06-01 before considering any proxy/relay workaround:
+
+- `BOP_CUENCA`: `/rss`, `/rss.xml`, `/sitemap.xml`, `/boletin-oficial-de-la-provincia/rss`, `/boletin-oficial-de-la-provincia/rss.xml`, and `/o/rss` all returned `403` from `volt-adc` on the VPS. Local `sitemap.xml` exists, but it is inside the same WAF perimeter and is not usable from the VPS.
+- `BOP_ZARAGOZA`: `boletin.dpz.es` and `www.dpz.es` RSS/sitemap candidates timed out from the VPS.
+- `BOP_SALAMANCA`: `sede.diputaciondesalamanca.gob.es` RSS/sitemap candidates timed out from the VPS. `www.lasalina.es` RSS/sitemap candidates were reachable but returned `404`, so they are not an alternate bulletin feed.
+
+Registry impact:
+
+- `BOP_CUENCA`, `BOP_SALAMANCA`, and `BOP_ZARAGOZA` now carry `blocked_vps: true`.
+- They remain `inventory_only`; no candidates, evidence-grade records, PDFs/artifacts, backfill, downstream writes, Hermes, systemd, or timer changes were introduced.
+
 ## Deferred
 
 - BORME: defer for this project unless scoped to a metadata-only spike. External parsers are not a direct fit for the current licensing and artifact-boundary constraints.

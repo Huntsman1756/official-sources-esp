@@ -30,6 +30,15 @@ def test_load_source_registry_validates_required_initial_coverage():
     assert len(source_codes) == len(registry["sources"])
 
 
+def test_vps_blocked_sources_are_marked_explicitly():
+    registry = load_source_registry()
+    sources = {source["source_code"]: source for source in registry["sources"]}
+
+    assert sources["BOP_CUENCA"]["blocked_vps"] is True
+    assert sources["BOP_SALAMANCA"]["blocked_vps"] is True
+    assert sources["BOP_ZARAGOZA"]["blocked_vps"] is True
+
+
 def test_validate_source_registry_rejects_ambiguous_status_values():
     registry = {
         "sources": [

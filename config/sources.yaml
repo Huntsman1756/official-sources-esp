@@ -913,6 +913,7 @@ sources:
     operational_status: inventory_only
     mcp_support: false
     monitor_support: none
+    blocked_vps: true
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
@@ -1301,6 +1302,7 @@ sources:
     operational_status: inventory_only
     mcp_support: false
     monitor_support: none
+    blocked_vps: true
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
@@ -1564,6 +1566,7 @@ sources:
     operational_status: inventory_only
     mcp_support: false
     monitor_support: none
+    blocked_vps: true
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false

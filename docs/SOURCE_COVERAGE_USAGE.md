@@ -37,6 +37,7 @@ candidate_creation_allowed=false: 65
 evidence_grade_allowed=false: 65
 candidate_creation_allowed=true: 0
 evidence_grade_allowed=true: 0
+blocked_vps=true: BOP_CUENCA, BOP_SALAMANCA, BOP_ZARAGOZA
 ```
 
 Discovery output paths, when writes are explicitly requested:
