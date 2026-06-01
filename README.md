@@ -191,6 +191,7 @@ official-sources html monitor --source BOP_CORDOBA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GIRONA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GIPUZKOA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GRANADA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_HUESCA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_JAEN --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_LAS_PALMAS --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_LEON --date YYYY-MM-DD --limit 1

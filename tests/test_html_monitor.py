@@ -26,6 +26,7 @@ from official_sources.html_monitor import (
     build_bop_gipuzkoa_html_url,
     build_bop_girona_html_url,
     build_bop_granada_html_url,
+    build_bop_huesca_html_url,
     build_bop_jaen_html_url,
     build_bop_las_palmas_html_url,
     build_bop_leon_html_url,
@@ -65,6 +66,7 @@ from official_sources.html_monitor import (
     parse_bop_cuenca_html,
     parse_bop_gipuzkoa_html,
     parse_bop_girona_html,
+    parse_bop_huesca_html,
     parse_bop_jaen_html,
     parse_bop_las_palmas_html,
     parse_bop_leon_html,
@@ -127,6 +129,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_GIRONA",
         "BOP_GIPUZKOA",
         "BOP_GRANADA",
+        "BOP_HUESCA",
         "BOP_JAEN",
         "BOP_LAS_PALMAS",
         "BOP_LEON",
@@ -302,6 +305,15 @@ def test_build_bop_gipuzkoa_html_url_is_one_date_request():
         "https://egoitza.gipuzkoa.eus/gao-bog/castell/bog/{yyyy}/{mm}/{dd}/bc{yymmdd}.htm",
         target_date="2026-05-29",
     ) == "https://egoitza.gipuzkoa.eus/gao-bog/castell/bog/2026/05/29/bc260529.htm"
+
+
+def test_build_bop_huesca_html_url_is_latest_bulletin_request():
+    url = (
+        "https://bop.dphuesca.es/index.php/mod.bopanuncios/mem.ultimoboletin/"
+        "idmenu.50004/seccion.portal/chk.b6a0e09090757bcdf5de25060e5c4cf5.html"
+    )
+
+    assert build_bop_huesca_html_url(url, target_date="2026-06-01") == url
 
 
 def test_build_bop_las_palmas_html_url_is_one_date_request():
@@ -1469,6 +1481,55 @@ def test_parse_bop_girona_html_emits_pdf_link_metadata_only_records():
     assert record["issue_number"] == "102"
     assert record["official_url"] == "https://ssl4.ddgi.cat/bopV1/pdf/2026/102/202610204663.pdf"
     assert record["summary"] == "Administracio local - Ajuntaments - AJUNTAMENT D'AMER"
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+
+
+def test_parse_bop_huesca_html_emits_pdf_link_metadata_only_records():
+    raw = b"""
+    <strong title="">Ejercicio:</strong> 2026<br />
+    <strong title="">Numero:</strong> 101<br />
+    <strong title="">Fecha:</strong> 01-06-2026<br />
+    <p> 1.&nbsp;&nbsp;<strong>Seccion: ADMINISTRACION LOCAL</strong> </p>
+    <p> * <strong>Subseccion: DIPUTACION PROVINCIAL DE HUESCA</strong> </p>
+    <p><strong>+&nbsp;2026 / 2267&nbsp;&nbsp;-&nbsp;&nbsp;
+      BOLETIN OFICIAL DE LA PROVINCIA</strong></p>
+    <p> OTROS<br />
+      <em>Puesta en funcionamiento de una nueva plataforma de gestion del BOPH</em><br />
+      <a href="/index.php/idbopanuncio.256954/demo.html">Pulse aqui</a> (PDF)
+    </p>
+    """
+    page_url = (
+        "https://bop.dphuesca.es/index.php/mod.bopanuncios/mem.ultimoboletin/"
+        "idmenu.50004/seccion.portal/chk.b6a0e09090757bcdf5de25060e5c4cf5.html"
+    )
+
+    result = parse_bop_huesca_html(
+        raw,
+        source_code="BOP_HUESCA",
+        page_url=page_url,
+        requested_date="2026-06-01",
+        discovered_at="2026-06-01T00:00:00Z",
+        monitor_run_id="run-huesca",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_HUESCA"
+    assert record["entry_id"] == "256954"
+    assert record["document_id"] == "256954"
+    assert record["title"] == "Puesta en funcionamiento de una nueva plataforma de gestion del BOPH"
+    assert record["published_at"] == "2026-06-01"
+    assert record["issue_number"] == "101"
+    assert record["official_url"].endswith(
+        "idbopanuncio.256954/demo.html"
+    )
+    assert record["summary"] == (
+        "ADMINISTRACION LOCAL - DIPUTACION PROVINCIAL DE HUESCA - "
+        "BOLETIN OFICIAL DE LA PROVINCIA - OTROS"
+    )
     assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"

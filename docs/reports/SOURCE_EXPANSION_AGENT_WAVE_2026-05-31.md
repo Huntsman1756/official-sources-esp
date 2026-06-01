@@ -465,6 +465,33 @@ Registry impact after this batch:
 - provincial `inventory_only`: 8
 - normal next-source ranking: `BOP_ZARAGOZA`, `BOP_CIUDAD_REAL`, `BOP_CUENCA`, `BOP_HUESCA`, `BOP_OURENSE`, `BOP_SALAMANCA`.
 
+## Follow-up batch: Huesca
+
+Validated locally on 2026-06-01 as metadata-only monitor:
+
+- `BOP_HUESCA`: official current-bulletin BOPH page at `https://bop.dphuesca.es/index.php/mod.bopanuncios/mem.ultimoboletin/idmenu.50004/seccion.portal/chk.b6a0e09090757bcdf5de25060e5c4cf5.html`; emits announcement metadata when the page bulletin date matches the requested date. PDF endpoints are stored only as official metadata and marked `pdf_endpoint_not_downloaded`.
+
+Local live preview evidence for `2026-06-01`:
+
+- `BOP_HUESCA`: `records=1`, `candidate_status=not_candidate`, `evidence_status=not_evidence`, first `document_id=256954`, `issue_number=101`.
+
+Registry impact after this batch:
+
+- `monitor_validated`: 46
+- `inventory_only`: 10
+- provincial `inventory_only`: 7
+- normal next-source ranking: `BOP_ZARAGOZA`, `BOP_CIUDAD_REAL`, `BOP_CUENCA`, `BOP_OURENSE`, `BOP_SALAMANCA`.
+
+Still deferred after 2026-06-01 probes:
+
+- `BOP_ALMERIA`: official surface remains ZK/JavaScript; plain GET does not expose deterministic bulletin records.
+- `BOP_CADIZ`: official HTML exposes useful records, but the current monitor flow/fetch path still fails TLS validation and the existing detail-discovery assumption is stale.
+- `BOP_CIUDAD_REAL`: official HTML exposes useful records, but the current monitor fetch path still fails TLS validation; parser also needs encoding/issue-number hardening before promotion.
+- `BOP_CUENCA`: official endpoint returned `403 Forbidden` / TLS fetch failure in standard monitor path.
+- `BOP_OURENSE`: standard HTTPS fetch still fails certificate validation locally; HTTP paths timed out.
+- `BOP_SALAMANCA`: local parse succeeds, but the project VPS still times out at 60 seconds, so promotion remains blocked.
+- `BOP_ZARAGOZA`: current HTTP paths returned 404 and HTTPS paths failed certificate validation.
+
 ## Deferred
 
 - BOP_ZARAGOZA: previous priority is stale; current evidence remains unknown/high friction.

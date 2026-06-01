@@ -195,6 +195,11 @@ def build_bop_granada_html_url(template_url: str, *, target_date: str) -> str:
     )
 
 
+def build_bop_huesca_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url.replace("{date}", target_date)
+
+
 def build_bop_jaen_html_url(template_url: str, *, target_date: str) -> str:
     parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
     return template_url.replace("{dd_mm_yyyy}", parsed_date.strftime("%d-%m-%Y")).replace(
@@ -1028,6 +1033,45 @@ def parse_bop_girona_html(
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
+def parse_bop_huesca_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("iso-8859-1", errors="replace")
+    published_at = _extract_bop_huesca_publication_date(text)
+    if published_at != requested_date:
+        return HTMLParseResult(raw_page_hash=raw_page_hash, records=[])
+    issue_number = _extract_bop_huesca_issue_number(text)
+    records = []
+    for title, href, document_id, summary in _iter_bop_huesca_announcements(text):
+        record = _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=title,
+            published_at=published_at,
+            official_url=urljoin(page_url, href),
+            summary=summary,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"],
+        )
+        if issue_number:
+            record["issue_number"] = issue_number
+        records.append(record)
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
 def parse_bop_tarragona_html(
     raw_page: bytes | str,
     *,
@@ -1812,6 +1856,8 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_gipuzkoa_html_url(template_url, target_date=target_date)
     if source_code == "BOP_GRANADA":
         return build_bop_granada_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_HUESCA":
+        return build_bop_huesca_html_url(template_url, target_date=target_date)
     if source_code == "BOP_JAEN":
         return build_bop_jaen_html_url(template_url, target_date=target_date)
     if source_code == "BOP_LAS_PALMAS":
@@ -1856,8 +1902,8 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
         "BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BON, BOP_BIZKAIA, "
         "BOP_BURGOS, BOP_CADIZ, BOP_CASTELLON, BOP_CIUDAD_REAL, BOP_CORDOBA, BOP_CUENCA, "
-        "BOP_GIRONA, BOP_GIPUZKOA, BOP_GRANADA, BOP_JAEN, BOP_LAS_PALMAS, BOP_LEON, BOP_LLEIDA, "
-        "BOP_MALAGA, BOP_PALENCIA, BOP_SALAMANCA, BOP_SEGOVIA, BOP_SEVILLA, "
+        "BOP_GIRONA, BOP_GIPUZKOA, BOP_GRANADA, BOP_HUESCA, BOP_JAEN, BOP_LAS_PALMAS, "
+        "BOP_LEON, BOP_LLEIDA, BOP_MALAGA, BOP_PALENCIA, BOP_SALAMANCA, BOP_SEGOVIA, BOP_SEVILLA, "
         "BOP_SANTA_CRUZ_TENERIFE, BOP_SORIA, BOP_TARRAGONA, BOP_PONTEVEDRA, "
         "BOP_TERUEL, BOP_TOLEDO, "
         "BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA, BOPA, and DOCM only"
@@ -2019,6 +2065,15 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_GRANADA":
         return parse_bop_sevilla_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_HUESCA":
+        return parse_bop_huesca_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -3296,6 +3351,76 @@ def _iter_bop_girona_announcements(text: str) -> list[tuple[str, str, str, str |
                 )
             )
     return announcements
+
+
+def _extract_bop_huesca_publication_date(text: str) -> str | None:
+    match = re.search(r"\bFecha:\s*(\d{2})-(\d{2})-(\d{4})\b", _strip_tags(text), re.I)
+    if not match:
+        return None
+    return date(int(match.group(3)), int(match.group(2)), int(match.group(1))).isoformat()
+
+
+def _extract_bop_huesca_issue_number(text: str) -> str | None:
+    match = re.search(r"\bN\S*mero:\s*(\d+)\b", _strip_tags(text), re.I)
+    return match.group(1) if match else None
+
+
+def _iter_bop_huesca_announcements(text: str) -> list[tuple[str, str, str, str | None]]:
+    sections = [
+        (match.start(), _normalize_text(_strip_tags(match.group("body"))))
+        for match in re.finditer(
+            r"<strong>\s*Secci\S*n:\s*(?P<body>.*?)</strong>",
+            text,
+            re.I | re.S,
+        )
+    ]
+    subsections = [
+        (match.start(), _normalize_text(_strip_tags(match.group("body"))))
+        for match in re.finditer(
+            r"<strong>\s*Subsecci\S*n:\s*(?P<body>.*?)</strong>",
+            text,
+            re.I | re.S,
+        )
+    ]
+    announcements = []
+    seen: set[str] = set()
+    pattern = re.compile(
+        r"<p[^>]*>\s*<strong>\s*\+(?:\s|&nbsp;)*\d{4}\s*/\s*\d+"
+        r"(?:\s|&nbsp;)*-(?:\s|&nbsp;)*(?P<issuer>.*?)</strong>\s*</p>\s*"
+        r"<p[^>]*>(?P<body>.*?)</p>",
+        re.I | re.S,
+    )
+    for match in pattern.finditer(text):
+        body = match.group("body")
+        link = re.search(r'<a[^>]+href="(?P<href>[^"]*idbopanuncio\.(?P<id>\d+)[^"]*)"', body, re.I)
+        title_match = re.search(r"<em>(?P<title>.*?)</em>", body, re.I | re.S)
+        if not link or not title_match:
+            continue
+        document_id = link.group("id")
+        if document_id in seen:
+            continue
+        seen.add(document_id)
+        category = _bop_huesca_category(body)
+        announcements.append(
+            (
+                _normalize_text(_strip_tags(title_match.group("title"))),
+                html.unescape(link.group("href")),
+                document_id,
+                _join_title_parts(
+                    _last_positioned_value(sections, match.start()),
+                    _last_positioned_value(subsections, match.start()),
+                    _normalize_text(_strip_tags(match.group("issuer"))),
+                    category,
+                ),
+            )
+        )
+    return announcements
+
+
+def _bop_huesca_category(body: str) -> str | None:
+    before_title = body.split("<em", 1)[0]
+    text = _normalize_text(_strip_tags(before_title))
+    return text or None
 
 
 def _split_bop_girona_link_text(value: str) -> tuple[str | None, str | None, str | None]:
