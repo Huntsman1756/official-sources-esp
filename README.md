@@ -186,7 +186,9 @@ official-sources html monitor --source BOP_AVILA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BARCELONA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BIZKAIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_BURGOS --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_CADIZ --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_CASTELLON --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_CIUDAD_REAL --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_CORDOBA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GIRONA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_GIPUZKOA --date YYYY-MM-DD --limit 1

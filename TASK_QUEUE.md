@@ -1,6 +1,6 @@
 # Task Queue
 
-Last updated: 2026-05-31
+Last updated: 2026-06-01
 
 This file was absent at the start of `TASK-SOURCE-REGISTRY-001`. It is now the local task queue
 for source-platform work in this repository.
@@ -107,6 +107,9 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 | `TASK-BOP-SANTA-CRUZ-TENERIFE-001` | implemented locally | Promotes `BOP_SANTA_CRUZ_TENERIFE` from inventory-only to metadata-only bulletin-level HTML monitor using the official date-scoped summary page. No PDFs/artifacts, candidates, evidence-grade records, broad backfill, downstream writes, VPS, Hermes, systemd, or timer changes. |
 | `TASK-BOP-TARRAGONA-001` | implemented locally | Promotes `BOP_TARRAGONA` from inventory-only to metadata-only HTML monitor using the official date-scoped BOPT announcement page. The monitor reads page one only; no PDFs/artifacts, candidates, evidence-grade records, broad backfill, downstream writes, VPS, Hermes, systemd, or timer changes. |
 | `TASK-BOP-TERUEL-001` | implemented locally | Promotes `BOP_TERUEL` from inventory-only to metadata-only current-bulletin HTML monitor using the official XPages BOPT page. The monitor emits no records on date mismatch; no PDFs/artifacts, candidates, evidence-grade records, broad backfill, downstream writes, VPS, Hermes, systemd, or timer changes. |
+| `TASK-BOP-CADIZ-001` | implemented locally | Promotes `BOP_CADIZ` from inventory-only to metadata-only HTML monitor using the official current BOP Cadiz landing page. The monitor records bulletin-level metadata and does not download PDFs/artifacts, create candidates, create evidence-grade records, run broad backfills, write downstream, or change Hermes/systemd timers. |
+| `TASK-BOP-CIUDAD-REAL-001` | implemented locally | Promotes `BOP_CIUDAD_REAL` from inventory-only to metadata-only HTML monitor using the official date-scoped `bop.dipucr.es` page. PDF endpoints are stored only as official metadata and marked `pdf_endpoint_not_downloaded`; no PDFs/artifacts, candidates, evidence-grade records, broad backfill, downstream writes, Hermes, systemd, or timer changes. |
+| `TASK-BOP-ZARAGOZA-001` | blocked | Local parser spike succeeded against the official latest-bulletin BOPZ page, but the project VPS times out connecting to `boletin.dpz.es:443`. Kept inventory-only; no monitor promotion, PDFs/artifacts, candidates, evidence-grade records, broad backfill, downstream writes, Hermes, systemd, or timer changes. |
 | `TASK-AUTONOMIC-WAVE-001` | proposed | Implement the highest-confidence autonomous monitors from agent review in order: `BOR` XML API, then `DOCM` HTML summary, then `BON` calendar JSON plus summary HTML. Preview-only first; no PDF downloads, evidence-grade promotion, downstream writes, or live MCP fetches. |
 | `TASK-SOURCE-HTML-MONITOR-HELPERS-001` | deferred | Only extract additional shared helpers after another source proves repeated duplication; do not create a broad generic provincial framework yet. |
 

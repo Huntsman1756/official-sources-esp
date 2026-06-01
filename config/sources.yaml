@@ -809,25 +809,25 @@ sources:
     name: Boletin Oficial de la Provincia de Cadiz
     jurisdiction: ES-CA
     jurisdiction_level: provincial
-    official_landing_url: http://www.bopcadiz.org
+    official_landing_url: https://www.bopcadiz.es/
     access_methods:
       - type: html
-        url: http://www.bopcadiz.org
-        status: inventory
-        notes: Official directory landing URL; standard monitor validation remains blocked by local TLS certificate validation on the HTTPS bulletin host.
-    operational_status: inventory_only
+        url: https://www.bopcadiz.es/
+        status: validated
+        notes: Official latest-bulletin BOP page used by metadata-only HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-06-01"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-      - Public HTTPS bulletin pages were found, but standard monitor fetch failed local TLS certificate validation.
-    notes: Official provincial bulletin inventory entry for Cadiz.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Latest-bulletin page only; monitor returns records only when the requested date matches the exposed bulletin date.
+      - Historical backfill disabled; preview one latest bulletin page only.
+    notes: Official provincial bulletin HTML discovery monitor for Cadiz.
 
   - source_code: BOP_CASTELLON
     name: Boletin Oficial de la Provincia de Castellon
@@ -859,22 +859,22 @@ sources:
     official_landing_url: https://bop.dipucr.es/
     access_methods:
       - type: html
-        url: https://bop.dipucr.es/
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://bop.dipucr.es/bop/{yyyy}/{mm}/{dd}
+        status: validated
+        notes: Official date-scoped BOP page used by metadata-only HTML monitor.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-06-01"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-      - Date-scoped HTML was found, but standard monitor fetch failed local TLS certificate validation.
-    notes: Official provincial bulletin inventory entry for Ciudad Real.
+      - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
+      - Date-scoped page exposes announcement PDF endpoints; monitor stores them as metadata only.
+      - Historical backfill disabled; preview one requested date only.
+    notes: Official provincial bulletin HTML discovery monitor for Ciudad Real.
 
   - source_code: BOP_CORDOBA
     name: Boletin Oficial de la Provincia de Cordoba
@@ -1550,12 +1550,12 @@ sources:
     name: Boletin Oficial de la Provincia de Zaragoza
     jurisdiction: ES-Z
     jurisdiction_level: provincial
-    official_landing_url: http://bop.dpz.es/BOPZ/
+    official_landing_url: https://boletin.dpz.es/BOPZ/
     access_methods:
       - type: html
-        url: http://bop.dpz.es/BOPZ/
+        url: https://boletin.dpz.es/BOPZ/
         status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
+        notes: Official latest-bulletin page identified locally; not promoted because the project VPS times out.
     operational_status: inventory_only
     mcp_support: false
     monitor_support: none
@@ -1563,8 +1563,8 @@ sources:
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-06-01"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
+      - Provincial bulletin inventory only; access method not validated for monitoring on the project VPS.
+      - Local parser spike succeeded, but the VPS timed out connecting to the official BOPZ endpoint.
     notes: Official provincial bulletin inventory entry for Zaragoza.

@@ -45,6 +45,7 @@ from official_sources.html_monitor import (
     build_bop_valencia_html_url,
     build_bop_valladolid_html_url,
     build_bop_zamora_html_url,
+    build_bop_zaragoza_html_url,
     build_bopa_html_url,
     build_docm_html_url,
     build_html_entry_hash,
@@ -85,6 +86,7 @@ from official_sources.html_monitor import (
     parse_bop_valencia_html,
     parse_bop_valladolid_html,
     parse_bop_zamora_html,
+    parse_bop_zaragoza_html,
     parse_bopa_html,
     parse_docm_html,
     select_html_access_method,
@@ -124,7 +126,9 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BON",
         "BOP_BIZKAIA",
         "BOP_BURGOS",
+        "BOP_CADIZ",
         "BOP_CASTELLON",
+        "BOP_CIUDAD_REAL",
         "BOP_CORDOBA",
         "BOP_GIRONA",
         "BOP_GIPUZKOA",
@@ -481,6 +485,13 @@ def test_build_bop_valladolid_html_url_is_one_date_request():
         "p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&"
         "p_p_col_id=column-1&p_p_col_count=3&"
         "_BOPVisualizaBoletin_WAR_BOPVisualizaBoletin_fecha=2026-05-29"
+    )
+
+
+def test_build_bop_zaragoza_html_url_is_latest_landing_request():
+    assert (
+        build_bop_zaragoza_html_url("https://boletin.dpz.es/BOPZ/", target_date="2026-06-01")
+        == "https://boletin.dpz.es/BOPZ/"
     )
 
 
@@ -1138,6 +1149,39 @@ def test_parse_bop_ciudad_real_html_emits_announcement_metadata():
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"
     assert "pdf_url" not in record
+
+
+def test_parse_bop_ciudad_real_latin1_html_preserves_accents_and_issue_number():
+    raw = """
+    <h2>Último Boletín publicado: 01-06-2026</h2>
+    <div class="cabecera_bop"><span>Número 102 - Lunes 1 de Junio de 2026</span></div>
+    <h3 class="admons">ADMINISTRACIÓN LOCAL</h3><div>
+      <p class="clasificaciones">AYUNTAMIENTO DE DAIMIEL</p>
+      <ul class="anuncios">
+        <li id="1699">
+          <p><a href="https://se1.dipucr.es:4443/SIGEM_BuscadorDocsWeb/getDocument.do?entidad=005&amp;doc=7569763">
+            Aprobación definitiva de la modificación de créditos.
+          </a><br><span class="nAnuncio">Anuncio N 1699</span></p>
+        </li>
+      </ul>
+    </div>
+    """.encode("iso-8859-1")
+    page_url = "https://bop.dipucr.es/bop/2026/06/01"
+
+    result = parse_bop_ciudad_real_html(
+        raw,
+        source_code="BOP_CIUDAD_REAL",
+        page_url=page_url,
+        requested_date="2026-06-01",
+        discovered_at="2026-06-01T00:00:00Z",
+        monitor_run_id="run-ciudad-real-latin1",
+    )
+
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["issue_number"] == "102"
+    assert record["title"] == "Aprobación definitiva de la modificación de créditos."
+    assert record["summary"] == "ADMINISTRACIÓN LOCAL - AYUNTAMIENTO DE DAIMIEL"
 
 
 def test_parse_bop_leon_html_emits_bulletin_metadata_only():
@@ -1863,6 +1907,49 @@ def test_parse_bop_valladolid_fixture_emits_metadata_only_records():
     assert "pdf_url" not in record
 
 
+def test_parse_bop_zaragoza_html_emits_announcement_metadata():
+    raw = b"""
+    <input type="hidden" name="fechaVista" value="01/06/2026" />
+    <input type="hidden" name="numBop" value="122"/>
+    <input type="hidden" name="fechaPub" value="lunes 1 de junio de 2026" />
+    <h3>Seccion tercera</h3>
+    <p class="parrafo" style="margin-bottom:0px">
+      DIPUTACION PROVINCIAL DE ZARAGOZA (DPZ).- AREA DE PRESIDENCIA
+    </p>
+    <p class="parrafo"><a class="enlaceEdicto" href="#"
+      onclick="javascript:abreVentanaDetalleEdicto('893727')">
+      DECRETO 1467/2026.- ELEVAR A DEFINITIVA LA LISTA PROVISIONAL.
+    </a></p>
+    """
+    page_url = "https://boletin.dpz.es/BOPZ/"
+
+    result = parse_bop_zaragoza_html(
+        raw,
+        source_code="BOP_ZARAGOZA",
+        page_url=page_url,
+        requested_date="2026-06-01",
+        discovered_at="2026-06-01T00:00:00Z",
+        monitor_run_id="run-zaragoza",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOP_ZARAGOZA"
+    assert record["entry_id"] == "893727"
+    assert record["document_id"] == "893727"
+    assert record["title"] == "DECRETO 1467/2026.- ELEVAR A DEFINITIVA LA LISTA PROVISIONAL."
+    assert record["published_at"] == "2026-06-01"
+    assert record["issue_number"] == "122"
+    assert record["summary"] == (
+        "Seccion tercera - DIPUTACION PROVINCIAL DE ZARAGOZA (DPZ).- AREA DE PRESIDENCIA"
+    )
+    assert "obtenerContenidoEdicto.do?idEdicto=893727" in record["official_url"]
+    assert record["warnings"] == []
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+
+
 def test_parse_bop_zamora_fixture_emits_metadata_only_records():
     raw = _fixture_bytes("bop_zamora_detail.html")
     page_url = (
@@ -2210,6 +2297,35 @@ def test_monitor_new_single_fetch_sources_emit_metadata_only_records():
         assert result.records[0]["evidence_status"] == "not_evidence"
 
 
+def test_monitor_bop_cadiz_uses_landing_when_it_already_contains_summary():
+    requested_urls = []
+    landing_url = "https://www.bopcadiz.es/"
+    source = {
+        **get_source("BOP_CADIZ"),
+        "access_methods": [{"type": "html", "url": landing_url, "status": "validated"}],
+    }
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        return b"""
+        <p class="fecha"> Fri May 29 08:00:00 CEST 2026</p>
+        <h2>Boletin numero 101 del ano 2026</h2>
+        <h3>ADMINISTRACION LOCAL</h3>
+        <p><a href="/export/sites/default/.boletines_pdf/2026/05_mayo/BOP101_29-05-26.pdf#page=6">
+          <strong>127.737.- Ayuntamiento de Vejer de la Frontera.</strong>
+          Delegacion de la autorizacion de matrimonio civil.
+        </a></p>
+        """
+
+    result = monitor_html_source(source, fetcher=fetcher, target_date="2026-05-29", limit=1)
+
+    assert requested_urls == [landing_url]
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == "BOP_CADIZ"
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
+
+
 def test_monitor_bop_palencia_returns_latest_only_when_date_matches():
     requested_urls = []
     landing_url = "https://www.diputaciondepalencia.es/servicios/boletin-oficial-provincia"
@@ -2317,6 +2433,7 @@ def test_html_monitor_has_no_candidate_evidence_or_artifact_code_paths():
 
 def test_fetch_html_sends_read_only_user_agent(monkeypatch):
     requested_headers = []
+    client_options = []
 
     class FakeResponse:
         url = "https://example.test"
@@ -2326,7 +2443,8 @@ def test_fetch_html_sends_read_only_user_agent(monkeypatch):
             return None
 
     class FakeClient:
-        def __init__(self, **_kwargs):
+        def __init__(self, **kwargs):
+            client_options.append(kwargs)
             return None
 
         def __enter__(self):
@@ -2343,6 +2461,8 @@ def test_fetch_html_sends_read_only_user_agent(monkeypatch):
 
     assert html_monitor.fetch_html("https://example.test") == b"<html></html>"
     assert requested_headers[0]["User-Agent"] == "official-sources-html-monitor/0.1"
+    assert client_options[0]["verify"] is not False
+    assert client_options[0]["verify"] is not True
 
 
 def test_fetch_html_wraps_httpx_errors(monkeypatch):

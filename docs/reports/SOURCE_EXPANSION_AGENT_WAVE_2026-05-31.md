@@ -485,14 +485,46 @@ Registry impact after this batch:
 Still deferred after 2026-06-01 probes:
 
 - `BOP_ALMERIA`: official surface remains ZK/JavaScript; plain GET does not expose deterministic bulletin records.
-- `BOP_CADIZ`: official HTML exposes useful records, but the current monitor flow/fetch path still fails TLS validation and the existing detail-discovery assumption is stale.
-- `BOP_CIUDAD_REAL`: official HTML exposes useful records, but the current monitor fetch path still fails TLS validation; parser also needs encoding/issue-number hardening before promotion.
 - `BOP_CUENCA`: official endpoint returned `403 Forbidden` / TLS fetch failure in standard monitor path.
 - `BOP_OURENSE`: standard HTTPS fetch still fails certificate validation locally; HTTP paths timed out.
 - `BOP_SALAMANCA`: local parse succeeds, but the project VPS still times out at 60 seconds, so promotion remains blocked.
-- `BOP_ZARAGOZA`: current HTTP paths returned 404 and HTTPS paths failed certificate validation.
+
+## Follow-up batch: TLS truststore, Cadiz, Ciudad Real, Zaragoza probe
+
+Validated locally on 2026-06-01 as metadata-only monitors:
+
+- `BOP_CADIZ`: official current BOP Cadiz landing page at `https://www.bopcadiz.es/`; emits bulletin-level metadata from the current landing page when the requested date matches.
+- `BOP_CIUDAD_REAL`: official date-scoped page at `https://bop.dipucr.es/bop/{yyyy}/{mm}/{dd}`; emits announcement metadata and stores PDF endpoints only as official metadata with `pdf_endpoint_not_downloaded`.
+
+Probed locally but not promoted:
+
+- `BOP_ZARAGOZA`: official BOPZ latest-bulletin page at `https://boletin.dpz.es/BOPZ/`; the local parser emits edict metadata, but the project VPS timed out connecting to the official endpoint. Registry status remains `inventory_only`.
+
+The HTML monitor now uses Python `truststore` for TLS verification when available, falling back to
+the default SSL context. This fixes official sites whose certificates validate through the system
+trust store without disabling TLS verification.
+
+Local live preview evidence:
+
+- `BOP_CADIZ` for `2026-06-01`: `records=1`, `candidate_status=not_candidate`, `evidence_status=not_evidence`, first `document_id=128.091`, `issue_number=102`.
+- `BOP_CIUDAD_REAL` for `2026-06-01`: `records=1`, `candidate_status=not_candidate`, `evidence_status=not_evidence`, first `document_id=7569763`, `issue_number=102`.
+- `BOP_ZARAGOZA` local-only probe for `2026-06-01`: `records=1`, `candidate_status=not_candidate`, `evidence_status=not_evidence`, first `document_id=892129`, `issue_number=122`; VPS validation failed with a connection timeout.
+
+Registry impact after this batch:
+
+- `monitor_validated`: 48
+- `inventory_only`: 8
+- provincial `inventory_only`: 5
+- normal next-source ranking: `BOP_ZARAGOZA`, `BOP_CUENCA`, `BOP_OURENSE`, `BOP_SALAMANCA`.
+
+Still deferred after this batch:
+
+- `BOP_ALMERIA`: official surface remains ZK/JavaScript; plain GET does not expose deterministic bulletin records.
+- `BOP_CUENCA`: public surface returned a page but no deterministic validated records were confirmed.
+- `BOP_OURENSE`: portal request succeeds with system trust, but a deterministic bulletin-record path still needs source-specific probing.
+- `BOP_SALAMANCA`: local parse succeeds, but the project VPS still times out at 60 seconds, so promotion remains blocked.
+- `BOP_ZARAGOZA`: local parser succeeds, but the project VPS cannot connect to `boletin.dpz.es:443`.
 
 ## Deferred
 
-- BOP_ZARAGOZA: previous priority is stale; current evidence remains unknown/high friction.
 - BORME: defer for this project unless scoped to a metadata-only spike. External parsers are not a direct fit for the current licensing and artifact-boundary constraints.

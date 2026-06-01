@@ -4,6 +4,7 @@ import hashlib
 import html
 import json
 import re
+import ssl
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
@@ -17,6 +18,73 @@ import httpx
 from official_sources.source_registry import get_source
 
 HTMLFetcher = Callable[[str], bytes | str]
+
+_HTML_EXTRA_CA_PEMS = (
+    """
+-----BEGIN CERTIFICATE-----
+MIIEszCCA5ugAwIBAgIQCyWUIs7ZgSoVoE6ZUooO+jANBgkqhkiG9w0BAQsFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH
+MjAeFw0xNzExMDIxMjI0MzNaFw0yNzExMDIxMjI0MzNaMGAxCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xHzAdBgNVBAMTFlJhcGlkU1NMIFRMUyBSU0EgQ0EgRzEwggEiMA0GCSqGSIb3
+DQEBAQUAA4IBDwAwggEKAoIBAQC/uVklRBI1FuJdUEkFCuDL/I3aJQiaZ6aibRHj
+ap/ap9zy1aYNrphe7YcaNwMoPsZvXDR+hNJOo9gbgOYVTPq8gXc84I75YKOHiVA4
+NrJJQZ6p2sJQyqx60HkEIjzIN+1LQLfXTlpuznToOa1hyTD0yyitFyOYwURM+/CI
+8FNFMpBhw22hpeAQkOOLmsqT5QZJYeik7qlvn8gfD+XdDnk3kkuuu0eG+vuyrSGr
+5uX5LRhFWlv1zFQDch/EKmd163m6z/ycx/qLa9zyvILc7cQpb+k7TLra9WE17YPS
+n9ANjG+ECo9PDW3N9lwhKQCNvw1gGoguyCQu7HE7BnW8eSSFAgMBAAGjggFmMIIB
+YjAdBgNVHQ4EFgQUDNtsgkkPSmcKuBTuesRIUojrVjgwHwYDVR0jBBgwFoAUTiJU
+IBiV5uNu5g/6+rkS7QYXjzkwDgYDVR0PAQH/BAQDAgGGMB0GA1UdJQQWMBQGCCsG
+AQUFBwMBBggrBgEFBQcDAjASBgNVHRMBAf8ECDAGAQH/AgEAMDQGCCsGAQUFBwEB
+BCgwJjAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AuZGlnaWNlcnQuY29tMEIGA1Ud
+HwQ7MDkwN6A1oDOGMWh0dHA6Ly9jcmwzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydEds
+b2JhbFJvb3RHMi5jcmwwYwYDVR0gBFwwWjA3BglghkgBhv1sAQEwKjAoBggrBgEF
+BQcCARYcaHR0cHM6Ly93d3cuZGlnaWNlcnQuY29tL0NQUzALBglghkgBhv1sAQIw
+CAYGZ4EMAQIBMAgGBmeBDAECAjANBgkqhkiG9w0BAQsFAAOCAQEAGUSlOb4K3Wtm
+SlbmE50UYBHXM0SKXPqHMzk6XQUpCheF/4qU8aOhajsyRQFDV1ih/uPIg7YHRtFi
+CTq4G+zb43X1T77nJgSOI9pq/TqCwtukZ7u9VLL3JAq3Wdy2moKLvvC8tVmRzkAe
+0xQCkRKIjbBG80MSyDX/R4uYgj6ZiNT/Zg6GI6RofgqgpDdssLc0XIRQEotxIZcK
+zP3pGJ9FCbMHmMLLyuBd+uCWvVcF2ogYAawufChS/PT61D9rqzPRS5I2uqa3tmIT
+44JhJgWhBnFMb7AGQkvNq9KNS9dd3GWc17H/dXa1enoxzWjE0hBdFjxPhUb0W3wi
+8o34/m8Fxw==
+-----END CERTIFICATE-----
+""",
+    """
+-----BEGIN CERTIFICATE-----
+MIIFjTCCA3WgAwIBAgIRAIN9TriekS/nLK07x2kt3CAwDQYJKoZIhvcNAQELBQAw
+TDEgMB4GA1UECxMXR2xvYmFsU2lnbiBSb290IENBIC0gUjYxEzARBgNVBAoTCkds
+b2JhbFNpZ24xEzARBgNVBAMTCkdsb2JhbFNpZ24wHhcNMjUwNTIxMDIzNjUyWhcN
+MjcwNTIxMDAwMDAwWjBVMQswCQYDVQQGEwJCRTEZMBcGA1UEChMQR2xvYmFsU2ln
+biBudi1zYTErMCkGA1UEAxMiR2xvYmFsU2lnbiBHQ0MgUjYgQWxwaGFTU0wgQ0Eg
+MjAyNTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJ/oiu0Bviq52UUE
+ADbFWmgu3rC7KDSMoorLN1Wd03McG3Z1aP71DlPCE33838r72Dfuj5M9LXfiQLJp
+Au6MwNExmKOzothw4x0zGf5oBYyrCMGm3fBpLPafwYQ3MchBOWMTbf83rKUPLH48
+KCJ0MnU8GUl8oA/J81wIvbbKPuNrFf6hvJDccjzc4NyxLz3A89zjV2g5whCg5O0u
+9YX4Zxk9JHuc/LvllOJO4waAYLjbWBJkz3rV3ts1SmSYnJqmyRTIjXwQgRvhEYqt
+DbRskt0W7M6cPwCze3GTBN2UHNpHkMs3YmVxku68I0aOQn5+uz//fDROP3z1Z/7I
+APteRtECAwEAAaOCAV8wggFbMA4GA1UdDwEB/wQEAwIBhjAdBgNVHSUEFjAUBggr
+BgEFBQcDAQYIKwYBBQUHAwIwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQU
+xbSTj28r3B5Iv7cQMIXO0bK7SC0wHwYDVR0jBBgwFoAUrmwFo5MT4qLn4tcc1sfw
+f8hnU6AwewYIKwYBBQUHAQEEbzBtMC4GCCsGAQUFBzABhiJodHRwOi8vb2NzcDIu
+Z2xvYmFsc2lnbi5jb20vcm9vdHI2MDsGCCsGAQUFBzAChi9odHRwOi8vc2VjdXJl
+Lmdsb2JhbHNpZ24uY29tL2NhY2VydC9yb290LXI2LmNydDA2BgNVHR8ELzAtMCug
+KaAnhiVodHRwOi8vY3JsLmdsb2JhbHNpZ24uY29tL3Jvb3QtcjYuY3JsMCEGA1Ud
+IAQaMBgwCAYGZ4EMAQIBMAwGCisGAQQBoDIKAQMwDQYJKoZIhvcNAQELBQADggIB
+AB/uvBuZf4CiuSahwiXn4geF52roAH+6jxsEPTXTfb7bbeMDXsYgRRsOTNA70ruZ
+Tnz5DfFMuBhNoFhIFb0qR1izdy6VkdKOqFPNF2dOFI1EcnY9l2ory9mrzHqVbrL4
+vzUd17FLUVyjTVU7PAv4nxyhnO1GTeT83YlrdRF31NyR6bvZVTEERHmpbWSgeveJ
+LRtaMzlGWiLZ8IwkH7o6GH3jp/KPtDW4Npu8w64HrRZdN2pqQhi7+YKwfHM7H+2U
+dM1BGN0sjOWMVbMSB9MtCsleS2Mb7TRZEbOHxECJLLIluQypZr7Pol3+hAqrhyKI
+k+6y+Da0NeDuWxW59Ku4NvClqW1UFX1SpfNGhzVfp/CH+vPM1tySomx2jE0EnYZu
+GwVucXPBsp5nUWqUV9+143glVuS7GTg9hFPjNBInn17HbCoIIQIOzj5Vd9bK3A9U
+GxXNpwenDHEalCsD/4eQYDHPhFE7sNe0D/OXu+FAM02VZkARx37Jp4bDdujvgL9P
+vZPR3wThvDN1CTU8Bc3xea3yKFAraKcPZLkhReQUAm2VpR+HSJRPlUpYizlF9WkL
+h3KcAVCBJWvnOkVwxyU5QJMcnwW95JlOtx+9100GL99jHE5rs3gXp7F4bg8H01QT
+9jVOhBBmQ7nQoXuwI0tqal2QUqZz3eeu62CU7xBwtfYR
+-----END CERTIFICATE-----
+""",
+)
 
 
 class HTMLMonitorError(ValueError):
@@ -301,6 +369,11 @@ def build_bop_valladolid_html_url(template_url: str, *, target_date: str) -> str
     return template_url.replace("{date}", target_date)
 
 
+def build_bop_zaragoza_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url.replace("{date}", target_date)
+
+
 def build_bop_zamora_html_url(template_url: str, *, target_date: str) -> str:
     validate_html_monitor_date(target_date)
     return template_url
@@ -400,12 +473,13 @@ def monitor_html_source(
         page_url = detail_url
     elif source_code == "BOP_CADIZ":
         landing_page = _coerce_page_bytes(fetch(page_url))
-        detail_url = _extract_bop_cadiz_latest_detail_url(
-            landing_page.decode("utf-8", errors="replace"),
-            page_url,
-        )
-        raw_page = _coerce_page_bytes(fetch(detail_url))
-        page_url = detail_url
+        landing_text = landing_page.decode("utf-8", errors="replace")
+        detail_url = _extract_bop_cadiz_latest_detail_url(landing_text, page_url)
+        if detail_url:
+            raw_page = _coerce_page_bytes(fetch(detail_url))
+            page_url = detail_url
+        else:
+            raw_page = landing_page
     else:
         raw_page = _coerce_page_bytes(fetch(page_url))
     raw_page_hash = hashlib.sha256(raw_page).hexdigest()
@@ -569,7 +643,7 @@ def parse_bop_araba_alava_html(
 ) -> HTMLParseResult:
     raw_bytes = _coerce_page_bytes(raw_page)
     raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
-    text = raw_bytes.decode("utf-8", errors="replace")
+    text = raw_bytes.decode("iso-8859-1", errors="replace")
     issue_number = _extract_bop_araba_issue_number(text)
     records = [
         _build_html_record(
@@ -890,7 +964,7 @@ def parse_bop_ciudad_real_html(
 ) -> HTMLParseResult:
     raw_bytes = _coerce_page_bytes(raw_page)
     raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
-    text = raw_bytes.decode("utf-8", errors="replace")
+    text = raw_bytes.decode("iso-8859-1", errors="replace")
     published_at = _extract_bop_ciudad_real_publication_date(text) or requested_date
     if published_at != requested_date:
         return HTMLParseResult(raw_page_hash=raw_page_hash, records=[])
@@ -1658,6 +1732,51 @@ def parse_bop_valladolid_html(
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
+def parse_bop_zaragoza_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("iso-8859-1", errors="replace")
+    published_at = _ddmmyyyy_to_iso(_input_value(text, "fechaVista"))
+    if published_at != requested_date:
+        return HTMLParseResult(raw_page_hash=raw_page_hash, records=[])
+    issue_number = _input_value(text, "numBop")
+    fecha_pub = _input_value(text, "fechaPub")
+    records = []
+    for title, entry_id, summary in _iter_bop_zaragoza_announcements(text):
+        record = _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=entry_id,
+            document_id=entry_id,
+            title=title,
+            published_at=published_at,
+            official_url=_bop_zaragoza_detail_url(
+                page_url,
+                entry_id=entry_id,
+                issue_number=issue_number,
+                fecha_pub=fecha_pub,
+            ),
+            summary=summary,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=[],
+        )
+        if issue_number:
+            record["issue_number"] = issue_number
+        records.append(record)
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
 def parse_bop_zamora_html(
     raw_page: bytes | str,
     *,
@@ -1780,7 +1899,11 @@ def write_html_jsonl(records: list[dict[str, Any]], output_path: Path) -> Path:
 
 def fetch_html(url: str) -> bytes:
     try:
-        with httpx.Client(follow_redirects=True, timeout=30.0) as client:
+        with httpx.Client(
+            follow_redirects=True,
+            timeout=30.0,
+            verify=_html_ssl_context(),
+        ) as client:
             response = client.get(
                 url,
                 headers={
@@ -1792,6 +1915,17 @@ def fetch_html(url: str) -> bytes:
             return response.content
     except httpx.HTTPError as exc:
         raise HTMLMonitorError(f"html monitor fetch failed for {url}: {exc}") from exc
+
+
+def _html_ssl_context() -> ssl.SSLContext:
+    try:
+        import truststore
+    except ImportError:
+        context = ssl.create_default_context()
+    else:
+        context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.load_verify_locations(cadata="\n".join(_HTML_EXTRA_CA_PEMS))
+    return context
 
 
 def _build_bop_a_coruna_record(
@@ -1892,6 +2026,8 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_valencia_html_url(template_url, target_date=target_date)
     if source_code == "BOP_VALLADOLID":
         return build_bop_valladolid_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_ZARAGOZA":
+        return build_bop_zaragoza_html_url(template_url, target_date=target_date)
     if source_code == "BOP_ZAMORA":
         return build_bop_zamora_html_url(template_url, target_date=target_date)
     if source_code == "BOPA":
@@ -1906,7 +2042,7 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         "BOP_LEON, BOP_LLEIDA, BOP_MALAGA, BOP_PALENCIA, BOP_SALAMANCA, BOP_SEGOVIA, BOP_SEVILLA, "
         "BOP_SANTA_CRUZ_TENERIFE, BOP_SORIA, BOP_TARRAGONA, BOP_PONTEVEDRA, "
         "BOP_TERUEL, BOP_TOLEDO, "
-        "BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA, BOPA, and DOCM only"
+        "BOP_VALENCIA, BOP_VALLADOLID, BOP_ZARAGOZA, BOP_ZAMORA, BOPA, and DOCM only"
     )
 
 
@@ -2227,6 +2363,15 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_VALLADOLID":
         return parse_bop_valladolid_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_ZARAGOZA":
+        return parse_bop_zaragoza_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -2715,7 +2860,7 @@ def _extract_bop_cadiz_latest_detail_url(text: str, page_url: str) -> str:
     match = re.search(r'href="(?P<href>/boletin/Boletin-numero-\d+-del-ano-\d+)"', text, re.I)
     if match:
         return urljoin(page_url, html.unescape(match.group("href")))
-    raise HTMLMonitorError("BOP_CADIZ listing page did not expose a bulletin detail URL")
+    return ""
 
 
 def _extract_bop_cadiz_publication_date(text: str) -> str | None:
@@ -3560,6 +3705,53 @@ def _iter_bop_valladolid_announcements(text: str) -> list[tuple[str, str, str, s
     return announcements
 
 
+def _iter_bop_zaragoza_announcements(text: str) -> list[tuple[str, str, str | None]]:
+    token_pattern = re.compile(
+        r"<h3>(?P<section>.*?)</h3>|"
+        r'<p[^>]+class="[^"]*\bparrafo\b[^"]*"[^>]*style="[^"]*margin-bottom:0px[^"]*"'
+        r'[^>]*>(?P<issuer>.*?)</p>|'
+        r'<a[^>]+class="[^"]*\benlaceEdicto\b[^"]*"[^>]*'
+        r'onclick="[^"]*abreVentanaDetalleEdicto\('
+        r"'(?P<entry_id>\d+)'\)[^>]*>(?P<title>.*?)</a>",
+        re.I | re.S,
+    )
+    section = None
+    issuer = None
+    announcements = []
+    seen: set[str] = set()
+    for token in token_pattern.finditer(text):
+        if token.group("section") is not None:
+            section = _normalize_text(_strip_tags(token.group("section")))
+            issuer = None
+            continue
+        if token.group("issuer") is not None:
+            issuer = _normalize_text(_strip_tags(token.group("issuer")))
+            continue
+        entry_id = token.group("entry_id")
+        if not entry_id or entry_id in seen:
+            continue
+        title = _normalize_text(_strip_tags(token.group("title")))
+        if title:
+            seen.add(entry_id)
+            announcements.append((title, entry_id, _join_title_parts(section, issuer)))
+    return announcements
+
+
+def _bop_zaragoza_detail_url(
+    page_url: str,
+    *,
+    entry_id: str,
+    issue_number: str | None,
+    fecha_pub: str | None,
+) -> str:
+    params = {"idEdicto": entry_id}
+    if issue_number:
+        params["numBop"] = issue_number
+    if fecha_pub:
+        params["fechaPub"] = fecha_pub
+    return urljoin(page_url, f"obtenerContenidoEdicto.do?{urlencode(params)}")
+
+
 def _iter_bop_segovia_bulletins(
     text: str, requested_date: str
 ) -> list[tuple[str, str, str, str]]:
@@ -4167,6 +4359,15 @@ def _first_json_value(item: dict[str, Any], key: str) -> str | None:
 def _query_param_value(url: str, key: str) -> str | None:
     match = re.search(rf"[?&]{re.escape(key)}=([^&#]+)", html.unescape(url))
     return html.unescape(match.group(1)) if match else None
+
+
+def _input_value(text: str, name: str) -> str | None:
+    match = re.search(
+        rf'<input[^>]+name="{re.escape(name)}"[^>]+value="(?P<value>[^"]*)"',
+        text,
+        re.I,
+    )
+    return html.unescape(match.group("value")) if match else None
 
 
 def _ddmmyyyy_to_iso(value: str | None) -> str | None:
