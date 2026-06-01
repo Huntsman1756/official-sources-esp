@@ -35,8 +35,11 @@ def test_vps_blocked_sources_are_marked_explicitly():
     sources = {source["source_code"]: source for source in registry["sources"]}
 
     assert sources["BOP_CUENCA"]["blocked_vps"] is True
+    assert sources["BOP_CUENCA"]["pending_relay"] is True
     assert sources["BOP_SALAMANCA"]["blocked_vps"] is True
+    assert sources["BOP_SALAMANCA"]["pending_relay"] is True
     assert sources["BOP_ZARAGOZA"]["blocked_vps"] is True
+    assert sources["BOP_ZARAGOZA"]["pending_relay"] is True
 
 
 def test_validate_source_registry_rejects_ambiguous_status_values():

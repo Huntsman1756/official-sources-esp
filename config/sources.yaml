@@ -914,6 +914,7 @@ sources:
     mcp_support: false
     monitor_support: none
     blocked_vps: true
+    pending_relay: true
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
@@ -1303,6 +1304,7 @@ sources:
     mcp_support: false
     monitor_support: none
     blocked_vps: true
+    pending_relay: true
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
@@ -1567,6 +1569,7 @@ sources:
     mcp_support: false
     monitor_support: none
     blocked_vps: true
+    pending_relay: true
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false

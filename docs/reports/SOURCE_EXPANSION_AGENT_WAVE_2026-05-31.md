@@ -582,7 +582,8 @@ Checked from the project VPS on 2026-06-01 before considering any proxy/relay wo
 
 Registry impact:
 
-- `BOP_CUENCA`, `BOP_SALAMANCA`, and `BOP_ZARAGOZA` now carry `blocked_vps: true`.
+- `BOP_CUENCA`, `BOP_SALAMANCA`, and `BOP_ZARAGOZA` now carry `blocked_vps: true`
+  and `pending_relay: true`.
 - They remain `inventory_only`; no candidates, evidence-grade records, PDFs/artifacts, backfill, downstream writes, Hermes, systemd, or timer changes were introduced.
 
 ## Deferred
