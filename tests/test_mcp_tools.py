@@ -749,6 +749,45 @@ def test_mcp_preview_discovery_runs_html_preview_without_writing(tmp_path):
     assert not list(tmp_path.rglob("*.jsonl"))
 
 
+def test_mcp_preview_discovery_runs_almeria_zk_html_preview_without_writing(tmp_path):
+    raw = b"\n".join(
+        [
+            br'["addChd",["bSyP1",[',
+            br"['zul.sel.Listitem','bSyP0j',{_index:0},{},[",
+            br"['zul.wgt.Label','bSyPjj',{value:'2026/103'},{},[]],",
+            br"['zul.wgt.Label','bSyPlj',{value:'01/06/2026'},{},[]],",
+            (
+                br"['zul.wgt.Html','bSyP4k',{content:'<span class=\'seccion "
+                br"seccion_local\'>ADMINISTRACI\xD3N LOCAL<\/span><br/><span "
+                br"class=\'linea1\'>DIPUTACI\xD3N PROVINCIAL DE ALMER\xCDA<\/span>"
+                br"<br/><span class=\'resumen\'>BASES GENERALES<\/span>'},{},[]],"
+            ),
+            br"['zul.wgt.Label','bSyP6k',{value:'1488-2026'},{},[]]]],",
+            br"['zul.mesh.Paging','bSyPo7',{},{},[]]",
+            br"]]]",
+        ]
+    )
+
+    result = tools.preview_discovery(
+        source_code="BOP_ALMERIA",
+        date="2026-06-01",
+        limit=1,
+        discovery_type="html",
+        html_fetcher=lambda _url: raw,
+    )
+
+    assert result["status"] == "ok"
+    assert result["source_code"] == "BOP_ALMERIA"
+    assert result["discovery_type"] == "html"
+    assert result["mode"] == "preview"
+    assert result["output_written"] is False
+    assert result["count"] == 1
+    assert result["records"][0]["document_id"] == "1488-2026"
+    assert result["records"][0]["candidate_status"] == "not_candidate"
+    assert result["records"][0]["evidence_status"] == "not_evidence"
+    assert not list(tmp_path.rglob("*.jsonl"))
+
+
 def test_mcp_preview_discovery_refuses_unknown_source():
     result = tools.preview_discovery(source_code="NOPE", date="2026-05-24")
 
@@ -764,6 +803,12 @@ def test_mcp_preview_discovery_refuses_inventory_only_unmonitored_source():
 
     assert result["status"] == "not_monitorable"
     assert result["source_code"] == "BOP_ZARAGOZA"
+    assert result["operational_status"] == "inventory_only"
+    assert result["monitor_support"] == "none"
+    assert result["blocked_vps"] is True
+    assert result["pending_relay"] is True
+    assert result["candidate_creation_allowed"] is False
+    assert result["evidence_grade_allowed"] is False
     assert "validated monitor support" in result["message"]
 
 

@@ -677,7 +677,7 @@ def preview_discovery(
     available_types = _implemented_preview_types(source)
     if source["operational_status"] == "inventory_only" or not available_types:
         return _not_monitorable(
-            source["source_code"],
+            source,
             requested_type,
             "Source does not have validated monitor support for MCP preview.",
         )
@@ -691,7 +691,7 @@ def preview_discovery(
         }
     if selected_type not in available_types:
         return _not_monitorable(
-            source["source_code"],
+            source,
             selected_type,
             f"Source does not have a validated {selected_type} monitor for MCP preview.",
         )
@@ -1365,7 +1365,7 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         for method in access_methods
     ):
         preview_types.append("rss")
-    if source_code in {"BOPV", "BOR", "BOP_CACERES", "BOP_HUELVA"} and any(
+    if source_code in {"BOPV", "BOR", "BOP_CACERES", "BOP_HUELVA", "BOP_OURENSE"} and any(
         method.get("type") == "api"
         and method.get("status") == "validated"
         and str(method.get("url", "")).strip()
@@ -1377,14 +1377,18 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         "BOP_A_CORUNA",
         "BOP_ALBACETE",
         "BOP_ALICANTE",
+        "BOP_ALMERIA",
         "BOP_ARABA_ALAVA",
         "BOP_AVILA",
         "BOP_BARCELONA",
         "BON",
         "BOP_BIZKAIA",
         "BOP_BURGOS",
+        "BOP_CADIZ",
         "BOP_CASTELLON",
+        "BOP_CIUDAD_REAL",
         "BOP_CORDOBA",
+        "BOP_CUENCA",
         "BOP_GIRONA",
         "BOP_GIPUZKOA",
         "BOP_GRANADA",
@@ -1396,6 +1400,7 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         "BOP_MALAGA",
         "BOP_PALENCIA",
         "BOP_PONTEVEDRA",
+        "BOP_SALAMANCA",
         "BOP_SEGOVIA",
         "BOP_SEVILLA",
         "BOP_SANTA_CRUZ_TENERIFE",
@@ -1405,6 +1410,7 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         "BOP_TOLEDO",
         "BOP_VALENCIA",
         "BOP_VALLADOLID",
+        "BOP_ZARAGOZA",
         "BOP_ZAMORA",
         "BOPA",
     } and any(
@@ -1483,10 +1489,16 @@ def _unknown_source(source_code: str, exc: SourceRegistryError) -> dict:
     }
 
 
-def _not_monitorable(source_code: str, discovery_type: str | None, message: str) -> dict:
+def _not_monitorable(source: dict[str, Any], discovery_type: str | None, message: str) -> dict:
     result = {
         "status": "not_monitorable",
-        "source_code": source_code,
+        "source_code": source["source_code"],
+        "operational_status": source.get("operational_status"),
+        "monitor_support": source.get("monitor_support"),
+        "blocked_vps": source.get("blocked_vps", False),
+        "pending_relay": source.get("pending_relay", False),
+        "candidate_creation_allowed": source.get("candidate_creation_allowed"),
+        "evidence_grade_allowed": source.get("evidence_grade_allowed"),
         "message": message,
     }
     if discovery_type is not None:

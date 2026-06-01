@@ -12,11 +12,13 @@ Current baseline for this contract:
 ```text
 registered sources: 65
 metadata_adapter_validated: 9
-monitor_validated: 17
-inventory_only: 39
-RSS/Atom discovery sources: 11
-API discovery monitor sources: 1
-HTML provincial discovery sources: 9
+monitor_validated: 50
+inventory_only: 6
+RSS/Atom discovery sources: 12
+API discovery monitor sources: 5
+HTML discovery monitor sources: 37
+blocked_vps=true: BOP_CUENCA, BOP_SALAMANCA, BOP_ZARAGOZA
+pending_relay=true: BOP_CUENCA, BOP_SALAMANCA, BOP_ZARAGOZA
 candidate_creation_allowed=false: 65
 evidence_grade_allowed=false: 65
 data/rss_monitor present: false

@@ -1,5 +1,25 @@
 # Validation
 
+## 2026-06-01 - Project stable source/MCP closeout
+
+Report:
+
+```text
+docs/reports/PROJECT_STABLE_CLOSEOUT_2026-06-01.md
+```
+
+Scope:
+
+```text
+TASK-PROJECT-STABLE-CLOSEOUT-2026-06-01
+stable private MCP/source-coverage closeout
+REL-001 deferred
+no relay infrastructure
+no candidate/evidence-grade creation
+no artifact downloads
+no downstream writes
+```
+
 ## 2026-05-31 - MCP read-only upstream v1 final closure
 
 Report:
