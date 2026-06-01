@@ -540,17 +540,37 @@ Live preview evidence for `2026-06-01`:
 
 Registry impact after this batch:
 
-- `monitor_validated`: 49
-- `inventory_only`: 7
-- provincial `inventory_only`: 4
+- `monitor_validated`: 50
+- `inventory_only`: 6
+- provincial `inventory_only`: 3
 - normal next-source ranking: `BOP_ZARAGOZA`, `BOP_CUENCA`, `BOP_SALAMANCA`.
 
 Still deferred after this batch:
 
-- `BOP_ALMERIA`: official surface remains ZK/JavaScript; plain GET does not expose deterministic bulletin records.
 - `BOP_CUENCA`: local parser succeeds, but the project VPS is rejected by the official WAF.
 - `BOP_SALAMANCA`: local parse succeeds, but the project VPS still times out at TCP/TLS connection to the official sede.
 - `BOP_ZARAGOZA`: local parser succeeds, but the project VPS times out at TCP connection to `boletin.dpz.es:443`.
+
+## Follow-up implementation: BOP_ALMERIA ZK metadata monitor
+
+Validated on 2026-06-01 that `BOP_ALMERIA` does not require Playwright for metadata discovery.
+The official ZK page can be initialized with `httpx` by requesting `publicoValidar.zul` with the
+same public `p=dipalme` parameters used by the browser, extracting `dtid` and the public window
+UUID from the bootstrap page, and replaying the read-only `/bop/zkau` `echo` request for
+`onAfterComposeNinguna`.
+
+Live preview evidence for `2026-06-01`:
+
+- `BOP_ALMERIA`: `records=3` with `--limit 3`, `candidate_status=not_candidate`,
+  `evidence_status=not_evidence`, first `document_id=1488-2026`, `issue_number=2026/103`.
+
+Registry impact:
+
+- `BOP_ALMERIA` is now `monitor_validated` with `monitor_support=available`.
+- The monitor remains metadata-only: no candidates, evidence-grade records, PDFs/artifacts,
+  backfill, downstream writes, Hermes, systemd, or timer changes were introduced.
+- Per-announcement official URLs were not exposed by the ZK listing response; records therefore
+  carry `official_url=null` and `entry_hash_fallback_missing_official_url`.
 
 ## Follow-up probe: alternate feed and sitemap routes for VPS-blocked sources
 

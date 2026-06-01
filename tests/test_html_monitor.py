@@ -13,6 +13,7 @@ from official_sources.html_monitor import (
     build_bon_html_url,
     build_bop_a_coruna_html_url,
     build_bop_alicante_html_url,
+    build_bop_almeria_html_url,
     build_bop_araba_alava_html_url,
     build_bop_avila_html_url,
     build_bop_barcelona_html_url,
@@ -55,6 +56,7 @@ from official_sources.html_monitor import (
     parse_bop_a_coruna_html,
     parse_bop_albacete_html,
     parse_bop_alicante_response,
+    parse_bop_almeria_zkau_response,
     parse_bop_araba_alava_html,
     parse_bop_avila_html,
     parse_bop_barcelona_html,
@@ -120,6 +122,7 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
     for source_code in (
         "BOP_ALBACETE",
         "BOP_ALICANTE",
+        "BOP_ALMERIA",
         "BOP_ARABA_ALAVA",
         "BOP_AVILA",
         "BOP_BARCELONA",
@@ -185,6 +188,15 @@ def test_build_bop_alicante_html_url_is_one_date_request():
     assert "nemo=BOP_CON" in url
     assert "usuario=-" in url
     assert "%3CfechaPub%3E25%2F05%2F2026%3C%2FfechaPub%3E" in url
+
+
+def test_build_bop_almeria_html_url_is_validated_zk_entrypoint():
+    url = (
+        "https://app.dipalme.org/bop/publicoValidar.zul?p=dipalme&protocolo=https&"
+        "urlInicial=https%3A%2F%2Fapp.dipalme.org%2Fbop%2Fpublico.zul%3Fp%3Ddipalme"
+    )
+
+    assert build_bop_almeria_html_url(url, target_date="2026-06-01") == url
 
 
 def test_build_bop_araba_alava_html_url_is_one_date_request():
@@ -2058,6 +2070,82 @@ def test_parse_bop_alicante_fixture_emits_metadata_only_records():
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"
     assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_bop_almeria_zkau_response_emits_metadata_only_records():
+    raw = b"\n".join(
+        [
+            br'["addChd",["bSyP1",[',
+            br"['zul.sel.Listitem','bSyP0j',{_index:0},{},[",
+            br"['zul.wgt.Label','bSyPjj',{value:'2026/103'},{},[]],",
+            br"['zul.wgt.Label','bSyPlj',{value:'01/06/2026'},{},[]],",
+            (
+                br"['zul.wgt.Html','bSyP4k',{content:'<span class=\'seccion "
+                br"seccion_local\'>ADMINISTRACI\xD3N LOCAL<\/span><br/><span "
+                br"class=\'linea1\'>DIPUTACI\xD3N PROVINCIAL DE ALMER\xCDA<\/span>"
+                br"<br/><span class=\'linea2\'>AREA DE RECURSOS HUMANOS Y "
+                br"CONTRATACION<\/span><br/><span class=\'resumen\'>BASES GENERALES "
+                br"PARA EL ACCESO EN PROPIEDAD A PLAZAS INCLUIDAS EN LA OFERTA DE "
+                br"EMPLEO P\xDABLICO<\/span>'},{},[]],"
+            ),
+            br"['zul.wgt.Label','bSyP6k',{value:'1488-2026'},{},[]]]],",
+            br"['zul.sel.Listitem','bSyP2j',{_index:1},{},[",
+            br"['zul.wgt.Label','bSyPhk',{value:'2026/103'},{},[]],",
+            br"['zul.wgt.Label','bSyPjk',{value:'01/06/2026'},{},[]],",
+            (
+                br"['zul.wgt.Html','bSyP2l',{content:'<span class=\'seccion "
+                br"seccion_local\'>ADMINISTRACI\xD3N LOCAL<\/span><br/><span "
+                br"class=\'linea1\'>AYUNTAMIENTO DE EL EJIDO<\/span><br/><span "
+                br"class=\'resumen\'>APROBACI\xD3N DEFINITIVA DEL EXPEDIENTE DE "
+                br"MODIFICACI\xD3N PRESUPUESTARIA<\/span>'},{},[]],"
+            ),
+            br"['zul.wgt.Label','bSyP4l',{value:'1467-2026'},{},[]]]],",
+            br"['zul.mesh.Paging','bSyPo7',{},{},[]]",
+            br"]]]",
+        ]
+    )
+    page_url = (
+        "https://app.dipalme.org/bop/publicoValidar.zul?p=dipalme&protocolo=https&"
+        "urlInicial=https%3A%2F%2Fapp.dipalme.org%2Fbop%2Fpublico.zul%3Fp%3Ddipalme"
+    )
+
+    result = parse_bop_almeria_zkau_response(
+        raw,
+        source_code="BOP_ALMERIA",
+        page_url=page_url,
+        requested_date="2026-06-01",
+        discovered_at="2026-06-01T00:00:00Z",
+        monitor_run_id="run-almeria",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 2
+    record = result.records[0]
+    assert record["source_code"] == "BOP_ALMERIA"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "zkau"
+    assert record["entry_id"] == "1488-2026"
+    assert record["document_id"] == "1488-2026"
+    assert record["issue_number"] == "2026/103"
+    assert record["title"] == (
+        "BASES GENERALES PARA EL ACCESO EN PROPIEDAD A PLAZAS INCLUIDAS "
+        "EN LA OFERTA DE EMPLEO PÚBLICO"
+    )
+    assert record["published_at"] == "2026-06-01"
+    assert record["official_url"] is None
+    assert record["summary"] == (
+        "ADMINISTRACIÓN LOCAL - DIPUTACIÓN PROVINCIAL DE ALMERÍA - "
+        "AREA DE RECURSOS HUMANOS Y CONTRATACION"
+    )
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert record["warnings"] == [
+        "zkau_xhr_metadata_only",
+        "pdf_endpoint_not_downloaded",
+        "entry_hash_fallback_missing_official_url",
+    ]
     assert "pdf_url" not in record
 
 

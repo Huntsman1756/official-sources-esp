@@ -910,11 +910,11 @@ def test_mcp_recommend_next_sources_excludes_documented_blocked_or_deferred_sour
     status = tools.get_source_status(source_code="BOP_ALMERIA")
     assert status["status"] == "ok"
     assert status["source"]["source_code"] == "BOP_ALMERIA"
-    assert status["source"]["operational_status"] == "inventory_only"
-    assert status["source"]["monitor_support"] == "none"
+    assert status["source"]["operational_status"] == "monitor_validated"
+    assert status["source"]["monitor_support"] == "available"
     assert status["source"]["candidate_creation_allowed"] is False
     assert status["source"]["evidence_grade_allowed"] is False
-    assert any("ZK/JavaScript" in limitation for limitation in status["source"]["limitations"])
+    assert any("ZK" in limitation for limitation in status["source"]["limitations"])
 
 
 def test_mcp_recommend_next_sources_surfaces_existing_cache_without_reading_live(tmp_path):

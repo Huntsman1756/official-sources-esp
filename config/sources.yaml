@@ -617,22 +617,22 @@ sources:
     official_landing_url: http://www.dipalme.org/Servicios/cmsdipro/index.nsf/bop_view.xsp?p=dipalme
     access_methods:
       - type: html
-        url: http://www.dipalme.org/Servicios/cmsdipro/index.nsf/bop_view.xsp?p=dipalme
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://app.dipalme.org/bop/publicoValidar.zul?p=dipalme&protocolo=https&urlInicial=https%3A%2F%2Fapp.dipalme.org%2Fbop%2Fpublico.zul%3Fp%3Ddipalme
+        status: validated
+        notes: Official ZK public bulletin entrypoint; monitor initializes the session and replays the read-only /bop/zkau listing XHR.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-06-01"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-      - Technical evaluation found a ZK/JavaScript application; defer until a separate JS-capable or endpoint-specific audit.
-    notes: Official provincial bulletin inventory entry for Almeria.
+      - Provincial HTML/ZK discovery is metadata-only and does not download PDFs or artifacts.
+      - The validated request uses the official ZK bootstrap plus the read-only /bop/zkau listing XHR, not a documented public API.
+      - Direct per-announcement official URLs were not exposed by the listing response, so entry hashes fall back to edict metadata.
+    notes: Official provincial bulletin ZK discovery monitor.
 
   - source_code: BOP_ARABA_ALAVA
     name: Boletin Oficial del Territorio Historico de Araba/Alava

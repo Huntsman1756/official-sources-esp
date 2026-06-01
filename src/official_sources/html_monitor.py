@@ -234,6 +234,11 @@ def build_bop_alicante_html_url(template_url: str, *, target_date: str) -> str:
     return f"{template_url}?{urlencode({'nemo': 'BOP_CON', 'param': param_xml, 'usuario': '-'})}"
 
 
+def build_bop_almeria_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url
+
+
 def build_bop_araba_alava_html_url(template_url: str, *, target_date: str) -> str:
     parsed_date = date.fromisoformat(validate_html_monitor_date(target_date))
     date_ddmmyyyy = quote(parsed_date.strftime("%d/%m/%Y"), safe="")
@@ -559,6 +564,8 @@ def monitor_html_source(
             page_url = detail_url
         else:
             raw_page = landing_page
+    elif source_code == "BOP_ALMERIA" and fetcher is None:
+        raw_page = fetch_bop_almeria_zkau_response(page_url)
     else:
         raw_page = _coerce_page_bytes(fetch(page_url))
     raw_page_hash = hashlib.sha256(raw_page).hexdigest()
@@ -708,6 +715,44 @@ def parse_bop_alicante_response(
                 warnings=["pdf_endpoint_not_downloaded"] if official_url else [],
             )
         )
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
+def parse_bop_almeria_zkau_response(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    records = []
+    for item in _iter_bop_almeria_announcements(text):
+        published_at = _ddmmyyyy_to_iso(item["published_date"])
+        if published_at != requested_date:
+            continue
+        record = _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="zkau",
+            entry_id=item["edict_number"],
+            document_id=item["edict_number"],
+            title=item["title"],
+            published_at=published_at,
+            official_url=None,
+            summary=item["summary"],
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["zkau_xhr_metadata_only", "pdf_endpoint_not_downloaded"],
+        )
+        if item["issue_number"]:
+            record["issue_number"] = item["issue_number"]
+        records.append(record)
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
@@ -1993,6 +2038,46 @@ def fetch_html(url: str) -> bytes:
         raise HTMLMonitorError(f"html monitor fetch failed for {url}: {exc}") from exc
 
 
+def fetch_bop_almeria_zkau_response(url: str) -> bytes:
+    try:
+        with httpx.Client(
+            follow_redirects=True,
+            timeout=30.0,
+            verify=_html_ssl_context(),
+            headers=_HTML_MONITOR_HEADERS,
+        ) as client:
+            initial_response = client.get(url)
+            initial_response.raise_for_status()
+            initial_text = initial_response.text
+            dtid = _extract_bop_almeria_dtid(initial_text)
+            uuid = _extract_bop_almeria_public_window_uuid(initial_text)
+            response = client.post(
+                "https://app.dipalme.org/bop/zkau",
+                data={
+                    "dtid": dtid,
+                    "cmd_0": "echo",
+                    "opt_0": "i",
+                    "uuid_0": uuid,
+                    "data_0": '{"":["onAfterComposeNinguna"]}',
+                },
+                headers={
+                    "Accept": "*/*",
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "Origin": "https://app.dipalme.org",
+                    "Referer": str(initial_response.url),
+                    "User-Agent": _HTML_MONITOR_HEADERS["User-Agent"],
+                },
+            )
+            response.raise_for_status()
+            if response.headers.get("ZK-Error"):
+                raise HTMLMonitorError(
+                    f"BOP_ALMERIA ZK endpoint returned ZK-Error={response.headers['ZK-Error']}"
+                )
+            return response.content
+    except httpx.HTTPError as exc:
+        raise HTMLMonitorError(f"BOP_ALMERIA ZK fetch failed for {url}: {exc}") from exc
+
+
 def _html_ssl_context() -> ssl.SSLContext:
     try:
         import truststore
@@ -2038,6 +2123,8 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_albacete_html_url(template_url, target_date=target_date)
     if source_code == "BOP_ALICANTE":
         return build_bop_alicante_html_url(template_url, target_date=target_date)
+    if source_code == "BOP_ALMERIA":
+        return build_bop_almeria_html_url(template_url, target_date=target_date)
     if source_code == "BOP_ARABA_ALAVA":
         return build_bop_araba_alava_html_url(template_url, target_date=target_date)
     if source_code == "BOP_AVILA":
@@ -2111,7 +2198,7 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
     if source_code == "DOCM":
         return build_docm_html_url(template_url, target_date=target_date)
     raise HTMLMonitorError(
-        "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, "
+        "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ALMERIA, "
         "BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BON, BOP_BIZKAIA, "
         "BOP_BURGOS, BOP_CADIZ, BOP_CASTELLON, BOP_CIUDAD_REAL, BOP_CORDOBA, BOP_CUENCA, "
         "BOP_GIRONA, BOP_GIPUZKOA, BOP_GRANADA, BOP_HUESCA, BOP_JAEN, BOP_LAS_PALMAS, "
@@ -2151,6 +2238,15 @@ def _parse_html_monitor_response(
         )
     if source_code == "BOP_ALICANTE":
         return parse_bop_alicante_response(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOP_ALMERIA":
+        return parse_bop_almeria_zkau_response(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -4421,6 +4517,68 @@ def _bop_alicante_items(payload: dict[str, Any]) -> list[dict[str, Any]]:
     if not isinstance(items, list):
         return []
     return [item for item in items if isinstance(item, dict)]
+
+
+def _extract_bop_almeria_dtid(text: str) -> str:
+    match = re.search(r"dt:'(?P<dtid>[^']+)'", text)
+    if not match:
+        raise HTMLMonitorError("BOP_ALMERIA ZK bootstrap did not expose dtid")
+    return match.group("dtid")
+
+
+def _extract_bop_almeria_public_window_uuid(text: str) -> str:
+    window_uuids = re.findall(r"\['zul\.wnd\.Window','(?P<uuid>[^']+)'", text)
+    if len(window_uuids) < 2:
+        raise HTMLMonitorError("BOP_ALMERIA ZK bootstrap did not expose public window uuid")
+    return window_uuids[1]
+
+
+def _iter_bop_almeria_announcements(text: str) -> list[dict[str, str | None]]:
+    item_pattern = re.compile(
+        r"\['zul\.sel\.Listitem','[^']+'.*?(?=\s*\['zul\.sel\.Listitem'|\s*\['zul\.mesh\.Paging'|$)",
+        re.S,
+    )
+    announcements = []
+    for block in item_pattern.finditer(text):
+        item = block.group(0)
+        values = [_decode_zk_string(value) for value in _zk_property_values(item, "value")]
+        content_match = re.search(r"content:'(?P<content>(?:\\'|[^'])*)'", item, re.S)
+        if len(values) < 3 or not content_match:
+            continue
+        content = _decode_zk_string(content_match.group("content"))
+        title = _first_bop_almeria_class_text(content, "resumen")
+        if not title:
+            continue
+        summary = _join_title_parts(
+            _first_bop_almeria_class_text(content, "seccion"),
+            _first_bop_almeria_class_text(content, "linea1"),
+            _first_bop_almeria_class_text(content, "linea2"),
+        )
+        announcements.append(
+            {
+                "issue_number": values[0],
+                "published_date": values[1],
+                "edict_number": values[-1],
+                "title": title,
+                "summary": summary,
+            }
+        )
+    return announcements
+
+
+def _zk_property_values(text: str, property_name: str) -> list[str]:
+    return re.findall(rf"{re.escape(property_name)}:'((?:\\'|[^'])*)'", text, re.S)
+
+
+def _decode_zk_string(value: str) -> str:
+    text = value.replace("\\/", "/").replace("\\'", "'")
+    text = re.sub(r"\\x([0-9a-fA-F]{2})", lambda match: chr(int(match.group(1), 16)), text)
+    return html.unescape(text)
+
+
+def _first_bop_almeria_class_text(text: str, class_name: str) -> str | None:
+    values = _class_texts(text, class_name)
+    return values[0] if values else None
 
 
 def _first_json_value(item: dict[str, Any], key: str) -> str | None:
