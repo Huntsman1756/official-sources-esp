@@ -10,18 +10,19 @@ Hermes, systemd, VPS state, or production data.
 Current baseline for this contract:
 
 ```text
-registered sources: 66
-metadata_adapter_validated: 9
-monitor_validated: 54
-inventory_only: 3
-RSS/Atom discovery sources: 12
-API discovery monitor sources: 6
-HTML discovery monitor sources: 40
+registered sources: 67
+metadata_adapter_validated: 10
+monitor_validated: 56
+inventory_only: 1
+RSS/Atom discovery sources: 13
+API discovery monitor sources: 10
+HTML discovery monitor sources: 50
 provincial BOP monitor_validated: 43/43
+remaining inventory_only source: DOUE
 blocked_vps=true: none for the operational monitor path
 pending_relay=true: none
-candidate_creation_allowed=false: 66
-evidence_grade_allowed=false: 66
+candidate_creation_allowed=false: 67
+evidence_grade_allowed=false: 67
 data/rss_monitor present: false
 data/api_monitor present: false
 data/html_monitor present: false
@@ -79,7 +80,7 @@ candidate rules, evidence rules, and publication constraints.
 
 No current registry state by itself means product-ready.
 
-For this baseline, no source is product-ready merely because it is one of the 66 registered sources.
+For this baseline, no source is product-ready merely because it is one of the 67 registered sources.
 Product use requires explicit product-side review.
 
 ### Registry Status vs Runtime Health
@@ -297,7 +298,7 @@ that source through the source-coverage or discovery surface.
 For this baseline:
 
 ```text
-candidate_creation_allowed=false: 66/66
+candidate_creation_allowed=false: 67/67
 ```
 
 Downstream consumers MUST NOT infer candidate permission from registry presence, monitor health,
@@ -313,7 +314,7 @@ source-coverage or discovery surface.
 For this baseline:
 
 ```text
-evidence_grade_allowed=false: 66/66
+evidence_grade_allowed=false: 67/67
 ```
 
 Downstream consumers MUST NOT infer evidence-grade permission from registry presence, monitor

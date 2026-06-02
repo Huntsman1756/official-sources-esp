@@ -152,10 +152,12 @@ def test_selected_provincial_html_access_methods_exist_in_registry():
         "BOP_TERUEL",
         "BOP_TOLEDO",
         "BOP_VALENCIA",
-        "BOP_VALLADOLID",
-        "BOP_ZAMORA",
-        "BOPA",
-        "DOCM",
+            "BOP_VALLADOLID",
+            "BOP_ZAMORA",
+            "BOCCE",
+            "BOME",
+            "BOPA",
+            "DOCM",
     ):
         source = get_source(source_code)
         method = select_html_access_method(source)
@@ -235,6 +237,21 @@ def test_build_bon_html_url_is_one_month_index_request():
     assert url.startswith("https://bon.navarra.es/es/indice-boletines?")
     assert "BoletinSelectorMesPortlet_anyo=2026" in url
     assert "BoletinSelectorMesPortlet_mes=5" in url
+
+
+def test_build_bome_html_url_is_landing_request():
+    assert html_monitor.build_bome_html_url(
+        "https://bomemelilla.es/", target_date="2026-05-29"
+    ) == (
+        "https://bomemelilla.es/"
+    )
+
+
+def test_build_bocce_html_url_is_landing_request():
+    assert html_monitor.build_bocce_html_url(
+        "https://www.ceuta.es/ceuta/documentos/secciones/bocces",
+        target_date="2026-05-22",
+    ) == "https://www.ceuta.es/ceuta/documentos/secciones/bocces"
 
 
 def test_build_bop_bizkaia_html_url_is_one_landing_request():
@@ -633,6 +650,78 @@ def test_parse_bon_fixture_emits_metadata_only_records():
     )
     assert record["issue_number"] == "104"
     assert record["warnings"] == []
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_bome_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bome_issue.html")
+    page_url = "https://bomemelilla.es/bome/BOME-B-2026-6383"
+
+    result = html_monitor.parse_bome_html(
+        raw,
+        source_code="BOME",
+        page_url=page_url,
+        requested_date="2026-05-29",
+        discovered_at="2026-05-29T00:00:00Z",
+        monitor_run_id="run-bome",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOME"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "BOME-A-2026-608"
+    assert record["document_id"] == "BOME-A-2026-608"
+    assert record["title"] == (
+        "CONSEJERIA DE PRESIDENCIA, ADMINISTRACION PUBLICA E IGUALDAD - "
+        "Orden relativa a relacion definitiva de aspirantes para un puesto de personal directivo."
+    )
+    assert record["published_at"] == "2026-05-29"
+    assert (
+        record["official_url"]
+        == "https://bomemelilla.es/bome/BOME-B-2026-6383/articulo/608"
+    )
+    assert record["summary"] == "ARTICULO 608"
+    assert record["warnings"] == []
+    assert record["candidate_status"] == "not_candidate"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["classification_status"] == "unclassified"
+    assert "pdf_url" not in record
+
+
+def test_parse_bocce_fixture_emits_metadata_only_records():
+    raw = _fixture_bytes("bocce_latest.html")
+    page_url = "https://www.ceuta.es/ceuta/documentos/secciones/bocces"
+
+    result = html_monitor.parse_bocce_html(
+        raw,
+        source_code="BOCCE",
+        page_url=page_url,
+        requested_date="2026-05-22",
+        discovered_at="2026-05-22T00:00:00Z",
+        monitor_run_id="run-bocce",
+    )
+
+    assert result.raw_page_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 1
+    record = result.records[0]
+    assert record["source_code"] == "BOCCE"
+    assert record["page_url"] == page_url
+    assert record["page_format"] == "html"
+    assert record["entry_id"] == "6619"
+    assert record["document_id"] == "BOCCE_6619_22-05-2026"
+    assert record["title"] == "BOCCE 6619"
+    assert record["published_at"] == "2026-05-22"
+    assert (
+        record["official_url"]
+        == "https://www.ceuta.es/ceuta/documentos/secciones/bocces/BOCCE_6619_22-05-2026.pdf"
+    )
+    assert record["warnings"] == ["pdf_endpoint_not_downloaded"]
     assert record["candidate_status"] == "not_candidate"
     assert record["evidence_status"] == "not_evidence"
     assert record["classification_status"] == "unclassified"
@@ -2467,6 +2556,55 @@ def test_monitor_bop_zamora_fetches_landing_then_matching_issue_detail():
     assert result.records[0]["evidence_status"] == "not_evidence"
 
 
+def test_monitor_bome_fetches_landing_then_matching_issue_detail():
+    requested_urls = []
+    landing_url = "https://bomemelilla.es/"
+    issue_url = "https://bomemelilla.es/bome/BOME-B-2026-6383"
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        if url == landing_url:
+            return _fixture_bytes("bome_latest.html")
+        if url == issue_url:
+            return _fixture_bytes("bome_issue.html")
+        raise AssertionError(f"unexpected URL: {url}")
+
+    result = monitor_html_source(
+        get_source("BOME"),
+        fetcher=fetcher,
+        target_date="2026-05-29",
+        limit=1,
+    )
+
+    assert requested_urls == [landing_url, issue_url]
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == "BOME"
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
+
+
+def test_monitor_bocce_fetches_landing_only():
+    requested_urls = []
+    landing_url = "https://www.ceuta.es/ceuta/documentos/secciones/bocces"
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        return _fixture_bytes("bocce_latest.html")
+
+    result = monitor_html_source(
+        get_source("BOCCE"),
+        fetcher=fetcher,
+        target_date="2026-05-22",
+        limit=1,
+    )
+
+    assert requested_urls == [landing_url]
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == "BOCCE"
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
+
+
 def test_monitor_bop_burgos_fetches_date_then_issue_detail():
     requested_urls = []
     landing_url = "http://bopbur.diputaciondeburgos.es/hemeroteca/2026-05-29?mostrar-anuncio=1"
@@ -2785,4 +2923,4 @@ def test_mcp_source_coverage_sees_bop_a_coruna_as_html_monitorable():
 def test_existing_source_registry_validation_still_passes():
     registry = load_source_registry()
 
-    assert len(registry["sources"]) == 66
+    assert len(registry["sources"]) == 67

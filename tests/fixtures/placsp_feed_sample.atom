@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:cbc="urn:dgpe:names:draft:codice:schema:xsd:CommonBasicComponents-2"
+      xmlns:cac="urn:dgpe:names:draft:codice:schema:xsd:CommonAggregateComponents-2"
+      xmlns:cac-place-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonAggregateComponents-2"
+      xmlns:cbc-place-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonBasicComponents-2"
+      xmlns:at="http://purl.org/atompub/tombstones/1.0">
+  <id>https://contrataciondelestado.es/sindicacion/sindicacion_643/licitacionesPerfilesContratanteCompleto3.atom</id>
+  <link rel="self" href="https://contrataciondelestado.es/sindicacion/sindicacion_643/licitacionesPerfilesContratanteCompleto3.atom"/>
+  <link rel="next" href="https://contrataciondelestado.es/sindicacion/sindicacion_643/next.atom"/>
+  <updated>2026-06-01T20:32:39.309+02:00</updated>
+  <at:deleted-entry ref="https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/19791334" when="2026-06-01T19:49:12.019+02:00">
+    <at:comment type="ANULADA"/>
+  </at:deleted-entry>
+  <entry>
+    <id>https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/18802405</id>
+    <link href="https://contrataciondelestado.es/wps/poc?uri=deeplink:detalle_licitacion&amp;idEvl=abc"/>
+    <summary type="text">Id licitación: 240/2025; Órgano de Contratación: Presidencia de la Mancomunidad de los Valles del Saja y Corona; Importe: 60000 EUR; Estado: RES</summary>
+    <title>Servicio de Teleasistencia de los Servicios Sociales de atención Primaria</title>
+    <updated>2026-06-01T20:25:18.511+02:00</updated>
+    <cac-place-ext:ContractFolderStatus>
+      <cbc:ContractFolderID>240/2025</cbc:ContractFolderID>
+      <cbc-place-ext:ContractFolderStatusCode languageID="es">RES</cbc-place-ext:ContractFolderStatusCode>
+      <cac-place-ext:LocatedContractingParty>
+        <cac:Party>
+          <cac:PartyIdentification>
+            <cbc:ID schemeName="DIR3">L05390002</cbc:ID>
+          </cac:PartyIdentification>
+          <cac:PartyName>
+            <cbc:Name>Presidencia de la Mancomunidad de los Valles del Saja y Corona</cbc:Name>
+          </cac:PartyName>
+        </cac:Party>
+      </cac-place-ext:LocatedContractingParty>
+      <cac:ProcurementProject>
+        <cbc:Name>Servicio de Teleasistencia de los Servicios Sociales de atención Primaria</cbc:Name>
+        <cbc:TypeCode>2</cbc:TypeCode>
+        <cac:BudgetAmount>
+          <cbc:EstimatedOverallContractAmount currencyID="EUR">120000</cbc:EstimatedOverallContractAmount>
+          <cbc:TaxExclusiveAmount currencyID="EUR">60000</cbc:TaxExclusiveAmount>
+        </cac:BudgetAmount>
+        <cac:RequiredCommodityClassification>
+          <cbc:ItemClassificationCode>85310000</cbc:ItemClassificationCode>
+        </cac:RequiredCommodityClassification>
+      </cac:ProcurementProject>
+      <cac:TenderingProcess>
+        <cbc:ProcedureCode>1</cbc:ProcedureCode>
+        <cac:TenderSubmissionDeadlinePeriod>
+          <cbc:EndDate>2026-01-26</cbc:EndDate>
+          <cbc:EndTime>23:59:00</cbc:EndTime>
+        </cac:TenderSubmissionDeadlinePeriod>
+      </cac:TenderingProcess>
+      <cac:TenderResult>
+        <cbc:ResultCode>9</cbc:ResultCode>
+        <cbc:AwardDate>2026-03-18</cbc:AwardDate>
+        <cac:WinningParty>
+          <cac:PartyIdentification>
+            <cbc:ID schemeName="NIF">A80495864</cbc:ID>
+          </cac:PartyIdentification>
+          <cac:PartyName>
+            <cbc:Name>SERVICIOS DE TELEASISTENCIA, S.A.</cbc:Name>
+          </cac:PartyName>
+        </cac:WinningParty>
+      </cac:TenderResult>
+      <cac:TechnicalDocumentReference>
+        <cbc:ID>PCAP.pdf</cbc:ID>
+        <cac:Attachment>
+          <cac:ExternalReference>
+            <cbc:URI>https://contrataciondelestado.es/FileSystem/servlet/GetDocumentByIdServlet?DocumentIdParam=pcap</cbc:URI>
+            <cbc:DocumentHash>abc123</cbc:DocumentHash>
+          </cac:ExternalReference>
+        </cac:Attachment>
+      </cac:TechnicalDocumentReference>
+    </cac-place-ext:ContractFolderStatus>
+  </entry>
+</feed>

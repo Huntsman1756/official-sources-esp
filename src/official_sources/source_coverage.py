@@ -242,8 +242,31 @@ DOWNSTREAM_DEMAND_PROFILES = {
             "foral and Ceuta/Melilla fiscal source inventory",
         ),
     },
+    "contratosabiertos": {
+        "consumer": "contratosabiertos",
+        "demand_class": "public_procurement",
+        "recommended_sources": (
+            (
+                "PLACSP",
+                "Primary official procurement platform for tender and contract metadata.",
+                "TASK-MCP-PLACSP-METADATA-ADAPTER-001",
+            ),
+            (
+                "DOUE",
+                "European procurement publication context for above-threshold procedures.",
+                "TASK-MCP-PLACSP-TED-CROSSREFERENCE-001",
+            ),
+        ),
+        "missing_capabilities": (
+            "document download and hash verification for tender documents",
+            "citation-backed evidence adapter for procurement records",
+            "product-side preview/import contract for contratosabiertos",
+        ),
+    },
 }
 DOWNSTREAM_CONSUMER_ALIASES = {
+    "contratosabiertos": "contratosabiertos",
+    "contratos-abiertos": "contratosabiertos",
     "eduayudas": "eduayudas",
     "la-ayuda": "la-ayuda",
     "la_ayuda": "la-ayuda",

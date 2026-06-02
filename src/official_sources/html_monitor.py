@@ -282,6 +282,16 @@ def build_bon_html_url(template_url: str, *, target_date: str) -> str:
     return f"{template_url}?{urlencode(params)}"
 
 
+def build_bome_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url
+
+
+def build_bocce_html_url(template_url: str, *, target_date: str) -> str:
+    validate_html_monitor_date(target_date)
+    return template_url
+
+
 def build_bop_bizkaia_html_url(template_url: str, *, target_date: str) -> str:
     validate_html_monitor_date(target_date)
     return template_url
@@ -539,6 +549,15 @@ def monitor_html_source(
     elif source_code == "BON":
         landing_page = _coerce_page_bytes(fetch(page_url))
         detail_url = _extract_bon_issue_url(
+            landing_page.decode("utf-8", errors="replace"),
+            page_url,
+            target_date,
+        )
+        raw_page = _coerce_page_bytes(fetch(detail_url))
+        page_url = detail_url
+    elif source_code == "BOME":
+        landing_page = _coerce_page_bytes(fetch(page_url))
+        detail_url = _extract_bome_issue_url(
             landing_page.decode("utf-8", errors="replace"),
             page_url,
             target_date,
@@ -901,6 +920,79 @@ def parse_bon_html(
         if issue_number:
             record["issue_number"] = issue_number
         records.append(record)
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
+def parse_bome_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    published_at = _extract_bome_publication_date(text) or requested_date
+    if published_at != requested_date:
+        return HTMLParseResult(raw_page_hash=raw_page_hash, records=[])
+    records = [
+        _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=document_id,
+            document_id=document_id,
+            title=_join_title_parts(section, title),
+            published_at=published_at,
+            official_url=official_url,
+            summary=summary,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=[],
+        )
+        for section, summary, title, document_id, official_url in _iter_bome_announcements(
+            text, page_url
+        )
+    ]
+    return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
+
+
+def parse_bocce_html(
+    raw_page: bytes | str,
+    *,
+    source_code: str,
+    page_url: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> HTMLParseResult:
+    raw_bytes = _coerce_page_bytes(raw_page)
+    raw_page_hash = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    records = [
+        _build_html_record(
+            source_code=source_code,
+            page_url=page_url,
+            page_format="html",
+            entry_id=issue_number,
+            document_id=document_id,
+            title=f"BOCCE {issue_number}",
+            published_at=published_at,
+            official_url=official_url,
+            summary=None,
+            raw_page_hash=raw_page_hash,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+            warnings=["pdf_endpoint_not_downloaded"],
+        )
+        for issue_number, document_id, published_at, official_url in _iter_bocce_issues(
+            text, page_url, requested_date
+        )
+    ]
     return HTMLParseResult(raw_page_hash=raw_page_hash, records=records)
 
 
@@ -2168,6 +2260,10 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_bop_barcelona_html_url(template_url, target_date=target_date)
     if source_code == "BON":
         return build_bon_html_url(template_url, target_date=target_date)
+    if source_code == "BOME":
+        return build_bome_html_url(template_url, target_date=target_date)
+    if source_code == "BOCCE":
+        return build_bocce_html_url(template_url, target_date=target_date)
     if source_code == "BOP_BIZKAIA":
         return build_bop_bizkaia_html_url(template_url, target_date=target_date)
     if source_code == "BOP_BURGOS":
@@ -2234,7 +2330,7 @@ def _build_html_monitor_url(source_code: str, template_url: str, *, target_date:
         return build_docm_html_url(template_url, target_date=target_date)
     raise HTMLMonitorError(
         "html monitor currently supports BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ALMERIA, "
-        "BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BON, BOP_BIZKAIA, "
+        "BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BON, BOME, BOCCE, BOP_BIZKAIA, "
         "BOP_BURGOS, BOP_CADIZ, BOP_CASTELLON, BOP_CIUDAD_REAL, BOP_CORDOBA, BOP_CUENCA, "
         "BOP_GIRONA, BOP_GIPUZKOA, BOP_GRANADA, BOP_HUESCA, BOP_JAEN, BOP_LAS_PALMAS, "
         "BOP_LEON, BOP_LLEIDA, BOP_MALAGA, BOP_PALENCIA, BOP_SALAMANCA, BOP_SEGOVIA, BOP_SEVILLA, "
@@ -2318,6 +2414,24 @@ def _parse_html_monitor_response(
         )
     if source_code == "BON":
         return parse_bon_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOME":
+        return parse_bome_html(
+            raw_page,
+            source_code=source_code,
+            page_url=page_url,
+            requested_date=target_date,
+            discovered_at=discovered_at,
+            monitor_run_id=monitor_run_id,
+        )
+    if source_code == "BOCCE":
+        return parse_bocce_html(
             raw_page,
             source_code=source_code,
             page_url=page_url,
@@ -2928,6 +3042,118 @@ def _bon_long_date_pattern(target_date: str) -> re.Pattern[str]:
     month_names = [name for name, number in _SPANISH_MONTHS.items() if number == parsed.month]
     month_pattern = "|".join(re.escape(name) for name in month_names)
     return re.compile(rf"\b{parsed.day}\s+de\s+(?:{month_pattern})\s+de\s+{parsed.year}\b", re.I)
+
+
+def _extract_bome_issue_url(text: str, page_url: str, target_date: str) -> str:
+    date_pattern = _long_date_pattern(target_date)
+    for link in re.finditer(
+        r'<a[^>]+href=["\'](?P<href>[^"\']*/bome/BOME-B-\d{4}-\d+[^"\']*)["\'][^>]*>'
+        r"(?P<label>.*?)</a>",
+        text,
+        re.I | re.S,
+    ):
+        label = _normalize_text(_strip_tags(link.group("label")))
+        if date_pattern.search(label):
+            return urljoin(page_url, html.unescape(link.group("href")))
+    raise HTMLMonitorError("BOME landing page did not expose issue URL for requested date")
+
+
+def _extract_bome_publication_date(text: str) -> str | None:
+    plain = _strip_tags(text)
+    match = re.search(
+        r"BOME\s+N[Âºo]\s+\d+\s+del\s+(?:lunes|martes|mi[eÃ©]rcoles|jueves|viernes|s[aÃ¡]bado|domingo),?\s+"
+        r"(?P<date>\d{1,2}\s+de\s+[A-Za-zÃÃ‰ÃÃ“ÃšÃ¡Ã©Ã­Ã³ÃºÃ±Ã‘]+\s+de\s+\d{4})",
+        plain,
+        re.I,
+    )
+    return _long_spanish_date_to_iso(match.group("date")) if match else None
+
+
+def _iter_bome_announcements(
+    text: str, page_url: str
+) -> list[tuple[str | None, str | None, str, str, str]]:
+    section_items = [
+        (match.start(), _normalize_text(_strip_tags(match.group("heading"))))
+        for match in re.finditer(
+            r"<h[3-4]\b[^>]*>(?P<heading>.*?)</h[3-4]>",
+            text,
+            re.I | re.S,
+        )
+    ]
+    block_pattern = re.compile(
+        r'<li\b[^>]*>\s*<h5\b[^>]*>(?P<summary>.*?)</h5>(?P<body>.*?)</li>',
+        re.I | re.S,
+    )
+    announcements: list[tuple[str | None, str | None, str, str, str]] = []
+    for block in block_pattern.finditer(text):
+        summary_text = _normalize_text(_strip_tags(block.group("summary")))
+        cve_match = re.search(r"\b(BOME-[A-Z]-\d{4}-\d+)\b", summary_text, re.I)
+        hrefs = [
+            html.unescape(match.group("href"))
+            for match in re.finditer(
+                r'<a[^>]+href=["\'](?P<href>[^"\']*(?:/articulo/|BOME-[A-Z]-\d{4}-\d+)[^"\']*)["\']',
+                block.group("body"),
+                re.I | re.S,
+            )
+        ]
+        title_match = re.search(
+            r"<blockquote\b[^>]*>(?P<title>.*?)</blockquote>"
+            r"|<p\b[^>]*>(?P<paragraph>.*?)</p>",
+            block.group("body"),
+            re.I | re.S,
+        )
+        document_id = cve_match.group(1).upper() if cve_match else None
+        title = (
+            _normalize_text(
+                _strip_tags(title_match.group("title") or title_match.group("paragraph"))
+            )
+            if title_match
+            else None
+        )
+        href = _first_value(
+            [
+                next((candidate for candidate in hrefs if "/articulo/" in candidate), None),
+                next((candidate for candidate in hrefs if "/descargar/" not in candidate), None),
+                hrefs[0] if hrefs else None,
+            ]
+        )
+        if document_id and title and href:
+            summary = re.sub(r"\s*\(CVE:\s*[^)]+\)", "", summary_text, flags=re.I).strip()
+            section = _last_positioned_value(section_items, block.start())
+            announcements.append((section, summary, title, document_id, urljoin(page_url, href)))
+    return announcements
+
+
+def _iter_bocce_issues(
+    text: str, page_url: str, requested_date: str
+) -> list[tuple[str, str, str, str]]:
+    requested = date.fromisoformat(validate_html_monitor_date(requested_date))
+    requested_token = requested.strftime("%d-%m-%Y")
+    pattern = re.compile(
+        r'<a[^>]+href=["\'](?P<href>[^"\']+)["\'][^>]*>\s*'
+        r"(?P<label>BOCCE_(?!Extra)(?P<issue>\d+)_(?P<date>\d{2}-\d{2}-\d{4}))\s*</a>",
+        re.I | re.S,
+    )
+    issues: list[tuple[str, str, str, str]] = []
+    seen: set[str] = set()
+    for match in pattern.finditer(text):
+        if match.group("date") != requested_token:
+            continue
+        document_id = _normalize_text(match.group("label"))
+        if document_id in seen:
+            continue
+        seen.add(document_id)
+        published_at = _ddmmyyyy_to_iso(match.group("date").replace("-", "/"))
+        if published_at:
+            issues.append(
+                (
+                    match.group("issue"),
+                    document_id,
+                    published_at,
+                    urljoin(page_url, html.unescape(match.group("href"))),
+                )
+            )
+    return issues
 
 
 def _string_number(value: object | None) -> str | None:

@@ -4,11 +4,13 @@ Last updated: 2026-06-02
 
 ## Current Decision
 
-`REL-001` closes the remaining provincial BOP coverage gap through the steamcases-vps IONOS relay.
+`TASK-BOME-BOCCE-HTML-MONITORS-2026-06-02` closes the Ceuta/Melilla registry gap with
+metadata-only HTML monitors after the relay-backed provincial BOP closeout.
 
 Implementation report:
 
 ```text
+docs/reports/bome-bocce-html-monitors-2026-06-02.md
 docs/reports/relay-provincial-bop-closeout-2026-06-01.md
 ```
 
@@ -21,8 +23,10 @@ downstream_acceptance: moves to consumer preview/import smokes
 writes: disabled
 candidate_creation_allowed=false for all registered sources
 evidence_grade_allowed=false for all registered sources
-source_expansion: closed after relay-backed provincial BOP completion
+source_expansion: closed after BOME/BOCCE metadata-only monitor completion
 AYTO_ZARAGOZA_EMPLEO: monitor_validated metadata-only API discovery
+BOME: monitor_validated metadata-only HTML article discovery
+BOCCE: monitor_validated metadata-only issue-level HTML discovery
 BOP_CUENCA: monitor_validated metadata-only HTML discovery through steamcases-vps IONOS relay
 BOP_SALAMANCA: monitor_validated metadata-only HTML discovery through steamcases-vps IONOS relay
 BOP_ZARAGOZA: monitor_validated metadata-only HTML discovery through steamcases-vps IONOS relay
@@ -32,12 +36,13 @@ BOP_ALICANTE: recovered on 2026-06-02 after DNS resolver-dependent degraded/manu
 Current registry baseline:
 
 ```text
-registered sources: 66
-metadata_adapter_validated: 9
-monitor_validated: 54
-inventory_only: 3
+registered sources: 67
+metadata_adapter_validated: 10
+monitor_validated: 56
+inventory_only: 1
 provincial BOP monitor_validated: 43/43
 API discovery monitor sources: AYTO_ZARAGOZA_EMPLEO, BOPV, BOR, BOP_CACERES, BOP_HUELVA, BOP_OURENSE
+remaining inventory_only source: DOUE
 ```
 
 The current MCP closure surface is:

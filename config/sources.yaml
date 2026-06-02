@@ -65,6 +65,37 @@ sources:
       - Metadata-only support does not imply downstream publication readiness.
     notes: Official grants registry, tracked as a source family but not as a bulletin.
 
+  - source_code: PLACSP
+    name: Plataforma de Contratacion del Sector Publico
+    jurisdiction: ES
+    jurisdiction_level: estatal
+    official_landing_url: https://contrataciondelsectorpublico.gob.es/wps/portal/DatosAbiertos
+    access_methods:
+      - type: atom
+        url: https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_643/licitacionesPerfilesContratanteCompleto3.atom
+        status: validated
+        notes: Metadata-only official Atom feed for PLACSP-hosted contracting profiles, excluding minor contracts.
+      - type: atom
+        url: https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_1044/PlataformasAgregadasSinMenores.atom
+        status: validated
+        notes: Metadata-only official Atom feed for aggregated autonomous-platform tenders, excluding minor contracts.
+      - type: xml
+        url: https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_643/licitacionesPerfilesContratanteCompleto3_{YYYYMM}.zip
+        status: validated
+        notes: Monthly historical ZIP datasets with Atom/CODICE entries; processed only through scoped PLACSP ingestion.
+    operational_status: metadata_adapter_validated
+    mcp_support: true
+    monitor_support: available
+    backfill_support: available
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-06-02"
+    limitations:
+      - Metadata-only tender ingestion; document download, citation selection, and evidence-grade use remain disabled.
+      - Public-procurement records must not create downstream products or source candidates without a separate reviewed evidence adapter.
+    notes: Official public procurement platform source family for contratosabiertos-style consumers.
+
   - source_code: DOUE
     name: Diario Oficial de la Union Europea
     jurisdiction: EU
@@ -535,39 +566,47 @@ sources:
     name: Boletin Oficial de la Ciudad Autonoma de Ceuta
     jurisdiction: ES-CE
     jurisdiction_level: autonómica
-    official_landing_url: http://www.ceuta.es/ceuta/documentos/
-    access_methods: []
-    operational_status: inventory_only
+    official_landing_url: https://www.ceuta.es/ceuta/documentos/secciones/bocces
+    access_methods:
+      - type: html
+        url: https://www.ceuta.es/ceuta/documentos/secciones/bocces
+        status: validated
+        notes: Official BOCCE listing page used for issue-level metadata-only discovery; issue PDF links are recorded as official_url only and never downloaded.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-22"
+    last_verified_at: "2026-06-02"
     limitations:
-      - Access method not validated yet.
-      - Prior audit notes suggest deferring implementation.
-    notes: Registry entry only.
+      - Metadata-only issue-level HTML discovery; no per-announcement BOCCE HTML was validated.
+      - Preview one requested date only; PDF links are stored as official metadata and never downloaded.
+    notes: Official BOCCE issue listing monitor.
 
   - source_code: BOME
     name: Boletin Oficial de la Ciudad Autonoma de Melilla
     jurisdiction: ES-ML
     jurisdiction_level: autonómica
     official_landing_url: https://bomemelilla.es/
-    access_methods: []
-    operational_status: inventory_only
+    access_methods:
+      - type: html
+        url: https://bomemelilla.es/
+        status: validated
+        notes: Official BOME landing page used to locate the latest matching issue before metadata-only article discovery.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
+    monitor_support: available
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-22"
+    last_verified_at: "2026-06-02"
     limitations:
-      - Access method not validated yet.
-      - Prior audit notes suggest deferring implementation.
-    notes: Registry entry only.
+      - Metadata-only HTML discovery for one requested date through the matching issue page.
+      - No PDF/artifact downloads, broad backfill, candidate creation, or evidence-grade export.
+    notes: Official BOME HTML discovery monitor.
 
   - source_code: BOP_A_CORUNA
     name: Boletin Oficial de la Provincia de A Coruna
