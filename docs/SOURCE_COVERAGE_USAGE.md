@@ -24,21 +24,23 @@ config/sources.yaml
 Current source counts:
 
 ```text
-registered sources: 65
+registered sources: 66
 metadata_adapter_validated: 9
-monitor_validated: 50
-inventory_only: 6
-provincial inventory-only sources: 3
+monitor_validated: 54
+inventory_only: 3
+provincial inventory-only sources: 0
+provincial BOP monitor_validated: 43/43
 RSS/Atom discovery sources: BOC_CANARIAS, BOC_CANTABRIA, BOCM, BOCYL, BOE, BOIB, BOJA, BOP_BADAJOZ, BOP_GUADALAJARA, BOP_LUGO, DOE, DOG
-API discovery sources: BOPV, BOR, BOP_CACERES, BOP_HUELVA, BOP_OURENSE
-HTML discovery sources: BON, BOPA, DOCM, BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ALMERIA, BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_BURGOS, BOP_CADIZ, BOP_CASTELLON, BOP_CIUDAD_REAL, BOP_CORDOBA, BOP_GIRONA, BOP_GIPUZKOA, BOP_GRANADA, BOP_HUESCA, BOP_JAEN, BOP_LAS_PALMAS, BOP_LEON, BOP_LLEIDA, BOP_MALAGA, BOP_PALENCIA, BOP_PONTEVEDRA, BOP_SEGOVIA, BOP_SEVILLA, BOP_SANTA_CRUZ_TENERIFE, BOP_SORIA, BOP_TARRAGONA, BOP_TERUEL, BOP_TOLEDO, BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA
-BOP_ALICANTE runtime health: degraded/manual-review
-candidate_creation_allowed=false: 65
-evidence_grade_allowed=false: 65
+API discovery sources: AYTO_ZARAGOZA_EMPLEO, BOPV, BOR, BOP_CACERES, BOP_HUELVA, BOP_OURENSE
+HTML discovery sources: BON, BOPA, DOCM, BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ALMERIA, BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_BURGOS, BOP_CADIZ, BOP_CASTELLON, BOP_CIUDAD_REAL, BOP_CORDOBA, BOP_CUENCA, BOP_GIRONA, BOP_GIPUZKOA, BOP_GRANADA, BOP_HUESCA, BOP_JAEN, BOP_LAS_PALMAS, BOP_LEON, BOP_LLEIDA, BOP_MALAGA, BOP_PALENCIA, BOP_PONTEVEDRA, BOP_SALAMANCA, BOP_SEGOVIA, BOP_SEVILLA, BOP_SANTA_CRUZ_TENERIFE, BOP_SORIA, BOP_TARRAGONA, BOP_TERUEL, BOP_TOLEDO, BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA, BOP_ZARAGOZA
+BOP_ALICANTE runtime health: recovered on 2026-06-02 after DNS resolver-dependent failure
+candidate_creation_allowed=false: 66
+evidence_grade_allowed=false: 66
 candidate_creation_allowed=true: 0
 evidence_grade_allowed=true: 0
-blocked_vps=true: BOP_CUENCA, BOP_SALAMANCA, BOP_ZARAGOZA
-pending_relay=true: BOP_CUENCA, BOP_SALAMANCA, BOP_ZARAGOZA
+relay-backed sources: BOP_CUENCA, BOP_SALAMANCA, BOP_ZARAGOZA
+blocked_vps=true: none for the operational monitor path
+pending_relay=true: none
 ```
 
 Discovery output paths, when writes are explicitly requested:
@@ -159,8 +161,8 @@ RSS/Atom monitor rules:
 
 ## API Discovery CLI
 
-API discovery is metadata-only. BOPV, BOR, BOP_CACERES, BOP_HUELVA, and BOP_OURENSE use the official API access
-methods declared in the registry.
+API discovery is metadata-only. AYTO_ZARAGOZA_EMPLEO, BOPV, BOR, BOP_CACERES,
+BOP_HUELVA, and BOP_OURENSE use the official API access methods declared in the registry.
 
 Preview BOPV without writing JSONL:
 
@@ -170,6 +172,7 @@ official-sources api monitor --source BOR --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOP_CACERES --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOP_HUELVA --date YYYY-MM-DD --limit 1
 official-sources api monitor --source BOP_OURENSE --date YYYY-MM-DD --limit 1
+official-sources api monitor --source AYTO_ZARAGOZA_EMPLEO --date YYYY-MM-DD --limit 1
 ```
 
 Write JSONL only when explicitly requested:
@@ -193,17 +196,21 @@ API monitor rules:
 HTML discovery is metadata-only. Current HTML discovery supports autonomous `BON`, `BOPA`, and `DOCM`,
 plus provincial `BOP_A_CORUNA`, `BOP_ALBACETE`, `BOP_ALICANTE`, `BOP_AVILA`,
 `BOP_ARABA_ALAVA`, `BOP_BARCELONA`, `BOP_BIZKAIA`, `BOP_BURGOS`, `BOP_CASTELLON`,
-`BOP_CADIZ`, `BOP_CIUDAD_REAL`, `BOP_CORDOBA`, `BOP_GIRONA`, `BOP_GIPUZKOA`,
+`BOP_CADIZ`, `BOP_CIUDAD_REAL`, `BOP_CORDOBA`, `BOP_CUENCA`, `BOP_GIRONA`, `BOP_GIPUZKOA`,
 `BOP_GRANADA`, `BOP_HUESCA`,
 `BOP_JAEN`, `BOP_LAS_PALMAS`,
 `BOP_LEON`, `BOP_LLEIDA`, `BOP_MALAGA`, `BOP_PALENCIA`, `BOP_PONTEVEDRA`,
-`BOP_SEGOVIA`, `BOP_SEVILLA`, `BOP_SANTA_CRUZ_TENERIFE`, `BOP_SORIA`,
+`BOP_SALAMANCA`, `BOP_SEGOVIA`, `BOP_SEVILLA`, `BOP_SANTA_CRUZ_TENERIFE`, `BOP_SORIA`,
 `BOP_TARRAGONA`, `BOP_TERUEL`, `BOP_TOLEDO`, `BOP_VALENCIA`, `BOP_VALLADOLID`,
-and `BOP_ZAMORA`
+`BOP_ZAMORA`, and `BOP_ZARAGOZA`
 through source-specific parsers.
-`BOP_ALICANTE` remains
-`degraded/manual-review` for runtime health and must not be counted in all-green claims. PDF links
-may appear as official URLs in records, but the monitor does not download PDFs or artifacts.
+`BOP_CUENCA`, `BOP_SALAMANCA`, and `BOP_ZARAGOZA` require
+`OFFICIAL_SOURCES_HTML_RELAY_BASE_URL` and `OFFICIAL_SOURCES_HTML_RELAY_SECRET` because direct
+project VPS fetch remains unreliable while the steamcases-vps IONOS relay is validated.
+`BOP_ALICANTE` recovered from its earlier DNS resolver-dependent `degraded/manual-review` state on
+2026-06-02; local and VPS previews returned `records=1` for 2026-05-27. The DNS-dependent history
+remains documented as residual operational risk. PDF links may appear as official URLs in records,
+but the monitor does not download PDFs or artifacts.
 
 Preview BOP_A_CORUNA without writing JSONL:
 
@@ -226,6 +233,7 @@ official-sources html monitor --source BOP_LLEIDA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_MALAGA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_PALENCIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_PONTEVEDRA --date YYYY-MM-DD --limit 1
+official-sources html monitor --source BOP_SALAMANCA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SEGOVIA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SEVILLA --date YYYY-MM-DD --limit 1
 official-sources html monitor --source BOP_SORIA --date YYYY-MM-DD --limit 1
@@ -259,6 +267,14 @@ HTML monitor rules:
 - records are not candidates;
 - records are not evidence-grade;
 - PDFs are not downloaded.
+
+Relay-backed source preview example:
+
+```bash
+$env:OFFICIAL_SOURCES_HTML_RELAY_BASE_URL="https://steamcases.desuscribir.es/official-sources-relay/api/fetch"
+$env:OFFICIAL_SOURCES_HTML_RELAY_SECRET="<secret>"
+official-sources html monitor --source BOP_CUENCA --date YYYY-MM-DD --limit 1
+```
 
 ## MCP Coverage Tools
 
@@ -333,7 +349,7 @@ BOPV: API/XML/HTML access methods declared
 BOP_CACERES: API access method declared
 BOP_A_CORUNA: HTML access method declared
 BOP_ALBACETE: HTML access method declared
-BOP_ALICANTE: HTML access method declared; runtime health degraded/manual-review
+BOP_ALICANTE: HTML access method declared; DNS recovery documented on 2026-06-02
 BOP_ARABA_ALAVA: HTML access method declared
 BOP_BARCELONA: HTML access method declared
 BOP_BIZKAIA: HTML access method declared
@@ -415,7 +431,7 @@ Runs a one-source metadata-only discovery preview through the MCP layer. The too
 
 ```text
 rss: validated RSS/Atom discovery sources
-api: BOPV, BOR, BOP_CACERES, BOP_HUELVA
+api: AYTO_ZARAGOZA_EMPLEO, BOPV, BOR, BOP_CACERES, BOP_HUELVA, BOP_OURENSE
 html: BON, BOPA, DOCM, BOP_A_CORUNA, BOP_ALBACETE, BOP_ALICANTE, BOP_ARABA_ALAVA, BOP_AVILA, BOP_BARCELONA, BOP_BIZKAIA, BOP_BURGOS, BOP_CASTELLON, BOP_CORDOBA, BOP_GIRONA, BOP_GIPUZKOA, BOP_GRANADA, BOP_HUESCA, BOP_JAEN, BOP_LAS_PALMAS, BOP_LEON, BOP_LLEIDA, BOP_MALAGA, BOP_PALENCIA, BOP_PONTEVEDRA, BOP_SEGOVIA, BOP_SEVILLA, BOP_SANTA_CRUZ_TENERIFE, BOP_SORIA, BOP_TARRAGONA, BOP_TERUEL, BOP_TOLEDO, BOP_VALENCIA, BOP_VALLADOLID, BOP_ZAMORA
 ```
 
@@ -454,7 +470,8 @@ provincial_html_discovery_pilot
 ```
 
 The tool scans the registry and recommends provincial `inventory_only` sources with official landing
-URLs and no validated monitor yet. It excludes already monitored sources such as `BOP_A_CORUNA`,
+URLs and no validated monitor yet. The normal recommendation list is currently empty because all 43
+provincial BOP entries are monitor-validated. It excludes already monitored sources such as `BOP_A_CORUNA`,
 `BOP_ALBACETE`, `BOP_ALICANTE`, `BOP_BARCELONA`, `BOP_BIZKAIA`, `BOP_CASTELLON`,
 `BOP_MALAGA`, `BOP_SEVILLA`, and `BOP_VALENCIA`.
 
@@ -570,7 +587,7 @@ The coverage surface must preserve these boundaries:
 - No backfills from coverage commands.
 - No VPS or production DB operation from coverage commands.
 - No LLM classification.
-- No all-sources-green claim while any registered source is `degraded/manual-review`.
+- No all-sources-green claim unless the scoped runtime checks have actually passed.
 - No product-readiness inference from registry presence, `monitor_validated`, or
   `monitor_support=available`.
 

@@ -47,6 +47,7 @@ DOCUMENTED_BLOCKER_MARKERS = (
     "blocking reason",
     "defer until",
     "deferred until",
+    "relay egress",
     "manual-only",
 )
 JS_HEADLESS_MARKERS = (

@@ -136,6 +136,34 @@ sources:
       - Backfill and candidate operations require separate explicit tasks.
     notes: Local metadata adapter exists; this registry does not start a monitor or backfill.
 
+  - source_code: AYTO_ZARAGOZA_EMPLEO
+    name: Oferta de Empleo del Ayuntamiento de Zaragoza
+    jurisdiction: ES-Z-Zaragoza
+    jurisdiction_level: local
+    official_landing_url: https://www.zaragoza.es/oferta/
+    access_methods:
+      - type: api
+        url: https://www.zaragoza.es/sede/servicio/oferta-empleo.json
+        status: validated
+        notes: Official open-data JSON endpoint for municipal public-employment notices.
+      - type: html
+        url: https://www.zaragoza.es/oferta/
+        status: validated
+        notes: Official municipal employment landing page linked from the Zaragoza site.
+    operational_status: monitor_validated
+    mcp_support: false
+    monitor_support: available
+    backfill_support: none
+    evidence_adapter: false
+    candidate_creation_allowed: false
+    evidence_grade_allowed: false
+    last_verified_at: "2026-06-01"
+    limitations:
+      - Metadata-only API discovery for dated municipal employment notices.
+      - Preview one requested date only; no detail-page crawling, attachment download, candidate creation, or evidence-grade export.
+      - Separate from BOP_ZARAGOZA, which remains blocked on the project VPS.
+    notes: Local municipal employment source added for Zaragoza coverage priority.
+
   - source_code: BOPA
     name: Boletin Oficial del Principado de Asturias
     jurisdiction: ES-AS
@@ -604,10 +632,14 @@ sources:
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
+    degraded: false
+    degraded_reason: null
+    recovery_note: "DNS resolver-dependent failure; resolved 2026-06-02. Local and VPS preview confirmed records=1 for 2026-05-27."
     last_verified_at: "2026-05-26"
     limitations:
       - Provincial HTML discovery is metadata-only and does not download PDFs or artifacts.
       - The validated request uses the official consultation page backing endpoint, not a general API contract.
+      - DNS-dependent host resolution risk is documented in docs/reports/bop-alicante-recovery-2026-06-02.md.
     notes: Official provincial bulletin HTML discovery monitor.
 
   - source_code: BOP_ALMERIA
@@ -907,24 +939,25 @@ sources:
     official_landing_url: https://www.dipucuenca.es/boletin-oficial-de-la-provincia
     access_methods:
       - type: html
-        url: https://www.dipucuenca.es/boletin-oficial-de-la-provincia
-        status: inventory
-        notes: Official directory landing URL; not validated for monitoring.
-    operational_status: inventory_only
+        url: https://www.dipucuenca.es/boletin-oficial-de-la-provincia?p_r_p_startDate={date_ddmmyyyy}&p_r_p_endDate={date_ddmmyyyy}
+        status: validated
+        relay_key: cuenca
+        notes: Official date-scoped listing URL fetched through the steamcases-vps IONOS relay because Hetzner, Cloudflare Worker, and tested Vercel relay egress are rejected by the official WAF.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
-    blocked_vps: true
-    pending_relay: true
+    monitor_support: available
+    blocked_vps: false
+    pending_relay: false
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-06-01"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-      - Date-scoped HTML parses locally, but project VPS requests are rejected by the official WAF with 403.
-    notes: Official provincial bulletin inventory entry for Cuenca.
+      - Metadata-only HTML discovery through the steamcases-vps IONOS relay; direct project VPS fetch is still rejected by the official WAF.
+      - No PDFs/artifacts, candidates, evidence-grade records, or broad backfill.
+      - Preview one requested date only.
+    notes: Official provincial bulletin monitor for Cuenca using relay-backed fetch.
 
   - source_code: BOP_GIPUZKOA
     name: Boletin Oficial de Gipuzkoa
@@ -1297,24 +1330,25 @@ sources:
     official_landing_url: https://sede.diputaciondesalamanca.gob.es/BOP/
     access_methods:
       - type: html
-        url: https://sede.diputaciondesalamanca.gob.es/BOP/
-        status: inventory
-        notes: Official directory landing URL; date-scoped page is parseable locally but not validated on the project VPS.
-    operational_status: inventory_only
+        url: https://sede.diputaciondesalamanca.gob.es/opencms/opencms/sede/BOP/index.jsp?fechaBoletin={date}
+        status: validated
+        relay_key: salamanca
+        notes: Official date-scoped BOP page fetched through the steamcases-vps IONOS relay because the project VPS and default Cloudflare path time out.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
-    blocked_vps: true
-    pending_relay: true
+    monitor_support: available
+    blocked_vps: false
+    pending_relay: false
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
-    last_verified_at: "2026-05-25"
+    last_verified_at: "2026-06-01"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring.
-      - Listed by official BOE/PAG directories; no RSS/API/HTML monitor has been validated.
-      - Date-scoped HTML was found and parsed locally, but project VPS fetch timed out at 60 seconds.
-    notes: Official provincial bulletin inventory entry for Salamanca.
+      - Metadata-only HTML discovery through the steamcases-vps IONOS relay; direct project VPS fetch is still not reliable.
+      - Bulletin-level records only; PDF endpoint is stored as official metadata and not downloaded.
+      - Preview one requested date only.
+    notes: Official provincial bulletin monitor for Salamanca using relay-backed fetch.
 
   - source_code: BOP_SANTA_CRUZ_TENERIFE
     name: Boletin Oficial de la Provincia de Santa Cruz de Tenerife
@@ -1563,19 +1597,21 @@ sources:
     access_methods:
       - type: html
         url: https://boletin.dpz.es/BOPZ/
-        status: inventory
-        notes: Official latest-bulletin page identified locally; not promoted because the project VPS times out.
-    operational_status: inventory_only
+        status: validated
+        relay_key: zaragoza
+        notes: Official latest-bulletin page fetched through the steamcases-vps IONOS relay because project VPS, Cloudflare Worker, and tested Vercel relay egress time out.
+    operational_status: monitor_validated
     mcp_support: false
-    monitor_support: none
-    blocked_vps: true
-    pending_relay: true
+    monitor_support: available
+    blocked_vps: false
+    pending_relay: false
     backfill_support: none
     evidence_adapter: false
     candidate_creation_allowed: false
     evidence_grade_allowed: false
     last_verified_at: "2026-06-01"
     limitations:
-      - Provincial bulletin inventory only; access method not validated for monitoring on the project VPS.
-      - Local parser spike succeeded, but the VPS timed out connecting to the official BOPZ endpoint.
-    notes: Official provincial bulletin inventory entry for Zaragoza.
+      - Metadata-only HTML discovery through the steamcases-vps IONOS relay; direct project VPS fetch still times out against the official endpoint.
+      - Latest-bulletin landing page only; requested date must match the current bulletin date.
+      - No PDFs/artifacts, candidates, evidence-grade records, or broad backfill.
+    notes: Official provincial bulletin monitor for Zaragoza using relay-backed fetch; municipal AYTO_ZARAGOZA_EMPLEO remains separate.

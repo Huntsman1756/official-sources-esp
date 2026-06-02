@@ -1,29 +1,43 @@
 # Project State
 
-Last updated: 2026-05-31
+Last updated: 2026-06-02
 
 ## Current Decision
 
-`TASK-MCP-READONLY-UPSTREAM-V1-FINAL-CLOSURE-001` closes `official-sources` as read-only upstream
-v1 for the current downstream consumers.
+`REL-001` closes the remaining provincial BOP coverage gap through the steamcases-vps IONOS relay.
 
-Final closure:
+Implementation report:
 
 ```text
-docs/MCP_READONLY_UPSTREAM_V1_FINAL_CLOSURE.md
+docs/reports/relay-provincial-bop-closeout-2026-06-01.md
 ```
 
 Status:
 
 ```text
-official-sources: CLOSED AS READ-ONLY UPSTREAM v1
+official-sources: READ-ONLY UPSTREAM WITH 43/43 PROVINCIAL BOP MONITORS
 operational_status: GO
 downstream_acceptance: moves to consumer preview/import smokes
 writes: disabled
 candidate_creation_allowed=false for all registered sources
 evidence_grade_allowed=false for all registered sources
-source_expansion: frozen unless a downstream smoke proves a concrete source gap
-BOP_ALICANTE: degraded/manual-review
+source_expansion: closed after relay-backed provincial BOP completion
+AYTO_ZARAGOZA_EMPLEO: monitor_validated metadata-only API discovery
+BOP_CUENCA: monitor_validated metadata-only HTML discovery through steamcases-vps IONOS relay
+BOP_SALAMANCA: monitor_validated metadata-only HTML discovery through steamcases-vps IONOS relay
+BOP_ZARAGOZA: monitor_validated metadata-only HTML discovery through steamcases-vps IONOS relay
+BOP_ALICANTE: recovered on 2026-06-02 after DNS resolver-dependent degraded/manual-review state
+```
+
+Current registry baseline:
+
+```text
+registered sources: 66
+metadata_adapter_validated: 9
+monitor_validated: 54
+inventory_only: 3
+provincial BOP monitor_validated: 43/43
+API discovery monitor sources: AYTO_ZARAGOZA_EMPLEO, BOPV, BOR, BOP_CACERES, BOP_HUELVA, BOP_OURENSE
 ```
 
 The current MCP closure surface is:
@@ -38,8 +52,15 @@ list_downstream_integration_smokes
 check_downstream_integration_smokes
 ```
 
-No upstream task may claim product readiness, all-sources-green, evidence-grade readiness, candidate
-readiness, legal/fiscal meaning, eligibility, publication approval, or downstream automation.
+No upstream task may claim product readiness, evidence-grade readiness, candidate readiness,
+legal/fiscal meaning, eligibility, publication approval, or downstream automation. Runtime
+all-sources-green claims still require scoped runtime checks, not registry status alone.
+
+Known residual operational risk:
+
+```text
+BOP_ALICANTE: DNS-dependent host resolution risk documented in docs/reports/bop-alicante-recovery-2026-06-02.md
+```
 
 ## Previous Decision
 
@@ -95,7 +116,9 @@ human_review_required=true
 `official-sources` remains closed as read-only upstream v1. Downstream product automation remains
 blocked until each product runs its own preview/import check and explicit review gate.
 
-`BOP_ALICANTE` remains `degraded/manual-review`; no all-sources-green claim is allowed.
+`BOP_ALICANTE` recovered from its earlier DNS-dependent `degraded/manual-review` state on
+2026-06-02. Runtime all-sources-green claims still require scoped runtime checks, not registry
+status alone.
 
 ## Previous Decision
 
@@ -134,7 +157,9 @@ product_automation_allowed=false
 human_review_required=true
 ```
 
-`BOP_ALICANTE` remains `degraded/manual-review`; no all-sources-green claim is allowed.
+`BOP_ALICANTE` recovered from its earlier DNS-dependent `degraded/manual-review` state on
+2026-06-02. Runtime all-sources-green claims still require scoped runtime checks, not registry
+status alone.
 
 ## Previous Decision
 
@@ -177,7 +202,9 @@ product_automation_allowed=false
 human_review_required=true
 ```
 
-`BOP_ALICANTE` remains `degraded/manual-review`; no all-sources-green claim is allowed.
+`BOP_ALICANTE` recovered from its earlier DNS-dependent `degraded/manual-review` state on
+2026-06-02. Runtime all-sources-green claims still require scoped runtime checks, not registry
+status alone.
 
 ## Previous Decision
 
@@ -222,7 +249,9 @@ product_automation_allowed=false
 human_review_required=true
 ```
 
-`BOP_ALICANTE` remains `degraded/manual-review`; no all-sources-green claim is allowed.
+`BOP_ALICANTE` recovered from its earlier DNS-dependent `degraded/manual-review` state on
+2026-06-02. Runtime all-sources-green claims still require scoped runtime checks, not registry
+status alone.
 
 ## Previous Decision
 
@@ -257,7 +286,8 @@ docs/reports/source-coverage-reopen-oposiciones-001-2026-05-31.md
 This expansion is scoped to `oposiciones2.0` public-employment alert demand. It remains
 metadata-only and did not create candidates, create evidence-grade records, download PDFs/artifacts,
 write discovery JSONL by default, write downstream repositories, run broad backfills, touch VPS,
-touch Hermes, or change systemd. `BOP_ALICANTE` remains `degraded/manual-review`.
+touch Hermes, or change systemd. `BOP_ALICANTE` later recovered from the earlier
+`degraded/manual-review` DNS state on 2026-06-02.
 
 ## Previous Decision
 
@@ -356,9 +386,9 @@ Current safety state remains unchanged:
 
 ```text
 writes: disabled
-candidate creation: disabled for 65/65
-evidence-grade creation: disabled for 65/65
-BOP_ALICANTE: degraded/manual-review
+candidate creation: disabled
+evidence-grade creation: disabled
+BOP_ALICANTE: recovered on 2026-06-02; DNS-dependent risk documented
 runtime behavior changes: none
 ```
 
@@ -377,7 +407,7 @@ downstream semantic ambiguity: CLOSED
 writes: disabled
 candidate creation: disabled for 65/65
 evidence-grade creation: disabled for 65/65
-BOP_ALICANTE: degraded/manual-review
+BOP_ALICANTE: recovered on 2026-06-02 after earlier degraded/manual-review DNS state
 coverage expansion: frozen
 old conflicting PRs: superseded/closed (#3, #7, #16)
 ```
@@ -418,14 +448,15 @@ The contract explicitly separates registry presence, runtime health, metadata-on
 `inventory_only`, `monitor_validated`, `monitor_support=available`, `evidence_adapter`,
 `candidate_creation_allowed`, and `evidence_grade_allowed`.
 
-Known degraded/manual-review item remains:
+Known degraded/manual-review item from the earlier snapshot is now superseded:
 
 ```text
-BOP_ALICANTE: resolver-dependent DNS instability for sede.diputacionalicante.es
+BOP_ALICANTE: recovered on 2026-06-02; residual DNS-dependent risk remains documented
 ```
 
-`BOP_ALICANTE` remains registered and monitor-capable but excluded from all-green claims. It was
-not marked healthy, removed from the registry, converted back to `inventory_only`, or runtime-fixed.
+`BOP_ALICANTE` remains registered and monitor-capable. Its 2026-05-27 DNS degradation was not a
+parser or endpoint regression, and the 2026-06-02 recovery report records local and VPS preview
+evidence before removing the current degraded overlay.
 
 No new source expansion is planned from this task. Future source work remains proposed only when a
 separate task explicitly authorizes it. Writes, candidate creation, and evidence-grade creation
@@ -1404,7 +1435,7 @@ Supported preview families:
 
 ```text
 rss: validated RSS/Atom discovery sources
-api: BOPV API discovery
+api: AYTO_ZARAGOZA_EMPLEO, BOPV, BOR, BOP_CACERES, BOP_HUELVA, and BOP_OURENSE API discovery
 html: validated provincial HTML discovery sources
 ```
 

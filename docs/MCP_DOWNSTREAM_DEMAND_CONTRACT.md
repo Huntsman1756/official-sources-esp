@@ -112,8 +112,9 @@ Whenever a tool returns a source, it should include:
 
 `runtime_health` must be represented as a separate field from `registry_operational_status`.
 
-`BOP_ALICANTE` must be returned as `degraded/manual-review` until a later recovery task documents
-normal runtime recovery.
+`BOP_ALICANTE` was previously returned as `degraded/manual-review`. The recovery task documented
+normal local and VPS runtime recovery on 2026-06-02, so current tools must not hardcode Alicante as
+degraded. Its DNS-dependent history remains a residual operational risk.
 
 ## Tool Contracts
 

@@ -1,0 +1,22 @@
+[Unit]
+Description=Official Sources allowlisted fetch relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=official-sources-relay
+Group=official-sources-relay
+WorkingDirectory=/opt/official-sources-fetch-relay
+EnvironmentFile=/opt/official-sources-fetch-relay/.env
+ExecStart=/usr/bin/python3 /opt/official-sources-fetch-relay/relay_server.py
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/official-sources-fetch-relay
+
+[Install]
+WantedBy=multi-user.target

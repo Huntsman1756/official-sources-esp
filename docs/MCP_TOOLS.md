@@ -197,7 +197,7 @@ Supported preview families:
 
 ```text
 rss: validated RSS/Atom discovery sources
-api: BOPV API discovery
+api: AYTO_ZARAGOZA_EMPLEO, BOPV, BOR, BOP_CACERES, BOP_HUELVA, and BOP_OURENSE API discovery
 html: validated provincial HTML discovery sources
 ```
 
@@ -221,7 +221,8 @@ provincial_html_discovery_pilot
 ```
 
 The tool recommends provincial `inventory_only` sources with official landing URLs and no validated
-monitor yet. Already monitored sources such as `BOP_A_CORUNA`, `BOP_ALBACETE`, `BOP_ALICANTE`,
+monitor yet. The current normal recommendation list is empty because all 43 provincial BOP entries
+are monitor-validated. Already monitored sources such as `BOP_A_CORUNA`, `BOP_ALBACETE`, `BOP_ALICANTE`,
 `BOP_ALMERIA`, `BOP_BARCELONA`, `BOP_BIZKAIA`, `BOP_CASTELLON`, `BOP_LUGO`, `BOP_MALAGA`,
 `BOP_SEVILLA`, and `BOP_VALENCIA` are excluded. Documented blocked/deferred sources are
 excluded from the normal ranking but remain visible through `list_sources` and

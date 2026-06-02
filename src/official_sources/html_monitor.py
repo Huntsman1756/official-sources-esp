@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+import os
 import re
 import ssl
 from collections.abc import Callable
@@ -18,6 +19,9 @@ import httpx
 from official_sources.source_registry import get_source
 
 HTMLFetcher = Callable[[str], bytes | str]
+HTML_RELAY_TARGETS = frozenset({"cuenca", "salamanca", "zaragoza"})
+HTML_RELAY_BASE_URL_ENV = "OFFICIAL_SOURCES_HTML_RELAY_BASE_URL"
+HTML_RELAY_SECRET_ENV = "OFFICIAL_SOURCES_HTML_RELAY_SECRET"
 
 _HTML_MONITOR_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -505,7 +509,10 @@ def monitor_html_source(
     access_method = select_html_access_method(source)
     page_url = _build_html_monitor_url(source_code, access_method["url"], target_date=target_date)
     fetch = fetcher or fetch_html
-    if source_code == "BOP_BIZKAIA":
+    relay_key = str(access_method.get("relay_key", "")).strip()
+    if relay_key and fetcher is None:
+        raw_page = fetch_html_via_relay(relay_key, target_date=target_date)
+    elif source_code == "BOP_BIZKAIA":
         landing_page = _coerce_page_bytes(fetch(page_url))
         detail_url = _extract_bop_bizkaia_latest_detail_url(
             landing_page.decode("utf-8", errors="replace"),
@@ -2036,6 +2043,34 @@ def fetch_html(url: str) -> bytes:
             return response.content
     except httpx.HTTPError as exc:
         raise HTMLMonitorError(f"html monitor fetch failed for {url}: {exc}") from exc
+
+
+def fetch_html_via_relay(relay_key: str, *, target_date: str) -> bytes:
+    target_date = validate_html_monitor_date(target_date)
+    if relay_key not in HTML_RELAY_TARGETS:
+        raise HTMLMonitorError(f"relay target is not allowed: {relay_key}")
+    base_url = os.environ.get(HTML_RELAY_BASE_URL_ENV, "").strip()
+    if not base_url:
+        raise HTMLMonitorError(f"{HTML_RELAY_BASE_URL_ENV} is required for relay-backed sources")
+    separator = "&" if "?" in base_url else "?"
+    relay_params = urlencode({"target": relay_key, "date": target_date, "raw": "1"})
+    relay_url = f"{base_url}{separator}{relay_params}"
+    headers = {}
+    relay_secret = os.environ.get(HTML_RELAY_SECRET_ENV, "").strip()
+    if relay_secret:
+        headers["X-Relay-Secret"] = relay_secret
+    try:
+        with httpx.Client(follow_redirects=True, timeout=60.0) as client:
+            response = client.get(relay_url, headers=headers)
+            response.raise_for_status()
+            upstream_status = response.headers.get("X-Relay-Upstream-Status")
+            if upstream_status and not upstream_status.startswith("2"):
+                raise HTMLMonitorError(
+                    f"relay upstream returned status {upstream_status} for {relay_key}"
+                )
+            return response.content
+    except httpx.HTTPError as exc:
+        raise HTMLMonitorError(f"html relay fetch failed for {relay_key}: {exc}") from exc
 
 
 def fetch_bop_almeria_zkau_response(url: str) -> bytes:

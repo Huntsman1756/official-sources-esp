@@ -2505,9 +2505,105 @@ def test_monitor_bop_burgos_fetches_date_then_issue_detail():
 
 def test_html_monitor_refuses_source_without_validated_html_access_method():
     with pytest.raises(HTMLMonitorError) as exc_info:
-        select_html_access_method(get_source("BOP_ZARAGOZA"))
+        select_html_access_method(get_source("DOUE"))
 
     assert "does not have a validated html access method" in str(exc_info.value)
+
+
+def test_select_html_access_method_exposes_relay_metadata_for_validated_bop_sources():
+    for source_code, relay_key in {
+        "BOP_CUENCA": "cuenca",
+        "BOP_SALAMANCA": "salamanca",
+        "BOP_ZARAGOZA": "zaragoza",
+    }.items():
+        source = get_source(source_code)
+        method = select_html_access_method(source)
+
+        assert source["operational_status"] == "monitor_validated"
+        assert source["monitor_support"] == "available"
+        assert source["blocked_vps"] is False
+        assert source["pending_relay"] is False
+        assert method["status"] == "validated"
+        assert method["relay_key"] == relay_key
+        assert source["candidate_creation_allowed"] is False
+        assert source["evidence_grade_allowed"] is False
+
+
+def test_fetch_html_via_relay_uses_allowlisted_target_key_and_date(monkeypatch):
+    requested_urls = []
+    client_options = []
+
+    class FakeResponse:
+        content = b"<html>relay</html>"
+        headers = {
+            "X-Relay-Upstream-Status": "200",
+            "X-Relay-Upstream-Bytes": "18",
+            "X-Relay-Upstream-Url": "https://boletin.dpz.es/BOPZ/",
+        }
+
+        def raise_for_status(self) -> None:
+            return None
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            client_options.append(kwargs)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def get(self, url, **kwargs):
+            requested_urls.append(url)
+            client_options.append(kwargs)
+            return FakeResponse()
+
+    monkeypatch.setenv("OFFICIAL_SOURCES_HTML_RELAY_BASE_URL", "https://relay.example.test/fetch")
+    monkeypatch.setenv("OFFICIAL_SOURCES_HTML_RELAY_SECRET", "test-secret")
+    monkeypatch.setattr(html_monitor.httpx, "Client", FakeClient)
+
+    assert (
+        html_monitor.fetch_html_via_relay("zaragoza", target_date="2026-06-01")
+        == b"<html>relay</html>"
+    )
+    assert requested_urls == [
+        "https://relay.example.test/fetch?target=zaragoza&date=2026-06-01&raw=1"
+    ]
+    assert client_options[0]["follow_redirects"] is True
+    assert client_options[1]["headers"] == {"X-Relay-Secret": "test-secret"}
+
+
+def test_fetch_html_via_relay_refuses_unknown_target(monkeypatch):
+    monkeypatch.setenv("OFFICIAL_SOURCES_HTML_RELAY_BASE_URL", "https://relay.example.test/fetch")
+
+    with pytest.raises(HTMLMonitorError) as exc_info:
+        html_monitor.fetch_html_via_relay("https://example.test", target_date="2026-06-01")
+
+    assert "relay target is not allowed" in str(exc_info.value)
+
+
+def test_monitor_html_source_uses_relay_when_configured(monkeypatch):
+    requested_targets = []
+
+    def relay_fetch(relay_key: str, *, target_date: str) -> bytes:
+        requested_targets.append((relay_key, target_date))
+        return b"""
+        <h2>Bolet&iacute;n del d&iacute;a 29/05/2026</h2>
+        <a href="/documentacion/bop/2026/20260529/BOP-SA-20260529-999.pdf">
+          Descargar bolet&iacute;n completo
+        </a>
+        """
+
+    monkeypatch.setattr(html_monitor, "fetch_html_via_relay", relay_fetch)
+
+    result = monitor_html_source(get_source("BOP_SALAMANCA"), target_date="2026-05-29", limit=1)
+
+    assert requested_targets == [("salamanca", "2026-05-29")]
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == "BOP_SALAMANCA"
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
 
 
 def test_html_monitor_has_no_candidate_evidence_or_artifact_code_paths():
@@ -2596,7 +2692,7 @@ def test_cli_html_monitor_refuses_all_source_runs(capsys):
 def test_cli_html_monitor_refuses_source_without_validated_html(capsys):
     from official_sources.cli import run
 
-    exit_code = run(["html", "monitor", "--source", "BOP_ZARAGOZA", "--date", "2026-05-25"])
+    exit_code = run(["html", "monitor", "--source", "DOUE", "--date", "2026-05-25"])
     captured = capsys.readouterr()
 
     assert exit_code == 2
@@ -2689,4 +2785,4 @@ def test_mcp_source_coverage_sees_bop_a_coruna_as_html_monitorable():
 def test_existing_source_registry_validation_still_passes():
     registry = load_source_registry()
 
-    assert len(registry["sources"]) == 65
+    assert len(registry["sources"]) == 66

@@ -20,7 +20,7 @@ monitor_support=available: 26
 evidence_adapter=true: 6
 candidate_creation_allowed=false: 65
 evidence_grade_allowed=false: 65
-BOP_ALICANTE runtime health: degraded/manual-review
+BOP_ALICANTE runtime health: recovered on 2026-06-02 after DNS-dependent degraded/manual-review state
 writes: disabled
 ```
 
@@ -96,7 +96,7 @@ docs/MCP_CASE_TAXONOMY.md
 
 | Project | Product need | Current consumer state | Useful current source families | Missing source families or capability | MCP priority | Next MCP task |
 | --- | --- | --- | --- | --- | --- | --- |
-| `oposiciones2.0` | Official public-employment alerts from BOE, autonomous bulletins, and BOPs. | MVP closed-beta hardening; BOE, DOGV, BOP Castellon, BOP Valencia, and partial BOP Alicante are already product-side concepts. | BOE, DOGV, BOCM/BOJA as registry/monitor candidates, selected provincial monitors, alert-grade exports. `BOP_CASTELLON` and `BOP_SEVILLA` now have shared metadata-only monitors. | More provincial BOP metadata monitors with employment relevance; `BOP_ALICANTE` remains degraded/manual-review. | High | Continue with low-friction public-employment BOP sources only after explicit task. |
+| `oposiciones2.0` | Official public-employment alerts from BOE, autonomous bulletins, and BOPs. | MVP closed-beta hardening; BOE, DOGV, BOP Castellon, BOP Valencia, and partial BOP Alicante are already product-side concepts. | BOE, DOGV, BOCM/BOJA as registry/monitor candidates, selected provincial monitors, alert-grade exports. `BOP_CASTELLON` and `BOP_SEVILLA` now have shared metadata-only monitors. | More provincial BOP metadata monitors with employment relevance; `BOP_ALICANTE` has a documented DNS-dependent recovery risk. | High | Continue with low-friction public-employment BOP sources only after explicit task. |
 | `eduayudas` | Verified education-aid evidence with official URL and verification date. | Evidence staging, preview, explicit evidence writes, explicit candidate conversion, and explicit draft pilot exist product-side. | BOE, BOJA, BOCYL, BOCM, DOGV, BDNS, autonomous bulletins. | Fresh reviewable evidence packets for education-aid searches; BDNS/education portal prioritization; product-scoped evidence exports, not global candidate creation. | High | `TASK-MCP-EVIDENCE-PACKETS-EDUAYUDAS-001` |
 | `la-ayuda` | Official source discovery and evidence for benefits/prestations catalog cards. | Static catalog; staging-first official-sources integration exists; many cards still require review or exact normative source discovery. | BOE, consolidated law tools, autonomous bulletins, selected evidence exports. | Normative source resolver for pending cards; official portal/sede source discovery; autonomous social-services, housing, family, dependency, disability, and benefit sources. | High | `TASK-MCP-BENEFIT-SOURCE-RESOLVER-LAAYUDA-001` |
 | `renta-verificable` | Exact fiscal/legal references for IRPF deductions. | Pre-beta local release candidate; production remains NO-GO pending infrastructure; fiscal/legal data is protected from casual edits. | BOE consolidated law tools, future autonomous legal reference support; AEAT remains primary outside current registry. | AEAT manual/reference source support; exact BOE/autonomous legal references; audit of generated or generic BOE links before integration. | Medium | `TASK-MCP-FISCAL-REFERENCE-RESOLVER-RENTA-001` |
@@ -221,7 +221,7 @@ No source expansion task may weaken these current rules:
 candidate_creation_allowed=false for all sources unless a future explicit source-specific task changes it
 evidence_grade_allowed=false for all sources unless a future explicit source-specific task changes it
 official-sources remains read-only toward downstream repositories
-BOP_ALICANTE remains degraded/manual-review until a separate recovery task proves otherwise
+BOP_ALICANTE recovery is documented on 2026-06-02; DNS-dependent residual risk remains tracked
 ```
 
 ## Task Status

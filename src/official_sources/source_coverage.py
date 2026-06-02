@@ -116,7 +116,7 @@ DOWNSTREAM_DEMAND_PROFILES = {
             "BOP_CASTELLON and BOP_SEVILLA are now shared metadata-only monitors",
             "source-specific metadata-only monitors for selected provincial BOPs",
             "consumer-aware alert-grade export ranking",
-            "explicit exclusion of BOP_ALICANTE from all-green claims while degraded/manual-review",
+            "documented DNS-dependent recovery risk for BOP_ALICANTE",
         ),
     },
     "eduayudas": {
@@ -303,7 +303,7 @@ DOWNSTREAM_INTEGRATION_SMOKE_PROFILES = {
             "do not send notifications",
             "do not treat alert-grade as evidence-grade",
             "do not import broad or review-only alerts through the strict path",
-            "do not count BOP_ALICANTE as green while degraded/manual-review",
+            "do not treat BOP_ALICANTE DNS recovery as candidate or evidence readiness",
         ],
         "known_risks": [
             "existing BOE helper is REST-shaped and needs an adapter for true MCP",
@@ -1248,9 +1248,7 @@ def _build_downstream_source_recommendation(
 
 
 def _downstream_source_status(source: dict[str, Any]) -> dict:
-    runtime_health = (
-        "degraded/manual-review" if source["source_code"] == "BOP_ALICANTE" else "unknown"
-    )
+    runtime_health = "degraded/manual-review" if source.get("degraded") is True else "unknown"
     safe_uses = ["inventory_awareness", "manual_review"]
     if source["operational_status"] == "monitor_validated":
         safe_uses.insert(0, "metadata_discovery")
@@ -1365,7 +1363,14 @@ def _implemented_preview_types(source: dict[str, Any]) -> list[str]:
         for method in access_methods
     ):
         preview_types.append("rss")
-    if source_code in {"BOPV", "BOR", "BOP_CACERES", "BOP_HUELVA", "BOP_OURENSE"} and any(
+    if source_code in {
+        "AYTO_ZARAGOZA_EMPLEO",
+        "BOPV",
+        "BOR",
+        "BOP_CACERES",
+        "BOP_HUELVA",
+        "BOP_OURENSE",
+    } and any(
         method.get("type") == "api"
         and method.get("status") == "validated"
         and str(method.get("url", "")).strip()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -21,6 +22,7 @@ BOP_CACERES_CALENDAR_API_ENDPOINT = "/boletines/bopMesCalendario"
 BOP_CACERES_ANNOUNCEMENTS_API_ENDPOINT = "/anuncios/anunciosAnunciantes"
 BOP_HUELVA_API_ENDPOINT = "/lib/bope/anuncios_bop/ajaxAnuncios.php"
 BOP_OURENSE_API_ENDPOINT = "/portalapi/api/boletin/getFecha/{yyyymmdd}"
+AYTO_ZARAGOZA_EMPLEO_API_ENDPOINT = "/sede/servicio/oferta-empleo.json"
 
 
 class APIMonitorError(ValueError):
@@ -250,8 +252,26 @@ def monitor_api_source(
             monitor_run_id=monitor_run_id,
         )
         return APIParseResult(raw_response_hash=raw_response_hash, records=result.records[:limit])
+    if source_code == "AYTO_ZARAGOZA_EMPLEO":
+        api_url = access_method["url"]
+        raw_response = _coerce_response_bytes(fetch(api_url))
+        raw_response_hash = hashlib.sha256(raw_response).hexdigest()
+        monitor_run_id = hashlib.sha256(
+            f"{source_code}{api_url}{target_date}{raw_response_hash}".encode()
+        ).hexdigest()[:16]
+        result = parse_ayto_zaragoza_empleo_response(
+            raw_response,
+            source_code=source_code,
+            api_url=api_url,
+            api_endpoint=AYTO_ZARAGOZA_EMPLEO_API_ENDPOINT,
+            requested_date=target_date,
+            discovered_at=f"{target_date}T00:00:00Z",
+            monitor_run_id=monitor_run_id,
+        )
+        return APIParseResult(raw_response_hash=raw_response_hash, records=result.records[:limit])
     raise APIMonitorError(
-        "api monitor currently supports BOPV, BOR, BOP_CACERES, BOP_HUELVA, and BOP_OURENSE only"
+        "api monitor currently supports BOPV, BOR, BOP_CACERES, BOP_HUELVA, "
+        "BOP_OURENSE, and AYTO_ZARAGOZA_EMPLEO only"
     )
 
 
@@ -530,6 +550,58 @@ def parse_bop_ourense_api_response(
     return APIParseResult(raw_response_hash=raw_response_hash, records=records)
 
 
+def parse_ayto_zaragoza_empleo_response(
+    raw_response: bytes | str,
+    *,
+    source_code: str,
+    api_url: str,
+    api_endpoint: str,
+    requested_date: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> APIParseResult:
+    raw_bytes = _coerce_response_bytes(raw_response)
+    raw_response_hash = hashlib.sha256(raw_bytes).hexdigest()
+    try:
+        payload = json.loads(raw_bytes.decode("utf-8"))
+    except json.JSONDecodeError as exc:
+        raise APIMonitorError(
+            f"AYTO_ZARAGOZA_EMPLEO API response is not valid JSON: {exc}"
+        ) from exc
+    groups = payload.get("result", [])
+    if not isinstance(groups, list):
+        raise APIMonitorError("AYTO_ZARAGOZA_EMPLEO API response field result must be a list")
+    records = []
+    for group in groups:
+        if not isinstance(group, dict):
+            continue
+        group_title = _string_or_none(group.get("title"))
+        items = group.get("items", [])
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            published_at, title = _split_zaragoza_empleo_title(_string_or_none(item.get("title")))
+            if published_at != requested_date:
+                continue
+            records.append(
+                _build_ayto_zaragoza_empleo_record(
+                    item=item,
+                    source_code=source_code,
+                    api_url=api_url,
+                    api_endpoint=api_endpoint,
+                    title=title,
+                    published_at=published_at,
+                    summary=group_title,
+                    raw_response_hash=raw_response_hash,
+                    discovered_at=discovered_at,
+                    monitor_run_id=monitor_run_id,
+                )
+            )
+    return APIParseResult(raw_response_hash=raw_response_hash, records=records)
+
+
 def write_api_jsonl(records: list[dict[str, Any]], output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = "".join(
@@ -801,6 +873,48 @@ def _build_bop_ourense_record(
     }
 
 
+def _build_ayto_zaragoza_empleo_record(
+    *,
+    item: dict[str, Any],
+    source_code: str,
+    api_url: str,
+    api_endpoint: str,
+    title: str | None,
+    published_at: str,
+    summary: str | None,
+    raw_response_hash: str,
+    discovered_at: str,
+    monitor_run_id: str,
+) -> dict[str, Any]:
+    api_id = _string_or_none(item.get("id"))
+    official_url = _string_or_none(item.get("apidetail"))
+    warnings = [] if official_url else ["entry_hash_fallback_missing_official_url"]
+    return {
+        "source_code": source_code,
+        "api_url": api_url,
+        "api_endpoint": api_endpoint,
+        "title": title,
+        "published_at": published_at,
+        "official_url": official_url,
+        "document_id": api_id,
+        "api_id": api_id,
+        "summary": summary,
+        "raw_response_hash": raw_response_hash,
+        "entry_hash": build_api_entry_hash(
+            source_code=source_code,
+            published_at=published_at,
+            official_url=official_url,
+            api_id=api_id,
+        ),
+        "discovered_at": discovered_at,
+        "monitor_run_id": monitor_run_id,
+        "classification_status": "unclassified",
+        "evidence_status": "not_evidence",
+        "candidate_status": "not_candidate",
+        "warnings": warnings,
+    }
+
+
 def _parse_bor_xml(raw_response: bytes, *, context: str) -> ET.Element:
     try:
         root = ET.fromstring(raw_response)
@@ -882,6 +996,25 @@ def _yyyymmdd_to_iso(value: str | None) -> str | None:
         return date(int(value[:4]), int(value[4:6]), int(value[6:8])).isoformat()
     except ValueError:
         return None
+
+
+def _ddmmyyyy_slash_to_iso(value: str | None) -> str | None:
+    if not value:
+        return None
+    try:
+        day, month, year = value.split("/")
+        return date(int(year), int(month), int(day)).isoformat()
+    except ValueError:
+        return None
+
+
+def _split_zaragoza_empleo_title(value: str | None) -> tuple[str | None, str | None]:
+    if not value:
+        return None, None
+    match = re.match(r"^(?P<date>\d{2}/\d{2}/\d{4}):\s*(?P<title>.+)$", value)
+    if not match:
+        return None, value
+    return _ddmmyyyy_slash_to_iso(match.group("date")), _string_or_none(match.group("title"))
 
 
 def _iso_date_prefix(value: str | None) -> str | None:
