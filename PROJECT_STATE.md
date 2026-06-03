@@ -4,19 +4,24 @@ Last updated: 2026-06-03
 
 ## Current Decision
 
-`TASK-HERMES-DRIFT-AUDITOR-001` hardens Hermes as a read-only release/source drift auditor.
-It adds a versioned audit contract, local evaluator, CLI command, tests, and report examples.
+`TASK-HERMES-EXTERNAL-RELEASE-CONTRACT-002` removes the self-referential release-SHA
+contract problem from the Hermes drift auditor. The versioned in-repo contract defines the
+auditor, source contract, freshness gates, and journal policy. The exact approved deployment
+SHA is supplied by an external runtime release contract outside the audited checkout.
+
 Hermes remains observational only: no deploy, no `git pull`, no checkout mutation, no systemd
 changes, no source expansion, and no downstream writes.
 
 Current implementation state:
 
 ```text
-PR #29: open for review/merge
+PR #30: merged into main at 592c2615ec1cd4196e1c74409c9f1296c2ee5cfe
+PR #29: merged into main at 9c672b3ca34fa795ae7fee5206a4247180ed6adb
 VPS release alignment: pending
-contract expected_head_sha: 9df078b1ae599bdeca8c573bddbb53ea6c33a16a
-branch HEAD: 2dfbf10d742c22c8f22dde91481706da09446fc2
-audit result on branch: expected NO-GO due contractual SHA mismatch
+in-repo expected_head_sha: absent by design
+external release contract: pending runtime/VPS configuration
+external release contract path: /etc/official-sources/hermes-audit-contract.yaml
+strict VPS command: official-sources hermes audit --release-contract /etc/official-sources/hermes-audit-contract.yaml --strict-release-contract
 ```
 
 Implementation report:
@@ -24,16 +29,17 @@ Implementation report:
 ```text
 docs/reports/hermes-drift-auditor-2026-06-03.md
 docs/reports/hermes-drift-auditor-post-merge-checklist-2026-06-03.md
+docs/reports/hermes-external-release-contract-2026-06-03.md
 ```
 
 Hermes drift-audit contract:
 
 ```text
 config/hermes/audit_contract.yaml
-expected_head_sha: 9df078b1ae599bdeca8c573bddbb53ea6c33a16a
 expected_project_state_min_date: 2026-06-03
 expected_total_sources: 67
 expected_inventory_only: DOUE
+external expected_head_sha: /etc/official-sources/hermes-audit-contract.yaml
 ```
 
 The previous source-coverage closure remains:

@@ -4,10 +4,12 @@ Task: `TASK-HERMES-DRIFT-AUDITOR-001`
 
 ## Verdict
 
-Implemented locally. PR #29 is open for review/merge; VPS release alignment remains pending.
+Implemented and merged in PR #29. VPS release alignment remains pending.
 
 Hermes now has a versioned read-only drift audit contract and a tested local evaluator that can be
-called by the VPS runner without granting deploy or repository mutation authority.
+called by the VPS runner without granting deploy or repository mutation authority. The exact
+approved deployment SHA is not stored in the audited checkout; it is supplied by an external
+runtime release contract.
 
 ## Scope
 
@@ -31,7 +33,7 @@ This task does not:
 
 The audit evaluates:
 
-- expected release SHA against the audited checkout HEAD;
+- expected release SHA against the audited checkout HEAD when an external release contract supplies it;
 - clean worktree requirement;
 - minimum `PROJECT_STATE.md` date;
 - optional remote `origin` head observation through `git ls-remote` only;
@@ -40,15 +42,20 @@ The audit evaluates:
 - allowed `inventory_only` sources;
 - journal evidence readability for scoped systemd units.
 
-The current local contract expects:
+The current in-repo contract expects:
 
 ```text
-expected_head_sha=9df078b1ae599bdeca8c573bddbb53ea6c33a16a
 expected_project_state_min_date=2026-06-03
 require_clean_worktree=true
 expected_total_sources=67
 expected_inventory_only=DOUE
 require_registry_parse=true
+```
+
+The approved release SHA is supplied outside the checkout, normally from:
+
+```text
+/etc/official-sources/hermes-audit-contract.yaml
 ```
 
 ## CLI
@@ -58,6 +65,8 @@ The command is:
 ```bash
 official-sources hermes audit \
   --contract config/hermes/audit_contract.yaml \
+  --release-contract /etc/official-sources/hermes-audit-contract.yaml \
+  --strict-release-contract \
   --repo-root /opt/official-sources/app \
   --registry /opt/official-sources/app/config/sources.yaml \
   --project-state /opt/official-sources/app/PROJECT_STATE.md \
@@ -86,24 +95,24 @@ It also renders:
 - required human action.
 
 Remote-head observation is deliberately informational unless the audited checkout `HEAD` itself
-differs from the expected release SHA. A stale local tracking ref is not used. When remote
-comparison is enabled, the command uses `git ls-remote`, which is read-only and does not mutate
-local refs.
+differs from the expected release SHA supplied by the external contract. A stale local tracking ref
+is not used. When remote comparison is enabled, the command uses `git ls-remote`, which is
+read-only and does not mutate local refs.
 
-On a feature branch, `NO-GO` can be the expected result when `expected_head_sha` still points at
-the last approved release. That is a contractual release mismatch, not a VPS alignment claim.
-Do not update `expected_head_sha` until PR #29 is merged and the final `main` SHA is known.
+If the external release contract is missing in local/dev mode, the report returns a `WARNING` and
+does not enforce the HEAD gate. In strict VPS mode, a missing external release contract is a
+failed gate.
 
 ## PR Review Notes
 
 Checked before merge:
 
-- `config/hermes/audit_contract.yaml` still points at
-  `9df078b1ae599bdeca8c573bddbb53ea6c33a16a`, not the PR branch SHA.
+- `config/hermes/audit_contract.yaml` defines source/freshness/journal gates but does not carry a
+  self-referential release SHA.
 - The report and state files do not claim VPS alignment, deployment, or Hermes VPS `GO`.
 - `git ls-remote` remote observation is read-only and warning-only.
-- `HEAD` mismatch, dirty worktree, stale `PROJECT_STATE.md`, source-count mismatch, and
-  unexpected `inventory_only` sources are failed gates.
+- `HEAD` mismatch against an external release contract, dirty worktree, stale `PROJECT_STATE.md`,
+  source-count mismatch, and unexpected `inventory_only` sources are failed gates.
 - Remote mismatch and unavailable journal evidence are warnings.
 
 ## Journal Evidence
@@ -128,7 +137,7 @@ python -m pytest tests/test_hermes_drift_audit.py -q
 Result:
 
 ```text
-10 passed
+18 passed
 ```
 
 Full validation:
@@ -142,5 +151,5 @@ Result:
 
 ```text
 ruff: All checks passed
-pytest: 756 passed, 2 warnings
+pytest: 763 passed, 2 warnings
 ```
