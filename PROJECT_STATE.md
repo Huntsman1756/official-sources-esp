@@ -9,10 +9,21 @@ It adds a versioned audit contract, local evaluator, CLI command, tests, and rep
 Hermes remains observational only: no deploy, no `git pull`, no checkout mutation, no systemd
 changes, no source expansion, and no downstream writes.
 
+Current implementation state:
+
+```text
+PR #29: open for review/merge
+VPS release alignment: pending
+contract expected_head_sha: 9df078b1ae599bdeca8c573bddbb53ea6c33a16a
+branch HEAD: 2dfbf10d742c22c8f22dde91481706da09446fc2
+audit result on branch: expected NO-GO due contractual SHA mismatch
+```
+
 Implementation report:
 
 ```text
 docs/reports/hermes-drift-auditor-2026-06-03.md
+docs/reports/hermes-drift-auditor-post-merge-checklist-2026-06-03.md
 ```
 
 Hermes drift-audit contract:
