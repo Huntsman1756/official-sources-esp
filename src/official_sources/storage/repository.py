@@ -151,6 +151,17 @@ class OfficialSourcesRepository:
             reliability_level="canonical",
         )
 
+    def ensure_official_source_placsp(self) -> dict[str, Any]:
+        return self.upsert_official_source(
+            code="PLACSP",
+            name="Plataforma de Contratacion del Sector Publico",
+            jurisdiction="ES",
+            region_code="ES",
+            base_url="https://contrataciondelsectorpublico.gob.es/sindicacion",
+            access_type="official_atom",
+            reliability_level="canonical",
+        )
+
     def ensure_official_source_boa(self) -> dict[str, Any]:
         return self.upsert_official_source(
             code="BOA",

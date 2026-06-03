@@ -124,8 +124,9 @@ Must not infer:
 - all sources green;
 - product publication allowed.
 
-`BOP_ALICANTE` remains `degraded/manual-review` and must not be used to claim that all monitored
-provincial sources are green.
+`BOP_ALICANTE` recovered from its earlier DNS-dependent `degraded/manual-review` state on
+2026-06-02. Its recovery must not be used to infer candidate readiness, evidence readiness, or
+product automation.
 
 ### `education_aid_evidence`
 

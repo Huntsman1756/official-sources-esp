@@ -32,7 +32,7 @@ candidate_creation_allowed: disabled for all registered sources
 evidence_grade_allowed: disabled for all registered sources
 writes: disabled unless a future explicit write contract says otherwise
 source_expansion: frozen unless a future consumer smoke proves a concrete source gap
-BOP_ALICANTE: degraded/manual-review
+BOP_ALICANTE: recovered on 2026-06-02 after earlier DNS-dependent degraded/manual-review state
 ```
 
 ## Implemented MCP Consumer Surface

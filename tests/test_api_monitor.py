@@ -9,6 +9,7 @@ import pytest
 
 import official_sources.api_monitor as api_monitor
 from official_sources.api_monitor import (
+    AYTO_ZARAGOZA_EMPLEO_API_ENDPOINT,
     APIMonitorError,
     build_api_entry_hash,
     build_api_monitor_output_path,
@@ -21,6 +22,7 @@ from official_sources.api_monitor import (
     build_bor_calendar_api_url,
     build_bor_issue_api_url,
     monitor_api_source,
+    parse_ayto_zaragoza_empleo_response,
     parse_bop_caceres_announcements_response,
     parse_bop_caceres_calendar_issue_id,
     parse_bop_huelva_api_response,
@@ -93,6 +95,20 @@ def test_bop_ourense_api_access_method_exists_in_registry():
     assert method["type"] == "api"
     assert method["status"] == "validated"
     assert method["url"] == "https://bop.depourense.es/portalapi/api/boletin/getFecha/{yyyymmdd}"
+    assert source["candidate_creation_allowed"] is False
+    assert source["evidence_grade_allowed"] is False
+
+
+def test_ayto_zaragoza_empleo_api_access_method_exists_in_registry():
+    source = get_source("AYTO_ZARAGOZA_EMPLEO")
+    method = select_api_access_method(source)
+
+    assert source["jurisdiction_level"] == "local"
+    assert source["operational_status"] == "monitor_validated"
+    assert source["monitor_support"] == "available"
+    assert method["type"] == "api"
+    assert method["status"] == "validated"
+    assert method["url"] == "https://www.zaragoza.es/sede/servicio/oferta-empleo.json"
     assert source["candidate_creation_allowed"] is False
     assert source["evidence_grade_allowed"] is False
 
@@ -334,6 +350,62 @@ def test_parse_bop_caceres_announcements_fixture_emits_metadata_only_records():
     assert record["evidence_status"] == "not_evidence"
     assert record["candidate_status"] == "not_candidate"
     assert "contenidoHtml" not in record
+
+
+def test_parse_ayto_zaragoza_empleo_fixture_emits_requested_date_metadata_only_records():
+    raw = _fixture_bytes("ayto_zaragoza_empleo.json")
+    api_url = "https://www.zaragoza.es/sede/servicio/oferta-empleo.json"
+
+    result = parse_ayto_zaragoza_empleo_response(
+        raw,
+        source_code="AYTO_ZARAGOZA_EMPLEO",
+        api_url=api_url,
+        api_endpoint=AYTO_ZARAGOZA_EMPLEO_API_ENDPOINT,
+        requested_date="2026-06-01",
+        discovered_at="2026-06-01T00:00:00Z",
+        monitor_run_id="run-ayto-zaragoza",
+    )
+
+    assert result.raw_response_hash == hashlib.sha256(raw).hexdigest()
+    assert len(result.records) == 2
+    record = result.records[0]
+    assert record["source_code"] == "AYTO_ZARAGOZA_EMPLEO"
+    assert record["api_url"] == api_url
+    assert record["api_endpoint"] == AYTO_ZARAGOZA_EMPLEO_API_ENDPOINT
+    assert record["title"] == "Oficial Pintor/a Grafica (TL)"
+    assert record["published_at"] == "2026-06-01"
+    assert (
+        record["official_url"]
+        == "https://www.zaragoza.es/sede/servicio/oferta-empleo/1709/conectazgz"
+    )
+    assert record["document_id"] == "16902"
+    assert record["api_id"] == "16902"
+    assert record["summary"] == "Novedades personal permanente"
+    assert record["classification_status"] == "unclassified"
+    assert record["evidence_status"] == "not_evidence"
+    assert record["candidate_status"] == "not_candidate"
+    assert record["warnings"] == []
+
+
+def test_monitor_api_source_runs_ayto_zaragoza_empleo_preview():
+    requested_urls = []
+
+    def fetcher(url: str) -> bytes:
+        requested_urls.append(url)
+        return _fixture_bytes("ayto_zaragoza_empleo.json")
+
+    result = monitor_api_source(
+        get_source("AYTO_ZARAGOZA_EMPLEO"),
+        fetcher=fetcher,
+        target_date="2026-06-01",
+        limit=1,
+    )
+
+    assert requested_urls == ["https://www.zaragoza.es/sede/servicio/oferta-empleo.json"]
+    assert len(result.records) == 1
+    assert result.records[0]["source_code"] == "AYTO_ZARAGOZA_EMPLEO"
+    assert result.records[0]["candidate_status"] == "not_candidate"
+    assert result.records[0]["evidence_status"] == "not_evidence"
 
 
 def test_parse_bop_ourense_api_response_emits_metadata_only_records():

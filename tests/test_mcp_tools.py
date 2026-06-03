@@ -309,9 +309,17 @@ def test_mcp_source_coverage_list_returns_registered_sources():
     result = tools.list_sources()
 
     assert result["resource_type"] == "source_coverage"
-    assert result["count"] == 65
+    assert result["count"] == 67
     source_codes = {source["source_code"] for source in result["sources"]}
-    assert {"BOE", "BOCYL", "DOUE", "BOP_A_CORUNA", "BOP_ZARAGOZA"}.issubset(source_codes)
+    assert {
+        "AYTO_ZARAGOZA_EMPLEO",
+        "BOE",
+        "BOCYL",
+        "DOUE",
+        "PLACSP",
+        "BOP_A_CORUNA",
+        "BOP_ZARAGOZA",
+    }.issubset(source_codes)
     bocyl = next(source for source in result["sources"] if source["source_code"] == "BOCYL")
     assert bocyl == {
         "source_code": "BOCYL",
@@ -729,6 +737,26 @@ def test_mcp_preview_discovery_runs_api_preview_without_writing(tmp_path):
     assert not list(tmp_path.rglob("*.jsonl"))
 
 
+def test_mcp_preview_discovery_runs_zaragoza_municipal_employment_api_without_writing(tmp_path):
+    result = tools.preview_discovery(
+        source_code="AYTO_ZARAGOZA_EMPLEO",
+        date="2026-06-01",
+        limit=1,
+        api_fetcher=lambda _url: _fixture_bytes("ayto_zaragoza_empleo.json"),
+    )
+
+    assert result["status"] == "ok"
+    assert result["source_code"] == "AYTO_ZARAGOZA_EMPLEO"
+    assert result["discovery_type"] == "api"
+    assert result["mode"] == "preview"
+    assert result["output_written"] is False
+    assert result["count"] == 1
+    assert result["records"][0]["candidate_status"] == "not_candidate"
+    assert result["records"][0]["evidence_status"] == "not_evidence"
+    assert result["records"][0]["classification_status"] == "unclassified"
+    assert not list(tmp_path.rglob("*.jsonl"))
+
+
 def test_mcp_preview_discovery_runs_html_preview_without_writing(tmp_path):
     result = tools.preview_discovery(
         source_code="BOP_A_CORUNA",
@@ -799,14 +827,14 @@ def test_mcp_preview_discovery_refuses_unknown_source():
 
 
 def test_mcp_preview_discovery_refuses_inventory_only_unmonitored_source():
-    result = tools.preview_discovery(source_code="BOP_ZARAGOZA", date="2026-05-24")
+    result = tools.preview_discovery(source_code="DOUE", date="2026-05-24")
 
     assert result["status"] == "not_monitorable"
-    assert result["source_code"] == "BOP_ZARAGOZA"
+    assert result["source_code"] == "DOUE"
     assert result["operational_status"] == "inventory_only"
     assert result["monitor_support"] == "none"
-    assert result["blocked_vps"] is True
-    assert result["pending_relay"] is True
+    assert result["blocked_vps"] is False
+    assert result["pending_relay"] is False
     assert result["candidate_creation_allowed"] is False
     assert result["evidence_grade_allowed"] is False
     assert "validated monitor support" in result["message"]
@@ -876,30 +904,14 @@ def test_mcp_preview_discovery_never_calls_write_paths(monkeypatch):
     assert result["output_written"] is False
 
 
-def test_mcp_recommend_next_sources_returns_ranked_viable_provincial_inventory_sources(tmp_path):
+def test_mcp_recommend_next_sources_returns_empty_when_remaining_sources_are_blocked(tmp_path):
     result = tools.recommend_next_sources(limit=6, output_root=tmp_path)
 
     assert result["status"] == "ok"
     assert result["resource_type"] == "source_recommendations"
     assert result["strategy"] == "provincial_html_discovery_pilot"
-    assert result["count"] == 3
-    assert [item["source_code"] for item in result["recommendations"]] == [
-        "BOP_ZARAGOZA",
-        "BOP_CUENCA",
-        "BOP_SALAMANCA",
-    ]
-    first = result["recommendations"][0]
-    assert first["recommended_task"] == "provincial_html_discovery_pilot"
-    assert first["confidence"] == "medium"
-    assert first["operational_status"] == "inventory_only"
-    assert first["monitor_support"] == "none"
-    assert first["discovery_cache_status"] == "no_discovery_cache"
-    assert first["latest_cache_date"] is None
-    assert first["implemented_preview_available"] is False
-    assert first["candidate_creation_allowed"] is False
-    assert first["evidence_grade_allowed"] is False
-    assert "metadata-only" in first["constraints"]
-    assert "no candidates" in first["constraints"]
+    assert result["count"] == 0
+    assert result["recommendations"] == []
 
 
 def test_mcp_recommend_next_sources_excludes_already_monitored_html_source(tmp_path):
@@ -951,6 +963,8 @@ def test_mcp_recommend_next_sources_excludes_documented_blocked_or_deferred_sour
 
     source_codes = {item["source_code"] for item in result["recommendations"]}
     assert "BOP_ALMERIA" not in source_codes
+    assert "BOP_CUENCA" not in source_codes
+    assert "BOP_ZARAGOZA" not in source_codes
 
     status = tools.get_source_status(source_code="BOP_ALMERIA")
     assert status["status"] == "ok"
@@ -960,30 +974,6 @@ def test_mcp_recommend_next_sources_excludes_documented_blocked_or_deferred_sour
     assert status["source"]["candidate_creation_allowed"] is False
     assert status["source"]["evidence_grade_allowed"] is False
     assert any("ZK" in limitation for limitation in status["source"]["limitations"])
-
-
-def test_mcp_recommend_next_sources_surfaces_existing_cache_without_reading_live(tmp_path):
-    output_path = tmp_path / "BOP_ZARAGOZA" / "2026-05-24" / "html_discovery.jsonl"
-    output_path.parent.mkdir(parents=True)
-    output_path.write_text(
-        json.dumps(
-            {
-                "source_code": "BOP_ZARAGOZA",
-                "candidate_status": "not_candidate",
-                "evidence_status": "not_evidence",
-                "classification_status": "unclassified",
-            },
-            sort_keys=True,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-
-    result = tools.recommend_next_sources(limit=1, output_root=tmp_path)
-
-    assert result["recommendations"][0]["source_code"] == "BOP_ZARAGOZA"
-    assert result["recommendations"][0]["discovery_cache_status"] == "has_discovery_cache"
-    assert result["recommendations"][0]["latest_cache_date"] == "2026-05-24"
 
 
 def test_mcp_recommend_next_sources_refuses_invalid_limit():
@@ -1006,7 +996,7 @@ def test_mcp_recommend_next_sources_does_not_execute_previews_or_write(tmp_path,
     result = tools.recommend_next_sources(limit=2, output_root=tmp_path)
 
     assert result["status"] == "ok"
-    assert result["count"] == 2
+    assert result["count"] == 0
     assert not list(tmp_path.rglob("*.jsonl"))
 
 

@@ -10,20 +10,24 @@ Hermes, systemd, VPS state, or production data.
 Current baseline for this contract:
 
 ```text
-registered sources: 65
-metadata_adapter_validated: 9
-monitor_validated: 50
-inventory_only: 6
-RSS/Atom discovery sources: 12
-API discovery monitor sources: 5
-HTML discovery monitor sources: 37
-blocked_vps=true: BOP_CUENCA, BOP_SALAMANCA, BOP_ZARAGOZA
-pending_relay=true: BOP_CUENCA, BOP_SALAMANCA, BOP_ZARAGOZA
-candidate_creation_allowed=false: 65
-evidence_grade_allowed=false: 65
+registered sources: 67
+metadata_adapter_validated: 10
+monitor_validated: 56
+inventory_only: 1
+RSS/Atom discovery sources: 13
+API discovery monitor sources: 10
+HTML discovery monitor sources: 50
+provincial BOP monitor_validated: 43/43
+remaining inventory_only source: DOUE
+blocked_vps=true: none for the operational monitor path
+pending_relay=true: none
+candidate_creation_allowed=false: 67
+evidence_grade_allowed=false: 67
 data/rss_monitor present: false
+data/api_monitor present: false
 data/html_monitor present: false
-BOP_ALICANTE runtime health: degraded/manual-review
+relay-backed sources: BOP_CUENCA, BOP_SALAMANCA, BOP_ZARAGOZA
+BOP_ALICANTE runtime health: recovered on 2026-06-02 after DNS resolver-dependent failure
 writes: disabled unless a future explicit write task authorizes them
 ```
 
@@ -76,7 +80,7 @@ candidate rules, evidence rules, and publication constraints.
 
 No current registry state by itself means product-ready.
 
-For this baseline, no source is product-ready merely because it is one of the 65 registered sources.
+For this baseline, no source is product-ready merely because it is one of the 67 registered sources.
 Product use requires explicit product-side review.
 
 ### Registry Status vs Runtime Health
@@ -86,10 +90,11 @@ specific monitor or operational check is currently passing.
 
 These are separate axes.
 
-For example, `BOP_ALICANTE` remains registered and monitor-capable in the registry, but its current
-runtime health is `degraded/manual-review` due resolver-dependent DNS instability. It must not be
-counted in an all-green source claim until normal DNS/live preview recovers and a later task records
-that recovery.
+For example, `BOP_ALICANTE` remains registered and monitor-capable in the registry. It was
+previously `degraded/manual-review` due resolver-dependent DNS instability, and the recovery was
+recorded on 2026-06-02 after local and VPS previews returned metadata-only records for 2026-05-27.
+The DNS-dependent history remains a residual operational risk, but it is no longer a current
+degraded source in this baseline.
 
 ### `healthy`
 
@@ -130,11 +135,18 @@ Downstream consumers MUST NOT infer:
 - product automation is allowed;
 - a later source expansion may ignore the degraded state.
 
-Current degraded/manual-review source:
+Current degraded/manual-review sources:
+
+```text
+none
+```
+
+Recovered degraded/manual-review source:
 
 ```text
 BOP_ALICANTE
-reason: resolver-dependent DNS instability for sede.diputacionalicante.es
+previous reason: resolver-dependent DNS instability for sede.diputacionalicante.es
+recovery: documented on 2026-06-02 in docs/reports/bop-alicante-recovery-2026-06-02.md
 ```
 
 ### `inventory_only`
@@ -286,7 +298,7 @@ that source through the source-coverage or discovery surface.
 For this baseline:
 
 ```text
-candidate_creation_allowed=false: 65/65
+candidate_creation_allowed=false: 67/67
 ```
 
 Downstream consumers MUST NOT infer candidate permission from registry presence, monitor health,
@@ -302,7 +314,7 @@ source-coverage or discovery surface.
 For this baseline:
 
 ```text
-evidence_grade_allowed=false: 65/65
+evidence_grade_allowed=false: 67/67
 ```
 
 Downstream consumers MUST NOT infer evidence-grade permission from registry presence, monitor

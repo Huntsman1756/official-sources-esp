@@ -123,9 +123,20 @@ def _validate_source(
         "evidence_adapter",
         "candidate_creation_allowed",
         "evidence_grade_allowed",
+        "degraded",
     ):
         if field in source and not isinstance(source[field], bool):
             errors.append(f"{label}.{field} must be an explicit boolean")
+
+    if source.get("degraded") is False and source.get("degraded_reason") is not None:
+        errors.append(f"{label}.degraded_reason must be null when degraded=false")
+    degraded_reason = source.get("degraded_reason")
+    if source.get("degraded") is True and (
+        degraded_reason is None or not str(degraded_reason).strip()
+    ):
+        errors.append(f"{label}.degraded_reason is required when degraded=true")
+    if "recovery_note" in source and not isinstance(source["recovery_note"], str):
+        errors.append(f"{label}.recovery_note must be a string when present")
 
     limitations = source.get("limitations")
     if "limitations" in source and not isinstance(limitations, list):

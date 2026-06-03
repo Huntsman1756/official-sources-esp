@@ -122,7 +122,8 @@ Required boundary:
 - strict alerts remain alert-grade, not evidence-grade;
 - imports are previewed before product writes;
 - no public-employment process, event, match, alert log, or notification is auto-created by MCP;
-- `BOP_ALICANTE` remains `degraded/manual-review` and cannot support an all-green claim.
+- `BOP_ALICANTE` recovered from its earlier DNS-dependent degradation on 2026-06-02; runtime
+  all-green claims still require scoped runtime checks, not registry status alone.
 
 ### `eduayudas`
 

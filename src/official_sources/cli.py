@@ -90,6 +90,13 @@ from official_sources.sources.dogc.ingestion import ingest_dogc_date
 from official_sources.sources.dogv.artifacts import DOGV_ARTIFACT_FIELDS, DOGVArtifactDownloader
 from official_sources.sources.dogv.client import validate_dogv_date
 from official_sources.sources.dogv.ingestion import ingest_dogv_date
+from official_sources.sources.placsp.client import (
+    PLACSP_DEFAULT_LIMIT,
+    build_placsp_feed_url,
+    validate_placsp_feed_type,
+    validate_placsp_limit,
+)
+from official_sources.sources.placsp.ingestion import ingest_placsp_feed, preview_placsp_feed
 from official_sources.storage.backup import SQLiteBackupError, backup_sqlite_database
 from official_sources.storage.database import connect, initialize_database, sqlite_runtime_pragmas
 from official_sources.storage.migrations.runner import (
@@ -1139,6 +1146,36 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="BDNS convocatoria number / codigoBDNS.",
     )
+    preview_placsp_feed = subparsers.add_parser(
+        "preview-placsp-feed",
+        help="Preview one PLACSP Atom feed page without storing tender metadata.",
+    )
+    preview_placsp_feed.add_argument(
+        "--feed-type",
+        default="profiles",
+        help="PLACSP feed type. Default: profiles.",
+    )
+    preview_placsp_feed.add_argument(
+        "--limit",
+        type=int,
+        default=PLACSP_DEFAULT_LIMIT,
+        help="Maximum feed entries to preview. Default: 50. Hard max: 500.",
+    )
+    ingest_placsp_feed = subparsers.add_parser(
+        "ingest-placsp-feed",
+        help="Ingest one PLACSP Atom feed page as metadata-only tender records.",
+    )
+    ingest_placsp_feed.add_argument(
+        "--feed-type",
+        default="profiles",
+        help="PLACSP feed type. Default: profiles.",
+    )
+    ingest_placsp_feed.add_argument(
+        "--limit",
+        type=int,
+        default=PLACSP_DEFAULT_LIMIT,
+        help="Maximum feed entries to ingest. Default: 50. Hard max: 500.",
+    )
     search_bdns = subparsers.add_parser(
         "search-bdns-calls",
         help="Search BDNS convocatorias with strict pagination limits.",
@@ -1700,6 +1737,7 @@ def run(
     bdns_search_fetcher=None,
     bdns_catalog_fetcher=None,
     bdns_concessions_fetcher=None,
+    placsp_feed_fetcher=None,
     rss_fetcher=None,
     api_fetcher=None,
     html_fetcher=None,
@@ -1750,6 +1788,10 @@ def run(
         return _run_ingest_bdns_latest(repository, args, bdns_latest_fetcher, stdout, stderr)
     if args.command == "ingest-bdns-call":
         return _run_ingest_bdns_call(repository, args, bdns_call_fetcher, stdout, stderr)
+    if args.command == "preview-placsp-feed":
+        return _run_preview_placsp_feed(repository, args, placsp_feed_fetcher, stdout, stderr)
+    if args.command == "ingest-placsp-feed":
+        return _run_ingest_placsp_feed(repository, args, placsp_feed_fetcher, stdout, stderr)
     if args.command == "search-bdns-calls":
         return _run_search_bdns_calls(repository, args, bdns_search_fetcher, stdout, stderr)
     if args.command == "preview-bdns-catalog":
@@ -2645,6 +2687,57 @@ def _run_ingest_bdns_call(
     return 0 if run_record["status"] == "success" else 1
 
 
+def _run_preview_placsp_feed(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        feed_type = validate_placsp_feed_type(args.feed_type)
+        limit = validate_placsp_limit(args.limit)
+        build_placsp_feed_url(feed_type)
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        f"command_started={args.command} source_code=PLACSP feed_type={feed_type} limit={limit}",
+        file=stdout,
+    )
+    run_record = preview_placsp_feed(feed_type=feed_type, limit=limit, fetcher=fetcher)
+    _print_placsp_run_record(run_record, stdout)
+    return 0 if run_record["status"] == "success" else 1
+
+
+def _run_ingest_placsp_feed(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    try:
+        feed_type = validate_placsp_feed_type(args.feed_type)
+        limit = validate_placsp_limit(args.limit)
+        build_placsp_feed_url(feed_type)
+    except ValueError as exc:
+        print(str(exc), file=stderr)
+        return 2
+    print(
+        f"command_started={args.command} source_code=PLACSP feed_type={feed_type} limit={limit}",
+        file=stdout,
+    )
+    run_record = ingest_placsp_feed(
+        repository,
+        feed_type=feed_type,
+        limit=limit,
+        fetcher=fetcher,
+    )
+    _print_placsp_run_record(run_record, stdout)
+    return 0 if run_record["status"] == "success" else 1
+
+
 def _run_search_bdns_calls(
     repository: OfficialSourcesRepository,
     args: argparse.Namespace,
@@ -3139,6 +3232,36 @@ def _print_bdns_run_record(run_record: dict, stdout: TextIO) -> None:
                 f"throttle_triggered={run_record['throttle_triggered']}",
                 f"last_http_status={_status_value(run_record['last_http_status'])}",
                 f"source_snapshot_hash={run_record.get('source_snapshot_hash') or 'none'}",
+            ]
+            + (
+                [f"error_message={_compact_token(run_record['error_message'])}"]
+                if run_record.get("error_message")
+                else []
+            )
+        ),
+        file=stdout,
+    )
+
+
+def _print_placsp_run_record(run_record: dict, stdout: TextIO) -> None:
+    sample_identifiers = run_record.get("sample_identifiers") or []
+    print(
+        " ".join(
+            [
+                f"status={run_record['status']}",
+                f"placsp_result={run_record.get('placsp_result') or run_record['status']}",
+                f"entry_count={run_record.get('entry_count', run_record['documents_fetched'])}",
+                f"deleted_entry_count={run_record.get('deleted_entry_count', 0)}",
+                f"documents_fetched={run_record['documents_fetched']}",
+                f"documents_new={run_record['documents_new']}",
+                f"documents_updated={run_record['documents_updated']}",
+                "sample_identifiers="
+                f"{','.join(sample_identifiers) if sample_identifiers else 'none'}",
+                f"retry_count={run_record['retry_count']}",
+                f"throttle_triggered={run_record['throttle_triggered']}",
+                f"last_http_status={_status_value(run_record['last_http_status'])}",
+                f"source_snapshot_hash={run_record.get('source_snapshot_hash') or 'none'}",
+                f"next_url={run_record.get('next_url') or 'none'}",
             ]
             + (
                 [f"error_message={_compact_token(run_record['error_message'])}"]

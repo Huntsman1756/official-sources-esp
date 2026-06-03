@@ -374,4 +374,4 @@ def test_cli_write_requires_explicit_write_flag_and_writes_jsonl(tmp_path, capsy
 def test_existing_source_registry_validation_still_passes():
     registry = load_source_registry()
 
-    assert len(registry["sources"]) == 65
+    assert len(registry["sources"]) == 67
