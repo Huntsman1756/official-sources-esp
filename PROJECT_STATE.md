@@ -1,8 +1,31 @@
 # Project State
 
-Last updated: 2026-06-02
+Last updated: 2026-06-03
 
 ## Current Decision
+
+`TASK-HERMES-DRIFT-AUDITOR-001` hardens Hermes as a read-only release/source drift auditor.
+It adds a versioned audit contract, local evaluator, CLI command, tests, and report examples.
+Hermes remains observational only: no deploy, no `git pull`, no checkout mutation, no systemd
+changes, no source expansion, and no downstream writes.
+
+Implementation report:
+
+```text
+docs/reports/hermes-drift-auditor-2026-06-03.md
+```
+
+Hermes drift-audit contract:
+
+```text
+config/hermes/audit_contract.yaml
+expected_head_sha: 9df078b1ae599bdeca8c573bddbb53ea6c33a16a
+expected_project_state_min_date: 2026-06-03
+expected_total_sources: 67
+expected_inventory_only: DOUE
+```
+
+The previous source-coverage closure remains:
 
 `TASK-BOME-BOCCE-HTML-MONITORS-2026-06-02` closes the Ceuta/Melilla registry gap with
 metadata-only HTML monitors after the relay-backed provincial BOP closeout.
