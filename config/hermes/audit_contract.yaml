@@ -1,0 +1,21 @@
+release:
+  expected_head_sha: "9df078b1ae599bdeca8c573bddbb53ea6c33a16a"
+  expected_project_state_min_date: "2026-06-03"
+  require_clean_worktree: true
+  stale_project_state_verdict: no_go
+  check_remote_head: true
+  remote_name: origin
+  remote_ref: refs/heads/main
+
+sources:
+  expected_total: 67
+  expected_inventory_only:
+    - DOUE
+  forbid_unexpected_inventory_only: true
+  require_registry_parse: true
+
+journal:
+  units:
+    - official-sources-hermes-auditor.service
+    - official-sources-boe-daily.service
+    - official-sources-integrity-check.service

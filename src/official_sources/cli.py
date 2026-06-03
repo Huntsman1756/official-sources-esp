@@ -21,6 +21,13 @@ from official_sources.api_monitor import (
     write_api_jsonl,
 )
 from official_sources.downstream_export import export_downstream_evidence_files
+from official_sources.hermes_drift_audit import (
+    HermesDriftAuditError,
+    collect_local_observation,
+    evaluate_hermes_drift,
+    load_audit_contract,
+    render_markdown_report,
+)
 from official_sources.html_monitor import (
     HTMLMonitorError,
     build_html_monitor_output_path,
@@ -1049,6 +1056,46 @@ def build_parser() -> argparse.ArgumentParser:
         help="Root directory for explicit --write JSONL output.",
     )
 
+    hermes = subparsers.add_parser("hermes", help="Read-only Hermes drift auditor commands.")
+    hermes_subparsers = hermes.add_subparsers(dest="hermes_command", required=True)
+    hermes_audit = hermes_subparsers.add_parser(
+        "audit",
+        help="Evaluate release/source drift without mutating the repository.",
+    )
+    hermes_audit.add_argument(
+        "--contract",
+        default=None,
+        help=(
+            "Path to the Hermes audit contract YAML. "
+            "Defaults to config/hermes/audit_contract.yaml."
+        ),
+    )
+    hermes_audit.add_argument(
+        "--repo-root",
+        default=".",
+        help="Repository root to audit. Default: current directory.",
+    )
+    hermes_audit.add_argument(
+        "--registry",
+        default=None,
+        help="Path to config/sources.yaml. Default: <repo-root>/config/sources.yaml.",
+    )
+    hermes_audit.add_argument(
+        "--project-state",
+        default=None,
+        help="Path to PROJECT_STATE.md. Default: <repo-root>/PROJECT_STATE.md.",
+    )
+    hermes_audit.add_argument(
+        "--output",
+        default=None,
+        help="Optional markdown report path to write. Stdout is always emitted.",
+    )
+    hermes_audit.add_argument(
+        "--fail-on-no-go",
+        action="store_true",
+        help="Return exit code 1 when the audit verdict is NO-GO.",
+    )
+
     ingest = subparsers.add_parser("ingest-boe-summary", help="Ingest one BOE daily summary.")
     ingest.add_argument(
         "--date",
@@ -1764,6 +1811,8 @@ def run(
         return _run_api_command(args, api_fetcher, stdout, stderr)
     if args.command == "html":
         return _run_html_command(args, html_fetcher, stdout, stderr)
+    if args.command == "hermes":
+        return _run_hermes_command(args, stdout, stderr)
 
     repository = _open_repository(args.db_path)
     if args.command == "ingest-boja-date":
@@ -2010,6 +2059,36 @@ def _run_sources_command(
         return 2
     print(f"Unknown sources command: {args.sources_command}", file=stderr)
     return 2
+
+
+def _run_hermes_command(
+    args: argparse.Namespace,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    if args.hermes_command != "audit":
+        print(f"Unknown hermes command: {args.hermes_command}", file=stderr)
+        return 2
+    try:
+        contract = load_audit_contract(Path(args.contract) if args.contract else None)
+        observation = collect_local_observation(
+            repo_root=Path(args.repo_root),
+            registry_path=Path(args.registry) if args.registry else None,
+            project_state_path=Path(args.project_state) if args.project_state else None,
+            contract=contract,
+        )
+        result = evaluate_hermes_drift(contract, observation)
+        report = render_markdown_report(result)
+    except HermesDriftAuditError as exc:
+        print(str(exc), file=stderr)
+        return 2
+
+    print(report, end="", file=stdout)
+    if args.output:
+        Path(args.output).write_text(report, encoding="utf-8")
+    if args.fail_on_no_go and result.verdict == "NO-GO":
+        return 1
+    return 0
 
 
 def _run_rss_command(
