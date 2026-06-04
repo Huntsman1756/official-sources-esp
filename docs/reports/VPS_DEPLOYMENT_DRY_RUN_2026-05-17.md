@@ -13,7 +13,7 @@ This report does not claim a real deployment.
 - Operator environment: Windows workspace at `G:\_Proyectos\mcpspain\official-sources`.
 - Repository metadata: no `.git` directory is present in this source tree.
 - Python execution: `rtk python`.
-- Local rehearsal data path: `G:/tmp/official-sources-task004a-20260517`.
+- Local rehearsal data path: `<tmp>/official-sources-task004a-20260517`.
 - Target VPS assumption documented for manual execution: Ubuntu 24.04 LTS, Python 3.12+,
   private access, non-root `official-sources` user, no public MCP exposure.
 
@@ -53,9 +53,9 @@ official-sources --help
 Commands:
 
 ```bash
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources.sqlite db status
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources.sqlite db migrate
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources.sqlite db validate
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources.sqlite db status
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources.sqlite db migrate
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources.sqlite db validate
 ```
 
 Results:
@@ -69,7 +69,7 @@ Results:
 Backup command:
 
 ```bash
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources.sqlite db backup --output G:/tmp/official-sources-task004a-20260517/backups/official_sources_20260517_000000.sqlite
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources.sqlite db backup --output <tmp>/official-sources-task004a-20260517/backups/official_sources_20260517_000000.sqlite
 ```
 
 Backup result:
@@ -82,9 +82,9 @@ Restore-copy commands:
 
 ```bash
 Copy-Item -Force G:\tmp\official-sources-task004a-20260517\backups\official_sources_20260517_000000.sqlite G:\tmp\official-sources-task004a-20260517\official_sources_restore_test.sqlite
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources_restore_test.sqlite db status
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources_restore_test.sqlite db migrate
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources_restore_test.sqlite db validate
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources_restore_test.sqlite db status
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources_restore_test.sqlite db migrate
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources_restore_test.sqlite db validate
 ```
 
 Restore-copy results:
@@ -100,7 +100,7 @@ The active database was not overwritten during the rehearsal.
 Command:
 
 ```bash
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources_restore_test.sqlite --artifact-dir G:/tmp/official-sources-task004a-20260517/artifacts status --date today
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources_restore_test.sqlite --artifact-dir <tmp>/official-sources-task004a-20260517/artifacts status --date today
 ```
 
 Result:

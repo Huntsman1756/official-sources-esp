@@ -125,8 +125,8 @@ It enforces:
 - `type` and `status` for every access method
 - explicit `candidate_creation_allowed`
 - explicit `evidence_grade_allowed`
-- no `evidence_grade` operational status unless `evidence_grade_allowed=true`
-- `evidence_grade_allowed=true` only for sources with existing evidence support in code/docs
+- no `evidence_grade` operational status unless evidence-grade permission is explicitly enabled
+- evidence-grade permission may be enabled only for sources with existing evidence support in code/docs
 - `monitor_support=validated` only with at least one validated RSS/Atom/API/XML/HTML method
 - validated access methods must include a URL or a clear notes justification
 

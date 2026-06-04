@@ -177,7 +177,7 @@ Required behavior:
 - Preserve the integrity warning in the downstream candidate or evidence record.
 - Show the warning to the human reviewer or admin.
 - Do not automatically reject the candidate solely because content changed.
-- Do not automatically approve or publish the candidate while the warning is unresolved.
+- Do not approve or publish the candidate while the warning is unresolved.
 
 This is not an automatic rejection rule. It is a signal that human review must be informed of
 the detected change. Unresolved integrity warnings must block automatic approval/publication.

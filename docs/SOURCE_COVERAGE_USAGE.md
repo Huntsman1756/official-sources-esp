@@ -37,8 +37,8 @@ remaining inventory_only source: DOUE
 BOP_ALICANTE runtime health: recovered on 2026-06-02 after DNS resolver-dependent failure
 candidate_creation_allowed=false: 67
 evidence_grade_allowed=false: 67
-candidate_creation_allowed=true: 0
-evidence_grade_allowed=true: 0
+candidate_creation_allowed true count: 0
+evidence_grade_allowed true count: 0
 relay-backed sources: BOP_CUENCA, BOP_SALAMANCA, BOP_ZARAGOZA
 blocked_vps=true: none for the operational monitor path
 pending_relay=true: none
