@@ -6,8 +6,12 @@ Last updated: 2026-06-04
 
 `TASK-HERMES-DRIFT-AUDITOR-001` and `TASK-HERMES-EXTERNAL-RELEASE-CONTRACT-002` are
 operationally completed. PR #30, PR #29, and PR #31 are merged, the project VPS has been
-fast-forwarded to the approved release, and Hermes strict audit now returns `GO` from the VPS
-using an external release contract outside the audited checkout.
+fast-forwarded to the approved release, and Hermes strict audit returned `GO` from the VPS using
+an external release contract outside the audited checkout.
+
+The live approved deployment SHA is intentionally not defined by this in-repo document. It is read
+from `/etc/official-sources/hermes-audit-contract.yaml` on the VPS so documentation-only commits do
+not create another self-referential release-SHA loop.
 
 Hermes remains an observational auditor. The release alignment was an explicit operator action:
 the stale VPS worktree drift was preserved, stashed, and not reapplied; the checkout was
@@ -19,15 +23,14 @@ Current implementation state:
 ```text
 PR #30: merged into main at 592c2615ec1cd4196e1c74409c9f1296c2ee5cfe
 PR #29: merged into main at 9c672b3ca34fa795ae7fee5206a4247180ed6adb
-PR #31: merged into main at 68dcffa9aa59f60ab526e67ae0dd3a12ba192e5a
-origin/main final: 68dcffa9aa59f60ab526e67ae0dd3a12ba192e5a
-VPS HEAD: 68dcffa9aa59f60ab526e67ae0dd3a12ba192e5a
+PR #31: merged and externalized the release SHA
+PR #32: merged and documented the first VPS release-alignment evidence
 VPS release alignment: completed
 in-repo expected_head_sha: absent by design
 external release contract: active
 external release contract path: /etc/official-sources/hermes-audit-contract.yaml
-external expected_head_sha: 68dcffa9aa59f60ab526e67ae0dd3a12ba192e5a
-Hermes strict audit: GO
+live external expected_head_sha: read from /etc/official-sources/hermes-audit-contract.yaml on VPS
+last documented strict audit evidence: GO at 68dcffa9aa59f60ab526e67ae0dd3a12ba192e5a
 failed gates: none
 warnings: none
 systemctl --failed: 0 loaded units listed
