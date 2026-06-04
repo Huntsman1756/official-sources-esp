@@ -4,6 +4,26 @@ Last updated: 2026-06-04
 
 ## Current Decision
 
+`TASK-HERMES-SCHEDULED-STRICT-AUDIT-003` is implemented locally and ready for PR review. It
+version-controls the scheduled Hermes runner so the daily systemd path calls the deterministic
+strict drift auditor with the external release contract and `--fail-on-no-go`. This closes the
+previous weakness where the scheduled Hermes run could produce a soft narrative report while the
+strict contract audit would have failed.
+
+Deployment is still pending by design. The VPS was not touched for this implementation pass, the
+external runtime contract was not changed, and the live systemd timer should not be considered
+updated until the PR is merged and a controlled VPS follow-up installs the versioned wrapper and
+templates.
+
+```text
+TASK-HERMES-SCHEDULED-STRICT-AUDIT-003: implemented locally / PR pending
+scheduled strict runner: versioned in deploy/systemd
+strict command: official-sources hermes audit --release-contract /etc/official-sources/hermes-audit-contract.yaml --strict-release-contract --fail-on-no-go
+VPS deploy: pending
+external release contract update: pending after merge
+latest implementation report: docs/reports/hermes-scheduled-strict-audit-2026-06-04.md
+```
+
 `TASK-HERMES-DRIFT-AUDITOR-001` and `TASK-HERMES-EXTERNAL-RELEASE-CONTRACT-002` are
 operationally completed. PR #30, PR #29, and PR #31 are merged, the project VPS has been
 fast-forwarded to the approved release, and Hermes strict audit returned `GO` from the VPS using
