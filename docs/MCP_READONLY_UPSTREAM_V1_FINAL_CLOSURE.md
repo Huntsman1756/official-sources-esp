@@ -66,6 +66,7 @@ docs/MCP_CASE_TAXONOMY.md
 docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md
 docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md
 docs/MCP_DOWNSTREAM_INTEGRATION_CLOSURE.md
+docs/architecture/downstream-integration-contracts.md
 docs/MCP_TOOLS.md
 ```
 
@@ -103,8 +104,9 @@ registry_mutated=false
 Source safety invariants:
 
 ```text
-candidate_creation_allowed=false for 65/65 registered sources
-evidence_grade_allowed=false for 65/65 registered sources
+registered sources: 67
+candidate_creation_allowed=false for 67/67 registered sources
+evidence_grade_allowed=false for 67/67 registered sources
 data/rss_monitor absent
 data/html_monitor absent
 ```
@@ -123,7 +125,7 @@ Each downstream project must run its own preview/import check:
 | `renta-verificable` | seed/reference validation | AEAT-first fiscal reference leads |
 
 Passing upstream MCP smokes means only that `official-sources` returns the expected read-only
-contracts. It does not mean downstream data is product-ready.
+contracts. It does not mean downstream imports have run or downstream data is product-ready.
 
 ## Remaining Work Policy
 
