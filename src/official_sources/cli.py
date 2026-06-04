@@ -32,6 +32,7 @@ from official_sources.hermes_drift_audit import (
     render_markdown_report,
     require_external_release_contract,
 )
+from official_sources.hermes_scheduled_audit import run_scheduled_strict_audit
 from official_sources.html_monitor import (
     HTMLMonitorError,
     build_html_monitor_output_path,
@@ -1112,6 +1113,33 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Return exit code 1 when the audit verdict is NO-GO.",
     )
+    hermes_scheduled_audit = hermes_subparsers.add_parser(
+        "scheduled-audit",
+        help="Run the scheduled strict release audit and write VPS watchdog evidence.",
+    )
+    hermes_scheduled_audit.add_argument(
+        "--repo-root",
+        default="/opt/official-sources/app",
+        help="Repository root to audit. Default: /opt/official-sources/app.",
+    )
+    hermes_scheduled_audit.add_argument(
+        "--state-root",
+        default="/var/lib/hermes-official-sources-auditor",
+        help="State directory for scheduled Hermes reports and logs.",
+    )
+    hermes_scheduled_audit.add_argument(
+        "--release-contract",
+        default="/etc/official-sources/hermes-audit-contract.yaml",
+        help="External release contract YAML containing release.expected_head_sha.",
+    )
+    hermes_scheduled_audit.add_argument(
+        "--official-sources-bin",
+        default=None,
+        help=(
+            "official-sources executable used for the strict audit. "
+            "Default: <repo-root>/.venv/bin/official-sources."
+        ),
+    )
 
     ingest = subparsers.add_parser("ingest-boe-summary", help="Ingest one BOE daily summary.")
     ingest.add_argument(
@@ -2083,6 +2111,18 @@ def _run_hermes_command(
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
+    if args.hermes_command == "scheduled-audit":
+        result = run_scheduled_strict_audit(
+            repo_root=Path(args.repo_root),
+            state_root=Path(args.state_root),
+            release_contract=Path(args.release_contract),
+            official_sources_bin=args.official_sources_bin,
+        )
+        print(f"report_path={result.report_path}", file=stdout)
+        print(f"strict_report_path={result.strict_report_path}", file=stdout)
+        print(f"log_path={result.log_path}", file=stdout)
+        print(f"strict_exit_code={result.exit_code}", file=stdout)
+        return result.exit_code
     if args.hermes_command != "audit":
         print(f"Unknown hermes command: {args.hermes_command}", file=stderr)
         return 2

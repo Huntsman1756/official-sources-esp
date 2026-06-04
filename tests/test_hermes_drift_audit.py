@@ -366,6 +366,39 @@ def test_hermes_audit_cli_missing_release_contract_warns_in_local_mode(tmp_path)
     assert "Failed gates:\n- none" in rendered
 
 
+def test_hermes_audit_cli_fail_on_no_go_keeps_warning_exit_zero(tmp_path):
+    from official_sources.cli import run
+
+    repo_root = _write_minimal_git_repo(tmp_path)
+    contract_path = _write_minimal_audit_contract(repo_root)
+    missing_release_contract_path = repo_root / "missing-release-contract.yaml"
+
+    stdout = StringIO()
+    exit_code = run(
+        [
+            "hermes",
+            "audit",
+            "--contract",
+            str(contract_path),
+            "--repo-root",
+            str(repo_root),
+            "--registry",
+            str(repo_root / "config" / "sources.yaml"),
+            "--project-state",
+            str(repo_root / "PROJECT_STATE.md"),
+            "--release-contract",
+            str(missing_release_contract_path),
+            "--fail-on-no-go",
+        ],
+        stdout=stdout,
+    )
+
+    rendered = stdout.getvalue()
+    assert exit_code == 0
+    assert "VERDICT: WARNING" in rendered
+    assert "Failed gates:\n- none" in rendered
+
+
 def test_hermes_audit_cli_missing_release_contract_is_no_go_in_strict_mode(tmp_path):
     from official_sources.cli import run
 
@@ -395,6 +428,40 @@ def test_hermes_audit_cli_missing_release_contract_is_no_go_in_strict_mode(tmp_p
 
     rendered = stdout.getvalue()
     assert exit_code == 0
+    assert "VERDICT: NO-GO" in rendered
+    assert "external release contract is required but unavailable" in rendered
+
+
+def test_hermes_audit_cli_fail_on_no_go_exits_nonzero_for_strict_no_go(tmp_path):
+    from official_sources.cli import run
+
+    repo_root = _write_minimal_git_repo(tmp_path)
+    contract_path = _write_minimal_audit_contract(repo_root)
+    missing_release_contract_path = repo_root / "missing-release-contract.yaml"
+
+    stdout = StringIO()
+    exit_code = run(
+        [
+            "hermes",
+            "audit",
+            "--contract",
+            str(contract_path),
+            "--repo-root",
+            str(repo_root),
+            "--registry",
+            str(repo_root / "config" / "sources.yaml"),
+            "--project-state",
+            str(repo_root / "PROJECT_STATE.md"),
+            "--release-contract",
+            str(missing_release_contract_path),
+            "--strict-release-contract",
+            "--fail-on-no-go",
+        ],
+        stdout=stdout,
+    )
+
+    rendered = stdout.getvalue()
+    assert exit_code == 1
     assert "VERDICT: NO-GO" in rendered
     assert "external release contract is required but unavailable" in rendered
 
