@@ -24,9 +24,13 @@ from official_sources.downstream_export import export_downstream_evidence_files
 from official_sources.hermes_drift_audit import (
     HermesDriftAuditError,
     collect_local_observation,
+    default_release_contract_path,
     evaluate_hermes_drift,
     load_audit_contract,
+    load_release_contract,
+    merge_release_contract,
     render_markdown_report,
+    require_external_release_contract,
 )
 from official_sources.html_monitor import (
     HTMLMonitorError,
@@ -1091,6 +1095,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional markdown report path to write. Stdout is always emitted.",
     )
     hermes_audit.add_argument(
+        "--release-contract",
+        default=None,
+        help=(
+            "External release contract YAML containing release.expected_head_sha. "
+            "Default in strict mode: /etc/official-sources/hermes-audit-contract.yaml."
+        ),
+    )
+    hermes_audit.add_argument(
+        "--strict-release-contract",
+        action="store_true",
+        help="Require an external release contract for the HEAD gate.",
+    )
+    hermes_audit.add_argument(
         "--fail-on-no-go",
         action="store_true",
         help="Return exit code 1 when the audit verdict is NO-GO.",
@@ -2071,6 +2088,16 @@ def _run_hermes_command(
         return 2
     try:
         contract = load_audit_contract(Path(args.contract) if args.contract else None)
+        release_contract_path = (
+            Path(args.release_contract)
+            if args.release_contract
+            else default_release_contract_path()
+        )
+        if release_contract_path.exists():
+            release_contract = load_release_contract(release_contract_path)
+            contract = merge_release_contract(contract, release_contract, release_contract_path)
+        elif args.strict_release_contract:
+            contract = require_external_release_contract(contract)
         observation = collect_local_observation(
             repo_root=Path(args.repo_root),
             registry_path=Path(args.registry) if args.registry else None,

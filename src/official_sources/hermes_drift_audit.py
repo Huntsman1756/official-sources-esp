@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import subprocess
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -22,11 +22,13 @@ class HermesDriftAuditError(ValueError):
 
 @dataclass(frozen=True)
 class AuditContract:
-    expected_head_sha: str
     expected_project_state_min_date: date
     require_clean_worktree: bool
     expected_total_sources: int
     expected_inventory_only: tuple[str, ...]
+    expected_head_sha: str | None = None
+    expected_head_sha_source: str | None = None
+    require_external_release_contract: bool = False
     forbid_unexpected_inventory_only: bool = True
     stale_project_state_verdict: str = "no_go"
     require_registry_parse: bool = False
@@ -42,8 +44,16 @@ class AuditContract:
             )
         if self.expected_total_sources < 0:
             raise HermesDriftAuditError("expected_total_sources must be non-negative")
-        if not self.expected_head_sha.strip():
-            raise HermesDriftAuditError("expected_head_sha is required")
+        if self.expected_head_sha is not None and not self.expected_head_sha.strip():
+            raise HermesDriftAuditError("expected_head_sha must be non-empty when provided")
+
+
+@dataclass(frozen=True)
+class ReleaseContract:
+    expected_head_sha: str
+    expected_branch: str | None = None
+    approved_at: str | None = None
+    approved_reason: str | None = None
 
 
 @dataclass(frozen=True)
@@ -101,11 +111,10 @@ def load_audit_contract(path: Path | None = None) -> AuditContract:
     if not isinstance(expected_inventory_only, list):
         raise HermesDriftAuditError("sources.expected_inventory_only must be a list")
     journal_units = journal.get("units", ())
-    if not isinstance(journal_units, list):
+    if not isinstance(journal_units, (list, tuple)):
         raise HermesDriftAuditError("journal.units must be a list")
 
     return AuditContract(
-        expected_head_sha=str(_required_value(release, "expected_head_sha")),
         expected_project_state_min_date=_parse_date_value(
             _required_value(release, "expected_project_state_min_date"),
             "release.expected_project_state_min_date",
@@ -125,6 +134,43 @@ def load_audit_contract(path: Path | None = None) -> AuditContract:
         remote_ref=str(release.get("remote_ref", "refs/heads/main")),
         journal_units=tuple(str(unit) for unit in journal_units),
     )
+
+
+def default_release_contract_path() -> Path:
+    return Path("/etc/official-sources/hermes-audit-contract.yaml")
+
+
+def load_release_contract(path: Path) -> ReleaseContract:
+    with path.open(encoding="utf-8") as handle:
+        raw = yaml.safe_load(handle)
+    if not isinstance(raw, dict):
+        raise HermesDriftAuditError("release contract must be a mapping")
+    release = _required_mapping(raw, "release")
+    expected_head_sha = str(_required_value(release, "expected_head_sha")).strip()
+    if not expected_head_sha:
+        raise HermesDriftAuditError("release.expected_head_sha is required")
+    return ReleaseContract(
+        expected_head_sha=expected_head_sha,
+        expected_branch=_optional_string(release.get("expected_branch")),
+        approved_at=_optional_string(release.get("approved_at")),
+        approved_reason=_optional_string(release.get("approved_reason")),
+    )
+
+
+def merge_release_contract(
+    audit_contract: AuditContract,
+    release_contract: ReleaseContract,
+    release_contract_path: Path,
+) -> AuditContract:
+    return replace(
+        audit_contract,
+        expected_head_sha=release_contract.expected_head_sha,
+        expected_head_sha_source=str(release_contract_path),
+    )
+
+
+def require_external_release_contract(audit_contract: AuditContract) -> AuditContract:
+    return replace(audit_contract, require_external_release_contract=True)
 
 
 def collect_local_observation(
@@ -213,6 +259,7 @@ def evaluate_hermes_drift(contract: AuditContract, observation: AuditObservation
         required_human_actions=tuple(_required_actions(reasons, warnings)),
         observed={
             "expected_head_sha": contract.expected_head_sha,
+            "expected_head_sha_source": contract.expected_head_sha_source,
             "actual_head_sha": observation.actual_head_sha,
             "remote_head_observed_sha": observation.remote_head_observed_sha,
             "git_worktree_clean": observation.git_worktree_clean,
@@ -265,11 +312,17 @@ def _evaluate_release_state(
     reasons: list[str],
     warnings: list[str],
 ) -> None:
-    if observation.actual_head_sha is None:
-        reasons.append("VPS HEAD could not be observed")
+    if contract.expected_head_sha is None:
+        if contract.require_external_release_contract:
+            reasons.append("external release contract is required but unavailable")
+        else:
+            warnings.append("external release contract unavailable; HEAD gate not enforced")
+    elif observation.actual_head_sha is None:
+        reasons.append("observed checkout HEAD could not be observed")
     elif observation.actual_head_sha != contract.expected_head_sha:
         reasons.append(
-            f"VPS HEAD is {observation.actual_head_sha}, expected {contract.expected_head_sha}"
+            "observed checkout HEAD is "
+            f"{observation.actual_head_sha}, expected {contract.expected_head_sha}"
         )
 
     if contract.require_clean_worktree:
@@ -296,6 +349,7 @@ def _evaluate_release_state(
         )
     elif (
         observation.remote_head_observed_sha is not None
+        and contract.expected_head_sha is not None
         and observation.remote_head_observed_sha != contract.expected_head_sha
     ):
         warnings.append(
@@ -350,8 +404,10 @@ def _evaluate_journal_evidence(observation: AuditObservation, warnings: list[str
 def _required_actions(reasons: list[str], warnings: list[str]) -> list[str]:
     actions: list[str] = []
     combined = "\n".join([*reasons, *warnings])
-    if "VPS HEAD is" in combined or "VPS HEAD could not" in combined:
+    if "observed checkout HEAD is" in combined or "observed checkout HEAD could not" in combined:
         actions.append("inspect VPS checkout and decide whether to fast-forward checkout")
+    if "external release contract" in combined:
+        actions.append("provide the external Hermes release contract or disable strict mode")
     if "git worktree is dirty" in combined:
         actions.append("inspect dirty diff on VPS before any release claim")
     if "PROJECT_STATE date" in combined:
@@ -384,6 +440,12 @@ def _required_value(raw: dict[str, Any], key: str) -> Any:
     if key not in raw:
         raise HermesDriftAuditError(f"{key} is required")
     return raw[key]
+
+
+def _optional_string(value: Any) -> str | None:
+    if value is None:
+        return None
+    return str(value)
 
 
 def _parse_date_value(value: Any, label: str) -> date:

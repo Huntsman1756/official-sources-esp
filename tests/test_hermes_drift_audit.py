@@ -10,6 +10,9 @@ from official_sources.hermes_drift_audit import (
     AuditObservation,
     JournalEvidence,
     evaluate_hermes_drift,
+    load_audit_contract,
+    load_release_contract,
+    merge_release_contract,
     render_markdown_report,
 )
 
@@ -17,6 +20,7 @@ from official_sources.hermes_drift_audit import (
 def _contract(**overrides) -> AuditContract:
     values = {
         "expected_head_sha": "9df078b1ae599bdeca8c573bddbb53ea6c33a16a",
+        "expected_head_sha_source": "external:test",
         "expected_project_state_min_date": date(2026, 6, 2),
         "require_clean_worktree": True,
         "expected_total_sources": 67,
@@ -71,7 +75,7 @@ def test_head_mismatch_returns_no_go_with_actionable_reason():
     )
 
     assert result.verdict == "NO-GO"
-    assert "VPS HEAD is a5c050b588fce8277247e9bcde3c446d852e784a" in result.reasons[0]
+    assert "observed checkout HEAD is a5c050b588fce8277247e9bcde3c446d852e784a" in result.reasons[0]
     assert "fast-forward checkout" in " ".join(result.required_human_actions)
 
 
@@ -172,6 +176,102 @@ def test_remote_head_mismatch_is_warning_only():
     ) in result.warnings
 
 
+def test_missing_external_release_contract_in_local_mode_warns_without_head_gate():
+    result = evaluate_hermes_drift(
+        _contract(expected_head_sha=None, expected_head_sha_source=None),
+        _observation(actual_head_sha="a5c050b588fce8277247e9bcde3c446d852e784a"),
+    )
+
+    assert result.verdict == "WARNING"
+    assert result.reasons == ()
+    assert "external release contract unavailable; HEAD gate not enforced" in result.warnings
+
+
+def test_missing_external_release_contract_in_strict_mode_is_no_go():
+    result = evaluate_hermes_drift(
+        _contract(
+            expected_head_sha=None,
+            expected_head_sha_source=None,
+            require_external_release_contract=True,
+        ),
+        _observation(actual_head_sha="a5c050b588fce8277247e9bcde3c446d852e784a"),
+    )
+
+    assert result.verdict == "NO-GO"
+    assert "external release contract is required but unavailable" in result.reasons
+
+
+def test_external_release_contract_supplies_hard_head_gate(tmp_path):
+    contract = _contract(expected_head_sha=None, expected_head_sha_source=None)
+    release_contract_path = tmp_path / "release-contract.yaml"
+    release_contract_path.write_text(
+        """
+release:
+  expected_head_sha: "9df078b1ae599bdeca8c573bddbb53ea6c33a16a"
+  expected_branch: main
+  approved_at: "2026-06-03T20:30:41Z"
+  approved_reason: "PR #30 + PR #29 merged"
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    release_contract = load_release_contract(release_contract_path)
+    merged_contract = merge_release_contract(contract, release_contract, release_contract_path)
+
+    result = evaluate_hermes_drift(merged_contract, _observation())
+
+    assert result.verdict == "GO"
+    assert result.observed["expected_head_sha_source"] == str(release_contract_path)
+
+
+def test_external_release_contract_head_mismatch_is_no_go(tmp_path):
+    contract = _contract(expected_head_sha=None, expected_head_sha_source=None)
+    release_contract_path = tmp_path / "release-contract.yaml"
+    release_contract_path.write_text(
+        """
+release:
+  expected_head_sha: "9df078b1ae599bdeca8c573bddbb53ea6c33a16a"
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    merged_contract = merge_release_contract(
+        contract,
+        load_release_contract(release_contract_path),
+        release_contract_path,
+    )
+    result = evaluate_hermes_drift(
+        merged_contract,
+        _observation(actual_head_sha="a5c050b588fce8277247e9bcde3c446d852e784a"),
+    )
+
+    assert result.verdict == "NO-GO"
+    assert (
+        "observed checkout HEAD is a5c050b588fce8277247e9bcde3c446d852e784a"
+        in result.reasons[0]
+    )
+
+
+def test_in_repo_audit_contract_no_longer_requires_expected_head_sha(tmp_path):
+    contract_path = tmp_path / "audit-contract.yaml"
+    contract_path.write_text(
+        """
+release:
+  expected_project_state_min_date: "2026-06-03"
+  require_clean_worktree: true
+sources:
+  expected_total: 67
+  expected_inventory_only:
+    - DOUE
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    contract = load_audit_contract(contract_path)
+
+    assert contract.expected_head_sha is None
+
+
 def test_hermes_audit_cli_collects_local_read_only_state(tmp_path):
     from official_sources.cli import run
 
@@ -183,7 +283,6 @@ def test_hermes_audit_cli_collects_local_read_only_state(tmp_path):
         "\n".join(
             [
                 "release:",
-                f'  expected_head_sha: "{head_sha}"',
                 '  expected_project_state_min_date: "2026-06-02"',
                 "  require_clean_worktree: false",
                 "sources:",
@@ -193,6 +292,18 @@ def test_hermes_audit_cli_collects_local_read_only_state(tmp_path):
                 "  forbid_unexpected_inventory_only: true",
                 "journal:",
                 "  units: []",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    release_contract_path = repo_root / "release-contract.yaml"
+    release_contract_path.write_text(
+        "\n".join(
+            [
+                "release:",
+                f'  expected_head_sha: "{head_sha}"',
+                '  expected_branch: "main"',
                 "",
             ]
         ),
@@ -212,12 +323,104 @@ def test_hermes_audit_cli_collects_local_read_only_state(tmp_path):
             str(repo_root / "config" / "sources.yaml"),
             "--project-state",
             str(repo_root / "PROJECT_STATE.md"),
+            "--release-contract",
+            str(release_contract_path),
         ],
         stdout=stdout,
     )
 
     assert exit_code == 0
     assert "VERDICT: GO" in stdout.getvalue()
+
+
+def test_hermes_audit_cli_missing_release_contract_warns_in_local_mode(tmp_path):
+    from official_sources.cli import run
+
+    repo_root = _write_minimal_git_repo(tmp_path)
+    contract_path = _write_minimal_audit_contract(repo_root)
+    missing_release_contract_path = repo_root / "missing-release-contract.yaml"
+
+    stdout = StringIO()
+    exit_code = run(
+        [
+            "hermes",
+            "audit",
+            "--contract",
+            str(contract_path),
+            "--repo-root",
+            str(repo_root),
+            "--registry",
+            str(repo_root / "config" / "sources.yaml"),
+            "--project-state",
+            str(repo_root / "PROJECT_STATE.md"),
+            "--release-contract",
+            str(missing_release_contract_path),
+        ],
+        stdout=stdout,
+    )
+
+    rendered = stdout.getvalue()
+    assert exit_code == 0
+    assert "VERDICT: WARNING" in rendered
+    assert "external release contract unavailable; HEAD gate not enforced" in rendered
+    assert "Failed gates:\n- none" in rendered
+
+
+def test_hermes_audit_cli_missing_release_contract_is_no_go_in_strict_mode(tmp_path):
+    from official_sources.cli import run
+
+    repo_root = _write_minimal_git_repo(tmp_path)
+    contract_path = _write_minimal_audit_contract(repo_root)
+    missing_release_contract_path = repo_root / "missing-release-contract.yaml"
+
+    stdout = StringIO()
+    exit_code = run(
+        [
+            "hermes",
+            "audit",
+            "--contract",
+            str(contract_path),
+            "--repo-root",
+            str(repo_root),
+            "--registry",
+            str(repo_root / "config" / "sources.yaml"),
+            "--project-state",
+            str(repo_root / "PROJECT_STATE.md"),
+            "--release-contract",
+            str(missing_release_contract_path),
+            "--strict-release-contract",
+        ],
+        stdout=stdout,
+    )
+
+    rendered = stdout.getvalue()
+    assert exit_code == 0
+    assert "VERDICT: NO-GO" in rendered
+    assert "external release contract is required but unavailable" in rendered
+
+
+def _write_minimal_audit_contract(repo_root: Path) -> Path:
+    contract_path = repo_root / "config" / "hermes" / "audit_contract.yaml"
+    contract_path.parent.mkdir(parents=True)
+    contract_path.write_text(
+        "\n".join(
+            [
+                "release:",
+                '  expected_project_state_min_date: "2026-06-02"',
+                "  require_clean_worktree: false",
+                "sources:",
+                "  expected_total: 1",
+                "  expected_inventory_only:",
+                "    - DOUE",
+                "  forbid_unexpected_inventory_only: true",
+                "journal:",
+                "  units: []",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    return contract_path
 
 
 def _write_minimal_git_repo(tmp_path: Path) -> Path:
