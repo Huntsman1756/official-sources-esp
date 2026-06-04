@@ -6,8 +6,8 @@ Task: `TASK-HERMES-VPS-RELEASE-ALIGNMENT-2026-06-04`
 
 Operational closure is `GO`.
 
-The repository, VPS checkout, and external Hermes release contract are aligned to the same approved
-release SHA:
+The repository, VPS checkout, and external Hermes release contract were aligned to this approved
+release SHA during the operational closeout:
 
 ```text
 68dcffa9aa59f60ab526e67ae0dd3a12ba192e5a
@@ -69,6 +69,11 @@ release:
   approved_at: "2026-06-03"
 ```
 
+This report is evidence of the closeout run. It is not the live release contract. The live expected
+deployment SHA is intentionally read from `/etc/official-sources/hermes-audit-contract.yaml`, not
+from an in-repo Markdown file, so later documentation-only commits do not recreate a
+self-referential release-SHA loop.
+
 ## Preserved VPS Drift
 
 Before alignment, the VPS checkout had stale partial-release drift. It was preserved before any
@@ -120,5 +125,7 @@ next timer trigger observed: 2026-06-05 00:15 UTC
 
 ## Follow-Up
 
-Wait for the next scheduled Hermes run and record whether the scheduled report also returns `GO`.
-Do not delete the preserved drift bundle or pop the stash during this release window.
+After any documentation-only closeout commit is merged, fast-forward the VPS and update the
+external contract to the new approved `origin/main` SHA before expecting the scheduled Hermes audit
+to remain `GO`. Do not delete the preserved drift bundle or pop the stash during this release
+window.
