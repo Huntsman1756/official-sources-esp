@@ -17,6 +17,12 @@ documentation-only contract. It formalizes that `official-sources` can serve
 write downstream repositories, create candidates, promote evidence-grade records, publish product
 content, or touch VPS/runtime state.
 
+`TASK-EDUAYUDAS-OFFICIAL-SOURCES-REAL-PACKAGE-001` has a documentation-only readiness audit in
+`docs/reports/eduayudas-real-package-readiness-2026-06-04.md`. The result is GO for a narrow
+BOE-only evidence package preview, and NO-GO for a broad BDNS/BOE/autonomous package until
+EduAyudas extends its evidence schema beyond `BOE`. No downstream write, import, source fetch,
+candidate creation, evidence-grade promotion, or runtime operation was performed.
+
 Deployment is still pending by design. The VPS was not touched for this implementation pass, the
 external runtime contract was not changed, and the live systemd timer should not be considered
 updated until the PR is merged and a controlled VPS follow-up installs the versioned wrapper and
@@ -135,6 +141,7 @@ Current downstream product contract:
 ```text
 docs/architecture/downstream-integration-contracts.md
 docs/reports/mcp-common-readiness-2026-06-04.md
+docs/reports/eduayudas-real-package-readiness-2026-06-04.md
 ```
 
 The current product stance is:
