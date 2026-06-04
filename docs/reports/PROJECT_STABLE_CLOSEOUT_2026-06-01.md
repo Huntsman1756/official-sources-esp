@@ -35,8 +35,8 @@ monitor_support=available: 59
 monitor_support=none: 6
 candidate_creation_allowed=false: 65
 evidence_grade_allowed=false: 65
-candidate_creation_allowed=true: 0
-evidence_grade_allowed=true: 0
+candidate_creation_allowed true count: 0
+evidence_grade_allowed true count: 0
 ```
 
 Inventory-only sources:

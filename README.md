@@ -138,8 +138,14 @@ The consumer-aware MCP contract is documented in
 `docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md`.
 The read-only downstream integration closure and smoke matrix are documented in
 `docs/MCP_DOWNSTREAM_INTEGRATION_CLOSURE.md`.
+The cross-product downstream integration contract for `oposiciones2.0`, `eduayudas`, `la-ayuda`,
+`renta-verificable`, `subvenciones`, and `contratosabiertos` is documented in
+`docs/architecture/downstream-integration-contracts.md`.
+The current common-readiness report is documented in
+`docs/reports/mcp-common-readiness-2026-06-04.md`.
 The MCP smoke checker `check_downstream_integration_smokes` validates that the current
-consumer-specific MCP planning calls still match that read-only matrix.
+consumer-specific MCP planning calls still match that read-only matrix. It does not execute real
+downstream imports or product writes.
 The final read-only upstream v1 closure is documented in
 `docs/MCP_READONLY_UPSTREAM_V1_FINAL_CLOSURE.md`.
 `eduayudas` evidence-packet planning is documented in

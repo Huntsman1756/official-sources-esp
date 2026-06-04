@@ -10,6 +10,13 @@ strict drift auditor with the external release contract and `--fail-on-no-go`. T
 previous weakness where the scheduled Hermes run could produce a soft narrative report while the
 strict contract audit would have failed.
 
+`TASK-MCP-DOWNSTREAM-PRODUCT-CONTRACTS-2026-06-04` is also implemented locally as a
+documentation-only contract. It formalizes that `official-sources` can serve
+`oposiciones2.0`, `eduayudas`, `la-ayuda`, `renta-verificable`, `subvenciones`, and
+`contratosabiertos` only as shared read-only upstream infrastructure. It does not run imports,
+write downstream repositories, create candidates, promote evidence-grade records, publish product
+content, or touch VPS/runtime state.
+
 Deployment is still pending by design. The VPS was not touched for this implementation pass, the
 external runtime contract was not changed, and the live systemd timer should not be considered
 updated until the PR is merged and a controlled VPS follow-up installs the versioned wrapper and
@@ -119,6 +126,26 @@ inventory_only: 1
 provincial BOP monitor_validated: 43/43
 API discovery monitor sources: AYTO_ZARAGOZA_EMPLEO, BOPV, BOR, BOP_CACERES, BOP_HUELVA, BOP_OURENSE
 remaining inventory_only source: DOUE
+candidate_creation_allowed=false: 67/67
+evidence_grade_allowed=false: 67/67
+```
+
+Current downstream product contract:
+
+```text
+docs/architecture/downstream-integration-contracts.md
+docs/reports/mcp-common-readiness-2026-06-04.md
+```
+
+The current product stance is:
+
+```text
+eduayudas: first real pilot, evidence package to private staging and review
+oposiciones2.0: useful after narrow strict-alert allowlist expansion
+la-ayuda: source leads only, pending_review before human review and page publication
+renta-verificable: blocked until AEAT reference audit
+subvenciones: provenance/cache beside BDNS-native pipeline, not replacement
+contratosabiertos: PLACSP-specific gap audit required before product use
 ```
 
 The current MCP closure surface is:
@@ -177,6 +204,9 @@ fields, known risks, and `must_not_do` constraints.
 `check_downstream_integration_smokes` executes only the hardcoded in-process `official-sources`
 MCP/planner calls from that matrix and checks expected status, expected output fields, and the
 shared read-only safety envelope.
+
+The smoke checker proves the MCP contract shape only. It does not prove real downstream imports,
+product staging, product publication readiness, runtime source health, or product data correctness.
 
 This closure does not run downstream preview/import commands, execute shell commands, fetch live
 sources, run monitor previews, write JSONL, mutate the registry, create candidates, create
@@ -2257,7 +2287,7 @@ Hard guardrails:
 | `TASK-SOURCE-RSS-MONITOR-004` | Implemented locally | `config/sources.yaml`, `tests/test_rss_monitor.py`, `docs/reports/rss-monitor-004-2026-05-26.md` | Adds BOC_CANARIAS, DOG, and BOP_LUGO as validated metadata-only RSS discovery sources. |
 | `TASK-HERMES-AUDITOR-SCHEDULED-VALIDATION-001` | Completed | `docs/reports/hermes-auditor-scheduled-validation-2026-05-28.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Confirms the VPS automatic Hermes run and later scheduled validation report returned operational `GO` without changing timers, services, source logic, downstream writes, or the VPS checkout. |
 | `TASK-SOURCE-RSS-MONITOR-005` | Implemented locally | `config/sources.yaml`, `src/official_sources/rss_monitor.py`, `tests/test_rss_monitor.py`, `docs/reports/rss-monitor-005-2026-05-29.md` | Adds BOCM and BOP_BADAJOZ as validated metadata-only RSS/Atom discovery sources without candidates, evidence-grade records, writes, VPS, Hermes, or systemd changes. |
-| `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-6-snapshot-2026-05-29.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Documents the post-RSS-005 coverage baseline: 65 sources, 11 RSS/Atom, 1 API discovery monitor, 7 HTML provincial discovery sources, 34 provincial inventory-only sources, and BOP_ALICANTE degraded/manual-review. |
+| `TASK-SOURCE-COVERAGE-V1.6-SNAPSHOT-001` | Implemented locally | `docs/reports/source-coverage-v1-6-snapshot-2026-05-29.md`, `PROJECT_STATE.md`, `TASK_QUEUE.md` | Documents the historical post-RSS-005 coverage baseline, now superseded by the current 67-source baseline, with BOP_ALICANTE then degraded/manual-review. |
 | `TASK-SOURCE-COVERAGE-STATUS-CONTRACT-001` | Merged | `docs/SOURCE_STATUS_CONTRACT.md`, PR #21 | Defines downstream-facing status semantics and separates registry presence, monitor capability, runtime health, metadata-only discovery, inventory-only status, candidate permission, evidence-grade permission, and product readiness. |
 | `TASK-PROJECT-CLOSURE-READONLY-UPSTREAM-001` | Implemented locally | `PROJECT_STATE.md`, `TASK_QUEUE.md` | Marks `official-sources` closed as read-only upstream v1 after PR #21 merged, VPS fast-forwarded, timers remained healthy, and old conflicting PRs #3, #7, and #16 were closed as superseded. |
 | `TASK-MCP-DOWNSTREAM-SOURCE-NEEDS-MATRIX-001` | Implemented locally | `docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md` | Defines downstream-demand classes and prioritizes future MCP/source work for current and future consumers. |

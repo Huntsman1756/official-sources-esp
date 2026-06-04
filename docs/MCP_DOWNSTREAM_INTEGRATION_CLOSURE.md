@@ -21,6 +21,7 @@ Related contracts:
 docs/SOURCE_STATUS_CONTRACT.md
 docs/MCP_DOWNSTREAM_DEMAND_CONTRACT.md
 docs/MCP_DOWNSTREAM_SOURCE_NEEDS_MATRIX.md
+docs/architecture/downstream-integration-contracts.md
 docs/MCP_TOOLS.md
 ```
 
@@ -82,6 +83,9 @@ known risks, and explicit `must_not_do` constraints.
 MCP/planner calls. It does not run downstream preview commands, shell commands, monitor previews,
 live source fetches, JSONL writes, registry mutations, candidates, evidence-grade promotion, or
 product writes.
+
+For the six-product integration contract that also covers `subvenciones` and `contratosabiertos`,
+see `docs/architecture/downstream-integration-contracts.md`.
 
 ## Consumer Smokes
 
@@ -257,5 +261,5 @@ The upstream closure is acceptable when:
 - each smoke points to an implemented MCP entrypoint or an explicit downstream preview contract;
 - tests prove the smoke matrix does not write source candidates;
 - no generated runtime data is created;
-- `candidate_creation_allowed=false` remains true for all registered sources;
-- `evidence_grade_allowed=false` remains true for all registered sources.
+- `candidate_creation_allowed=false` remains true for all 67 registered sources;
+- `evidence_grade_allowed=false` remains true for all 67 registered sources.

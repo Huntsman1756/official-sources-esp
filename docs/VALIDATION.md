@@ -1628,14 +1628,14 @@ rtk python -m pytest -q
 rtk python -m ruff check .
 rtk python -m ruff format --check .
 rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --help
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources.sqlite db status
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources.sqlite db migrate
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources.sqlite db validate
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources.sqlite db backup --output G:/tmp/official-sources-task004a-20260517/backups/official_sources_20260517_000000.sqlite
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources_restore_test.sqlite db status
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources_restore_test.sqlite db migrate
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources_restore_test.sqlite db validate
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a-20260517/official_sources_restore_test.sqlite --artifact-dir G:/tmp/official-sources-task004a-20260517/artifacts status --date today
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources.sqlite db status
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources.sqlite db migrate
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources.sqlite db validate
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources.sqlite db backup --output <tmp>/official-sources-task004a-20260517/backups/official_sources_20260517_000000.sqlite
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources_restore_test.sqlite db status
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources_restore_test.sqlite db migrate
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources_restore_test.sqlite db validate
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a-20260517/official_sources_restore_test.sqlite --artifact-dir <tmp>/official-sources-task004a-20260517/artifacts status --date today
 ```
 
 Result:
@@ -1701,14 +1701,14 @@ TASK-004A local CLI and database dry-run:
 
 ```bash
 rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --help
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a/official_sources.sqlite db status
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a/official_sources.sqlite db migrate
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a/official_sources.sqlite db validate
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a/official_sources.sqlite db backup --output G:/tmp/official-sources-task004a/backups/official_sources_20260517_000000.sqlite
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a/official_sources_restore_test.sqlite db status
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a/official_sources_restore_test.sqlite db migrate
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a/official_sources_restore_test.sqlite db validate
-rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path G:/tmp/official-sources-task004a/official_sources_restore_test.sqlite --artifact-dir G:/tmp/official-sources-task004a/artifacts status --date today
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a/official_sources.sqlite db status
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a/official_sources.sqlite db migrate
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a/official_sources.sqlite db validate
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a/official_sources.sqlite db backup --output <tmp>/official-sources-task004a/backups/official_sources_20260517_000000.sqlite
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a/official_sources_restore_test.sqlite db status
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a/official_sources_restore_test.sqlite db migrate
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a/official_sources_restore_test.sqlite db validate
+rtk python -c "import sys; sys.path.insert(0, 'src'); from official_sources.cli import main; main()" --db-path <tmp>/official-sources-task004a/official_sources_restore_test.sqlite --artifact-dir <tmp>/official-sources-task004a/artifacts status --date today
 ```
 
 Result:
@@ -1940,7 +1940,7 @@ Result: `76 passed`.
 Lint:
 
 ```bash
-RUFF_CACHE_DIR=G:/tmp/official-sources-ruff-cache python -m ruff check .
+RUFF_CACHE_DIR=<tmp>/official-sources-ruff-cache python -m ruff check .
 ```
 
 Result: `All checks passed!`
@@ -1948,7 +1948,7 @@ Result: `All checks passed!`
 Format check:
 
 ```bash
-RUFF_CACHE_DIR=G:/tmp/official-sources-ruff-cache python -m ruff format --check .
+RUFF_CACHE_DIR=<tmp>/official-sources-ruff-cache python -m ruff format --check .
 ```
 
 Result: `40 files already formatted`.
@@ -1970,7 +1970,7 @@ TASK-002B intermediate validation found import-order and formatting issues in th
 
 TASK-002C intermediate validation found import-order and formatting issues in the new audit and CLI changes. They were corrected with Ruff before final validation.
 
-The final Ruff commands used an explicit cache directory under `G:/tmp` to avoid a local `.ruff_cache` permission warning. The commands exited successfully.
+The final Ruff commands used an explicit cache directory under `<tmp>` to avoid a local `.ruff_cache` permission warning. The commands exited successfully.
 
 TASK-003 intermediate validation found one expected MCP tool-name regression test and formatting issues in the new consolidated legislation files. They were corrected before final validation.
 
