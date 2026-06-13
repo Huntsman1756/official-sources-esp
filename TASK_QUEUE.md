@@ -1,6 +1,6 @@
 # Task Queue
 
-Last updated: 2026-06-04
+Last updated: 2026-06-13
 
 This file was absent at the start of `TASK-SOURCE-REGISTRY-001`. It is now the local task queue
 for source-platform work in this repository.
@@ -81,6 +81,7 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 
 | Task | Status | Boundary |
 | --- | --- | --- |
+| `TASK-HERMES-FAIL-CLOSED-SOURCE-FRESHNESS-001` | implemented locally | Adds `docs/architecture/hermes-fail-closed-source-freshness-contract.md` as a contract-only definition for future Hermes source freshness SLOs, GO/WARNING/NO-GO verdicts, read-only downstream smokes, report format, and escalation rules. No runtime implementation, source changes, registry mutation, SQLite writes, monitor materialization, candidates, evidence, artifacts, downstream writes, VPS, Hermes systemd, or deploy changes. |
 | `TASK-PROVINCIAL-MONITORS-WAVE-003` | deferred | No new source expansion is currently planned. May proceed only if a future task explicitly reopens source expansion with scoped runtime checks. `BOP_ALICANTE` is no longer currently degraded after the 2026-06-02 recovery, but its DNS-dependent residual risk must remain documented. |
 | `REL-001-CUENCA-ZARAGOZA-EGRESS` | completed by `REL-001` | steamcases-vps / IONOS AS8560 validates the relay path for `BOP_CUENCA`, `BOP_SALAMANCA`, and `BOP_ZARAGOZA`; Cloudflare Worker, Smart Placement, and Vercel regions remained documented failed attempts. |
 | `TASK-SOURCE-PROVINCIAL-URL-DIFF-AUDIT-001` | proposed | Compare BOE and PAG provincial URLs source by source; documentation-only unless a URL correction is verified. |
