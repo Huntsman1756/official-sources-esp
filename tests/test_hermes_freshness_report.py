@@ -268,6 +268,60 @@ def test_runtime_observation_loads_latest_monitor_jsonl_without_changing_engine(
     assert str(output_path) in observation.sources[0].impact
 
 
+def test_runtime_observation_uses_latest_timestamp_across_multiple_records(tmp_path):
+    output_path = tmp_path / "data" / "rss_monitor" / "BOE" / "2026-06-13" / "rss_discovery.jsonl"
+    output_path.parent.mkdir(parents=True)
+    records = [
+        {
+            "source_code": "BOE",
+            "title": "Old entry",
+            "published_at": "2026-06-13T06:00:00Z",
+            "discovered_at": "2026-06-13T06:30:00Z",
+        },
+        {
+            "source_code": "BOE",
+            "title": "New entry",
+            "published_at": "2026-06-13T07:30:00Z",
+            "discovered_at": "2026-06-13T09:15:00Z",
+        },
+    ]
+    output_path.write_text(
+        "".join(json.dumps(record, sort_keys=True) + "\n" for record in records),
+        encoding="utf-8",
+    )
+
+    observation = load_runtime_observation(
+        tmp_path,
+        now=NOW,
+        default_threshold_hours=36,
+        critical_sources=("BOE",),
+    )
+
+    assert observation.sources[0].source_code == "BOE"
+    assert observation.sources[0].last_seen == "2026-06-13T09:15:00Z"
+
+
+def test_runtime_observation_rejects_corrupt_jsonl_with_path_and_line(tmp_path):
+    output_path = tmp_path / "data" / "rss_monitor" / "BOE" / "2026-06-13" / "rss_discovery.jsonl"
+    output_path.parent.mkdir(parents=True)
+    output_path.write_text('{"source_code": "BOE"}\n{not-json}\n', encoding="utf-8")
+
+    try:
+        load_runtime_observation(
+            tmp_path,
+            now=NOW,
+            default_threshold_hours=36,
+            critical_sources=("BOE",),
+        )
+    except ValueError as exc:
+        message = str(exc)
+        assert str(output_path) in message
+        assert ":2" in message
+        assert "not valid JSON" in message
+    else:
+        raise AssertionError("corrupt JSONL must not be ignored")
+
+
 def test_runtime_observation_marks_expected_missing_source(tmp_path):
     observation = load_runtime_observation(
         tmp_path,
