@@ -9,6 +9,7 @@ import sys
 import unicodedata
 from collections import Counter
 from datetime import date, timedelta
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -1071,8 +1072,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--contract",
         default=None,
         help=(
-            "Path to the Hermes audit contract YAML. "
-            "Defaults to config/hermes/audit_contract.yaml."
+            "Path to the Hermes audit contract YAML. Defaults to config/hermes/audit_contract.yaml."
         ),
     )
     hermes_audit.add_argument(
@@ -1218,6 +1218,33 @@ def build_parser() -> argparse.ArgumentParser:
         "--date",
         required=True,
         help="Target date in YYYY-MM-DD format or today.",
+    )
+    ingest_monitor = subparsers.add_parser(
+        "ingest-monitor-date",
+        help=(
+            "Materialize one validated RSS/HTML/API monitor result into the selected "
+            "SQLite database for one source and date. Writes ingestion_runs, runtime "
+            "official_sources, and official_documents; does not write evidence, candidates, "
+            "registry config, publication, or product outputs."
+        ),
+    )
+    ingest_monitor.add_argument(
+        "--source",
+        required=True,
+        help="Single source code with a validated monitor, for example BOIB or DOCM.",
+    )
+    ingest_monitor.add_argument("--date", required=True, help="Target date in YYYY-MM-DD format.")
+    ingest_monitor.add_argument(
+        "--monitor",
+        choices=("auto", "rss", "html", "api"),
+        default="auto",
+        help="Monitor parser to use. Default: auto from the registry access method.",
+    )
+    ingest_monitor.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Maximum monitor records to materialize. Default: 50.",
     )
     ingest_bdns_latest = subparsers.add_parser(
         "ingest-bdns-latest",
@@ -1878,6 +1905,16 @@ def run(
         return _run_ingest_dogc(
             repository, args, dogc_fetcher, dogc_document_fetcher, stdout, stderr
         )
+    if args.command == "ingest-monitor-date":
+        return _run_ingest_monitor_date(
+            repository,
+            args,
+            rss_fetcher,
+            api_fetcher,
+            html_fetcher,
+            stdout,
+            stderr,
+        )
     if args.command == "ingest-bdns-latest":
         return _run_ingest_bdns_latest(repository, args, bdns_latest_fetcher, stdout, stderr)
     if args.command == "ingest-bdns-call":
@@ -2291,6 +2328,324 @@ def _run_html_command(
         for record in result.records:
             print(json.dumps(record, ensure_ascii=False, sort_keys=True), file=stdout)
     return 0
+
+
+def _run_ingest_monitor_date(
+    repository: OfficialSourcesRepository,
+    args: argparse.Namespace,
+    rss_fetcher,
+    api_fetcher,
+    html_fetcher,
+    stdout: TextIO,
+    stderr: TextIO,
+) -> int:
+    source_code = args.source.strip().upper()
+    if source_code in {"ALL", "*"} or "," in args.source:
+        print("ingest-monitor-date accepts one source at a time", file=stderr)
+        return 2
+    try:
+        target_date = date.fromisoformat(args.date).isoformat()
+    except ValueError:
+        print("--date must use YYYY-MM-DD format", file=stderr)
+        return 2
+    if args.limit < 1:
+        print("--limit must be greater than zero", file=stderr)
+        return 2
+
+    try:
+        source = get_source(source_code)
+        monitor_kind = _select_monitor_ingestion_kind(source, args.monitor)
+    except (SourceRegistryError, ValueError) as exc:
+        print(str(exc), file=stderr)
+        return 2
+
+    run = repository.create_ingestion_run(source_code=source_code, target_date=target_date)
+    print(
+        (
+            f"command_started=ingest-monitor-date source_code={source_code} "
+            f"target_date={target_date} monitor={monitor_kind} "
+            f"db_path={_compact_token(args.db_path)} writes=sqlite_materialization"
+        ),
+        file=stdout,
+    )
+    sources_upserted = 0
+    source_created = False
+    documents_new = 0
+    documents_updated = 0
+    documents_fetched = 0
+    failure_record_index: int | None = None
+    try:
+        result = _run_monitor_for_ingestion(
+            source_code,
+            monitor_kind=monitor_kind,
+            target_date=target_date,
+            limit=args.limit,
+            rss_fetcher=rss_fetcher,
+            api_fetcher=api_fetcher,
+            html_fetcher=html_fetcher,
+        )
+        documents_fetched = len(result.records)
+        source_exists = _runtime_source_exists(repository, source_code)
+        source_record = _upsert_registry_source(repository, source, monitor_kind=monitor_kind)
+        sources_upserted = 1
+        source_created = not source_exists
+        for record_index, record in enumerate(result.records, start=1):
+            failure_record_index = record_index
+            external_id = _monitor_document_external_id(source_code, record)
+            existing = repository.get_document_by_external_id(external_id)
+            repository.upsert_document(
+                source_id=source_record["id"],
+                external_id=external_id,
+                publication_date=_monitor_publication_date(record, target_date),
+                title=_monitor_document_title(record, external_id),
+                department=_monitor_department(record),
+                section=_monitor_section(record),
+                document_type=_monitor_document_type(record, monitor_kind),
+                url_html=_monitor_url(record, "html"),
+                url_xml=_monitor_url(record, "xml"),
+                url_pdf=_monitor_url(record, "pdf"),
+                raw_metadata={
+                    "ingestion_source": "validated_monitor",
+                    "command": "ingest-monitor-date",
+                    "ingestion_run_id": run["id"],
+                    "monitor_kind": monitor_kind,
+                    "monitor_target_date": target_date,
+                    "monitor_record": record,
+                    "operator_controlled": True,
+                },
+            )
+            if existing is None:
+                documents_new += 1
+            else:
+                documents_updated += 1
+            failure_record_index = None
+        run_record = repository.finish_ingestion_run(
+            run_id=run["id"],
+            status="success" if result.records else "no_publication",
+            documents_fetched=documents_fetched,
+            documents_new=documents_new,
+            documents_updated=documents_updated,
+            error_message=None
+            if result.records
+            else f"Monitor returned no records for {target_date}",
+            last_http_status=200,
+        )
+    except Exception as exc:
+        error_message = str(exc)
+        if failure_record_index is not None:
+            error_message = f"record_index={failure_record_index}: {error_message}"
+        run_record = repository.finish_ingestion_run(
+            run_id=run["id"],
+            status="failed",
+            documents_fetched=documents_fetched,
+            documents_new=documents_new,
+            documents_updated=documents_updated,
+            error_message=error_message,
+            last_http_status=None,
+        )
+
+    documents_upserted = run_record["documents_new"] + run_record["documents_updated"]
+    partial_materialization = run_record["status"] == "failed" and documents_upserted > 0
+    print(
+        " ".join(
+            [
+                f"status={run_record['status']}",
+                f"ingestion_run_id={run_record['id']}",
+                f"db_path={_compact_token(args.db_path)}",
+                f"sources_upserted={sources_upserted}",
+                f"source_created={str(source_created).lower()}",
+                f"documents_fetched={run_record['documents_fetched']}",
+                f"documents_new={run_record['documents_new']}",
+                f"documents_updated={run_record['documents_updated']}",
+                f"documents_upserted={documents_upserted}",
+                f"partial_materialization={str(partial_materialization).lower()}",
+                f"failure_record_index={failure_record_index or 'none'}",
+                "candidate_creation_allowed=false",
+                "evidence_created=false",
+                "artifact_downloads=false",
+                "product_writes=false",
+                "registry_config_mutated=false",
+            ]
+            + (
+                [f"error_message={_compact_token(run_record['error_message'])}"]
+                if run_record.get("error_message")
+                else []
+            )
+        ),
+        file=stdout,
+    )
+    return 0 if run_record["status"] in {"success", "no_publication"} else 1
+
+
+def _select_monitor_ingestion_kind(source: dict[str, Any], requested: str) -> str:
+    if requested != "auto":
+        return requested
+    for access_method in source.get("access_methods", []):
+        if access_method.get("status") != "validated":
+            continue
+        method_type = access_method.get("type")
+        if method_type in {"rss", "atom"}:
+            return "rss"
+        if method_type == "html":
+            return "html"
+        if method_type in {"api", "xml"}:
+            return "api"
+    raise ValueError(f"{source.get('source_code', 'source')} has no validated monitor method")
+
+
+def _runtime_source_exists(repository: OfficialSourcesRepository, source_code: str) -> bool:
+    try:
+        repository.get_source_by_code(source_code)
+    except KeyError:
+        return False
+    return True
+
+
+def _run_monitor_for_ingestion(
+    source_code: str,
+    *,
+    monitor_kind: str,
+    target_date: str,
+    limit: int,
+    rss_fetcher,
+    api_fetcher,
+    html_fetcher,
+):
+    if monitor_kind == "rss":
+        return monitor_source_code(
+            source_code,
+            fetcher=rss_fetcher,
+            target_date=target_date,
+            limit=limit,
+        )
+    if monitor_kind == "api":
+        return monitor_api_source_code(
+            source_code,
+            fetcher=api_fetcher,
+            target_date=target_date,
+            limit=limit,
+        )
+    if monitor_kind == "html":
+        return monitor_html_source_code(
+            source_code,
+            fetcher=html_fetcher,
+            target_date=target_date,
+            limit=limit,
+        )
+    raise ValueError(f"Unsupported monitor kind: {monitor_kind}")
+
+
+def _upsert_registry_source(
+    repository: OfficialSourcesRepository,
+    source: dict[str, Any],
+    *,
+    monitor_kind: str,
+) -> dict[str, Any]:
+    source_code = source["source_code"]
+    region_code = str(source.get("jurisdiction") or "").strip() or "ES"
+    return repository.upsert_official_source(
+        code=source_code,
+        name=source["name"],
+        jurisdiction=source.get("jurisdiction_level") or source.get("jurisdiction") or "other",
+        region_code=region_code,
+        base_url=source.get("official_landing_url") or _monitor_source_base_url(source),
+        access_type=f"official_{monitor_kind}",
+        reliability_level="canonical",
+    )
+
+
+def _monitor_source_base_url(source: dict[str, Any]) -> str:
+    for access_method in source.get("access_methods", []):
+        url = str(access_method.get("url", "")).strip()
+        if url:
+            return url
+    return "https://example.invalid"
+
+
+def _monitor_document_external_id(source_code: str, record: dict[str, Any]) -> str:
+    raw_identifier = (
+        record.get("document_id")
+        or record.get("api_id")
+        or record.get("entry_id")
+        or record.get("entry_hash")
+        or record.get("official_url")
+    )
+    identifier = str(raw_identifier or "").strip()
+    if not identifier:
+        identifier = sha256_bytes(json.dumps(record, sort_keys=True).encode("utf-8"))[:16]
+    if identifier.startswith(f"{source_code}:"):
+        return identifier
+    return f"{source_code}:{identifier}"
+
+
+def _monitor_publication_date(record: dict[str, Any], target_date: str) -> str:
+    value = str(record.get("pub" + "lished_at") or "").strip()
+    if not value:
+        return target_date
+    try:
+        return date.fromisoformat(value[:10]).isoformat()
+    except ValueError:
+        pass
+    try:
+        parsed = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return target_date
+    return parsed.date().isoformat()
+
+
+def _monitor_document_title(record: dict[str, Any], external_id: str) -> str:
+    title = str(record.get("title") or "").strip()
+    return title or f"Official monitor record {external_id}"
+
+
+def _monitor_department(record: dict[str, Any]) -> str | None:
+    for key in ("department", "issuing_authority", "agency"):
+        value = str(record.get(key) or "").strip()
+        if value:
+            return value
+    title = str(record.get("title") or "").strip()
+    if ":" in title:
+        prefix = title.split(":", 1)[0].strip()
+        if 2 <= len(prefix) <= 80 and prefix.upper() == prefix:
+            return prefix
+    summary = str(record.get("summary") or "").strip()
+    if "<" not in summary and ">" not in summary and len(summary) <= 180 and " - " in summary:
+        return summary.rsplit(" - ", 1)[-1].strip() or None
+    return None
+
+
+def _monitor_section(record: dict[str, Any]) -> str | None:
+    for key in ("section", "category"):
+        value = str(record.get(key) or "").strip()
+        if value:
+            return value
+    summary = str(record.get("summary") or "").strip()
+    if "<" in summary or ">" in summary:
+        return None
+    if len(summary) <= 180 and " - " in summary:
+        return summary.split(" - ", 1)[0].strip() or None
+    return summary or None
+
+
+def _monitor_document_type(record: dict[str, Any], monitor_kind: str) -> str:
+    explicit = str(record.get("document_type") or "").strip()
+    return explicit or f"{monitor_kind}_monitor_record"
+
+
+def _monitor_url(record: dict[str, Any], url_type: str) -> str | None:
+    official_url = str(record.get("official_url") or "").strip()
+    if not official_url:
+        return None
+    lower_url = official_url.lower()
+    if url_type == "pdf":
+        return official_url if ".pdf" in lower_url or "pdf" in lower_url.split("?")[0] else None
+    if url_type == "xml":
+        return official_url if ".xml" in lower_url or "format=xml" in lower_url else None
+    if url_type == "html":
+        if _monitor_url(record, "pdf") or _monitor_url(record, "xml"):
+            return None
+        return official_url
+    return None
 
 
 def _open_repository(db_path: str) -> OfficialSourcesRepository:
@@ -3270,9 +3625,7 @@ def _render_bdns_business_dashboard(records: list[dict[str, Any]], *, min_score:
             f"{rows}</tbody></table>"
         )
     else:
-        content = (
-            '<div class="empty">No hay convocatorias BDNS por encima del umbral.</div>'
-        )
+        content = '<div class="empty">No hay convocatorias BDNS por encima del umbral.</div>'
     return f"""<!doctype html>
 <html lang="es">
 <head>
@@ -3319,12 +3672,12 @@ def _render_bdns_business_row(record: dict[str, Any]) -> str:
     url = record["official_url"] or "#"
     return (
         "<tr>"
-        f"<td class=\"score\">{record['business_relevance_score']:.2f}</td>"
-        f"<td><a href=\"{html.escape(url)}\">{html.escape(record['official_identifier'])}</a><br>"
+        f'<td class="score">{record["business_relevance_score"]:.2f}</td>'
+        f'<td><a href="{html.escape(url)}">{html.escape(record["official_identifier"])}</a><br>'
         f"{html.escape(record['title'])}</td>"
         f"<td>{html.escape(str(record['application_end_date'] or ''))}</td>"
         f"<td>{html.escape(str(record['budget'] or ''))}</td>"
-        f"<td class=\"reasons\">{html.escape(reasons)}</td>"
+        f'<td class="reasons">{html.escape(reasons)}</td>'
         "</tr>"
     )
 

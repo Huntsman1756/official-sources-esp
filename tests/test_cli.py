@@ -282,6 +282,257 @@ def test_ingest_boe_summary_non_sunday_404_exits_nonzero_and_reports_failed(tmp_
     assert "last_http_status=404" in captured.out
 
 
+def test_ingest_monitor_date_materializes_rss_records(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    command = [
+        "--db-path",
+        str(db_path),
+        "ingest-monitor-date",
+        "--source",
+        "BOIB",
+        "--date",
+        "2026-05-24",
+        "--limit",
+        "1",
+    ]
+    exit_code = run(
+        command,
+        rss_fetcher=lambda _url: _fixture_bytes("rss_monitor_minimal.xml"),
+    )
+
+    connection = connect(str(db_path))
+    document = connection.execute(
+        """
+        SELECT
+            s.code,
+            s.region_code,
+            d.external_id,
+            d.publication_date,
+            d.url_html,
+            d.raw_metadata_json
+        FROM official_documents d
+        JOIN official_sources s ON s.id = d.source_id
+        WHERE s.code = 'BOIB'
+        """
+    ).fetchone()
+    run_record = OfficialSourcesRepository(connection).get_latest_ingestion_run(
+        "BOIB", "2026-05-24"
+    )
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert document["code"] == "BOIB"
+    assert document["region_code"] == "ES-IB"
+    assert document["external_id"].startswith("BOIB:")
+    assert document["publication_date"] == "2026-05-22"
+    assert document["url_html"]
+    assert run_record["documents_new"] == 1
+    raw_metadata = json.loads(document["raw_metadata_json"])
+    assert raw_metadata["command"] == "ingest-monitor-date"
+    assert raw_metadata["ingestion_run_id"] == run_record["id"]
+    assert raw_metadata["monitor_kind"] == "rss"
+    assert raw_metadata["monitor_target_date"] == "2026-05-24"
+    assert raw_metadata["operator_controlled"] is True
+    assert raw_metadata["monitor_record"]["source_code"] == "BOIB"
+    assert "db_path=" in captured.out
+    assert "writes=sqlite_materialization" in captured.out
+    assert "ingestion_run_id=" in captured.out
+    assert "sources_upserted=1" in captured.out
+    assert "source_created=true" in captured.out
+    assert "documents_upserted=1" in captured.out
+    assert "candidate_creation_allowed=false" in captured.out
+    assert "evidence_created=false" in captured.out
+    assert "artifact_downloads=false" in captured.out
+    assert "product_writes=false" in captured.out
+    assert "registry_config_mutated=false" in captured.out
+
+    second_exit_code = run(
+        command,
+        rss_fetcher=lambda _url: _fixture_bytes("rss_monitor_minimal.xml"),
+    )
+    second_run_record = OfficialSourcesRepository(connection).get_latest_ingestion_run(
+        "BOIB", "2026-05-24"
+    )
+    document_count = connection.execute(
+        """
+        SELECT COUNT(*)
+        FROM official_documents d
+        JOIN official_sources s ON s.id = d.source_id
+        WHERE s.code = 'BOIB'
+        """
+    ).fetchone()[0]
+    second_captured = capsys.readouterr()
+    assert second_exit_code == 0
+    assert document_count == 1
+    assert second_run_record["documents_new"] == 0
+    assert second_run_record["documents_updated"] == 1
+    assert "source_created=false" in second_captured.out
+    assert "documents_new=0" in second_captured.out
+    assert "documents_updated=1" in second_captured.out
+    assert "documents_upserted=1" in second_captured.out
+
+
+def test_ingest_monitor_date_reports_partial_failure_counts(tmp_path, capsys, monkeypatch):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    feed = b"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>BOIB</title>
+    <link>https://www.caib.es/eboibfront/</link>
+    <description>BOIB test feed</description>
+    <item>
+      <title>First monitor record</title>
+      <link>https://www.caib.es/eboibfront/record-1</link>
+      <description>First metadata-only record.</description>
+      <pubDate>Fri, 22 May 2026 18:05:45 GMT</pubDate>
+      <guid>https://www.caib.es/eboibfront/record-1</guid>
+    </item>
+    <item>
+      <title>Second monitor record</title>
+      <link>https://www.caib.es/eboibfront/record-2</link>
+      <description>Second metadata-only record.</description>
+      <pubDate>Fri, 22 May 2026 19:05:45 GMT</pubDate>
+      <guid>https://www.caib.es/eboibfront/record-2</guid>
+    </item>
+  </channel>
+</rss>
+"""
+    original_upsert_document = OfficialSourcesRepository.upsert_document
+    call_count = 0
+
+    def flaky_upsert_document(self, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 2:
+            raise RuntimeError("simulated second document failure")
+        return original_upsert_document(self, **kwargs)
+
+    monkeypatch.setattr(OfficialSourcesRepository, "upsert_document", flaky_upsert_document)
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "ingest-monitor-date",
+            "--source",
+            "BOIB",
+            "--date",
+            "2026-05-24",
+            "--limit",
+            "2",
+        ],
+        rss_fetcher=lambda _url: feed,
+    )
+
+    connection = connect(str(db_path))
+    run_record = OfficialSourcesRepository(connection).get_latest_ingestion_run(
+        "BOIB", "2026-05-24"
+    )
+    document_count = connection.execute(
+        """
+        SELECT COUNT(*)
+        FROM official_documents d
+        JOIN official_sources s ON s.id = d.source_id
+        WHERE s.code = 'BOIB'
+        """
+    ).fetchone()[0]
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert document_count == 1
+    assert run_record["status"] == "failed"
+    assert run_record["documents_fetched"] == 2
+    assert run_record["documents_new"] == 1
+    assert run_record["documents_updated"] == 0
+    assert "documents_new=1" in captured.out
+    assert "documents_updated=0" in captured.out
+    assert "documents_upserted=1" in captured.out
+    assert "partial_materialization=true" in captured.out
+    assert "failure_record_index=2" in captured.out
+    assert "error_message=record_index=2:" in captured.out
+
+
+def test_ingest_monitor_date_materializes_html_records(tmp_path):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "ingest-monitor-date",
+            "--source",
+            "BOPA",
+            "--date",
+            "2026-05-29",
+            "--limit",
+            "1",
+        ],
+        html_fetcher=lambda _url: _fixture_bytes("bopa_summary_2026_05_29.html"),
+    )
+
+    connection = connect(str(db_path))
+    document = connection.execute(
+        """
+        SELECT s.region_code, d.external_id, d.publication_date, d.title, d.url_pdf, d.url_html
+        FROM official_documents d
+        JOIN official_sources s ON s.id = d.source_id
+        WHERE s.code = 'BOPA'
+        """
+    ).fetchone()
+    assert exit_code == 0
+    assert document["region_code"] == "ES-AS"
+    assert document["external_id"] == "BOPA:2026-04395"
+    assert document["publication_date"] == "2026-05-29"
+    assert document["title"]
+    assert document["url_pdf"] or document["url_html"]
+
+
+def test_ingest_monitor_date_materializes_api_records(tmp_path):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+
+    def api_fetcher(url: str) -> bytes:
+        if "tipo=3" in url:
+            return _fixture_bytes("bor_calendar_may_2026.xml")
+        return _fixture_bytes("bor_issue_2026_05_29.xml")
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "ingest-monitor-date",
+            "--source",
+            "BOR",
+            "--date",
+            "2026-05-29",
+            "--limit",
+            "1",
+        ],
+        api_fetcher=api_fetcher,
+    )
+
+    connection = connect(str(db_path))
+    document = connection.execute(
+        """
+        SELECT s.region_code, d.external_id, d.publication_date, d.department, d.section, d.url_html
+        FROM official_documents d
+        JOIN official_sources s ON s.id = d.source_id
+        WHERE s.code = 'BOR'
+        """
+    ).fetchone()
+    assert exit_code == 0
+    assert document["region_code"] == "ES-RI"
+    assert document["external_id"] == "BOR:40629535-5-HTML-577687-X"
+    assert document["publication_date"] == "2026-05-29"
+    assert document["department"] == "CONSEJERIA DE HACIENDA"
+    assert document["section"] == "DISPOSICIONES GENERALES"
+    assert document["url_html"]
+
+
 def test_status_reports_no_publication_and_last_http_status(tmp_path, capsys):
     from official_sources.cli import run
 
