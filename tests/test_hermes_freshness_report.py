@@ -35,6 +35,7 @@ def test_fresh_source_returns_go_with_auditable_fields():
 
     assert result.verdict == "GO"
     assert result.checks[0].status == "healthy"
+    assert result.checks[0].reason == "age within threshold"
     assert result.checks[0].age_hours == 4.0
     assert result.checks[0].threshold_hours == 36
     assert result.checks[0].calendar_exception is None
@@ -56,6 +57,7 @@ def test_non_critical_stale_source_returns_warning():
 
     assert result.verdict == "WARNING"
     assert result.checks[0].status == "stale"
+    assert result.checks[0].reason == "age exceeds threshold"
     assert result.checks[0].age_hours == 72.0
     assert result.warnings == ("BOP_TEST stale for 72.0h over threshold 24h",)
 
@@ -90,6 +92,7 @@ def test_missing_critical_source_returns_no_go():
 
     assert result.verdict == "NO-GO"
     assert result.checks[0].status == "missing"
+    assert result.checks[0].reason == "last_seen missing"
     assert result.checks[0].age_hours is None
     assert result.failures == ("BDNS critical freshness timestamp is missing",)
 
@@ -108,6 +111,7 @@ def test_calendar_exception_keeps_stale_source_go():
 
     assert result.verdict == "GO"
     assert result.checks[0].status == "calendar-exempt"
+    assert result.checks[0].reason == "calendar exception: holiday"
     assert result.checks[0].calendar_exception == "holiday"
     assert result.failures == ()
     assert result.warnings == ()
@@ -130,8 +134,14 @@ def test_report_renders_verdict_sources_thresholds_calendar_and_impact():
     report = render_markdown_report(result)
 
     assert "VERDICT: WARNING" in report
-    assert "| BOE | healthy | 2026-06-13T08:00:00Z | 36 | 4.0 | none |" in report
-    assert "| BOP_TEST | stale | 2026-06-10T12:00:00Z | 24 | 72.0 | none |" in report
+    assert (
+        "| BOE | healthy | age within threshold | 2026-06-13T08:00:00Z | 36 | 4.0 | none |"
+        in report
+    )
+    assert (
+        "| BOP_TEST | stale | age exceeds threshold | 2026-06-10T12:00:00Z | 24 | 72.0 | none |"
+        in report
+    )
     assert "Non-critical source needs manual review." in report
     assert "- official_documents_written: false" in report
     assert "- downstream_writes: false" in report
@@ -181,3 +191,42 @@ def test_cli_freshness_report_reads_fixture_and_writes_only_explicit_report(tmp_
         "freshness-report.md",
         "freshness-state.json",
     ]
+
+
+def test_cli_freshness_report_without_output_writes_nothing(tmp_path, capsys):
+    from official_sources.cli import run
+
+    state_path = tmp_path / "freshness-state.json"
+    state_path.write_text(
+        json.dumps(
+            {
+                "sources": [
+                    {
+                        "source_code": "BOE",
+                        "last_seen": "2026-06-13T08:00:00Z",
+                        "threshold_hours": 36,
+                        "critical": True,
+                        "calendar_exception": None,
+                        "impact": "BOE monitor freshness is current.",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = run(
+        [
+            "hermes",
+            "freshness-report",
+            "--state",
+            str(state_path),
+            "--now",
+            "2026-06-13T12:00:00Z",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "VERDICT: GO" in captured.out
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["freshness-state.json"]

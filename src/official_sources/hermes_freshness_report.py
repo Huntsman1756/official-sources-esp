@@ -43,6 +43,7 @@ class FreshnessObservation:
 class FreshnessCheck:
     source_code: str
     status: str
+    reason: str
     last_seen: str | None
     threshold_hours: int
     age_hours: float | None
@@ -116,14 +117,18 @@ def render_markdown_report(result: FreshnessResult) -> str:
         "",
         "## Checks",
         "",
-        "| Source | Status | Last seen | Threshold hours | Age hours | Calendar exception |",
-        "| --- | --- | --- | ---: | ---: | --- |",
+        (
+            "| Source | Status | Reason | Last seen | Threshold hours | Age hours | "
+            "Calendar exception |"
+        ),
+        "| --- | --- | --- | --- | ---: | ---: | --- |",
     ]
     for check in result.checks:
         lines.append(
             "| "
             f"{check.source_code} | "
             f"{check.status} | "
+            f"{check.reason} | "
             f"{check.last_seen or 'missing'} | "
             f"{check.threshold_hours} | "
             f"{_display_age(check.age_hours)} | "
@@ -177,6 +182,7 @@ def _evaluate_source(
         return FreshnessCheck(
             source_code=source.source_code,
             status="calendar-exempt",
+            reason=f"calendar exception: {source.calendar_exception}",
             last_seen=source.last_seen,
             threshold_hours=source.threshold_hours,
             age_hours=_age_hours(now, source.last_seen) if source.last_seen else None,
@@ -192,6 +198,7 @@ def _evaluate_source(
         return FreshnessCheck(
             source_code=source.source_code,
             status="missing",
+            reason="last_seen missing",
             last_seen=None,
             threshold_hours=source.threshold_hours,
             age_hours=None,
@@ -211,11 +218,14 @@ def _evaluate_source(
         else:
             warnings.append(message)
         status = "stale"
+        reason = "age exceeds threshold"
     else:
         status = "healthy"
+        reason = "age within threshold"
     return FreshnessCheck(
         source_code=source.source_code,
         status=status,
+        reason=reason,
         last_seen=source.last_seen,
         threshold_hours=source.threshold_hours,
         age_hours=age_hours,
