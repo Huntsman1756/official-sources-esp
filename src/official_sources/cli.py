@@ -40,6 +40,11 @@ from official_sources.hermes_freshness_report import (
     load_runtime_observation,
     parse_timestamp,
 )
+from official_sources.hermes_freshness_observation_producer import (
+    HermesFreshnessObservationProducerError,
+    collect_freshness_observations,
+    write_observations_jsonl,
+)
 from official_sources.hermes_freshness_report import (
     render_markdown_report as render_freshness_markdown_report,
 )
@@ -1239,6 +1244,37 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional markdown report path to write. Stdout is always emitted.",
     )
+    hermes_freshness_observations = hermes_subparsers.add_parser(
+        "freshness-observations",
+        help=(
+            "Produce freshness observation JSONL from existing runtime state only. "
+            "No live fetches, materialization, or product writes are run."
+        ),
+    )
+    hermes_freshness_observations.add_argument(
+        "--runtime-root",
+        required=True,
+        help=(
+            "Repository/runtime root containing data/rss_monitor, data/api_monitor, and "
+            "data/html_monitor read-only outputs."
+        ),
+    )
+    hermes_freshness_observations.add_argument(
+        "--db-path",
+        default=None,
+        help="Optional SQLite database to inspect read-only for ingestion_runs freshness observations.",
+    )
+    hermes_freshness_observations.add_argument(
+        "--source",
+        action="append",
+        default=[],
+        help="Optional source code filter. Can be repeated.",
+    )
+    hermes_freshness_observations.add_argument(
+        "--output",
+        required=True,
+        help="Freshness observation JSONL path to write.",
+    )
 
     ingest = subparsers.add_parser("ingest-boe-summary", help="Ingest one BOE daily summary.")
     ingest.add_argument(
@@ -2247,6 +2283,23 @@ def _run_hermes_command(
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
+    if args.hermes_command == "freshness-observations":
+        try:
+            observations = collect_freshness_observations(
+                runtime_root=Path(args.runtime_root),
+                db_path=Path(args.db_path) if args.db_path else None,
+                source_codes=tuple(args.source),
+            )
+            if not observations:
+                print("no freshness observations found", file=stderr)
+                return 2
+            write_observations_jsonl(observations, Path(args.output))
+        except (OSError, HermesFreshnessObservationProducerError) as exc:
+            print(str(exc), file=stderr)
+            return 2
+        print(f"observations_written={len(observations)}", file=stdout)
+        print(f"output={args.output}", file=stdout)
+        return 0
     if args.hermes_command == "freshness-report":
         try:
             now = parse_timestamp(args.now)
