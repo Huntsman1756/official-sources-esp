@@ -7,6 +7,7 @@ from official_sources.hermes_freshness_report import (
     FreshnessObservation,
     SourceFreshness,
     evaluate_freshness,
+    load_runtime_observation,
     render_markdown_report,
 )
 
@@ -230,3 +231,167 @@ def test_cli_freshness_report_without_output_writes_nothing(tmp_path, capsys):
     assert exit_code == 0
     assert "VERDICT: GO" in captured.out
     assert sorted(path.name for path in tmp_path.iterdir()) == ["freshness-state.json"]
+
+
+def test_runtime_observation_loads_latest_monitor_jsonl_without_changing_engine(tmp_path):
+    output_path = tmp_path / "data" / "rss_monitor" / "BOE" / "2026-06-13" / "rss_discovery.jsonl"
+    output_path.parent.mkdir(parents=True)
+    output_path.write_text(
+        json.dumps(
+            {
+                "source_code": "BOE",
+                "title": "BOE entry",
+                "published_at": "2026-06-13T07:30:00Z",
+                "discovered_at": "2026-06-13T08:00:00Z",
+                "candidate_status": "not_candidate",
+                "evidence_status": "not_evidence",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    observation = load_runtime_observation(
+        tmp_path,
+        now=NOW,
+        default_threshold_hours=36,
+        critical_sources=("BOE",),
+    )
+    result = evaluate_freshness(observation)
+
+    assert result.verdict == "GO"
+    assert observation.sources[0].source_code == "BOE"
+    assert observation.sources[0].last_seen == "2026-06-13T08:00:00Z"
+    assert observation.sources[0].threshold_hours == 36
+    assert observation.sources[0].critical is True
+    assert "Runtime discovery output observed" in observation.sources[0].impact
+    assert str(output_path) in observation.sources[0].impact
+
+
+def test_runtime_observation_uses_latest_timestamp_across_multiple_records(tmp_path):
+    output_path = tmp_path / "data" / "rss_monitor" / "BOE" / "2026-06-13" / "rss_discovery.jsonl"
+    output_path.parent.mkdir(parents=True)
+    records = [
+        {
+            "source_code": "BOE",
+            "title": "Old entry",
+            "published_at": "2026-06-13T06:00:00Z",
+            "discovered_at": "2026-06-13T06:30:00Z",
+        },
+        {
+            "source_code": "BOE",
+            "title": "New entry",
+            "published_at": "2026-06-13T07:30:00Z",
+            "discovered_at": "2026-06-13T09:15:00Z",
+        },
+    ]
+    output_path.write_text(
+        "".join(json.dumps(record, sort_keys=True) + "\n" for record in records),
+        encoding="utf-8",
+    )
+
+    observation = load_runtime_observation(
+        tmp_path,
+        now=NOW,
+        default_threshold_hours=36,
+        critical_sources=("BOE",),
+    )
+
+    assert observation.sources[0].source_code == "BOE"
+    assert observation.sources[0].last_seen == "2026-06-13T09:15:00Z"
+
+
+def test_runtime_observation_rejects_corrupt_jsonl_with_path_and_line(tmp_path):
+    output_path = tmp_path / "data" / "rss_monitor" / "BOE" / "2026-06-13" / "rss_discovery.jsonl"
+    output_path.parent.mkdir(parents=True)
+    output_path.write_text('{"source_code": "BOE"}\n{not-json}\n', encoding="utf-8")
+
+    try:
+        load_runtime_observation(
+            tmp_path,
+            now=NOW,
+            default_threshold_hours=36,
+            critical_sources=("BOE",),
+        )
+    except ValueError as exc:
+        message = str(exc)
+        assert str(output_path) in message
+        assert ":2" in message
+        assert "not valid JSON" in message
+    else:
+        raise AssertionError("corrupt JSONL must not be ignored")
+
+
+def test_runtime_observation_marks_expected_missing_source(tmp_path):
+    observation = load_runtime_observation(
+        tmp_path,
+        now=NOW,
+        default_threshold_hours=24,
+        critical_sources=("BDNS",),
+        expected_sources=("BDNS",),
+    )
+    result = evaluate_freshness(observation)
+
+    assert result.verdict == "NO-GO"
+    assert observation.sources[0].source_code == "BDNS"
+    assert observation.sources[0].last_seen is None
+    assert observation.sources[0].impact == "Expected runtime discovery output is missing."
+    assert result.checks[0].status == "missing"
+
+
+def test_runtime_observation_rejects_empty_unscoped_runtime_root(tmp_path):
+    try:
+        load_runtime_observation(
+            tmp_path,
+            now=NOW,
+            default_threshold_hours=24,
+        )
+    except ValueError as exc:
+        assert "no runtime discovery outputs found" in str(exc)
+    else:
+        raise AssertionError("empty runtime root must not produce a silent GO")
+
+
+def test_cli_freshness_report_runtime_root_reads_real_inputs_without_extra_writes(tmp_path, capsys):
+    from official_sources.cli import run
+
+    output_path = tmp_path / "data" / "api_monitor" / "BOPV" / "2026-06-13" / "api_discovery.jsonl"
+    output_path.parent.mkdir(parents=True)
+    output_path.write_text(
+        json.dumps(
+            {
+                "source_code": "BOPV",
+                "title": "BOPV entry",
+                "published_at": "2026-06-13",
+                "discovered_at": "2026-06-13T08:00:00Z",
+                "candidate_status": "not_candidate",
+                "evidence_status": "not_evidence",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    exit_code = run(
+        [
+            "hermes",
+            "freshness-report",
+            "--runtime-root",
+            str(tmp_path),
+            "--now",
+            "2026-06-13T12:00:00Z",
+            "--default-threshold-hours",
+            "36",
+            "--critical-source",
+            "BOPV",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "VERDICT: GO" in captured.out
+    assert (
+        "| BOPV | healthy | age within threshold | 2026-06-13T08:00:00Z | 36 | 4.0 | none |"
+        in captured.out
+    )
+    assert not (tmp_path / "freshness-report.md").exists()
