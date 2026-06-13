@@ -33,6 +33,7 @@ from official_sources.hermes_drift_audit import (
     render_markdown_report,
     require_external_release_contract,
 )
+from official_sources.hermes_bocm_rss_observation import run_bocm_rss_observation
 from official_sources.hermes_freshness_report import (
     HermesFreshnessReportError,
     evaluate_freshness,
@@ -1283,6 +1284,42 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Freshness observation JSONL path to write.",
     )
+    hermes_bocm_rss_observation = hermes_subparsers.add_parser(
+        "bocm-rss-observation",
+        help=(
+            "Run a manual BOCM RSS observation into Hermes freshness runtime state. "
+            "No scheduler, SQLite writes, or external project writes are run."
+        ),
+    )
+    hermes_bocm_rss_observation.add_argument(
+        "--repo-root",
+        default="/opt/official-sources/app",
+        help="Repository checkout root used as command working directory.",
+    )
+    hermes_bocm_rss_observation.add_argument(
+        "--state-root",
+        default="/var/lib/hermes-official-sources-auditor",
+        help="Hermes state root. BOCM RSS and observation JSONL are written below this root.",
+    )
+    hermes_bocm_rss_observation.add_argument(
+        "--official-sources-bin",
+        default=None,
+        help=(
+            "official-sources executable used for the RSS monitor and freshness observation "
+            "producer. Default: <repo-root>/.venv/bin/official-sources."
+        ),
+    )
+    hermes_bocm_rss_observation.add_argument(
+        "--date",
+        default="today",
+        help="BOCM RSS monitor date in YYYY-MM-DD format or today. Default: today.",
+    )
+    hermes_bocm_rss_observation.add_argument(
+        "--limit",
+        type=int,
+        default=1,
+        help="Maximum BOCM RSS records to observe. Default: 1.",
+    )
 
     ingest = subparsers.add_parser("ingest-boe-summary", help="Ingest one BOE daily summary.")
     ingest.add_argument(
@@ -2363,6 +2400,22 @@ def _run_hermes_command(
         print(f"freshness_exit_code={result.exit_code}", file=stdout)
         if result.freshness_result.stderr.strip():
             print(result.freshness_result.stderr.strip(), file=stderr)
+        return result.exit_code
+    if args.hermes_command == "bocm-rss-observation":
+        result = run_bocm_rss_observation(
+            repo_root=Path(args.repo_root),
+            state_root=Path(args.state_root),
+            official_sources_bin=args.official_sources_bin,
+            target_date=args.date,
+            limit=args.limit,
+        )
+        print(f"rss_output_path={result.rss_output_path}", file=stdout)
+        print(f"observations_path={result.observations_path}", file=stdout)
+        print(f"bocm_rss_observation_exit_code={result.exit_code}", file=stdout)
+        if result.rss_result.stderr.strip():
+            print(result.rss_result.stderr.strip(), file=stderr)
+        if result.observations_result.stderr.strip():
+            print(result.observations_result.stderr.strip(), file=stderr)
         return result.exit_code
     if args.hermes_command != "audit":
         print(f"Unknown hermes command: {args.hermes_command}", file=stderr)
