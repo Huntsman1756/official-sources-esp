@@ -37,6 +37,7 @@ Future implementations under this contract may:
 - read the source registry
 - read existing monitor metadata and cache timestamps
 - read existing SQLite metadata in read-only mode
+- read scoped systemd unit/timer state and journal evidence
 - run in-process read-only MCP/planner smokes
 - write local Hermes audit reports and logs under the Hermes state root
 - emit GO, WARNING, or NO-GO
@@ -71,6 +72,11 @@ Hermes freshness automation.
 
 These SLOs define default thresholds. Source-specific overrides may be added only when documented
 in the contract or in the source registry metadata.
+
+Official sources do not all publish daily. A stale timestamp is `WARNING` by default unless the
+source is marked critical and the report can prove that the source missed its own expected cadence.
+Weekends, public holidays, no-publication days, and source-specific discontinuous schedules must be
+represented as documented calendar exceptions, not treated as automatic `NO-GO`.
 
 | Source family | WARNING | NO-GO |
 | --- | --- | --- |
@@ -141,7 +147,10 @@ checks:
     latest_success_at: "<timestamp or null>"
     latest_record_date: "<date or null>"
     staleness_hours: 0
+    threshold_hours: 0
+    calendar_exception: "<weekend, holiday, no_publication, source_specific, or null>"
     evidence: "<path, query, or report section>"
+    impact: "<operator-facing impact>"
     action_required: "<human action, or none>"
 forbidden_actions_confirmed:
   git_mutation: false
