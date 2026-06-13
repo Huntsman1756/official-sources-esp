@@ -43,6 +43,11 @@ from official_sources.hermes_freshness_report import (
 from official_sources.hermes_freshness_report import (
     render_markdown_report as render_freshness_markdown_report,
 )
+from official_sources.hermes_scheduled_freshness_report import (
+    DEFAULT_CRITICAL_SOURCES,
+    DEFAULT_EXPECTED_SOURCES,
+    run_scheduled_freshness_report,
+)
 from official_sources.hermes_scheduled_audit import run_scheduled_strict_audit
 from official_sources.html_monitor import (
     HTMLMonitorError,
@@ -1150,6 +1155,46 @@ def build_parser() -> argparse.ArgumentParser:
             "Default: <repo-root>/.venv/bin/official-sources."
         ),
     )
+    hermes_scheduled_freshness = hermes_subparsers.add_parser(
+        "scheduled-freshness-report",
+        help="Run the Hermes freshness report-only integration without service enforcement.",
+    )
+    hermes_scheduled_freshness.add_argument(
+        "--repo-root",
+        default="/opt/official-sources/app",
+        help="Repository/runtime root containing data/... monitor state. Default: /opt/official-sources/app.",
+    )
+    hermes_scheduled_freshness.add_argument(
+        "--state-root",
+        default="/var/lib/hermes-official-sources-auditor",
+        help="Hermes state root. Freshness reports are written below freshness-reports/.",
+    )
+    hermes_scheduled_freshness.add_argument(
+        "--official-sources-bin",
+        default=None,
+        help=(
+            "official-sources executable used for the freshness report. "
+            "Default: <repo-root>/.venv/bin/official-sources."
+        ),
+    )
+    hermes_scheduled_freshness.add_argument(
+        "--default-threshold-hours",
+        type=int,
+        default=72,
+        help="Freshness threshold for runtime inputs. Default: 72.",
+    )
+    hermes_scheduled_freshness.add_argument(
+        "--critical-source",
+        action="append",
+        default=None,
+        help="Critical source code for fail-closed freshness verdicts. Can be repeated.",
+    )
+    hermes_scheduled_freshness.add_argument(
+        "--expected-source",
+        action="append",
+        default=None,
+        help="Expected source code for missing-input reporting. Can be repeated.",
+    )
     hermes_freshness = hermes_subparsers.add_parser(
         "freshness-report",
         help="Render a read-only Hermes source freshness report from local state.",
@@ -2235,6 +2280,20 @@ def _run_hermes_command(
         print(f"strict_report_path={result.strict_report_path}", file=stdout)
         print(f"log_path={result.log_path}", file=stdout)
         print(f"strict_exit_code={result.exit_code}", file=stdout)
+        return result.exit_code
+    if args.hermes_command == "scheduled-freshness-report":
+        result = run_scheduled_freshness_report(
+            repo_root=Path(args.repo_root),
+            state_root=Path(args.state_root),
+            official_sources_bin=args.official_sources_bin,
+            default_threshold_hours=args.default_threshold_hours,
+            critical_sources=tuple(args.critical_source or DEFAULT_CRITICAL_SOURCES),
+            expected_sources=tuple(args.expected_source or DEFAULT_EXPECTED_SOURCES),
+        )
+        print(f"report_path={result.report_path}", file=stdout)
+        print(f"freshness_exit_code={result.exit_code}", file=stdout)
+        if result.freshness_result.stderr.strip():
+            print(result.freshness_result.stderr.strip(), file=stderr)
         return result.exit_code
     if args.hermes_command != "audit":
         print(f"Unknown hermes command: {args.hermes_command}", file=stderr)
