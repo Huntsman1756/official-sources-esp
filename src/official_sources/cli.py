@@ -37,6 +37,7 @@ from official_sources.hermes_freshness_report import (
     HermesFreshnessReportError,
     evaluate_freshness,
     load_observation,
+    load_runtime_observation,
     parse_timestamp,
 )
 from official_sources.hermes_freshness_report import (
@@ -1153,15 +1154,40 @@ def build_parser() -> argparse.ArgumentParser:
         "freshness-report",
         help="Render a read-only Hermes source freshness report from local state.",
     )
-    hermes_freshness.add_argument(
+    freshness_input = hermes_freshness.add_mutually_exclusive_group(required=True)
+    freshness_input.add_argument(
         "--state",
-        required=True,
         help="JSON freshness state fixture to read. No live fetches or materialization are run.",
+    )
+    freshness_input.add_argument(
+        "--runtime-root",
+        help=(
+            "Repository/runtime root containing data/rss_monitor, data/api_monitor, and "
+            "data/html_monitor read-only outputs."
+        ),
     )
     hermes_freshness.add_argument(
         "--now",
         required=True,
         help="Evaluation timestamp in ISO-8601 format, for example 2026-06-13T12:00:00Z.",
+    )
+    hermes_freshness.add_argument(
+        "--default-threshold-hours",
+        type=int,
+        default=72,
+        help="Freshness threshold for runtime inputs. Default: 72.",
+    )
+    hermes_freshness.add_argument(
+        "--critical-source",
+        action="append",
+        default=[],
+        help="Source code that should return NO-GO when missing or stale. Can be repeated.",
+    )
+    hermes_freshness.add_argument(
+        "--expected-source",
+        action="append",
+        default=[],
+        help="Source code expected in runtime inputs; missing values are reported explicitly.",
     )
     hermes_freshness.add_argument(
         "--output",
@@ -2178,7 +2204,17 @@ def _run_hermes_command(
 ) -> int:
     if args.hermes_command == "freshness-report":
         try:
-            observation = load_observation(Path(args.state), now=parse_timestamp(args.now))
+            now = parse_timestamp(args.now)
+            if args.state:
+                observation = load_observation(Path(args.state), now=now)
+            else:
+                observation = load_runtime_observation(
+                    Path(args.runtime_root),
+                    now=now,
+                    default_threshold_hours=args.default_threshold_hours,
+                    critical_sources=tuple(args.critical_source),
+                    expected_sources=tuple(args.expected_source),
+                )
             result = evaluate_freshness(observation)
             report = render_freshness_markdown_report(result)
         except (OSError, HermesFreshnessReportError) as exc:

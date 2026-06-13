@@ -6,6 +6,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+DISCOVERY_FILES = {
+    "rss": ("data/rss_monitor", "rss_discovery.jsonl"),
+    "api": ("data/api_monitor", "api_discovery.jsonl"),
+    "html": ("data/html_monitor", "html_discovery.jsonl"),
+}
+
 
 class HermesFreshnessReportError(ValueError):
     pass
@@ -72,6 +78,43 @@ def load_observation(path: Path, *, now: datetime) -> FreshnessObservation:
         raise HermesFreshnessReportError("freshness state must include a sources list")
     sources = tuple(_source_from_mapping(item, index) for index, item in enumerate(raw_sources, 1))
     return FreshnessObservation(now=now, sources=sources)
+
+
+def load_runtime_observation(
+    runtime_root: Path,
+    *,
+    now: datetime,
+    default_threshold_hours: int,
+    critical_sources: tuple[str, ...] = (),
+    expected_sources: tuple[str, ...] = (),
+) -> FreshnessObservation:
+    if default_threshold_hours <= 0:
+        raise HermesFreshnessReportError("default_threshold_hours must be positive")
+    normalized_critical = {source.strip().upper() for source in critical_sources}
+    normalized_expected = {source.strip().upper() for source in expected_sources}
+    observed = _load_discovery_sources(
+        runtime_root.resolve(),
+        default_threshold_hours,
+        normalized_critical,
+    )
+    if not observed and not normalized_expected:
+        raise HermesFreshnessReportError(
+            "no runtime discovery outputs found; provide --expected-source to report missing inputs"
+        )
+
+    for source_code in sorted(normalized_expected - set(observed)):
+        observed[source_code] = SourceFreshness(
+            source_code=source_code,
+            last_seen=None,
+            threshold_hours=default_threshold_hours,
+            critical=source_code in normalized_critical,
+            calendar_exception=None,
+            impact="Expected runtime discovery output is missing.",
+        )
+    return FreshnessObservation(
+        now=now,
+        sources=tuple(observed[source_code] for source_code in sorted(observed)),
+    )
 
 
 def evaluate_freshness(observation: FreshnessObservation) -> FreshnessResult:
@@ -249,6 +292,76 @@ def _source_from_mapping(raw: Any, index: int) -> SourceFreshness:
         )
     except KeyError as exc:
         raise HermesFreshnessReportError(f"sources[{index}] missing field: {exc.args[0]}") from exc
+
+
+def _load_discovery_sources(
+    runtime_root: Path,
+    default_threshold_hours: int,
+    critical_sources: set[str],
+) -> dict[str, SourceFreshness]:
+    latest_by_source: dict[str, tuple[datetime, str, Path]] = {}
+    for discovery_type, (relative_root, filename) in DISCOVERY_FILES.items():
+        discovery_root = runtime_root / relative_root
+        if not discovery_root.exists():
+            continue
+        for output_path in sorted(discovery_root.glob(f"*/*/{filename}")):
+            source_code = output_path.parent.parent.name.strip().upper()
+            last_seen = _latest_discovery_timestamp(output_path)
+            current = latest_by_source.get(source_code)
+            if current is None or last_seen > current[0]:
+                latest_by_source[source_code] = (last_seen, discovery_type, output_path)
+
+    return {
+        source_code: SourceFreshness(
+            source_code=source_code,
+            last_seen=_format_timestamp(last_seen),
+            threshold_hours=default_threshold_hours,
+            critical=source_code in critical_sources,
+            calendar_exception=None,
+            impact=(
+                "Runtime discovery output observed from "
+                f"{discovery_type} monitor at {output_path}"
+            ),
+        )
+        for source_code, (last_seen, discovery_type, output_path) in latest_by_source.items()
+    }
+
+
+def _latest_discovery_timestamp(output_path: Path) -> datetime:
+    latest: datetime | None = None
+    try:
+        lines = output_path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        raise HermesFreshnessReportError(
+            f"could not read discovery output {output_path}: {exc}"
+        ) from exc
+    for line_number, line in enumerate(lines, 1):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise HermesFreshnessReportError(
+                f"discovery output {output_path}:{line_number} is not valid JSON"
+            ) from exc
+        if not isinstance(record, dict):
+            raise HermesFreshnessReportError(
+                f"discovery output {output_path}:{line_number} must be a JSON object"
+            )
+        timestamp = _record_timestamp(record)
+        if timestamp is not None and (latest is None or timestamp > latest):
+            latest = timestamp
+    if latest is None:
+        return parse_timestamp(f"{output_path.parent.name}T00:00:00Z")
+    return latest
+
+
+def _record_timestamp(record: dict[str, Any]) -> datetime | None:
+    for key in ("discovered_at", "updated_at", "published_at"):
+        value = _optional_string(record.get(key))
+        if value is not None:
+            return parse_timestamp(value)
+    return None
 
 
 def _age_hours(now: datetime, last_seen: str) -> float:
