@@ -41,7 +41,7 @@ def test_collects_monitor_observation_from_discovered_at_not_publication_date(tm
             "input_kind": "rss_monitor_jsonl",
             "timestamp_type": "observed",
             "confidence": "operational",
-            "reason": "derived from monitor discovered_at; no live fetch",
+            "reason": "derived from monitor discovered_at",
             "latest_record_date": "2026-06-14T12:00:00Z",
         },
     )
@@ -162,7 +162,40 @@ def test_cli_writes_only_explicit_observations_jsonl(tmp_path, capsys):
             "input_kind": "rss_monitor_jsonl",
             "timestamp_type": "observed",
             "confidence": "operational",
-            "reason": "derived from monitor discovered_at; no live fetch",
+            "reason": "derived from monitor discovered_at",
         }
     ]
     assert not (tmp_path / "runtime" / "freshness-observations.jsonl").exists()
+
+
+def test_collects_monitor_observation_preserves_source_reason(tmp_path):
+    output_path = tmp_path / "data" / "api_monitor" / "BDNS" / "2026-06-13" / "api_discovery.jsonl"
+    output_path.parent.mkdir(parents=True)
+    output_path.write_text(
+        json.dumps(
+            {
+                "source_code": "BDNS",
+                "discovered_at": "2026-06-13T10:15:00Z",
+                "published_at": "2026-06-12",
+                "reason": "derived from operator-controlled BDNS latest API observation",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    observations = collect_freshness_observations(runtime_root=tmp_path)
+
+    assert observations == (
+        {
+            "source": "BDNS",
+            "observed_at": "2026-06-13T10:15:00Z",
+            "observation_kind": "existing_runtime_state",
+            "input_path": str(output_path),
+            "input_kind": "api_monitor_jsonl",
+            "timestamp_type": "observed",
+            "confidence": "operational",
+            "reason": "derived from operator-controlled BDNS latest API observation",
+            "latest_record_date": "2026-06-12T00:00:00Z",
+        },
+    )
