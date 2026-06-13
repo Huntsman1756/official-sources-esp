@@ -57,7 +57,7 @@ official-sources hermes freshness-report \
   --expected-source BOE \
   --expected-source BDNS \
   --expected-source BOCM \
-  --output /var/lib/hermes-official-sources-auditor/freshness-reports/freshness-$STAMP.md
+  --output /var/lib/hermes-official-sources-auditor/freshness-reports/hermes-freshness-report-$STAMP.md
 ```
 
 The documented local smoke used `--runtime-root .` and returned `NO-GO` when the local checkout had
@@ -115,7 +115,7 @@ same ownership and operational surface.
 Suggested filename:
 
 ```text
-freshness-YYYYMMDD-HHMMSSZ.md
+hermes-freshness-report-YYYYMMDD-HHMMSS.md
 ```
 
 The implementation must create only this report path and any required parent directory under the
