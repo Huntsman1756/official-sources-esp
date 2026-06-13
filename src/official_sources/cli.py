@@ -37,6 +37,7 @@ from official_sources.hermes_freshness_report import (
     HermesFreshnessReportError,
     evaluate_freshness,
     load_observation,
+    load_observation_jsonl,
     load_runtime_observation,
     parse_timestamp,
 )
@@ -1216,6 +1217,13 @@ def build_parser() -> argparse.ArgumentParser:
             "data/html_monitor read-only outputs."
         ),
     )
+    freshness_input.add_argument(
+        "--observations-jsonl",
+        help=(
+            "Freshness observation JSONL produced from existing runtime state. "
+            "No live fetches or materialization are run."
+        ),
+    )
     hermes_freshness.add_argument(
         "--now",
         required=True,
@@ -2305,6 +2313,14 @@ def _run_hermes_command(
             now = parse_timestamp(args.now)
             if args.state:
                 observation = load_observation(Path(args.state), now=now)
+            elif args.observations_jsonl:
+                observation = load_observation_jsonl(
+                    Path(args.observations_jsonl),
+                    now=now,
+                    default_threshold_hours=args.default_threshold_hours,
+                    critical_sources=tuple(args.critical_source),
+                    expected_sources=tuple(args.expected_source),
+                )
             else:
                 observation = load_runtime_observation(
                     Path(args.runtime_root),

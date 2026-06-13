@@ -80,6 +80,72 @@ def load_observation(path: Path, *, now: datetime) -> FreshnessObservation:
     return FreshnessObservation(now=now, sources=sources)
 
 
+def load_observation_jsonl(
+    path: Path,
+    *,
+    now: datetime,
+    default_threshold_hours: int,
+    critical_sources: tuple[str, ...] = (),
+    expected_sources: tuple[str, ...] = (),
+) -> FreshnessObservation:
+    if default_threshold_hours <= 0:
+        raise HermesFreshnessReportError("default_threshold_hours must be positive")
+    normalized_critical = {source.strip().upper() for source in critical_sources}
+    normalized_expected = {source.strip().upper() for source in expected_sources}
+    observed: dict[str, tuple[datetime, SourceFreshness]] = {}
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        raise HermesFreshnessReportError(
+            f"could not read freshness observation JSONL {path}: {exc}"
+        ) from exc
+
+    for line_number, line in enumerate(lines, 1):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise HermesFreshnessReportError(
+                f"freshness observation JSONL {path}:{line_number} is not valid JSON"
+            ) from exc
+        if not isinstance(record, dict):
+            raise HermesFreshnessReportError(
+                f"freshness observation JSONL {path}:{line_number} must be a JSON object"
+            )
+        source = _source_from_observation_record(
+            record,
+            line_number,
+            default_threshold_hours,
+            normalized_critical,
+        )
+        observed_at = parse_timestamp(source.last_seen or "")
+        current = observed.get(source.source_code)
+        if current is None or observed_at > current[0]:
+            observed[source.source_code] = (observed_at, source)
+
+    if not observed and not normalized_expected:
+        raise HermesFreshnessReportError(
+            "no freshness observation JSONL records found; provide --expected-source to report missing inputs"
+        )
+    for source_code in sorted(normalized_expected - set(observed)):
+        observed[source_code] = (
+            datetime.min.replace(tzinfo=UTC),
+            SourceFreshness(
+                source_code=source_code,
+                last_seen=None,
+                threshold_hours=default_threshold_hours,
+                critical=source_code in normalized_critical,
+                calendar_exception=None,
+                impact="Expected freshness observation is missing.",
+            ),
+        )
+    return FreshnessObservation(
+        now=now,
+        sources=tuple(observed[source_code][1] for source_code in sorted(observed)),
+    )
+
+
 def load_runtime_observation(
     runtime_root: Path,
     *,
@@ -292,6 +358,45 @@ def _source_from_mapping(raw: Any, index: int) -> SourceFreshness:
         )
     except KeyError as exc:
         raise HermesFreshnessReportError(f"sources[{index}] missing field: {exc.args[0]}") from exc
+
+
+def _source_from_observation_record(
+    raw: dict[str, Any],
+    line_number: int,
+    default_threshold_hours: int,
+    critical_sources: set[str],
+) -> SourceFreshness:
+    try:
+        source_code = str(raw["source"])
+        observed_at = str(raw["observed_at"])
+    except KeyError as exc:
+        raise HermesFreshnessReportError(
+            f"freshness observation JSONL line {line_number} missing field: {exc.args[0]}"
+        ) from exc
+    timestamp_type = _optional_string(raw.get("timestamp_type"))
+    if timestamp_type != "observed":
+        raise HermesFreshnessReportError(
+            f"freshness observation JSONL line {line_number} timestamp_type must be observed"
+        )
+    parse_timestamp(observed_at)
+    input_kind = _optional_string(raw.get("input_kind")) or "unknown"
+    input_path = _optional_string(raw.get("input_path")) or "unknown"
+    reason = _optional_string(raw.get("reason")) or "freshness observation"
+    latest_record_date = _optional_string(raw.get("latest_record_date"))
+    impact = (
+        f"Freshness observation from {input_kind} at {input_path}; "
+        f"reason={reason}"
+    )
+    if latest_record_date:
+        impact = f"{impact}; latest_record_date={latest_record_date}"
+    return SourceFreshness(
+        source_code=source_code,
+        last_seen=_format_timestamp(parse_timestamp(observed_at)),
+        threshold_hours=default_threshold_hours,
+        critical=source_code.strip().upper() in critical_sources,
+        calendar_exception=None,
+        impact=impact,
+    )
 
 
 def _load_discovery_sources(

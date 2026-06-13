@@ -2,6 +2,15 @@
 
 Status: completed
 
+Correction:
+
+```text
+This smoke used /opt/official-sources/app/official-sources.sqlite on VPS.
+That is not the SQLite database used by the systemd BOE daily service.
+See docs/reports/hermes-critical-source-observations-2026-06-13.md for the corrected
+real-runtime smoke against /opt/official-sources/data/official_sources.sqlite.
+```
+
 Task:
 
 ```text
