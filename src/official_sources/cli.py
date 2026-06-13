@@ -33,6 +33,15 @@ from official_sources.hermes_drift_audit import (
     render_markdown_report,
     require_external_release_contract,
 )
+from official_sources.hermes_freshness_report import (
+    HermesFreshnessReportError,
+    evaluate_freshness,
+    load_observation,
+    parse_timestamp,
+)
+from official_sources.hermes_freshness_report import (
+    render_markdown_report as render_freshness_markdown_report,
+)
 from official_sources.hermes_scheduled_audit import run_scheduled_strict_audit
 from official_sources.html_monitor import (
     HTMLMonitorError,
@@ -1140,6 +1149,25 @@ def build_parser() -> argparse.ArgumentParser:
             "Default: <repo-root>/.venv/bin/official-sources."
         ),
     )
+    hermes_freshness = hermes_subparsers.add_parser(
+        "freshness-report",
+        help="Render a read-only Hermes source freshness report from local state.",
+    )
+    hermes_freshness.add_argument(
+        "--state",
+        required=True,
+        help="JSON freshness state fixture to read. No live fetches or materialization are run.",
+    )
+    hermes_freshness.add_argument(
+        "--now",
+        required=True,
+        help="Evaluation timestamp in ISO-8601 format, for example 2026-06-13T12:00:00Z.",
+    )
+    hermes_freshness.add_argument(
+        "--output",
+        default=None,
+        help="Optional markdown report path to write. Stdout is always emitted.",
+    )
 
     ingest = subparsers.add_parser("ingest-boe-summary", help="Ingest one BOE daily summary.")
     ingest.add_argument(
@@ -2148,6 +2176,18 @@ def _run_hermes_command(
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
+    if args.hermes_command == "freshness-report":
+        try:
+            observation = load_observation(Path(args.state), now=parse_timestamp(args.now))
+            result = evaluate_freshness(observation)
+            report = render_freshness_markdown_report(result)
+        except (OSError, HermesFreshnessReportError) as exc:
+            print(str(exc), file=stderr)
+            return 2
+        print(report, end="", file=stdout)
+        if args.output:
+            Path(args.output).write_text(report, encoding="utf-8")
+        return 0
     if args.hermes_command == "scheduled-audit":
         result = run_scheduled_strict_audit(
             repo_root=Path(args.repo_root),
