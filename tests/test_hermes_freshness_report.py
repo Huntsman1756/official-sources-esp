@@ -7,6 +7,7 @@ from official_sources.hermes_freshness_report import (
     FreshnessObservation,
     SourceFreshness,
     evaluate_freshness,
+    load_observation_jsonl,
     load_runtime_observation,
     render_markdown_report,
 )
@@ -350,6 +351,191 @@ def test_runtime_observation_rejects_empty_unscoped_runtime_root(tmp_path):
         assert "no runtime discovery outputs found" in str(exc)
     else:
         raise AssertionError("empty runtime root must not produce a silent GO")
+
+
+def test_observation_jsonl_maps_operational_observed_at_to_last_seen(tmp_path):
+    observations_path = tmp_path / "freshness-observations.jsonl"
+    observations_path.write_text(
+        json.dumps(
+            {
+                "source": "BOE",
+                "observed_at": "2026-06-13T07:41:10Z",
+                "observation_kind": "existing_runtime_state",
+                "input_path": "/opt/official-sources/data/official_sources.sqlite",
+                "input_kind": "sqlite_ingestion_runs",
+                "timestamp_type": "observed",
+                "confidence": "operational",
+                "reason": "derived from successful ingestion_run id=1 status=success; no live fetch",
+                "latest_record_date": "2026-06-13",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    observation = load_observation_jsonl(
+        observations_path,
+        now=NOW,
+        default_threshold_hours=72,
+        critical_sources=("BOE", "BDNS"),
+        expected_sources=("BOE", "BDNS"),
+    )
+    result = evaluate_freshness(observation)
+
+    assert [source.source_code for source in observation.sources] == ["BDNS", "BOE"]
+    assert observation.sources[1].last_seen == "2026-06-13T07:41:10Z"
+    assert "sqlite_ingestion_runs" in observation.sources[1].impact
+    assert "latest_record_date=2026-06-13" in observation.sources[1].impact
+    assert result.checks[1].status == "healthy"
+    assert result.checks[0].source_code == "BDNS"
+    assert result.checks[0].status == "missing"
+    assert result.verdict == "NO-GO"
+
+
+def test_observation_jsonl_uses_latest_operational_observation_per_source(tmp_path):
+    observations_path = tmp_path / "freshness-observations.jsonl"
+    records = [
+        {
+            "source": "BOE",
+            "observed_at": "2026-06-12T07:41:10Z",
+            "observation_kind": "existing_runtime_state",
+            "input_path": "/opt/official-sources/data/official_sources.sqlite",
+            "input_kind": "sqlite_ingestion_runs",
+            "timestamp_type": "observed",
+            "confidence": "operational",
+            "reason": "older run",
+        },
+        {
+            "source": "BOE",
+            "observed_at": "2026-06-13T07:41:10Z",
+            "observation_kind": "existing_runtime_state",
+            "input_path": "/opt/official-sources/data/official_sources.sqlite",
+            "input_kind": "sqlite_ingestion_runs",
+            "timestamp_type": "observed",
+            "confidence": "operational",
+            "reason": "newer run",
+        },
+    ]
+    observations_path.write_text(
+        "".join(json.dumps(record) + "\n" for record in records),
+        encoding="utf-8",
+    )
+
+    observation = load_observation_jsonl(
+        observations_path,
+        now=NOW,
+        default_threshold_hours=72,
+        critical_sources=("BOE",),
+    )
+
+    assert len(observation.sources) == 1
+    assert observation.sources[0].source_code == "BOE"
+    assert observation.sources[0].last_seen == "2026-06-13T07:41:10Z"
+    assert "reason=newer run" in observation.sources[0].impact
+
+
+def test_observation_jsonl_rejects_corrupt_jsonl_with_path_and_line(tmp_path):
+    observations_path = tmp_path / "freshness-observations.jsonl"
+    observations_path.write_text(
+        json.dumps(
+            {
+                "source": "BOE",
+                "observed_at": "2026-06-13T07:41:10Z",
+                "timestamp_type": "observed",
+            }
+        )
+        + "\n{not-json}\n",
+        encoding="utf-8",
+    )
+
+    try:
+        load_observation_jsonl(
+            observations_path,
+            now=NOW,
+            default_threshold_hours=72,
+            critical_sources=("BOE",),
+        )
+    except ValueError as exc:
+        message = str(exc)
+        assert str(observations_path) in message
+        assert ":2" in message
+        assert "not valid JSON" in message
+    else:
+        raise AssertionError("corrupt freshness observation JSONL must not be ignored")
+
+
+def test_observation_jsonl_rejects_record_date_as_operational_timestamp(tmp_path):
+    observations_path = tmp_path / "freshness-observations.jsonl"
+    observations_path.write_text(
+        json.dumps(
+            {
+                "source": "BOE",
+                "observed_at": "2026-06-13T07:41:10Z",
+                "timestamp_type": "record_date_only",
+                "published_at": "2026-06-13T12:00:00Z",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    try:
+        load_observation_jsonl(
+            observations_path,
+            now=NOW,
+            default_threshold_hours=72,
+            critical_sources=("BOE",),
+        )
+    except ValueError as exc:
+        assert "timestamp_type must be observed" in str(exc)
+    else:
+        raise AssertionError("record-date timestamps must not become freshness observations")
+
+
+def test_cli_freshness_report_reads_observation_jsonl_without_extra_writes(tmp_path, capsys):
+    from official_sources.cli import run
+
+    observations_path = tmp_path / "freshness-observations.jsonl"
+    observations_path.write_text(
+        json.dumps(
+            {
+                "source": "BOCM",
+                "observed_at": "2026-06-13T08:15:00Z",
+                "observation_kind": "existing_runtime_state",
+                "input_path": "data/rss_monitor/BOCM/2026-06-13/rss_discovery.jsonl",
+                "input_kind": "rss_monitor_jsonl",
+                "timestamp_type": "observed",
+                "confidence": "operational",
+                "reason": "derived from monitor discovered_at; no live fetch",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    exit_code = run(
+        [
+            "hermes",
+            "freshness-report",
+            "--observations-jsonl",
+            str(observations_path),
+            "--now",
+            "2026-06-13T12:00:00Z",
+            "--default-threshold-hours",
+            "72",
+            "--critical-source",
+            "BOCM",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "VERDICT: GO" in captured.out
+    assert (
+        "| BOCM | healthy | age within threshold | 2026-06-13T08:15:00Z | 72 | 3.8 | none |"
+        in captured.out
+    )
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["freshness-observations.jsonl"]
 
 
 def test_cli_freshness_report_runtime_root_reads_real_inputs_without_extra_writes(tmp_path, capsys):

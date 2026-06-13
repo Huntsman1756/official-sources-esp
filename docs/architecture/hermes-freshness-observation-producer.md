@@ -118,3 +118,23 @@ The scheduler remains blocked until either:
 
 The preferred next step is a smoke of the producer against local/main and then VPS state, still
 without activating any schedule.
+
+## Report Consumption
+
+Freshness reports can consume the generated observation JSONL directly:
+
+```bash
+official-sources hermes freshness-report \
+  --observations-jsonl /var/lib/hermes-official-sources-auditor/freshness-observations/latest.jsonl \
+  --now 2026-06-13T20:40:00Z \
+  --default-threshold-hours 72 \
+  --critical-source BOE \
+  --critical-source BDNS \
+  --critical-source BOCM \
+  --expected-source BOE \
+  --expected-source BDNS \
+  --expected-source BOCM
+```
+
+This input is read-only. It does not run the producer, perform live fetches, write SQLite, or
+activate a scheduler.
