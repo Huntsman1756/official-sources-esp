@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
@@ -212,8 +213,11 @@ def _parse_timestamp(value: str) -> datetime:
         normalized = f"{normalized[:-1]}+00:00"
     try:
         parsed = datetime.fromisoformat(normalized)
-    except ValueError as exc:
-        raise HermesFreshnessObservationProducerError(f"invalid timestamp: {value}") from exc
+    except ValueError:
+        try:
+            parsed = parsedate_to_datetime(value)
+        except (TypeError, ValueError) as exc:
+            raise HermesFreshnessObservationProducerError(f"invalid timestamp: {value}") from exc
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=UTC)
     return parsed.astimezone(UTC)

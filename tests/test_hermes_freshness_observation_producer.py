@@ -199,3 +199,35 @@ def test_collects_monitor_observation_preserves_source_reason(tmp_path):
             "latest_record_date": "2026-06-12T00:00:00Z",
         },
     )
+
+
+def test_collects_monitor_observation_accepts_rfc2822_record_date(tmp_path):
+    output_path = tmp_path / "data" / "rss_monitor" / "BOE" / "2026-06-14" / "rss_discovery.jsonl"
+    output_path.parent.mkdir(parents=True)
+    output_path.write_text(
+        json.dumps(
+            {
+                "source_code": "BOE",
+                "discovered_at": "2026-06-14T00:00:00Z",
+                "published_at": "Sat, 13 Jun 2026 00:00:00 +0200",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    observations = collect_freshness_observations(runtime_root=tmp_path)
+
+    assert observations == (
+        {
+            "source": "BOE",
+            "observed_at": "2026-06-14T00:00:00Z",
+            "observation_kind": "existing_runtime_state",
+            "input_path": str(output_path),
+            "input_kind": "rss_monitor_jsonl",
+            "timestamp_type": "observed",
+            "confidence": "operational",
+            "reason": "derived from monitor discovered_at",
+            "latest_record_date": "2026-06-12T22:00:00Z",
+        },
+    )
