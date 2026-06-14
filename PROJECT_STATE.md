@@ -42,6 +42,14 @@ SQLite DB, the dry-run result moved from `matches_after_filters=21` to `matches_
 with `candidates_created=0`. No VPS DB write, source candidate write, artifact download,
 downstream write, runtime, systemd, timer, cap, or Hermes change was performed.
 
+`TASK-OFFICIAL-SOURCES-DOGC-CANDIDATE-QUALITY-DRY-RUN-001` is implemented locally. It adds a
+DOGC-specific `dogc-ayudas` quality filter for Catalan public-employment/selection notices and
+internal institutional practice scholarships. Against a local copy of the VPS SQLite DB, the DOGC
+dry-run result moved from `matches_after_filters=4` to `matches_after_filters=2`, preserving
+menjador-school aid and young-student mobility grants with `candidates_created=0`. No VPS DB write,
+source candidate write, artifact download, downstream write, runtime, systemd, timer, cap, or
+Hermes change was performed.
+
 `TASK-HERMES-SCHEDULED-STRICT-AUDIT-003` is implemented locally and ready for PR review. It
 version-controls the scheduled Hermes runner so the daily systemd path calls the deterministic
 strict drift auditor with the external release contract and `--fail-on-no-go`. This closes the

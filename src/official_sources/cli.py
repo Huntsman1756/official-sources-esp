@@ -385,6 +385,25 @@ DOGC_AYUDAS_PROFILE_KEYWORDS = [
     "transport escolar",
     "menjador escolar",
 ]
+DOGC_EMPLOYMENT_OR_SELECTION_NOISE_TERMS = {
+    "oferta publica d'ocupacio",
+    "oferta publica de ocupacio",
+    "proces de seleccio",
+    "proces selectiu",
+    "borsa de treball",
+    "borses de treball",
+    "personal laboral fix",
+    "admissions i exclusions",
+    "llista d'admissions",
+    "plantilla de personal",
+}
+DOGC_INTERNAL_PRACTICE_NOISE_TERMS = {
+    "beques per fer practiques al departament",
+    "beques per fer practiques",
+    "practiques al departament",
+    "entitats adscrites",
+    "oficina de suport a la iniciativa cultural",
+}
 LA_AYUDA_DEFAULT_EXCLUDED_SECTIONS = ["V-A"]
 GENERIC_WEAK_KEYWORDS = {"convocatoria", "transporte"}
 BOJA_GENERIC_WEAK_KEYWORDS = {
@@ -5571,6 +5590,11 @@ def _candidate_exclusion_reason(
         matches,
     ):
         return "keyword_rules"
+    if filters["profile"] == ["dogc-ayudas"] and _dogc_profile_exclusion_reason(
+        document,
+        matches,
+    ):
+        return "keyword_rules"
     if (
         filters["profile"]
         and filters["profile"][0]
@@ -5977,6 +6001,29 @@ def _borm_profile_exclusion_reason(
         return "borm_entity_project_noise"
     if not title_has_direct_signal:
         return "borm_no_direct_signal"
+    return None
+
+
+def _dogc_profile_exclusion_reason(
+    document: dict[str, Any],
+    matches: dict[str, Any],
+) -> str | None:
+    keywords = matches["keywords"]
+    title = _normalize_search_text(str(document.get("title") or ""))
+    department = _normalize_search_text(str(document.get("department") or ""))
+    section = _normalize_search_text(str(document.get("section") or ""))
+    document_type = _normalize_search_text(str(document.get("document_type") or ""))
+    combined_text = " ".join([title, department, section, document_type])
+
+    if _autonomous_weak_only_match(keywords):
+        return "dogc_weak_only"
+    if any(
+        term in combined_text
+        for term in _normalized_set(DOGC_EMPLOYMENT_OR_SELECTION_NOISE_TERMS)
+    ):
+        return "dogc_employment_or_selection_noise"
+    if any(term in title for term in _normalized_set(DOGC_INTERNAL_PRACTICE_NOISE_TERMS)):
+        return "dogc_internal_practice_noise"
     return None
 
 

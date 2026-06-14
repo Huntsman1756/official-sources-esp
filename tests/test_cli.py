@@ -3562,6 +3562,107 @@ def test_find_source_candidates_boa_profile_filters_non_student_facing_noise(
     assert candidate_count == 0
 
 
+def test_find_source_candidates_dogc_profile_filters_selection_and_internal_practice_noise(
+    tmp_path, capsys
+):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_dogc()
+    documents = [
+        (
+            "DOGC:menjador",
+            (
+                "Edicte sobre aprovacio inicial de les bases per a la concessio "
+                "d'ajuts individuals de menjador atorgats a l'alumnat "
+                "d'ensenyaments obligatoris i d'educacio infantil de centres "
+                "educatius sufragats amb fons publics per al curs escolar 2026-2027"
+            ),
+            "Consell Comarcal del Pla d'Urgell",
+            "Administracio local",
+        ),
+        (
+            "DOGC:mobilitat",
+            (
+                "Anunci sobre aprovacio inicial de les bases reguladores d'ajuts "
+                "en forma de beques individuals per a la mobilitat de persones "
+                "joves estudiants"
+            ),
+            "Ajuntament de Santa Coloma de Cervello",
+            "Administracio local",
+        ),
+        (
+            "DOGC:selection-noise",
+            (
+                "Anunci sobre aprovacio provisional de la llista d'admissions i "
+                "exclusions del proces de seleccio corresponent a la modificacio "
+                "de l'oferta publica d'ocupacio d'una placa de personal laboral fix "
+                "adscrita a l'ambit de joves vulnerables"
+            ),
+            "Consell Comarcal del Valles Oriental",
+            "Administracio local",
+        ),
+        (
+            "DOGC:internal-practice",
+            (
+                "Resolucio per la qual s'aproven les bases especifiques que han de "
+                "regir la concessio de beques per fer practiques al Departament de "
+                "Politica Linguistica o a les seves entitats adscrites"
+            ),
+            "Departament de Politica Linguistica",
+            "Altres disposicions",
+        ),
+    ]
+
+    for external_id, title, department, section in documents:
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=external_id,
+            publication_date="2026-06-05",
+            title=title,
+            department=department,
+            section=section,
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "DOGC",
+            "--date-from",
+            "2026-06-05",
+            "--date-to",
+            "2026-06-05",
+            "--profile",
+            "dogc-ayudas",
+            "--dry-run",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "documents_scanned=4" in captured.out
+    assert "matches_total=4" in captured.out
+    assert "matches_after_filters=2" in captured.out
+    assert "excluded_by_keyword_rules=2" in captured.out
+    assert "DOGC:menjador" in captured.out
+    assert "DOGC:mobilitat" in captured.out
+    assert "DOGC:selection-noise" not in captured.out
+    assert "DOGC:internal-practice" not in captured.out
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    assert candidate_count == 0
+
+
 def test_find_source_candidates_bopv_profile_keeps_direct_aid_despite_raw_noise(tmp_path, capsys):
     from official_sources.cli import run
 
