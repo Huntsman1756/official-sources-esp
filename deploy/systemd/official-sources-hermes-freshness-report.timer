@@ -1,0 +1,11 @@
+[Unit]
+Description=Run official-sources Hermes freshness report-only runner
+
+[Timer]
+OnCalendar=*-*-* 08:15:00 UTC
+Persistent=true
+RandomizedDelaySec=5m
+Unit=official-sources-hermes-freshness-report.service
+
+[Install]
+WantedBy=timers.target
