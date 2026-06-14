@@ -3663,6 +3663,118 @@ def test_find_source_candidates_dogc_profile_filters_selection_and_internal_prac
     assert candidate_count == 0
 
 
+def test_find_source_candidates_docm_profile_filters_non_student_facing_noise(
+    tmp_path, capsys
+):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_docm()
+    documents = [
+        (
+            "DOCM:school-transport",
+            (
+                "Ayudas y Subvenciones. Correccion de errores del Decreto por "
+                "el que se aprueban las bases reguladoras de la concesion directa "
+                "de las ayudas individuales de transporte escolar para el alumnado "
+                "matriculado en centros docentes publicos no universitarios"
+            ),
+            "Consejeria de Educacion, Cultura y Deportes",
+            "I.- DISPOSICIONES GENERALES",
+        ),
+        (
+            "DOCM:study-aid",
+            (
+                "Ayudas y Subvenciones. Orden por la que se convocan ayudas al "
+                "estudio para alumnado matriculado en formacion profesional"
+            ),
+            "Consejeria de Educacion, Cultura y Deportes",
+            "III.- OTRAS DISPOSICIONES Y ACTOS",
+        ),
+        (
+            "DOCM:entrepreneur-noise",
+            (
+                "Ayudas y Subvenciones. Orden por la que se establecen las bases "
+                "reguladoras para la concesion de ayudas para la tutorizacion y "
+                "asesoramiento a personas emprendedoras"
+            ),
+            "Consejeria de Economia, Empresas y Empleo",
+            "I.- DISPOSICIONES GENERALES",
+        ),
+        (
+            "DOCM:social-notification-noise",
+            (
+                "Notificaciones. Notificacion de la Delegacion Provincial de "
+                "Bienestar Social por la que se acuerda la publicacion de la "
+                "propuesta de resolucion desfavorable de la solicitud de ayuda de "
+                "emergencia social"
+            ),
+            "Consejeria de Bienestar Social",
+            "III.- OTRAS DISPOSICIONES Y ACTOS",
+        ),
+        (
+            "DOCM:collaboration-noise",
+            (
+                "Universidades. Extracto de la Universidad de Castilla-La Mancha "
+                "de la convocatoria de beca de colaboracion en las actividades "
+                "promovidas por la Catedra Institucional de Profesionalizacion de "
+                "la Contratacion Publica"
+            ),
+            "Universidad de Castilla-La Mancha",
+            "III.- OTRAS DISPOSICIONES Y ACTOS",
+        ),
+    ]
+
+    for external_id, title, department, section in documents:
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=external_id,
+            publication_date="2026-06-05",
+            title=title,
+            department=department,
+            section=section,
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "DOCM",
+            "--date-from",
+            "2026-06-05",
+            "--date-to",
+            "2026-06-05",
+            "--profile",
+            "docm-ayudas",
+            "--dry-run",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "documents_scanned=5" in captured.out
+    assert "matches_total=5" in captured.out
+    assert "matches_after_filters=2" in captured.out
+    assert "excluded_by_keyword_rules=3" in captured.out
+    assert "DOCM:school-transport" in captured.out
+    assert "DOCM:study-aid" in captured.out
+    assert "DOCM:entrepreneur-noise" not in captured.out
+    assert "DOCM:social-notification-noise" not in captured.out
+    assert "DOCM:collaboration-noise" not in captured.out
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    assert candidate_count == 0
+
+
 def test_find_source_candidates_bopv_profile_keeps_direct_aid_despite_raw_noise(tmp_path, capsys):
     from official_sources.cli import run
 

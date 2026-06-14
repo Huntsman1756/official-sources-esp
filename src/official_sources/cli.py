@@ -160,6 +160,7 @@ SOURCE_CANDIDATE_SOURCE_CODES = (
     "BOA",
     "BORM",
     "DOGC",
+    "DOCM",
 )
 SOURCE_CANDIDATE_PROFILES = (
     "la-ayuda",
@@ -170,6 +171,7 @@ SOURCE_CANDIDATE_PROFILES = (
     "boa-ayudas",
     "borm-ayudas",
     "dogc-ayudas",
+    "docm-ayudas",
 )
 OPPOSITION_ALERT_SOURCE_CODES = (
     "BOE",
@@ -403,6 +405,52 @@ DOGC_INTERNAL_PRACTICE_NOISE_TERMS = {
     "practiques al departament",
     "entitats adscrites",
     "oficina de suport a la iniciativa cultural",
+}
+DOCM_AYUDAS_PROFILE_KEYWORDS = [
+    *AUTONOMOUS_AYUDAS_PROFILE_KEYWORDS,
+    "ayudas y subvenciones",
+    "ayudas individuales de transporte escolar",
+    "transporte escolar",
+    "alumnado matriculado",
+    "centros docentes publicos no universitarios",
+    "beca de colaboracion",
+    "becas de colaboracion",
+    "bdns",
+]
+DOCM_DIRECT_TITLE_TERMS = {
+    "ayudas individuales de transporte escolar",
+    "transporte escolar",
+    "alumnado matriculado",
+    "centros docentes publicos no universitarios",
+    "material curricular",
+    "material escolar",
+    "comedor escolar",
+    "ayudas al estudio",
+}
+DOCM_NON_STUDENT_FACING_NOISE_TERMS = {
+    "personas emprendedoras",
+    "emprendedoras",
+    "emprendedores",
+    "ayuda de emergencia social",
+    "ingreso minimo de solidaridad",
+    "notificacion",
+    "expediente sancionador",
+    "certificado de profesionalidad",
+    "licencia urbanistica",
+    "suelo rustico",
+    "planta solar fotovoltaica",
+    "explotacion de ganado",
+    "policia local",
+    "procedimiento de libre designacion",
+    "nombramiento",
+    "organo de contratacion",
+    "contratacion",
+    "beca de colaboracion",
+    "becas de colaboracion",
+    "catedra institucional",
+    "unidad tecnica de acreditacion",
+    "grupo visilab",
+    "contratacion publica",
 }
 LA_AYUDA_DEFAULT_EXCLUDED_SECTIONS = ["V-A"]
 GENERIC_WEAK_KEYWORDS = {"convocatoria", "transporte"}
@@ -5424,6 +5472,7 @@ def _opposition_alert_territory_code(source_code: str) -> str:
         "BORM": "ES-MC",
         "BOA": "ES-AR",
         "DOGC": "ES-CT",
+        "DOCM": "ES-CM",
     }.get(source_code, "unknown")
 
 
@@ -5437,6 +5486,7 @@ def _opposition_alert_territory_name(source_code: str) -> str:
         "BORM": "Region de Murcia",
         "BOA": "Aragon",
         "DOGC": "Catalunya",
+        "DOCM": "Castilla-La Mancha",
     }.get(source_code, "Unknown")
 
 
@@ -5481,6 +5531,8 @@ def _candidate_keywords(args: argparse.Namespace) -> list[str]:
         keywords.extend(BOPV_AYUDAS_PROFILE_KEYWORDS)
     if args.profile == "dogc-ayudas":
         keywords.extend(DOGC_AYUDAS_PROFILE_KEYWORDS)
+    if args.profile == "docm-ayudas":
+        keywords.extend(DOCM_AYUDAS_PROFILE_KEYWORDS)
     if args.keywords:
         keywords.extend(keyword.strip() for keyword in args.keywords.split(",") if keyword.strip())
     return list(dict.fromkeys(keywords))
@@ -5595,6 +5647,11 @@ def _candidate_exclusion_reason(
         matches,
     ):
         return "keyword_rules"
+    if filters["profile"] == ["docm-ayudas"] and _docm_profile_exclusion_reason(
+        document,
+        matches,
+    ):
+        return "keyword_rules"
     if (
         filters["profile"]
         and filters["profile"][0]
@@ -5683,6 +5740,7 @@ def _score_candidate_match(
         "boa-ayudas",
         "borm-ayudas",
         "dogc-ayudas",
+        "docm-ayudas",
     } and _autonomous_weak_only_match(keywords):
         score -= 2
         reasons.append("autonomous_weak_only_generic_match:-2")
@@ -6025,6 +6083,34 @@ def _dogc_profile_exclusion_reason(
     if any(term in title for term in _normalized_set(DOGC_INTERNAL_PRACTICE_NOISE_TERMS)):
         return "dogc_internal_practice_noise"
     return None
+
+
+def _docm_profile_exclusion_reason(
+    document: dict[str, Any],
+    matches: dict[str, Any],
+) -> str | None:
+    keywords = matches["keywords"]
+    title = _normalize_search_text(str(document.get("title") or ""))
+    department = _normalize_search_text(str(document.get("department") or ""))
+    section = _normalize_search_text(str(document.get("section") or ""))
+    document_type = _normalize_search_text(str(document.get("document_type") or ""))
+    combined_text = " ".join([title, department, section, document_type])
+    title_has_direct_signal = _docm_title_has_direct_signal(title)
+
+    if _autonomous_weak_only_match(keywords):
+        return "docm_weak_only"
+    if (
+        any(term in combined_text for term in _normalized_set(DOCM_NON_STUDENT_FACING_NOISE_TERMS))
+        and not title_has_direct_signal
+    ):
+        return "docm_non_student_facing_noise"
+    if not title_has_direct_signal:
+        return "docm_no_direct_signal"
+    return None
+
+
+def _docm_title_has_direct_signal(title: str) -> bool:
+    return any(term in title for term in _normalized_set(DOCM_DIRECT_TITLE_TERMS))
 
 
 def _borm_title_has_direct_signal(title: str) -> bool:

@@ -107,6 +107,17 @@ class OfficialSourcesRepository:
             reliability_level="canonical",
         )
 
+    def ensure_official_source_docm(self) -> dict[str, Any]:
+        return self.upsert_official_source(
+            code="DOCM",
+            name="Diario Oficial de Castilla-La Mancha",
+            jurisdiction="autonomous",
+            region_code="ES-CM",
+            base_url="https://docm.jccm.es",
+            access_type="official_html",
+            reliability_level="canonical",
+        )
+
     def ensure_official_source_bocyl(self) -> dict[str, Any]:
         return self.upsert_official_source(
             code="BOCYL",

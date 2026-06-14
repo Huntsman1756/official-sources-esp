@@ -50,6 +50,13 @@ menjador-school aid and young-student mobility grants with `candidates_created=0
 source candidate write, artifact download, downstream write, runtime, systemd, timer, cap, or
 Hermes change was performed.
 
+`TASK-OFFICIAL-SOURCES-DOCM-CANDIDATE-QUALITY-DRY-RUN-001` is implemented locally. It adds DOCM
+support to the generic `find-source-candidates` dry-run path with a `docm-ayudas` profile and
+DOCM-specific quality filters. Against a local copy of the VPS SQLite DB, the DOCM dry-run result
+became `matches_after_filters=1`, preserving `DOCM:2026/4175` as a school-transport education-aid
+signal with `candidates_created=0`. No VPS DB write, source candidate write, artifact download,
+downstream write, runtime, systemd, timer, cap, or Hermes change was performed.
+
 `TASK-HERMES-SCHEDULED-STRICT-AUDIT-003` is implemented locally and ready for PR review. It
 version-controls the scheduled Hermes runner so the daily systemd path calls the deterministic
 strict drift auditor with the external release contract and `--fail-on-no-go`. This closes the
