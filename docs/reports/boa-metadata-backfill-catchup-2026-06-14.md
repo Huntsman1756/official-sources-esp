@@ -170,31 +170,29 @@ The dry-run also surfaced expected non-student or weaker matches, including yout
 internal training/practice scholarships. Those should be handled by a separate BOA candidate-review
 quality loop, not by this metadata-only catch-up.
 
-## Known Activation Gap
+## URL Mapping Follow-up
 
-BOA metadata is now present upstream, but `official_documents.url_html`, `url_pdf`, and `url_xml`
-were not populated for the confirmed comedor rows. The raw BOA payload includes document
-identifiers, issue metadata, and issue PDF URL, and `document_files.official_url` stores the date
-query endpoint as `raw_api_response`.
+The initial post-check looked for the confirmed BOA `MLKOB` value in `url_html`, but BOA stores
+document object links in `url_pdf` because the upstream JSON field is `UrlPdf`.
 
-This does not invalidate the metadata-only catch-up. It does block treating BOA as activation-ready
-for downstream review until the BOA document URL mapping is explicitly verified or improved.
-
-Recommended follow-up:
+Follow-up verification in `docs/reports/boa-document-url-mapping-2026-06-14.md` confirmed:
 
 ```text
-TASK-OFFICIAL-SOURCES-BOA-DOCUMENT-URL-MAPPING-001
-Scope: BOA parser/review URL mapping only
-Goal: populate or deterministically derive official document URLs for BOA documents
-Forbidden: candidates writes, evidence-grade promotion, artifact downloads, downstream writes, runtime/systemd/timer changes
+boa_documents_total=1384
+boa_url_pdf_present=1384
+boa_comedor_pdf_sample=1
+boa_pdf_missing_but_raw_urlpdf_present=0
 ```
+
+Therefore the URL mapping is GO for the metadata-only upstream contract. BOA activation still needs
+candidate dry-run quality review before any write path is considered.
 
 ## Decision
 
 ```text
 TASK-OFFICIAL-SOURCES-BOA-METADATA-BACKFILL-CATCHUP-001: DONE
 Validation: GO for metadata-only upstream catch-up
-Activation readiness: PARTIAL, blocked on BOA document URL mapping/review quality
+Activation readiness: PARTIAL, pending BOA candidate dry-run quality review
 EduBecas DB writes: 0
 source_candidates writes: 0
 artifact/PDF downloads: 0

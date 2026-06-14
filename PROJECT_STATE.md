@@ -30,9 +30,10 @@ report: docs/reports/boa-metadata-backfill-catchup-2026-06-14.md
 
 Activation is still partial, not final. BOA metadata now feeds upstream review scans, and the
 `boa-ayudas` dry-run found 21 filtered matches, including the `2026-06-05` comedor-school sample.
-However, BOA `official_documents.url_html`, `url_pdf`, and `url_xml` are not populated from the
-date endpoint for the confirmed sample rows. The next BOA task should be a parser/review URL mapping
-loop, not downstream writes or publication.
+Follow-up verification confirmed document object URLs are persisted in `url_pdf` for `1384/1384`
+BOA documents; `url_html` and `url_xml` remain empty because BOA exposes this surface through
+`UrlPdf`. The next BOA task should be candidate dry-run quality review, not downstream writes or
+publication.
 
 `TASK-HERMES-SCHEDULED-STRICT-AUDIT-003` is implemented locally and ready for PR review. It
 version-controls the scheduled Hermes runner so the daily systemd path calls the deterministic
