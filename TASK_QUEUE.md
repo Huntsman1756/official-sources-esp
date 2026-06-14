@@ -1,6 +1,6 @@
 # Task Queue
 
-Last updated: 2026-06-13
+Last updated: 2026-06-14
 
 This file was absent at the start of `TASK-SOURCE-REGISTRY-001`. It is now the local task queue
 for source-platform work in this repository.
@@ -12,6 +12,7 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 
 | Task | Status | Notes |
 | --- | --- | --- |
+| `TASK-OFFICIAL-SOURCES-BOA-METADATA-BACKFILL-CATCHUP-001` | completed on VPS | Ran bounded BOA metadata-only catch-up on the official-sources VPS for `2026-04-21..2026-06-05`, explicitly including the EduBecas sample date `2026-06-05`. Result: `official_documents_boa=1384`, `document_files(raw_api_response)=1384`, `source_candidates_boa=0`, `artifact_download_attempts_boa=0`, DB validation green before/after, and backups verified with `quick_check`. Activation remains partial because BOA document URL columns are not populated from the date endpoint. Report: `docs/reports/boa-metadata-backfill-catchup-2026-06-14.md`. |
 | `TASK-SOURCE-PLATFORM-001` | accepted | Cross-project boundary accepted in `PROJECT_STATE.md` and `docs/CROSS_PROJECT_INTEGRATION_MAP.md`. |
 | `TASK-SOURCE-REGISTRY-001` | implemented locally | Canonical executable registry added at `config/sources.yaml`, with validation tests and read-only CLI coverage reporting. |
 | `TASK-SOURCE-RSS-MONITOR-001` | closed in main | Metadata-only RSS/Atom discovery monitor is present in `main` with BOCYL as the original pilot. Default mode is preview; JSONL writes require explicit `--write`. Current `main` also validates BOE RSS through later RSS/coverage work. |
@@ -147,6 +148,7 @@ Rows marked `closed in main` have been explicitly reconciled against current `ma
 | `TASK-BOP-OURENSE-001` | implemented locally | Promotes `BOP_OURENSE` from inventory-only to metadata-only API monitor using the official Angular portal backing endpoint `/portalapi/api/boletin/getFecha/{yyyymmdd}`. Edict HTML endpoints are stored only as official metadata; no PDFs/artifacts, candidates, evidence-grade records, broad backfill, downstream writes, Hermes, systemd, or timer changes. |
 | `TASK-BOP-ZARAGOZA-001` | blocked | Local parser spike succeeded against the official latest-bulletin BOPZ page, but the project VPS times out connecting to `boletin.dpz.es:443`. Kept inventory-only; no monitor promotion, PDFs/artifacts, candidates, evidence-grade records, broad backfill, downstream writes, Hermes, systemd, or timer changes. |
 | `TASK-AUTONOMIC-WAVE-001` | proposed | Implement the highest-confidence autonomous monitors from agent review in order: `BOR` XML API, then `DOCM` HTML summary, then `BON` calendar JSON plus summary HTML. Preview-only first; no PDF downloads, evidence-grade promotion, downstream writes, or live MCP fetches. |
+| `TASK-OFFICIAL-SOURCES-BOA-DOCUMENT-URL-MAPPING-001` | proposed | Verify or improve BOA document-level official URL mapping after the metadata backfill. Current BOA rows preserve raw API responses and issue metadata, but `official_documents.url_html/url_pdf/url_xml` are not populated for the confirmed `2026-06-05` comedor sample. No candidates writes, evidence-grade promotion, artifact downloads, downstream writes, runtime, systemd, or timer changes. |
 | `TASK-SOURCE-HTML-MONITOR-HELPERS-001` | deferred | Only extract additional shared helpers after another source proves repeated duplication; do not create a broad generic provincial framework yet. |
 
 ## Guardrails

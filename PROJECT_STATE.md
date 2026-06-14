@@ -1,8 +1,38 @@
 # Project State
 
-Last updated: 2026-06-04
+Last updated: 2026-06-14
 
 ## Current Decision
+
+`TASK-OFFICIAL-SOURCES-BOA-METADATA-BACKFILL-CATCHUP-001` is completed on the
+`official-sources` VPS as a bounded metadata-only upstream catch-up for `BOA`.
+
+The run covered `2026-04-21..2026-06-05`, explicitly including the confirmed EduBecas sample date
+`2026-06-05`. It created no source candidates, no evidence-grade records, no artifact/PDF
+downloads, no downstream EduBecas writes, and no public drafts or publications.
+
+```text
+VPS app: /opt/official-sources/app
+VPS DB: /opt/official-sources/data/official_sources.sqlite
+VPS HEAD: bdddd07
+worktree: clean
+range: 2026-04-21..2026-06-05
+runs: 46
+success_runs: 32
+no_publication_runs: 14
+official_documents_boa: 1384
+document_files_raw_api_response: 1384
+source_candidates_boa: 0
+artifact_download_attempts_boa: 0
+db_validate_before_after: GO
+report: docs/reports/boa-metadata-backfill-catchup-2026-06-14.md
+```
+
+Activation is still partial, not final. BOA metadata now feeds upstream review scans, and the
+`boa-ayudas` dry-run found 21 filtered matches, including the `2026-06-05` comedor-school sample.
+However, BOA `official_documents.url_html`, `url_pdf`, and `url_xml` are not populated from the
+date endpoint for the confirmed sample rows. The next BOA task should be a parser/review URL mapping
+loop, not downstream writes or publication.
 
 `TASK-HERMES-SCHEDULED-STRICT-AUDIT-003` is implemented locally and ready for PR review. It
 version-controls the scheduled Hermes runner so the daily systemd path calls the deterministic
