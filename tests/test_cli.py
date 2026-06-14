@@ -490,6 +490,65 @@ def test_ingest_monitor_date_materializes_html_records(tmp_path):
     assert document["url_pdf"] or document["url_html"]
 
 
+def test_ingest_monitor_date_records_docm_html_snapshot_file(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    raw = _fixture_bytes("docm_summary_2026_05_29.html")
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "ingest-monitor-date",
+            "--source",
+            "DOCM",
+            "--date",
+            "2026-05-29",
+            "--limit",
+            "1",
+        ],
+        html_fetcher=lambda _url: raw,
+    )
+
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    document = connection.execute(
+        """
+        SELECT d.id, d.external_id, d.publication_date, d.url_html
+        FROM official_documents d
+        JOIN official_sources s ON s.id = d.source_id
+        WHERE s.code = 'DOCM'
+        """
+    ).fetchone()
+    files = repository.list_document_files(document["id"])
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert document["external_id"] == "DOCM:2026/4101"
+    assert document["publication_date"] == "2026-05-29"
+    assert document["url_html"] == (
+        "https://docm.jccm.es/docm/verArchivoHtml.do?"
+        "ruta=2026/05/29/html/2026_4101.html&tipo=rutaDocm"
+    )
+    assert len(files) == 1
+    file_record = files[0]
+    assert file_record["file_type"] == "raw_api_response"
+    assert file_record["official_url"] == (
+        "https://docm.jccm.es/docm/cambiarBoletin.do?fecha=20260529"
+    )
+    assert file_record["media_type"] == "text/html"
+    assert file_record["size_bytes"] == len(raw)
+    assert file_record["sha256"] == sha256_bytes(raw)
+    assert file_record["source_snapshot_hash"] == sha256_bytes(raw)
+    integrity_checks = repository.list_integrity_checks(file_record["id"])
+    assert len(integrity_checks) == 1
+    assert integrity_checks[0]["ingestion_run_id"] is not None
+    assert integrity_checks[0]["changed"] == 0
+    assert integrity_checks[0]["change_reason"] == "new_file"
+    assert "artifact_downloads=false" in captured.out
+    assert "evidence_created=false" in captured.out
+    assert "candidate_creation_allowed=false" in captured.out
+
+
 def test_ingest_monitor_date_materializes_api_records(tmp_path):
     from official_sources.cli import run
 

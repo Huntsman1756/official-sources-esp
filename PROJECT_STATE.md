@@ -57,6 +57,17 @@ became `matches_after_filters=1`, preserving `DOCM:2026/4175` as a school-transp
 signal with `candidates_created=0`. No VPS DB write, source candidate write, artifact download,
 downstream write, runtime, systemd, timer, cap, or Hermes change was performed.
 
+`TASK-OFFICIAL-SOURCES-DOCM-ARTIFACT-INTEGRITY-ENRICHMENT-001` is implemented locally. DOCM
+`ingest-monitor-date` now persists the fetched official summary HTML payload as a
+`document_files` `raw_api_response` row for each materialized DOCM document, with `media_type` set
+to `text/html`, `source_snapshot_hash` equal to the monitor `raw_page_hash`, and an
+`integrity_checks` row tied to the ingestion run. A temporary SQLite validation with the DOCM
+fixture produced `document_files=1` and `integrity_checks=1` while preserving
+`candidate_creation_allowed=false`, `evidence_created=false`, and `artifact_downloads=false`. No
+VPS DB write, source candidate write, evidence-grade record, downstream write, runtime, systemd,
+timer, cap, or Hermes change was performed. Ruff remains a separate pre-existing formatting/lint
+drift and was not mixed into this task.
+
 `TASK-HERMES-SCHEDULED-STRICT-AUDIT-003` is implemented locally and ready for PR review. It
 version-controls the scheduled Hermes runner so the daily systemd path calls the deterministic
 strict drift auditor with the external release contract and `--fail-on-no-go`. This closes the

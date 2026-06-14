@@ -2814,6 +2814,15 @@ def _run_ingest_monitor_date(
                     "operator_controlled": True,
                 },
             )
+            stored_document = repository.get_document_by_external_id(external_id)
+            _upsert_monitor_snapshot_file(
+                repository,
+                source_code=source_code,
+                document_id=stored_document["id"],
+                record=record,
+                raw_payload=getattr(result, "raw_page", None),
+                ingestion_run_id=run["id"],
+            )
             if existing is None:
                 documents_new += 1
             else:
@@ -3046,6 +3055,32 @@ def _monitor_url(record: dict[str, Any], url_type: str) -> str | None:
             return None
         return official_url
     return None
+
+
+def _upsert_monitor_snapshot_file(
+    repository: OfficialSourcesRepository,
+    *,
+    source_code: str,
+    document_id: int,
+    record: dict[str, Any],
+    raw_payload: bytes | None,
+    ingestion_run_id: int,
+) -> None:
+    if source_code != "DOCM":
+        return
+    page_url = str(record.get("page_url") or "").strip()
+    raw_page_hash = str(record.get("raw_page_hash") or "").strip()
+    if not page_url or not raw_page_hash or raw_payload is None:
+        return
+    repository.upsert_document_file(
+        document_id=document_id,
+        file_type="raw_api_response",
+        official_url=page_url,
+        payload=raw_payload,
+        ingestion_run_id=ingestion_run_id,
+        media_type="text/html",
+        source_snapshot_hash=raw_page_hash,
+    )
 
 
 def _open_repository(db_path: str) -> OfficialSourcesRepository:

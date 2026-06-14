@@ -178,6 +178,7 @@ class HTMLMonitorError(ValueError):
 class HTMLParseResult:
     raw_page_hash: str
     records: list[dict[str, Any]]
+    raw_page: bytes | None = None
 
 
 @dataclass(frozen=True)
@@ -607,8 +608,16 @@ def monitor_html_source(
         monitor_run_id=monitor_run_id,
     )
     if limit is None:
-        return result
-    return HTMLParseResult(raw_page_hash=result.raw_page_hash, records=result.records[:limit])
+        return HTMLParseResult(
+            raw_page_hash=result.raw_page_hash,
+            records=result.records,
+            raw_page=raw_page,
+        )
+    return HTMLParseResult(
+        raw_page_hash=result.raw_page_hash,
+        records=result.records[:limit],
+        raw_page=raw_page,
+    )
 
 
 def monitor_html_source_code(
