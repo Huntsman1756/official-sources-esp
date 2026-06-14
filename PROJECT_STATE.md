@@ -35,6 +35,13 @@ BOA documents; `url_html` and `url_xml` remain empty because BOA exposes this su
 `UrlPdf`. The next BOA task should be candidate dry-run quality review, not downstream writes or
 publication.
 
+`TASK-OFFICIAL-SOURCES-BOA-CANDIDATE-QUALITY-DRY-RUN-001` is implemented locally. It adds a
+BOA-specific `boa-ayudas` quality filter that keeps student-facing education aid signals while
+excluding the non-student-facing noise observed after the catch-up. Against a local copy of the VPS
+SQLite DB, the dry-run result moved from `matches_after_filters=21` to `matches_after_filters=8`,
+with `candidates_created=0`. No VPS DB write, source candidate write, artifact download,
+downstream write, runtime, systemd, timer, cap, or Hermes change was performed.
+
 `TASK-HERMES-SCHEDULED-STRICT-AUDIT-003` is implemented locally and ready for PR review. It
 version-controls the scheduled Hermes runner so the daily systemd path calls the deterministic
 strict drift auditor with the external release contract and `--fail-on-no-go`. This closes the

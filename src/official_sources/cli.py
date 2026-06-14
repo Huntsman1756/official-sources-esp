@@ -822,6 +822,33 @@ AUTONOMOUS_PROCEDURAL_NOISE_TERMS = {
     "anuncio",
     "procedimiento",
 }
+BOA_EDUCATION_DIRECT_TITLE_TERMS = {
+    "ayudas para la adquisicion y el uso de material curricular",
+    "material curricular",
+    "becas que faciliten la utilizacion del servicio de comedor escolar",
+    "comedor escolar",
+    "becas complementarias",
+    "programa erasmus",
+    "movilidad internacional",
+    "ayudas al estudio",
+    "alumnado escolarizado",
+    "libros de texto",
+}
+BOA_NON_STUDENT_FACING_NOISE_TERMS = {
+    "certamen",
+    "premio jovenes creadores",
+    "actividades juveniles de tiempo libre",
+    "atencion temprana",
+    "consejo economico y social",
+    "beca de formacion y practicas",
+    "acepta la renuncia",
+    "renuncia presentada",
+    "personas becarias auxiliares de conversacion",
+    "calendario de admision y matriculacion",
+    "asociaciones de estudiantes",
+    "jovenes voluntarios",
+    "cooperacion internacional para el desarrollo",
+}
 BORM_DIRECT_TITLE_TERMS = {
     "beca",
     "becas",
@@ -5539,6 +5566,11 @@ def _candidate_exclusion_reason(
         matches,
     ):
         return "keyword_rules"
+    if filters["profile"] == ["boa-ayudas"] and _boa_profile_exclusion_reason(
+        document,
+        matches,
+    ):
+        return "keyword_rules"
     if (
         filters["profile"]
         and filters["profile"][0]
@@ -5872,6 +5904,50 @@ def _autonomous_profile_exclusion_reason(
     if not title_has_direct_signal:
         return "autonomous_no_direct_signal"
     return None
+
+
+def _boa_profile_exclusion_reason(
+    document: dict[str, Any],
+    matches: dict[str, Any],
+) -> str | None:
+    keywords = matches["keywords"]
+    title = _normalize_search_text(str(document.get("title") or ""))
+    department = _normalize_search_text(str(document.get("department") or ""))
+    section = _normalize_search_text(str(document.get("section") or ""))
+    document_type = _normalize_search_text(str(document.get("document_type") or ""))
+    combined_text = " ".join([title, department, section, document_type])
+
+    if _autonomous_weak_only_match(keywords):
+        return "boa_weak_only"
+    if _autonomous_has_housing_context(title):
+        return None
+    if any(term in title for term in _normalized_set(BOA_NON_STUDENT_FACING_NOISE_TERMS)):
+        return "boa_non_student_facing_noise"
+    if "departamento de educacion" not in department and not _boa_title_has_direct_signal(title):
+        return "boa_non_education_department_noise"
+    if not _boa_title_has_direct_signal(title):
+        return "boa_no_student_facing_signal"
+    if any(term in combined_text for term in _normalized_set(AUTONOMOUS_EMPLOYMENT_NOISE_TERMS)):
+        return "boa_employment_noise"
+    return None
+
+
+def _boa_title_has_direct_signal(title: str) -> bool:
+    if any(term in title for term in _normalized_set(BOA_EDUCATION_DIRECT_TITLE_TERMS)):
+        return True
+    if "universidad" in title or "universidades" in title:
+        return any(
+            term in title
+            for term in {
+                "beca",
+                "becas",
+                "ayuda",
+                "ayudas",
+                "subvencion",
+                "subvenciones",
+            }
+        )
+    return False
 
 
 def _borm_profile_exclusion_reason(

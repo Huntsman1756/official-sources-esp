@@ -3413,6 +3413,155 @@ def test_find_source_candidates_supports_new_autonomous_profiles_and_filters_noi
     assert candidate_count == 0
 
 
+def test_find_source_candidates_boa_profile_filters_non_student_facing_noise(
+    tmp_path, capsys
+):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.ensure_official_source_boa()
+    documents = [
+        (
+            "BOA:material-curricular",
+            (
+                "ORDEN ECU/817/2026, de 29 de mayo, por la que se convocan ayudas "
+                "para la adquisicion y el uso de material curricular de alumnado "
+                "escolarizado en etapas obligatorias de centros sostenidos con fondos "
+                "publicos de la Comunidad Autonoma de Aragon para el curso 2026/2027."
+            ),
+            "DEPARTAMENTO DE EDUCACION, CIENCIA Y UNIVERSIDADES",
+        ),
+        (
+            "BOA:comedor",
+            (
+                "ORDEN ECU/818/2026, de 29 de mayo, por la que se convocan becas "
+                "que faciliten la utilizacion del servicio de comedor escolar por parte "
+                "del alumnado de centros docentes sostenidos con fondos publicos de la "
+                "Comunidad Autonoma de Aragon para el curso 2026/2027."
+            ),
+            "DEPARTAMENTO DE EDUCACION, CIENCIA Y UNIVERSIDADES",
+        ),
+        (
+            "BOA:erasmus",
+            (
+                "EXTRACTO de la Orden ECU/815/2026, de 21 de mayo, por la que se "
+                "convocan las becas complementarias a las del Programa Erasmus + y a "
+                "las de otros programas de movilidad internacional para el curso "
+                "academico 2026-2027."
+            ),
+            "DEPARTAMENTO DE EDUCACION, CIENCIA Y UNIVERSIDADES",
+        ),
+        (
+            "BOA:young-creators",
+            (
+                "ORDEN DBF/799/2026, de 19 mayo, por la que se convoca el certamen "
+                "IX Premio Jovenes Creadores Aragoneses para el ano 2026."
+            ),
+            (
+                "VICEPRESIDENCIA DEL GOBIERNO Y DEPARTAMENTO DE DESREGULACION, "
+                "BIENESTAR SOCIAL Y FAMILIA"
+            ),
+        ),
+        (
+            "BOA:ces-practices",
+            (
+                "RESOLUCION de 11 de mayo de 2026, del Presidente del Consejo "
+                "Economico y Social de Aragon, por la que se convoca una beca de "
+                "formacion y practicas en el Consejo Economico y Social de Aragon."
+            ),
+            "CONSEJO ECONOMICO Y SOCIAL",
+        ),
+        (
+            "BOA:renuncia",
+            (
+                "ORDEN ECU/725/2026, de 7 de mayo, por la que se acepta la renuncia "
+                "presentada por persona beneficiaria de ayuda adjudicada a personas "
+                "becarias auxiliares de conversacion con destino en centros educativos."
+            ),
+            "DEPARTAMENTO DE EDUCACION, CIENCIA Y UNIVERSIDADES",
+        ),
+        (
+            "BOA:atencion-temprana",
+            (
+                "ORDEN BSF/714/2026, de 28 de abril, por la que se hace publica la "
+                "convocatoria de ayudas individuales de pago directo a las familias "
+                "para atencion temprana, ano 2026."
+            ),
+            "DEPARTAMENTO DE BIENESTAR SOCIAL Y FAMILIA",
+        ),
+        (
+            "BOA:calendario",
+            (
+                "RESOLUCION de 16 de abril de 2026, por la que se establece el "
+                "calendario de admision y matriculacion de alumnado de Educacion "
+                "Secundaria para personas adultas."
+            ),
+            "DEPARTAMENTO DE EDUCACION, CULTURA Y DEPORTE",
+        ),
+        (
+            "BOA:student-associations",
+            (
+                "EXTRACTO de la Orden ECU/795/2026, de 18 de mayo, por la que se "
+                "convocan subvenciones destinadas a las asociaciones de estudiantes "
+                "sin animo de lucro en el ambito universitario para el ano 2026."
+            ),
+            "DEPARTAMENTO DE EDUCACION, CIENCIA Y UNIVERSIDADES",
+        ),
+    ]
+    for external_id, title, department in documents:
+        repository.upsert_document(
+            source_id=source["id"],
+            external_id=external_id,
+            publication_date="2026-06-05",
+            title=title,
+            department=department,
+            section="III. Otras Disposiciones y Acuerdos",
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "BOA",
+            "--date-from",
+            "2026-06-05",
+            "--date-to",
+            "2026-06-05",
+            "--profile",
+            "boa-ayudas",
+            "--dry-run",
+            "--limit",
+            "20",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "documents_scanned=9" in captured.out
+    assert "matches_total=9" in captured.out
+    assert "matches_after_filters=3" in captured.out
+    assert "excluded_by_keyword_rules=6" in captured.out
+    assert "BOA:material-curricular" in captured.out
+    assert "BOA:comedor" in captured.out
+    assert "BOA:erasmus" in captured.out
+    assert "BOA:young-creators" not in captured.out
+    assert "BOA:ces-practices" not in captured.out
+    assert "BOA:renuncia" not in captured.out
+    assert "BOA:atencion-temprana" not in captured.out
+    assert "BOA:calendario" not in captured.out
+    assert "BOA:student-associations" not in captured.out
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    assert candidate_count == 0
+
+
 def test_find_source_candidates_bopv_profile_keeps_direct_aid_despite_raw_noise(tmp_path, capsys):
     from official_sources.cli import run
 
