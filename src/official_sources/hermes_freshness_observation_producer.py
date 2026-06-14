@@ -65,7 +65,7 @@ def _iter_monitor_observations(
             parsed = _parse_monitor_output(output_path)
             if parsed is None:
                 continue
-            observed_at, latest_record_date = parsed
+            observed_at, latest_record_date, observation_reason = parsed
             observation = {
                 "source": source_code,
                 "observed_at": _format_timestamp(observed_at),
@@ -74,7 +74,7 @@ def _iter_monitor_observations(
                 "input_kind": input_kind,
                 "timestamp_type": "observed",
                 "confidence": "operational",
-                "reason": "derived from monitor discovered_at; no live fetch",
+                "reason": observation_reason or "derived from monitor discovered_at",
             }
             if latest_record_date is not None:
                 observation["latest_record_date"] = _format_timestamp(latest_record_date)
@@ -82,9 +82,10 @@ def _iter_monitor_observations(
     return tuple(observations)
 
 
-def _parse_monitor_output(output_path: Path) -> tuple[datetime, datetime | None] | None:
+def _parse_monitor_output(output_path: Path) -> tuple[datetime, datetime | None, str | None] | None:
     latest_observed: datetime | None = None
     latest_record_date: datetime | None = None
+    observation_reason: str | None = None
     try:
         lines = output_path.read_text(encoding="utf-8").splitlines()
     except OSError as exc:
@@ -108,6 +109,7 @@ def _parse_monitor_output(output_path: Path) -> tuple[datetime, datetime | None]
         observed = _first_timestamp(record, OBSERVED_TIMESTAMP_KEYS)
         if observed is not None and (latest_observed is None or observed > latest_observed):
             latest_observed = observed
+            observation_reason = _clean_optional_text(record.get("reason"))
         record_date = _first_timestamp(record, RECORD_DATE_KEYS)
         if record_date is not None and (
             latest_record_date is None or record_date > latest_record_date
@@ -116,7 +118,7 @@ def _parse_monitor_output(output_path: Path) -> tuple[datetime, datetime | None]
 
     if latest_observed is None:
         return None
-    return latest_observed, latest_record_date
+    return latest_observed, latest_record_date, observation_reason
 
 
 def _iter_sqlite_ingestion_observations(
@@ -195,6 +197,13 @@ def _first_timestamp(record: dict[str, Any], keys: tuple[str, ...]) -> datetime 
         if text:
             return _parse_timestamp(text)
     return None
+
+
+def _clean_optional_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
 
 
 def _parse_timestamp(value: str) -> datetime:

@@ -33,6 +33,7 @@ from official_sources.hermes_drift_audit import (
     render_markdown_report,
     require_external_release_contract,
 )
+from official_sources.hermes_bdns_observation import run_bdns_observation
 from official_sources.hermes_bocm_rss_observation import run_bocm_rss_observation
 from official_sources.hermes_freshness_report import (
     HermesFreshnessReportError,
@@ -1320,6 +1321,37 @@ def build_parser() -> argparse.ArgumentParser:
         default=1,
         help="Maximum BOCM RSS records to observe. Default: 1.",
     )
+    hermes_bdns_observation = hermes_subparsers.add_parser(
+        "bdns-observation",
+        help=(
+            "Run a manual BDNS latest API freshness observation. "
+            "No scheduler, SQLite writes, ingestion, or external project writes are run."
+        ),
+    )
+    hermes_bdns_observation.add_argument(
+        "--repo-root",
+        default="/opt/official-sources/app",
+        help="Repository checkout root used as command working directory.",
+    )
+    hermes_bdns_observation.add_argument(
+        "--state-root",
+        default="/var/lib/hermes-official-sources-auditor",
+        help="Hermes state root. BDNS API and observation JSONL are written below this root.",
+    )
+    hermes_bdns_observation.add_argument(
+        "--official-sources-bin",
+        default=None,
+        help=(
+            "official-sources executable used for the freshness observation producer. "
+            "Default: <repo-root>/.venv/bin/official-sources."
+        ),
+    )
+    hermes_bdns_observation.add_argument(
+        "--limit",
+        type=int,
+        default=1,
+        help="Maximum BDNS latest records to observe. Default: 1.",
+    )
 
     ingest = subparsers.add_parser("ingest-boe-summary", help="Ingest one BOE daily summary.")
     ingest.add_argument(
@@ -2414,6 +2446,22 @@ def _run_hermes_command(
         print(f"bocm_rss_observation_exit_code={result.exit_code}", file=stdout)
         if result.rss_result.stderr.strip():
             print(result.rss_result.stderr.strip(), file=stderr)
+        if result.observations_result.stderr.strip():
+            print(result.observations_result.stderr.strip(), file=stderr)
+        return result.exit_code
+    if args.hermes_command == "bdns-observation":
+        result = run_bdns_observation(
+            repo_root=Path(args.repo_root),
+            state_root=Path(args.state_root),
+            official_sources_bin=args.official_sources_bin,
+            limit=args.limit,
+        )
+        print(f"api_output_path={result.api_output_path}", file=stdout)
+        print(f"observations_path={result.observations_path}", file=stdout)
+        print(f"records_seen={result.records_seen}", file=stdout)
+        print(f"latest_record_date={result.latest_record_date or 'none'}", file=stdout)
+        print(f"fetch_status_code={result.fetch_status_code or 'none'}", file=stdout)
+        print(f"bdns_observation_exit_code={result.exit_code}", file=stdout)
         if result.observations_result.stderr.strip():
             print(result.observations_result.stderr.strip(), file=stderr)
         return result.exit_code
