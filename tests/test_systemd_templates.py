@@ -12,6 +12,7 @@ def test_systemd_files_exist():
         "official-sources-hermes-auditor.service",
         "official-sources-hermes-auditor.timer",
         "official-sources-hermes-freshness-report.service",
+        "official-sources-hermes-freshness-report.timer",
         "official-sources-integrity-check.service",
         "official-sources-integrity-check.timer",
         "run-official-sources-hermes-auditor.sh",
@@ -77,7 +78,7 @@ def test_hermes_systemd_template_runs_scheduled_strict_audit_wrapper():
     assert "--official-sources-bin \"${OFFICIAL_SOURCES_BIN}\"" in wrapper
 
 
-def test_hermes_freshness_systemd_template_runs_report_only_wrapper_without_timer():
+def test_hermes_freshness_systemd_template_runs_report_only_wrapper():
     service = (SYSTEMD_DIR / "official-sources-hermes-freshness-report.service").read_text(
         encoding="utf-8"
     )
@@ -91,4 +92,16 @@ def test_hermes_freshness_systemd_template_runs_report_only_wrapper_without_time
     assert "--repo-root \"${APP_ROOT}\"" in wrapper
     assert "--state-root \"${STATE_ROOT}\"" in wrapper
     assert "--official-sources-bin \"${OFFICIAL_SOURCES_BIN}\"" in wrapper
-    assert not (SYSTEMD_DIR / "official-sources-hermes-freshness-report.timer").exists()
+
+
+def test_hermes_freshness_timer_runs_report_only_service_after_boe_daily():
+    timer = (SYSTEMD_DIR / "official-sources-hermes-freshness-report.timer").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Description=Run official-sources Hermes freshness report-only runner" in timer
+    assert "OnCalendar=*-*-* 08:15:00 UTC" in timer
+    assert "Persistent=true" in timer
+    assert "RandomizedDelaySec=5m" in timer
+    assert "Unit=official-sources-hermes-freshness-report.service" in timer
+    assert "WantedBy=timers.target" in timer
