@@ -11,9 +11,11 @@ def test_systemd_files_exist():
         "official-sources-boe-daily.timer",
         "official-sources-hermes-auditor.service",
         "official-sources-hermes-auditor.timer",
+        "official-sources-hermes-freshness-report.service",
         "official-sources-integrity-check.service",
         "official-sources-integrity-check.timer",
         "run-official-sources-hermes-auditor.sh",
+        "run-official-sources-hermes-freshness-report.sh",
     }
 
     assert {path.name for path in SYSTEMD_DIR.iterdir()} == expected
@@ -43,6 +45,7 @@ def test_systemd_services_use_private_vps_layout_and_dedicated_user():
     for service_name in [
         "official-sources-boe-daily.service",
         "official-sources-hermes-auditor.service",
+        "official-sources-hermes-freshness-report.service",
         "official-sources-integrity-check.service",
     ]:
         content = (SYSTEMD_DIR / service_name).read_text(encoding="utf-8")
@@ -72,3 +75,20 @@ def test_hermes_systemd_template_runs_scheduled_strict_audit_wrapper():
     assert "hermes scheduled-audit" in wrapper
     assert "--release-contract \"${RELEASE_CONTRACT}\"" in wrapper
     assert "--official-sources-bin \"${OFFICIAL_SOURCES_BIN}\"" in wrapper
+
+
+def test_hermes_freshness_systemd_template_runs_report_only_wrapper_without_timer():
+    service = (SYSTEMD_DIR / "official-sources-hermes-freshness-report.service").read_text(
+        encoding="utf-8"
+    )
+    wrapper = (SYSTEMD_DIR / "run-official-sources-hermes-freshness-report.sh").read_text(
+        encoding="utf-8"
+    )
+
+    assert "ExecStart=/opt/hermes-official-sources-auditor/bin/" in service
+    assert "run-official-sources-hermes-freshness-report.sh" in service
+    assert "hermes scheduled-freshness-report" in wrapper
+    assert "--repo-root \"${APP_ROOT}\"" in wrapper
+    assert "--state-root \"${STATE_ROOT}\"" in wrapper
+    assert "--official-sources-bin \"${OFFICIAL_SOURCES_BIN}\"" in wrapper
+    assert not (SYSTEMD_DIR / "official-sources-hermes-freshness-report.timer").exists()

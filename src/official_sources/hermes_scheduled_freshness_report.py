@@ -24,6 +24,7 @@ class CommandResult:
 class ScheduledFreshnessReportResult:
     exit_code: int
     report_path: Path
+    observations_path: Path
     freshness_result: CommandResult
 
 
@@ -44,32 +45,70 @@ def run_scheduled_freshness_report(
     repo_root = repo_root.resolve()
     state_root = state_root.resolve()
     reports_dir = state_root / "freshness-reports"
+    freshness_runtime = state_root / "freshness-runtime"
+    observations_dir = state_root / "freshness-observations"
+    observations_path = observations_dir / "latest-critical.jsonl"
     try:
         reports_dir.mkdir(parents=True, exist_ok=True)
+        observations_dir.mkdir(parents=True, exist_ok=True)
+        (freshness_runtime / "data" / "rss_monitor").mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         return ScheduledFreshnessReportResult(
             exit_code=2,
             report_path=reports_dir,
+            observations_path=observations_path,
             freshness_result=CommandResult(
                 returncode=2,
                 stdout="",
-                stderr=f"could not create freshness report directory {reports_dir}: {exc}",
+                stderr=f"could not create freshness schedule directories under {state_root}: {exc}",
             ),
         )
 
-    generated_at = _utc_now(now)
-    stamp = generated_at.strftime("%Y%m%d-%H%M%S")
+    started_at = _utc_now(now)
+    stamp = started_at.strftime("%Y%m%d-%H%M%S")
     report_path = reports_dir / f"hermes-freshness-report-{stamp}.md"
 
     bin_path = official_sources_bin or str(repo_root / ".venv" / "bin" / "official-sources")
+    runner = run_command or _run_command
+    source_codes = _ordered_sources(critical_sources, expected_sources)
+    for command in _observation_commands(
+        bin_path=bin_path,
+        repo_root=repo_root,
+        state_root=state_root,
+        freshness_runtime=freshness_runtime,
+        observations_path=observations_path,
+        observed_date=started_at.date().isoformat(),
+        source_codes=source_codes,
+    ):
+        result = runner(command, repo_root)
+        if result.returncode != 0:
+            return ScheduledFreshnessReportResult(
+                exit_code=result.returncode,
+                report_path=report_path,
+                observations_path=observations_path,
+                freshness_result=result,
+            )
+    if not observations_path.exists():
+        return ScheduledFreshnessReportResult(
+            exit_code=2,
+            report_path=report_path,
+            observations_path=observations_path,
+            freshness_result=CommandResult(
+                returncode=2,
+                stdout="",
+                stderr=f"freshness observations were not written: {observations_path}",
+            ),
+        )
+
+    report_at = _utc_now(now)
     command = [
         bin_path,
         "hermes",
         "freshness-report",
-        "--runtime-root",
-        ".",
+        "--observations-jsonl",
+        str(observations_path),
         "--now",
-        _format_timestamp(generated_at),
+        _format_timestamp(report_at),
         "--default-threshold-hours",
         str(default_threshold_hours),
     ]
@@ -79,7 +118,6 @@ def run_scheduled_freshness_report(
         command.extend(["--expected-source", source_code])
     command.extend(["--output", str(report_path)])
 
-    runner = run_command or _run_command
     freshness_result = runner(command, repo_root)
     if freshness_result.returncode == 0 and not report_path.exists():
         freshness_result = CommandResult(
@@ -94,8 +132,97 @@ def run_scheduled_freshness_report(
     return ScheduledFreshnessReportResult(
         exit_code=freshness_result.returncode,
         report_path=report_path,
+        observations_path=observations_path,
         freshness_result=freshness_result,
     )
+
+
+def _observation_commands(
+    *,
+    bin_path: str,
+    repo_root: Path,
+    state_root: Path,
+    freshness_runtime: Path,
+    observations_path: Path,
+    observed_date: str,
+    source_codes: tuple[str, ...],
+) -> tuple[list[str], ...]:
+    commands: list[list[str]] = []
+    if "BOE" in source_codes:
+        commands.append(
+            [
+                bin_path,
+                "rss",
+                "monitor",
+                "--source",
+                "BOE",
+                "--date",
+                observed_date,
+                "--limit",
+                "1",
+                "--write",
+                "--output-root",
+                str(freshness_runtime / "data" / "rss_monitor"),
+            ]
+        )
+    if "BOCM" in source_codes:
+        commands.append(
+            [
+                bin_path,
+                "hermes",
+                "bocm-rss-observation",
+                "--repo-root",
+                str(repo_root),
+                "--state-root",
+                str(state_root),
+                "--official-sources-bin",
+                bin_path,
+                "--date",
+                "today",
+                "--limit",
+                "1",
+            ]
+        )
+    if "BDNS" in source_codes:
+        commands.append(
+            [
+                bin_path,
+                "hermes",
+                "bdns-observation",
+                "--repo-root",
+                str(repo_root),
+                "--state-root",
+                str(state_root),
+                "--official-sources-bin",
+                bin_path,
+                "--limit",
+                "1",
+            ]
+        )
+    freshness_observations_command = [
+        bin_path,
+        "hermes",
+        "freshness-observations",
+        "--runtime-root",
+        str(freshness_runtime),
+    ]
+    for source_code in source_codes:
+        freshness_observations_command.extend(["--source", source_code])
+    freshness_observations_command.extend(["--output", str(observations_path)])
+    commands.append(freshness_observations_command)
+    return tuple(commands)
+
+
+def _ordered_sources(
+    critical_sources: tuple[str, ...],
+    expected_sources: tuple[str, ...],
+) -> tuple[str, ...]:
+    ordered: list[str] = []
+    for source_code in (*critical_sources, *expected_sources):
+        normalized = source_code.strip().upper()
+        if normalized and normalized not in ordered:
+            ordered.append(normalized)
+    return tuple(ordered)
 
 
 def _run_command(command: list[str], cwd: Path) -> CommandResult:

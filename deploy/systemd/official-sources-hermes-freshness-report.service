@@ -1,0 +1,18 @@
+[Unit]
+Description=official-sources Hermes freshness report-only runner
+Documentation=https://github.com/example/official-sources
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=official-sources
+Group=official-sources
+WorkingDirectory=/opt/official-sources/app
+EnvironmentFile=/opt/official-sources/.env
+Environment=APP_ROOT=/opt/official-sources/app
+Environment=STATE_ROOT=/var/lib/hermes-official-sources-auditor
+Environment=OFFICIAL_SOURCES_BIN=/opt/official-sources/app/.venv/bin/official-sources
+ExecStart=/opt/hermes-official-sources-auditor/bin/run-official-sources-hermes-freshness-report.sh
+NoNewPrivileges=true
+PrivateTmp=true

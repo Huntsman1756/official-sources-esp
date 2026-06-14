@@ -2429,6 +2429,7 @@ def _run_hermes_command(
             expected_sources=tuple(args.expected_source or DEFAULT_EXPECTED_SOURCES),
         )
         print(f"report_path={result.report_path}", file=stdout)
+        print(f"observations_path={result.observations_path}", file=stdout)
         print(f"freshness_exit_code={result.exit_code}", file=stdout)
         if result.freshness_result.stderr.strip():
             print(result.freshness_result.stderr.strip(), file=stderr)
