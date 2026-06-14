@@ -8,7 +8,7 @@ import re
 import sys
 import unicodedata
 from collections import Counter
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any, TextIO
@@ -180,6 +180,9 @@ OPPOSITION_ALERT_SOURCE_CODES = (
     "BORM",
     "BOA",
     "DOGC",
+    "BOP_ALICANTE",
+    "BOP_VALENCIA",
+    "BOP_CASTELLON",
 )
 OPPOSITION_ALERT_TYPES = (
     "convocatoria",
@@ -1965,6 +1968,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["json", "jsonl"],
         default="json",
         help="Output format. Default: json.",
+    )
+    opposition_alerts.add_argument(
+        "--scope",
+        choices=["all", "strict"],
+        default="all",
+        help="Alert scope filter. Use strict for oposiciones2.0 import previews.",
     )
     return parser
 
@@ -4844,17 +4853,22 @@ def _run_dry_run_opposition_alerts(
 
     alerts: list[dict[str, Any]] = []
     excluded_by_rule = Counter()
+    detected_at = datetime.now(UTC).isoformat()
     for document in documents:
         classification = _classify_opposition_alert(document)
         if not classification["matched"]:
             if classification["matched_rules"]:
                 excluded_by_rule.update(classification["matched_rules"])
             continue
+        if args.scope == "strict" and classification["alert_scope"] != "strict":
+            excluded_by_rule.update(["excluded_scope_filter:strict"])
+            continue
         alerts.append(
             _opposition_alert_record(
                 document,
                 source_name=source_names[document["source_code"]],
                 classification=classification,
+                detected_at=detected_at,
             )
         )
         if len(alerts) >= args.limit:
@@ -4873,6 +4887,7 @@ def _run_dry_run_opposition_alerts(
         "date_from": date_from,
         "date_to": date_to,
         "sources": source_codes,
+        "alert_scope_filter": args.scope,
         "alerts_by_source": dict(sorted(alerts_by_source.items())),
         "alerts_by_type": dict(sorted(alerts_by_type.items())),
         "alerts_by_scope": dict(sorted(alerts_by_scope.items())),
@@ -5307,6 +5322,7 @@ def _opposition_alert_record(
     *,
     source_name: str,
     classification: dict[str, Any],
+    detected_at: str,
 ) -> dict[str, Any]:
     official_url = _candidate_official_url(document)
     alert_type = classification["alert_type"]
@@ -5322,9 +5338,12 @@ def _opposition_alert_record(
         "territory_code": _opposition_alert_territory_code(document["source_code"]),
         "territory_name": _opposition_alert_territory_name(document["source_code"]),
         "publication_date": document["publication_date"],
+        "published_at": document["publication_date"],
+        "detected_at": detected_at,
         "title": document.get("title") or "",
         "normalized_title": normalized_title,
         "official_url": official_url,
+        "url": official_url,
         "bulletin_identifier": None,
         "document_identifier": document.get("external_id"),
         "issuing_body": document.get("department"),
@@ -5338,6 +5357,14 @@ def _opposition_alert_record(
         "related_group_key": _opposition_alert_related_group_key(document, alert_type),
         "review_status": "new",
         "evidence_grade_status": "none",
+        "raw_excerpt": _opposition_alert_raw_excerpt(document),
+        "evidence": {
+            "grade": "alert-grade",
+            "matched_terms": classification["matched_terms"],
+            "matched_rules": classification["matched_rules"],
+            "source_code": document["source_code"],
+            "official_url": official_url,
+        },
         "metadata_json": {},
     }
 
@@ -5378,6 +5405,9 @@ def _opposition_alert_territory_code(source_code: str) -> str:
         "BORM": "ES-MC",
         "BOA": "ES-AR",
         "DOGC": "ES-CT",
+        "BOP_ALICANTE": "ES-VC-A",
+        "BOP_VALENCIA": "ES-VC-V",
+        "BOP_CASTELLON": "ES-VC-CS",
     }.get(source_code, "unknown")
 
 
@@ -5391,7 +5421,19 @@ def _opposition_alert_territory_name(source_code: str) -> str:
         "BORM": "Region de Murcia",
         "BOA": "Aragon",
         "DOGC": "Catalunya",
+        "BOP_ALICANTE": "Alicante",
+        "BOP_VALENCIA": "Valencia",
+        "BOP_CASTELLON": "Castellon",
     }.get(source_code, "Unknown")
+
+
+def _opposition_alert_raw_excerpt(document: dict[str, Any]) -> str:
+    parts = [
+        str(document.get("title") or ""),
+        str(document.get("department") or ""),
+        str(document.get("section") or ""),
+    ]
+    return " | ".join(part for part in parts if part).strip()
 
 
 class _SharedBOEFetcher:

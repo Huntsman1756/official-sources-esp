@@ -2256,7 +2256,8 @@ def test_cli_does_not_expose_mcp_write_tools_or_downstream_publication():
     assert "FastMCP" not in source
     assert "mcp.tool" not in source
     assert "human_accepted" not in source
-    assert "publish" not in source.lower()
+    source_without_contract_field = source.lower().replace("published_at", "")
+    assert "publish" not in source_without_contract_field
     downstream_lines = [
         line
         for line in source.lower().splitlines()
@@ -2927,6 +2928,81 @@ def test_dry_run_opposition_alerts_outputs_json_without_writes(tmp_path, capsys)
     assert {alert["review_status"] for alert in payload["alerts"]} == {"new"}
     assert {alert["evidence_grade_status"] for alert in payload["alerts"]} == {"none"}
     assert all(alert["source_candidate_id"] is None for alert in payload["alerts"])
+
+
+def test_dry_run_opposition_alerts_scope_strict_exports_import_contract(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    source = repository.upsert_official_source(
+        code="BOP_ALICANTE",
+        name="Boletin Oficial de la Provincia de Alicante",
+        jurisdiction="provincial",
+        region_code="ES-VC-A",
+        base_url="https://sede.diputacionalicante.es",
+        access_type="official_html",
+        reliability_level="canonical",
+    )
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOP_ALICANTE:2026:001",
+        publication_date="2026-05-20",
+        title="Convocatoria para la constitucion de una bolsa de trabajo de auxiliares administrativos",
+        department="Ayuntamiento de Alicante",
+        url_html="https://sede.diputacionalicante.es/edictos/2026/001",
+    )
+    repository.upsert_document(
+        source_id=source["id"],
+        external_id="BOP_ALICANTE:2026:002",
+        publication_date="2026-05-20",
+        title="Anuncio relativo a la Oferta de Empleo Publico para el ano 2026",
+        department="Ayuntamiento de Alicante",
+        url_html="https://sede.diputacionalicante.es/edictos/2026/002",
+    )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "dry-run-opposition-alerts",
+            "--source",
+            "BOP_ALICANTE",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--format",
+            "json",
+            "--scope",
+            "strict",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    assert exit_code == 0
+    assert candidate_count == 0
+    assert payload["summary"]["alert_scope_filter"] == "strict"
+    assert payload["summary"]["alerts_found"] == 1
+    alert = payload["alerts"][0]
+    assert alert["source_code"] == "BOP_ALICANTE"
+    assert alert["alert_scope"] == "strict"
+    assert alert["official_url"] == alert["url"]
+    assert alert["publication_date"] == alert["published_at"]
+    assert alert["detected_at"]
+    assert alert["review_status"] == "new"
+    assert alert["evidence_grade_status"] == "none"
+    assert alert["raw_excerpt"]
+    assert alert["evidence"]["matched_terms"]
+    assert payload["summary"]["writes"]["external_output"] is False
 
 
 def test_dry_run_opposition_alerts_jsonl_and_contextual_exclusions(tmp_path, capsys):
