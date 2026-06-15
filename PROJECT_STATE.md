@@ -4,6 +4,17 @@ Last updated: 2026-06-15
 
 ## Current Decision
 
+`TASK-OFFICIAL-SOURCES-BOPA-ARTIFACT-INTEGRITY-ENRICHMENT-001` is implemented locally. BOPA
+`ingest-monitor-date` now persists the fetched official summary HTML payload as a
+`document_files` `raw_api_response` row for each materialized BOPA document, with `media_type` set
+to `text/html`, `source_snapshot_hash` equal to the monitor `raw_page_hash`, and an
+`integrity_checks` row tied to the ingestion run. A temporary SQLite validation with the BOPA
+fixture produced `document_files=1` and `integrity_checks=1` while preserving
+`candidate_creation_allowed=false`, `evidence_created=false`, and `artifact_downloads=false`. No
+VPS DB write, source candidate write, evidence-grade record, downstream write, runtime, systemd,
+timer, cap, or Hermes change was performed. Report:
+`docs/reports/bopa-artifact-integrity-enrichment-2026-06-15.md`.
+
 `TASK-OFFICIAL-SOURCES-BOPA-CANDIDATE-QUALITY-DRY-RUN-001` is implemented locally. It adds BOPA
 support to `find-source-candidates` with a source-specific `bopa-ayudas` profile for EduBecas-style
 education-aid review. Against a local copy of the VPS SQLite DB, the dry-run result is

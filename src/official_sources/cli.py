@@ -3145,7 +3145,7 @@ def _upsert_monitor_snapshot_file(
     raw_payload: bytes | None,
     ingestion_run_id: int,
 ) -> None:
-    if source_code != "DOCM":
+    if source_code not in {"DOCM", "BOPA"}:
         return
     page_url = str(record.get("page_url") or "").strip()
     raw_page_hash = str(record.get("raw_page_hash") or "").strip()
