@@ -4,6 +4,17 @@ Last updated: 2026-06-15
 
 ## Current Decision
 
+`TASK-OFFICIAL-SOURCES-BON-LIVE-SNAPSHOT-BACKFILL-001` is completed on the official-sources VPS.
+The task used a temporary checkout of `e2e2688` because the runtime checkout stayed pinned to the
+external release contract at `1d5a20b` and was not pulled, merged, deployed, or reconciled. Backup
+`/opt/official-sources/data/backups/official_sources_before_bon_artifact_integrity_20260615_060747.sqlite`
+was verified with `quick_check`. Result: `ingestion_run_id=521`, `documents_fetched=46`,
+`documents_new=0`, `documents_updated=46`, `document_files.raw_api_response=46`,
+`integrity_checks=46`, `source_candidates=0`, and `artifact_download_attempts=0`; DB quick check
+stayed green before and after. No evidence-grade records, downstream writes, runtime, systemd,
+timer, cap, or Hermes changes. Report:
+`docs/reports/bon-live-snapshot-backfill-2026-06-15.md`.
+
 `TASK-OFFICIAL-SOURCES-BON-ARTIFACT-INTEGRITY-ENRICHMENT-001` is implemented locally. BON
 `ingest-monitor-date` now persists the fetched official summary HTML payload as a
 `document_files` `raw_api_response` row for each materialized BON document, with `media_type` set
