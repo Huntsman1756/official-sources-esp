@@ -68,6 +68,19 @@ VPS DB write, source candidate write, evidence-grade record, downstream write, r
 timer, cap, or Hermes change was performed. Ruff remains a separate pre-existing formatting/lint
 drift and was not mixed into this task.
 
+`TASK-OFFICIAL-SOURCES-DOCM-LIVE-SNAPSHOT-BACKFILL-001` is completed on the official-sources VPS.
+Because the runtime checkout was divergent (`HEAD=bdddd07`, ahead 2 and behind 6 relative to
+`origin/main`), the task did not pull, merge, deploy, or change systemd/runtime. Instead, it used a
+temporary checkout of `3fb4ad6` under `/var/tmp` with the existing venv to run only the DOCM
+`ingest-monitor-date` materialization against the live SQLite after a verified backup. Result:
+`ingestion_run_id=519`, `documents_fetched=32`, `documents_new=0`, `documents_updated=32`,
+`document_files.raw_api_response=32`, `integrity_checks=32`, `source_candidates=0`, and
+`artifact_download_attempts=0`; DB validation stayed green before and after. Backup:
+`/opt/official-sources/data/backups/official_sources_before_docm_artifact_integrity_20260615_043712.sqlite`.
+The pre-existing Hermes strict auditor failure remains separate: the VPS checkout HEAD differs from
+the external expected release SHA and from current `origin/main`. Report:
+`docs/reports/docm-live-snapshot-backfill-2026-06-15.md`.
+
 `TASK-HERMES-SCHEDULED-STRICT-AUDIT-003` is implemented locally and ready for PR review. It
 version-controls the scheduled Hermes runner so the daily systemd path calls the deterministic
 strict drift auditor with the external release contract and `--fail-on-no-go`. This closes the
