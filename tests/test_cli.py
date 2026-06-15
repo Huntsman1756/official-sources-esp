@@ -606,6 +606,76 @@ def test_ingest_monitor_date_records_bopa_html_snapshot_file(tmp_path, capsys):
     assert "candidate_creation_allowed=false" in captured.out
 
 
+def test_ingest_monitor_date_records_bon_html_snapshot_file(tmp_path, capsys):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    index_url = (
+        "https://bon.navarra.es/es/indice-boletines?"
+        "p_p_id=es_navarra_bon_boletin_selectormes_portlet_BoletinSelectorMesPortlet"
+        "&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view"
+        "&_es_navarra_bon_boletin_selectormes_portlet_BoletinSelectorMesPortlet_anyo=2026"
+        "&_es_navarra_bon_boletin_selectormes_portlet_BoletinSelectorMesPortlet_mes=5"
+    )
+    summary_url = "https://bon.navarra.es/es/boletin/-/sumario/2026/104"
+    summary_raw = _fixture_bytes("bon_summary_2026_104.html")
+
+    def html_fetcher(url: str) -> bytes:
+        if url == index_url:
+            return _fixture_bytes("bon_index_may_2026.html")
+        if url == summary_url:
+            return summary_raw
+        raise AssertionError(f"unexpected URL: {url}")
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "ingest-monitor-date",
+            "--source",
+            "BON",
+            "--date",
+            "2026-05-29",
+            "--limit",
+            "1",
+        ],
+        html_fetcher=html_fetcher,
+    )
+
+    connection = connect(str(db_path))
+    repository = OfficialSourcesRepository(connection)
+    document = connection.execute(
+        """
+        SELECT d.id, d.external_id, d.publication_date, d.url_html
+        FROM official_documents d
+        JOIN official_sources s ON s.id = d.source_id
+        WHERE s.code = 'BON'
+        """
+    ).fetchone()
+    files = repository.list_document_files(document["id"])
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert document["external_id"] == "BON:2026.104.22"
+    assert document["publication_date"] == "2026-05-29"
+    assert document["url_html"] == "https://bon.navarra.es/es/anuncio/-/texto/2026/104/22"
+    assert len(files) == 1
+    file_record = files[0]
+    assert file_record["file_type"] == "raw_api_response"
+    assert file_record["official_url"] == summary_url
+    assert file_record["media_type"] == "text/html"
+    assert file_record["size_bytes"] == len(summary_raw)
+    assert file_record["sha256"] == sha256_bytes(summary_raw)
+    assert file_record["source_snapshot_hash"] == sha256_bytes(summary_raw)
+    integrity_checks = repository.list_integrity_checks(file_record["id"])
+    assert len(integrity_checks) == 1
+    assert integrity_checks[0]["ingestion_run_id"] is not None
+    assert integrity_checks[0]["changed"] == 0
+    assert integrity_checks[0]["change_reason"] == "new_file"
+    assert "artifact_downloads=false" in captured.out
+    assert "evidence_created=false" in captured.out
+    assert "candidate_creation_allowed=false" in captured.out
+
+
 def test_ingest_monitor_date_materializes_api_records(tmp_path):
     from official_sources.cli import run
 
