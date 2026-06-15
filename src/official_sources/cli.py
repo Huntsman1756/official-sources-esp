@@ -243,7 +243,6 @@ BOJA_AYUDAS_PROFILE_KEYWORDS = [
     "libros de texto",
     "transporte escolar",
     "comedor escolar",
-    "discapacidad",
     "vivienda",
     "alquiler",
     "joven",
@@ -477,9 +476,6 @@ BOJA_HIGH_INTENT_KEYWORDS = {
     "libros de texto",
     "transporte escolar",
     "comedor escolar",
-    "discapacidad",
-    "joven",
-    "jovenes",
 }
 BOJA_EDUCATION_DEPARTMENT_TERMS = {
     "desarrollo educativo",
@@ -513,6 +509,48 @@ BOJA_NOISE_TEXT_TERMS = {
     "asociaciones empresariales",
     "entidades locales",
     "diputaciones",
+}
+BOJA_EMPLOYMENT_OR_SELECTION_NOISE_TERMS = {
+    "autoridades y personal",
+    "oferta publica de empleo",
+    "ofertas de empleo publico",
+    "proceso selectivo",
+    "procesos selectivos",
+    "pruebas selectivas",
+    "concurso-oposicion",
+    "concurso oposicion",
+    "personal funcionario",
+    "funcionario de carrera",
+    "personal laboral",
+    "aspirantes admitidas y excluidas",
+    "aspirantes que superan",
+    "plazas reservadas",
+    "vacantes",
+    "nombramiento",
+    "se nombra",
+}
+BOJA_FPE_NOTIFICATION_NOISE_TERMS = {
+    "formacion profesional para el empleo",
+    "no ha sido posible notificar",
+    "relacion de solicitantes",
+    "subsanacion",
+    "propuesta provisional",
+    "resolucion de archivo",
+    "archivo por desistimiento",
+    "requerimientos de documentacion",
+}
+BOJA_EDUCATION_PROCEDURE_NOISE_TERMS = {
+    "obtencion del certificado",
+    "certificado de nivel",
+    "sorteo publico",
+    "procedimiento de admision",
+    "admision del alumnado",
+    "centros docentes publicos y privados concertados",
+}
+BOJA_RESOLVED_AID_NOISE_TERMS = {
+    "resuelve la convocatoria",
+    "resuelven dos becas",
+    "resuelve una beca",
 }
 DOGV_GENERIC_WEAK_KEYWORDS = {
     "ayuda",
@@ -5812,10 +5850,21 @@ def _boja_profile_exclusion_reason(
     if _boja_weak_only_match(keywords):
         return "boja_weak_only"
     if {"vivienda", "alquiler"} & normalized_keywords and not (
-        {"joven", "jovenes", "estudiantes", "alumnado"} & normalized_keywords
-        or any(term in combined_text for term in {"joven", "jovenes", "estudiantes", "alumnado"})
+        {"estudiantes", "alumnado"} & normalized_keywords
+        or any(term in combined_text for term in {"estudiantes", "alumnado"})
     ):
         return "boja_housing_noise"
+    if any(term in combined_text for term in _normalized_set(BOJA_EMPLOYMENT_OR_SELECTION_NOISE_TERMS)):
+        return "boja_employment_or_selection_noise"
+    if (
+        "formacion profesional para el empleo" in combined_text
+        and any(term in combined_text for term in _normalized_set(BOJA_FPE_NOTIFICATION_NOISE_TERMS))
+    ):
+        return "boja_fpe_notification_noise"
+    if any(term in combined_text for term in _normalized_set(BOJA_EDUCATION_PROCEDURE_NOISE_TERMS)):
+        return "boja_education_procedure_noise"
+    if any(term in combined_text for term in _normalized_set(BOJA_RESOLVED_AID_NOISE_TERMS)):
+        return "boja_resolved_aid_noise"
     high_intent = {_normalize_search_text(keyword) for keyword in BOJA_HIGH_INTENT_KEYWORDS}
     education_departments = {
         _normalize_search_text(term) for term in BOJA_EDUCATION_DEPARTMENT_TERMS

@@ -4,6 +4,18 @@ Last updated: 2026-06-15
 
 ## Current Decision
 
+`TASK-OFFICIAL-SOURCES-BOJA-CANDIDATE-QUALITY-DRY-RUN-001` is implemented locally. It tightens
+the BOJA `boja-ayudas` dry-run profile for EduBecas-style education-aid review. Against a local
+copy of the VPS SQLite DB, the dry-run result moved from `matches_after_filters=36` to
+`matches_after_filters=5`, with `candidates_created=0`. The filter preserves student-facing
+university scholarship/aid calls and school/FP mobility or stay calls while excluding public
+employment/selection, FPE notification, youth housing without student context, education procedure
+and already-resolved scholarship notices. Four of the five preserved documents have BOJA PDF hashes
+and integrity checks; all five have BOJA API snapshot hashes and integrity checks. No VPS DB write,
+source candidate write, evidence-grade record, artifact download, downstream write, runtime,
+systemd, timer, cap, or Hermes change was performed. Report:
+`docs/reports/boja-candidate-quality-dry-run-2026-06-15.md`.
+
 `TASK-OFFICIAL-SOURCES-HERMES-RUNTIME-CONTRACT-RECONCILIATION-001` is completed on the
 official-sources VPS. The pre-existing strict auditor NO-GO was caused by release-contract/runtime
 drift: external expected SHA `1045bf7`, clean runtime checkout `bdddd07`, and current

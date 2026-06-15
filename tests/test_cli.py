@@ -4214,7 +4214,9 @@ def test_find_boe_candidates_boja_profile_treats_transport_contextually(tmp_path
     assert "transporte escolar" in captured.out
 
 
-def test_find_boe_candidates_boja_profile_allows_young_housing_context(tmp_path, capsys):
+def test_find_boe_candidates_boja_profile_excludes_young_housing_without_student_context(
+    tmp_path, capsys
+):
     from official_sources.cli import run
 
     db_path = tmp_path / "db.sqlite"
@@ -4249,9 +4251,106 @@ def test_find_boe_candidates_boja_profile_allows_young_housing_context(tmp_path,
 
     captured = capsys.readouterr()
     assert exit_code == 0
+    assert "matches_total=1" in captured.out
+    assert "matches_after_filters=0" in captured.out
+    assert "excluded_by_keyword_rules=1" in captured.out
+    assert "BOJA:young-rent" not in captured.out
+
+
+def test_find_boe_candidates_boja_profile_filters_live_noise_and_keeps_student_aid(
+    tmp_path, capsys
+):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    boja_source = repository.ensure_official_source_boja()
+    examples = [
+        (
+            "BOJA:employment-disability",
+            "Resolucion por la que se aprueban las listas definitivas de personas aspirantes "
+            "que superan el concurso-oposicion para personas con discapacidad intelectual",
+            "Consejeria de Sanidad, Presidencia y Emergencias",
+            "2. Autoridades y personal",
+        ),
+        (
+            "BOJA:fpe-notification",
+            "Anuncio mediante el que se publica relacion de solicitantes de ayuda de Formacion "
+            "Profesional para el Empleo a los que no ha sido posible notificar resolucion de beca",
+            "Consejeria de Empleo, Empresa y Trabajo Autonomo",
+            "5. Anuncios",
+        ),
+        (
+            "BOJA:language-certificate",
+            "Resolucion por la que se regula el procedimiento para la obtencion del certificado "
+            "de nivel Intermedio B2 de idiomas para el alumnado que cursa Bachillerato bilingue",
+            "Consejeria de Desarrollo Educativo y Formacion Profesional",
+            "3. Otras disposiciones",
+        ),
+        (
+            "BOJA:admission-lottery",
+            "Resolucion por la que se anuncia la hora y el lugar para la celebracion del sorteo "
+            "publico establecido en el procedimiento de admision del alumnado en centros docentes",
+            "Consejeria de Desarrollo Educativo y Formacion Profesional",
+            "3. Otras disposiciones",
+        ),
+        (
+            "BOJA:resolved-training-grant",
+            "Resolucion por la que se resuelve la convocatoria de seis becas de formacion "
+            "de personal bibliotecario adscritas a la biblioteca de la Universidad",
+            "Universidades",
+            "3. Otras disposiciones",
+        ),
+        (
+            "BOJA:student-master-aid",
+            "Extracto de la Resolucion por la que se convocan becas de atraccion de talento "
+            "para estudiantes de Master",
+            "Universidades",
+            "1. Disposiciones generales",
+        ),
+    ]
+    for external_id, title, department, section in examples:
+        repository.upsert_document(
+            source_id=boja_source["id"],
+            external_id=external_id,
+            publication_date="2026-05-20",
+            title=title,
+            department=department,
+            section=section,
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-boe-candidates",
+            "--source",
+            "BOJA",
+            "--date-from",
+            "2026-05-20",
+            "--date-to",
+            "2026-05-20",
+            "--profile",
+            "boja-ayudas",
+            "--dry-run",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "matches_total=5" in captured.out
     assert "matches_after_filters=1" in captured.out
-    assert "matched_keywords=ayudas,vivienda,alquiler,jovenes" in captured.out
-    assert "BOJA:young-rent" in captured.out
+    assert "excluded_by_keyword_rules=4" in captured.out
+    assert "BOJA:student-master-aid" in captured.out
+    assert "BOJA:employment-disability" not in captured.out
+    assert "BOJA:fpe-notification" not in captured.out
+    assert "BOJA:language-certificate" not in captured.out
+    assert "BOJA:admission-lottery" not in captured.out
+    assert "BOJA:resolved-training-grant" not in captured.out
 
 
 def test_find_source_candidates_dogv_profile_filters_noise_and_keeps_direct_aid(tmp_path, capsys):
