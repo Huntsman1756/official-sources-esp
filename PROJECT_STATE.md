@@ -1,8 +1,21 @@
 # Project State
 
-Last updated: 2026-06-14
+Last updated: 2026-06-15
 
 ## Current Decision
+
+`TASK-OFFICIAL-SOURCES-HERMES-RUNTIME-CONTRACT-RECONCILIATION-001` is completed on the
+official-sources VPS. The pre-existing strict auditor NO-GO was caused by release-contract/runtime
+drift: external expected SHA `1045bf7`, clean runtime checkout `bdddd07`, and current
+`origin/main` `1d5a20b`. The divergent runtime HEAD was preserved as
+`preserve/vps-main-bdddd07-before-runtime-reconcile-20260615_044932`, the external contract was
+backed up as
+`/etc/official-sources/hermes-audit-contract.yaml.before-runtime-reconcile-20260615_044932`, the
+runtime checkout was aligned to `origin/main`, and the external contract now expects
+`1d5a20baae785f13c4800529d954d6e07f324e16`. Direct strict audit returned `VERDICT: GO`, the
+systemd service smoke exited `0/SUCCESS`, `systemctl --failed` returned `0 loaded units listed`,
+and the VPS worktree is clean on `main...origin/main`. Report:
+`docs/reports/hermes-runtime-contract-reconciliation-2026-06-15.md`.
 
 `TASK-OFFICIAL-SOURCES-BOA-METADATA-BACKFILL-CATCHUP-001` is completed on the
 `official-sources` VPS as a bounded metadata-only upstream catch-up for `BOA`.
