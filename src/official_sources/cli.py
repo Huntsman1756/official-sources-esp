@@ -161,6 +161,7 @@ SOURCE_CANDIDATE_SOURCE_CODES = (
     "BORM",
     "DOGC",
     "DOCM",
+    "BOPA",
 )
 SOURCE_CANDIDATE_PROFILES = (
     "la-ayuda",
@@ -172,6 +173,7 @@ SOURCE_CANDIDATE_PROFILES = (
     "borm-ayudas",
     "dogc-ayudas",
     "docm-ayudas",
+    "bopa-ayudas",
 )
 OPPOSITION_ALERT_SOURCE_CODES = (
     "BOE",
@@ -450,6 +452,45 @@ DOCM_NON_STUDENT_FACING_NOISE_TERMS = {
     "unidad tecnica de acreditacion",
     "grupo visilab",
     "contratacion publica",
+}
+BOPA_AYUDAS_PROFILE_KEYWORDS = [
+    *AUTONOMOUS_AYUDAS_PROFILE_KEYWORDS,
+    "ayudas a estudiantes",
+    "beca de colaboracion",
+    "becas de colaboracion",
+    "campamentos geologicos",
+    "campeonatos universitarios",
+    "equipos deportivos",
+]
+BOPA_DIRECT_TITLE_TERMS = {
+    "ayudas a estudiantes",
+    "beca de colaboracion",
+    "becas de colaboracion",
+    "campamentos geologicos",
+    "campeonatos universitarios",
+    "equipos deportivos",
+}
+BOPA_NON_STUDENT_FACING_NOISE_TERMS = {
+    "convenio de colaboracion",
+    "tesis doctoral con mencion industrial",
+    "cursos de verano",
+    "apertura temprana",
+    "padron de usuarios",
+    "ayuda a domicilio",
+    "jefe/a de seccion de educacion",
+    "comision de servicios",
+    "medio rural",
+    "politica agraria",
+    "ecorregimen",
+    "agricultura",
+    "cultivos",
+    "entidades locales",
+    "gastos generales de funcionamiento",
+    "adquisicion de equipamiento",
+    "servicio publico de empleo",
+    "talleres de empleo",
+    "contratacion de personal investigador",
+    "personal tecnico de apoyo",
 }
 LA_AYUDA_DEFAULT_EXCLUDED_SECTIONS = ["V-A"]
 GENERIC_WEAK_KEYWORDS = {"convocatoria", "transporte"}
@@ -5606,6 +5647,8 @@ def _candidate_keywords(args: argparse.Namespace) -> list[str]:
         keywords.extend(DOGC_AYUDAS_PROFILE_KEYWORDS)
     if args.profile == "docm-ayudas":
         keywords.extend(DOCM_AYUDAS_PROFILE_KEYWORDS)
+    if args.profile == "bopa-ayudas":
+        keywords.extend(BOPA_AYUDAS_PROFILE_KEYWORDS)
     if args.keywords:
         keywords.extend(keyword.strip() for keyword in args.keywords.split(",") if keyword.strip())
     return list(dict.fromkeys(keywords))
@@ -5725,6 +5768,11 @@ def _candidate_exclusion_reason(
         matches,
     ):
         return "keyword_rules"
+    if filters["profile"] == ["bopa-ayudas"] and _bopa_profile_exclusion_reason(
+        document,
+        matches,
+    ):
+        return "keyword_rules"
     if (
         filters["profile"]
         and filters["profile"][0]
@@ -5814,6 +5862,7 @@ def _score_candidate_match(
         "borm-ayudas",
         "dogc-ayudas",
         "docm-ayudas",
+        "bopa-ayudas",
     } and _autonomous_weak_only_match(keywords):
         score -= 2
         reasons.append("autonomous_weak_only_generic_match:-2")
@@ -6190,6 +6239,27 @@ def _docm_profile_exclusion_reason(
         return "docm_non_student_facing_noise"
     if not title_has_direct_signal:
         return "docm_no_direct_signal"
+    return None
+
+
+def _bopa_profile_exclusion_reason(
+    document: dict[str, Any],
+    matches: dict[str, Any],
+) -> str | None:
+    keywords = matches["keywords"]
+    title = _normalize_search_text(str(document.get("title") or ""))
+    department = _normalize_search_text(str(document.get("department") or ""))
+    section = _normalize_search_text(str(document.get("section") or ""))
+    document_type = _normalize_search_text(str(document.get("document_type") or ""))
+    raw_metadata = _normalize_search_text(str(document.get("raw_metadata_json") or ""))
+    combined_text = " ".join([title, department, section, document_type, raw_metadata])
+
+    if _autonomous_weak_only_match(keywords):
+        return "bopa_weak_only"
+    if any(term in combined_text for term in _normalized_set(BOPA_NON_STUDENT_FACING_NOISE_TERMS)):
+        return "bopa_non_student_facing_noise"
+    if not any(term in title for term in _normalized_set(BOPA_DIRECT_TITLE_TERMS)):
+        return "bopa_no_direct_signal"
     return None
 
 

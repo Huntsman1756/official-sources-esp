@@ -4,6 +4,19 @@ Last updated: 2026-06-15
 
 ## Current Decision
 
+`TASK-OFFICIAL-SOURCES-BOPA-CANDIDATE-QUALITY-DRY-RUN-001` is implemented locally. It adds BOPA
+support to `find-source-candidates` with a source-specific `bopa-ayudas` profile for EduBecas-style
+education-aid review. Against a local copy of the VPS SQLite DB, the dry-run result is
+`documents_scanned=50`, `matches_total=33`, `matches_after_filters=3`, and `candidates_created=0`.
+The filter preserves Universidad de Oviedo student-facing aid/scholarship calls while excluding
+university convenios, research hiring, public education staffing, local/social-service aid,
+agrarian subsidy and municipal/entity subsidy noise. The preserved BOPA documents have official HTML
+URLs and monitor entry hashes but no `document_files` or PDF URLs, so downstream evidence preview
+remains blocked pending a separate artifact-integrity task. No VPS DB write, source candidate write,
+evidence-grade record, artifact download, downstream write, runtime, systemd, timer, cap, or Hermes
+change was performed. Report:
+`docs/reports/bopa-candidate-quality-dry-run-2026-06-15.md`.
+
 `TASK-OFFICIAL-SOURCES-BOJA-CANDIDATE-QUALITY-DRY-RUN-001` is implemented locally. It tightens
 the BOJA `boja-ayudas` dry-run profile for EduBecas-style education-aid review. Against a local
 copy of the VPS SQLite DB, the dry-run result moved from `matches_after_filters=36` to

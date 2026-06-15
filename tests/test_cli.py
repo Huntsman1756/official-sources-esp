@@ -3834,6 +3834,126 @@ def test_find_source_candidates_docm_profile_filters_non_student_facing_noise(
     assert candidate_count == 0
 
 
+def test_find_source_candidates_bopa_profile_filters_live_noise_and_keeps_student_aid(
+    tmp_path, capsys
+):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    bopa_source = repository.upsert_official_source(
+        code="BOPA",
+        name="Boletin Oficial del Principado de Asturias",
+        jurisdiction="ES",
+        region_code="ES-AS",
+        base_url="https://miprincipado.asturias.es/bopa-sumario",
+        access_type="official_html",
+        reliability_level="canonical",
+    )
+    examples = [
+        (
+            "BOPA:student-geology-aid",
+            "Extracto de la Resolucion del Vicerrector de Estudiantes y Empleabilidad "
+            "por la que se aprueba la convocatoria publica de ayudas a estudiantes "
+            "destinadas a financiar campamentos geologicos de estudios de Grado",
+            "UNIVERSIDAD DE OVIEDO",
+            "I. Principado de Asturias",
+        ),
+        (
+            "BOPA:collaboration-scholarship",
+            "Extracto de la Resolucion por la que se aprueba la convocatoria de una "
+            "beca de colaboracion para los servicios de normalizacion linguistica",
+            "UNIVERSIDAD DE OVIEDO",
+            "I. Principado de Asturias",
+        ),
+        (
+            "BOPA:sports-university-aid",
+            "Extracto de la Resolucion por la que se aprueba la convocatoria publica "
+            "para la concesion de ayudas a los componentes de los equipos deportivos "
+            "y campeonatos universitarios",
+            "UNIVERSIDAD DE OVIEDO",
+            "I. Principado de Asturias",
+        ),
+        (
+            "BOPA:doctoral-convenio",
+            "Convenio de colaboracion entre la Universidad de Oviedo y Banca March "
+            "para la realizacion de una tesis doctoral con mencion industrial",
+            "UNIVERSIDAD DE OVIEDO",
+            "I. Principado de Asturias",
+        ),
+        (
+            "BOPA:research-hiring",
+            "Extracto de la Resolucion por la que se aprueba la convocatoria para la "
+            "contratacion de personal investigador y personal tecnico de apoyo",
+            "UNIVERSIDAD DE OVIEDO",
+            "I. Principado de Asturias",
+        ),
+        (
+            "BOPA:home-help",
+            "Anuncio de exposicion del padron de beneficiarios del servicio de ayuda "
+            "a domicilio",
+            "Ayuntamiento",
+            "V. Administracion local",
+        ),
+        (
+            "BOPA:agrarian-subsidy",
+            "Resolucion por la que se concede la subvencion Ecorregimen agroecologia "
+            "en tierras de cultivo",
+            "Consejeria de Medio Rural y Politica Agraria",
+            "I. Principado de Asturias",
+        ),
+    ]
+    for external_id, title, department, section in examples:
+        repository.upsert_document(
+            source_id=bopa_source["id"],
+            external_id=external_id,
+            publication_date="2026-06-05",
+            title=title,
+            department=department,
+            section=section,
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "BOPA",
+            "--date-from",
+            "2026-06-05",
+            "--date-to",
+            "2026-06-05",
+            "--profile",
+            "bopa-ayudas",
+            "--dry-run",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "source=BOPA" in captured.out
+    assert "matches_total=7" in captured.out
+    assert "matches_after_filters=3" in captured.out
+    assert "excluded_by_keyword_rules=4" in captured.out
+    assert "BOPA:student-geology-aid" in captured.out
+    assert "BOPA:collaboration-scholarship" in captured.out
+    assert "BOPA:sports-university-aid" in captured.out
+    assert "BOPA:doctoral-convenio" not in captured.out
+    assert "BOPA:research-hiring" not in captured.out
+    assert "BOPA:home-help" not in captured.out
+    assert "BOPA:agrarian-subsidy" not in captured.out
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    assert candidate_count == 0
+
+
 def test_find_source_candidates_bopv_profile_keeps_direct_aid_despite_raw_noise(tmp_path, capsys):
     from official_sources.cli import run
 
