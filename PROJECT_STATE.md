@@ -4,6 +4,19 @@ Last updated: 2026-06-15
 
 ## Current Decision
 
+`TASK-OFFICIAL-SOURCES-BON-CANDIDATE-QUALITY-DRY-RUN-001` is implemented locally. It adds BON
+support to `find-source-candidates` with a source-specific `bon-ayudas` profile for EduBecas-style
+education-aid review. Against a local copy of the VPS SQLite DB, the dry-run result is
+`documents_scanned=46`, `matches_total=25`, `matches_after_filters=1`, and `candidates_created=0`.
+The filter preserves the Universidad Pública de Navarra student scholarship call for degree
+students selected for academic olympiads while excluding appointments, public employment,
+research hiring, social/dependency aid, training-center subsidies for unemployed people, prize/TFE,
+admission/procedure, environmental and local-government noise. The preserved BON document has an
+official HTML URL but no `document_files` or PDF URL, so downstream evidence preview remains
+blocked pending a separate artifact-integrity task. No VPS DB write, source candidate write,
+evidence-grade record, artifact download, downstream write, runtime, systemd, timer, cap, or Hermes
+change was performed. Report: `docs/reports/bon-candidate-quality-dry-run-2026-06-15.md`.
+
 `TASK-OFFICIAL-SOURCES-BOPA-LIVE-SNAPSHOT-BACKFILL-001` is completed on the official-sources VPS.
 The task used a temporary checkout of `d0448f3` because the runtime checkout stayed pinned to the
 external release contract at `1d5a20b` and was not pulled, merged, deployed, or reconciled. Backup

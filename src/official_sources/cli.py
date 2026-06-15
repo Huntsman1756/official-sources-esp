@@ -162,6 +162,7 @@ SOURCE_CANDIDATE_SOURCE_CODES = (
     "DOGC",
     "DOCM",
     "BOPA",
+    "BON",
 )
 SOURCE_CANDIDATE_PROFILES = (
     "la-ayuda",
@@ -174,6 +175,7 @@ SOURCE_CANDIDATE_PROFILES = (
     "dogc-ayudas",
     "docm-ayudas",
     "bopa-ayudas",
+    "bon-ayudas",
 )
 OPPOSITION_ALERT_SOURCE_CODES = (
     "BOE",
@@ -491,6 +493,59 @@ BOPA_NON_STUDENT_FACING_NOISE_TERMS = {
     "talleres de empleo",
     "contratacion de personal investigador",
     "personal tecnico de apoyo",
+}
+BON_AYUDAS_PROFILE_KEYWORDS = [
+    *AUTONOMOUS_AYUDAS_PROFILE_KEYWORDS,
+    "becas para estudiantes",
+    "estudiantes que se matriculen",
+    "estudios de grado",
+    "olimpiadas academicas",
+]
+BON_DIRECT_TITLE_TERMS = {
+    "becas para estudiantes",
+    "estudiantes que se matriculen",
+    "estudios de grado",
+    "olimpiadas academicas",
+}
+BON_NON_STUDENT_FACING_NOISE_TERMS = {
+    "area clinica",
+    "radiologia",
+    "plan de gestion",
+    "zona especial de conservacion",
+    "nombramiento",
+    "nombra",
+    "cese",
+    "ceses",
+    "provision de personal docente",
+    "centros publicos dependientes",
+    "directores y directoras",
+    "oposicion",
+    "concurso-oposicion",
+    "oferta publica de empleo",
+    "personal investigador",
+    "contratacion de personal investigador",
+    "puesto de trabajo",
+    "procedimiento de ingreso",
+    "proceso selectivo",
+    "plazas del puesto",
+    "personas dependientes",
+    "permanencia en el domicilio",
+    "cuidador/a profesional",
+    "certificados profesionales",
+    "personas desempleadas",
+    "centros docentes privados",
+    "acciones formativas",
+    "premio al mejor trabajo fin de estudios",
+    "trabajo fin de estudios",
+    "admision del alumnado",
+    "procedimiento de admision",
+    "listas definitivas",
+    "listas de espera",
+    "autorizacion ambiental",
+    "modificacion sustancial",
+    "propuesta de nombramiento",
+    "delegacion de alcaldia",
+    "aprovechamientos comunales",
 }
 LA_AYUDA_DEFAULT_EXCLUDED_SECTIONS = ["V-A"]
 GENERIC_WEAK_KEYWORDS = {"convocatoria", "transporte"}
@@ -5649,6 +5704,8 @@ def _candidate_keywords(args: argparse.Namespace) -> list[str]:
         keywords.extend(DOCM_AYUDAS_PROFILE_KEYWORDS)
     if args.profile == "bopa-ayudas":
         keywords.extend(BOPA_AYUDAS_PROFILE_KEYWORDS)
+    if args.profile == "bon-ayudas":
+        keywords.extend(BON_AYUDAS_PROFILE_KEYWORDS)
     if args.keywords:
         keywords.extend(keyword.strip() for keyword in args.keywords.split(",") if keyword.strip())
     return list(dict.fromkeys(keywords))
@@ -5773,6 +5830,11 @@ def _candidate_exclusion_reason(
         matches,
     ):
         return "keyword_rules"
+    if filters["profile"] == ["bon-ayudas"] and _bon_profile_exclusion_reason(
+        document,
+        matches,
+    ):
+        return "keyword_rules"
     if (
         filters["profile"]
         and filters["profile"][0]
@@ -5863,6 +5925,7 @@ def _score_candidate_match(
         "dogc-ayudas",
         "docm-ayudas",
         "bopa-ayudas",
+        "bon-ayudas",
     } and _autonomous_weak_only_match(keywords):
         score -= 2
         reasons.append("autonomous_weak_only_generic_match:-2")
@@ -6260,6 +6323,27 @@ def _bopa_profile_exclusion_reason(
         return "bopa_non_student_facing_noise"
     if not any(term in title for term in _normalized_set(BOPA_DIRECT_TITLE_TERMS)):
         return "bopa_no_direct_signal"
+    return None
+
+
+def _bon_profile_exclusion_reason(
+    document: dict[str, Any],
+    matches: dict[str, Any],
+) -> str | None:
+    keywords = matches["keywords"]
+    title = _normalize_search_text(str(document.get("title") or ""))
+    department = _normalize_search_text(str(document.get("department") or ""))
+    section = _normalize_search_text(str(document.get("section") or ""))
+    document_type = _normalize_search_text(str(document.get("document_type") or ""))
+    raw_metadata = _normalize_search_text(str(document.get("raw_metadata_json") or ""))
+    combined_text = " ".join([title, department, section, document_type, raw_metadata])
+
+    if _autonomous_weak_only_match(keywords):
+        return "bon_weak_only"
+    if any(term in combined_text for term in _normalized_set(BON_NON_STUDENT_FACING_NOISE_TERMS)):
+        return "bon_non_student_facing_noise"
+    if not any(term in title for term in _normalized_set(BON_DIRECT_TITLE_TERMS)):
+        return "bon_no_direct_signal"
     return None
 
 

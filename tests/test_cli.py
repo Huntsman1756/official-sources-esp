@@ -4011,6 +4011,114 @@ def test_find_source_candidates_bopa_profile_filters_live_noise_and_keeps_studen
     assert candidate_count == 0
 
 
+def test_find_source_candidates_bon_profile_filters_live_noise_and_keeps_student_aid(
+    tmp_path, capsys
+):
+    from official_sources.cli import run
+
+    db_path = tmp_path / "db.sqlite"
+    connection = connect(str(db_path))
+    initialize_database(connection)
+    repository = OfficialSourcesRepository(connection)
+    bon_source = repository.upsert_official_source(
+        code="BON",
+        name="Boletin Oficial de Navarra",
+        jurisdiction="ES",
+        region_code="ES-NC",
+        base_url="https://bon.navarra.es/es/",
+        access_type="official_html",
+        reliability_level="canonical",
+    )
+    examples = [
+        (
+            "BON:student-scholarship",
+            "Resolucion del vicerrector de Estudiantes por la que se aprueba la "
+            "convocatoria de becas para estudiantes que se matriculen en estudios "
+            "de Grado y hayan sido seleccionados para concurrir a las Olimpiadas "
+            "Academicas Nacionales",
+            "1.4. Subvenciones, ayudas y becas",
+        ),
+        (
+            "BON:training-centers",
+            "Resolucion por la que se aprueban las bases reguladoras y la "
+            "convocatoria para la subvencion a centros docentes privados de "
+            "Formacion Profesional para acciones formativas dirigidas a personas "
+            "desempleadas",
+            "1.4. Subvenciones, ayudas y becas",
+        ),
+        (
+            "BON:final-project-prize",
+            "Resolucion por la que se aprueba la convocatoria para la concesion de "
+            "un premio al mejor Trabajo Fin de Estudios elaborado por alumnado",
+            "1.4. Subvenciones, ayudas y becas",
+        ),
+        (
+            "BON:teacher-directors",
+            "Resolucion del Servicio de Seleccion y Provision de Personal Docente "
+            "por la que se procede al nombramiento de directores de centros publicos",
+            "1.2.1. Ceses, nombramientos y otras situaciones",
+        ),
+        (
+            "BON:university-hiring",
+            "Resolucion del rector por la que se aprueba la convocatoria para la "
+            "contratacion de personal investigador en formacion",
+            "1.2.2. Oposiciones y concursos. Oferta Publica de Empleo",
+        ),
+        (
+            "BON:admission-procedure",
+            "Resolucion por la que se aprueban las bases que van a regular el "
+            "procedimiento de admision del alumnado en centros publicos",
+            "1.7. Otros",
+        ),
+    ]
+    for external_id, title, department in examples:
+        repository.upsert_document(
+            source_id=bon_source["id"],
+            external_id=external_id,
+            publication_date="2026-06-05",
+            title=title,
+            department=department,
+            section="1. Comunidad Foral de Navarra",
+        )
+
+    exit_code = run(
+        [
+            "--db-path",
+            str(db_path),
+            "find-source-candidates",
+            "--source",
+            "BON",
+            "--date-from",
+            "2026-06-05",
+            "--date-to",
+            "2026-06-05",
+            "--profile",
+            "bon-ayudas",
+            "--dry-run",
+            "--limit",
+            "10",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "source=BON" in captured.out
+    assert "matches_total=5" in captured.out
+    assert "matches_after_filters=1" in captured.out
+    assert "excluded_by_keyword_rules=4" in captured.out
+    assert "BON:student-scholarship" in captured.out
+    assert "BON:training-centers" not in captured.out
+    assert "BON:final-project-prize" not in captured.out
+    assert "BON:teacher-directors" not in captured.out
+    assert "BON:university-hiring" not in captured.out
+    assert "BON:admission-procedure" not in captured.out
+
+    candidate_count = connection.execute(
+        "SELECT COUNT(*) AS count FROM source_candidates"
+    ).fetchone()["count"]
+    assert candidate_count == 0
+
+
 def test_find_source_candidates_bopv_profile_keeps_direct_aid_despite_raw_noise(tmp_path, capsys):
     from official_sources.cli import run
 
